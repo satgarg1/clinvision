@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Waiting Room Display — Qlinic</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body class="display-body">
+
+  <div class="display-header">
+    <div class="brand">Qlinic <span style="color:var(--grey-500);font-weight:400;font-size:16px;">— live queue</span></div>
+    <div class="clock" id="clockTime">--</div>
+  </div>
+
+  <div class="display-grid" id="displayGrid"></div>
+
+  <div style="position:fixed;bottom:20px;left:60px;right:60px;text-align:center;">
+    <a href="dashboard.html" style="color:var(--grey-500);font-size:13px;text-decoration:none;">&larr; Back to app (this screen is meant to run on a TV/monitor in the waiting room)</a>
+  </div>
+
+  <script src="data.js"></script>
+  <script>
+    Qlinic.requireLogin('login.html');
+
+    function statusLabel(status) {
+      return {
+        on_time: 'On time',
+        running_late: 'Running late',
+        on_break: 'On a break',
+        emergency: 'Emergency — please bear with us',
+      }[status] || status;
+    }
+
+    function render() {
+      document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
+      const all = Qlinic.getAllQueues();
+
+      document.getElementById('displayGrid').innerHTML = all.map(({ doctor, queue }) => `
+        <div class="display-doctor-card">
+          <div class="doc-name">${doctor.name}</div>
+          <div class="doc-specialty">${doctor.specialty}</div>
+
+          ${doctor.status === 'running_late' || doctor.status === 'on_break' || doctor.status === 'emergency' ? `
+            <div class="display-delay-banner">${statusLabel(doctor.status)}${doctor.delayMins ? ' — about ' + doctor.delayMins + ' min behind' : ''}</div>
+          ` : ''}
+
+          <div class="display-now-serving">
+            <div class="tiny-label">Now serving</div>
+            <div class="name">${queue.nowServing ? queue.nowServing.name : '—'}</div>
+          </div>
+
+          <div class="display-queue-list">
+            ${queue.waiting.length === 0
+              ? '<div style="color:var(--grey-500);">No one else waiting right now.</div>'
+              : queue.waiting.slice(0, 6).map((p) => `
+                <div class="display-queue-row">
+                  <span class="pos">${p.position}</span>
+                  <span class="name">${p.name}</span>
+                  <span class="eta">~${estimateWaitLabel(p, doctor)}</span>
+                </div>
+              `).join('')
+            }
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function estimateWaitLabel(patient, doctor) {
+      // Simple confidence-band estimate: position * doctor's typical pace, shown as a range not a false-precise number.
+      const paceMins = 12;
+      const low = (patient.position - 1) * (paceMins - 3);
+      const high = patient.position * (paceMins + 3);
+      return `${Math.max(low, 0)}–${high} min`;
+    }
+
+    render();
+    setInterval(render, 5000); // auto-refresh, simulating a live screen
+  </script>
+</body>
+</html>

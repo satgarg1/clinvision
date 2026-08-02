@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reception — Qlinic</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <a href="index.html" class="brand">Qlinic</a>
+      <div class="clinic-name" id="clinicName">Loading…</div>
+      <nav>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="reception.html" class="nav-link active">Reception</a>
+        <a href="doctor.html" class="nav-link">Doctor View</a>
+        <a href="display.html" class="nav-link">Display Screen</a>
+      </nav>
+      <a href="#" id="logoutLink" class="logout-link">Log out</a>
+    </aside>
+
+    <main class="app-main">
+      <div class="app-topbar">
+        <h1>Reception</h1>
+        <div class="clock-pill">
+          <span>Clinic time: <span class="time" id="clockTime">--</span></span>
+          <button id="advanceTimeBtn">+15 min (demo)</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Find a patient who just arrived</h2>
+        <p style="font-size:13px;color:var(--grey-500);margin:0 0 14px;">
+          Same as today — ask their name, search it here, tap "Mark arrived." That's the only new step.
+        </p>
+        <div class="field">
+          <input type="text" id="searchBox" placeholder="Search by name or phone…" />
+        </div>
+        <div id="searchResults"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Register a walk-in</h2>
+        <form id="walkinForm" class="inline-form">
+          <div class="field">
+            <label>Name</label>
+            <input type="text" id="wName" required />
+          </div>
+          <div class="field">
+            <label>Phone</label>
+            <input type="tel" id="wPhone" required />
+          </div>
+          <div class="field">
+            <label>Doctor</label>
+            <select id="wDoctor" required></select>
+          </div>
+          <div class="field">
+            <label>Reason (optional)</label>
+            <input type="text" id="wReason" />
+          </div>
+          <button type="submit" class="btn-sm primary">Add walk-in &amp; queue now</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h2>Add a phoned-in appointment</h2>
+        <p style="font-size:13px;color:var(--grey-500);margin:0 0 14px;">
+          For v1, booking still happens by phone call — you enter it here, same as your register.
+        </p>
+        <form id="apptForm" class="inline-form">
+          <div class="field">
+            <label>Name</label>
+            <input type="text" id="aName" required />
+          </div>
+          <div class="field">
+            <label>Phone</label>
+            <input type="tel" id="aPhone" required />
+          </div>
+          <div class="field">
+            <label>Doctor</label>
+            <select id="aDoctor" required></select>
+          </div>
+          <div class="field">
+            <label>Booked time</label>
+            <input type="time" id="aTime" required />
+          </div>
+          <button type="submit" class="btn-sm primary">Add appointment</button>
+        </form>
+      </div>
+
+      <div id="queuePanels"></div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="data.js"></script>
+  <script>
+    Qlinic.requireLogin('login.html');
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    function fillDoctorSelects() {
+      const opts = Qlinic.getDoctors().map((d) => `<option value="${d.id}">${d.name} — ${d.specialty}</option>`).join('');
+      document.getElementById('wDoctor').innerHTML = opts;
+      document.getElementById('aDoctor').innerHTML = opts;
+    }
+
+    function renderSearch() {
+      const q = document.getElementById('searchBox').value;
+      const box = document.getElementById('searchResults');
+      if (!q.trim()) { box.innerHTML = ''; return; }
+      const results = Qlinic.searchBookedPatients(q);
+      if (results.length === 0) {
+        box.innerHTML = '<div class="empty-state">No booked patient matches "' + q + '". Use "Register a walk-in" below instead.</div>';
+        return;
+      }
+      box.innerHTML = `
+        <table class="qtable">
+          <thead><tr><th>Name</th><th>Phone</th><th>Doctor</th><th>Booked</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            ${results.map((p) => {
+              const doc = Qlinic.getDoctor(p.doctorId);
+              return `
+                <tr>
+                  <td>${p.name}</td>
+                  <td>${p.phone}</td>
+                  <td>${doc.name}</td>
+                  <td>${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}</td>
+                  <td>${p.likelyNoShow ? '<span class="badge badge-likely">Likely no-show</span>' : '<span class="badge badge-booked">Not yet arrived</span>'}</td>
+                  <td><button class="btn-sm primary" onclick="doMarkArrived('${p.id}')">Mark arrived</button></td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function doMarkArrived(id) {
+      Qlinic.markArrived(id);
+      document.getElementById('searchBox').value = '';
+      renderSearch();
+      renderQueues();
+      showToast('Marked arrived — added to the live queue');
+    }
+
+    function doMarkNoShow(id) {
+      if (confirm('Mark this patient as a no-show?')) {
+        Qlinic.markNoShow(id);
+        renderQueues();
+        showToast('Marked as no-show');
+      }
+    }
+
+    function renderQueues() {
+      const all = Qlinic.getAllQueues();
+      document.getElementById('queuePanels').innerHTML = all.map(({ doctor, queue }) => `
+        <div class="panel">
+          <h2>${doctor.name} — ${doctor.specialty}</h2>
+          ${queue.nowServing ? `<p style="font-size:14px;margin:0 0 14px;"><strong>Now with:</strong> ${queue.nowServing.name}</p>` : '<p style="font-size:14px;color:var(--grey-500);margin:0 0 14px;">No one in consultation right now.</p>'}
+
+          <h3 style="font-size:14px;margin:0 0 8px;color:var(--grey-700);">Waiting (${queue.waiting.length})</h3>
+          ${queue.waiting.length === 0 ? '<div class="empty-state">No one waiting.</div>' : `
+            <table class="qtable">
+              <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Arrived</th><th></th></tr></thead>
+              <tbody>
+                ${queue.waiting.map((p) => `
+                  <tr>
+                    <td>${p.position}</td>
+                    <td>${p.name}</td>
+                    <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
+                    <td>${p.arrivedAt ? Qlinic.formatTime(Qlinic.parseTime(p.arrivedAt)) : '—'}</td>
+                    <td></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `}
+
+          <h3 style="font-size:14px;margin:20px 0 8px;color:var(--grey-700);">Booked, not yet arrived (${queue.booked.length})</h3>
+          ${queue.booked.length === 0 ? '<div class="empty-state">Everyone booked has arrived.</div>' : `
+            <table class="qtable">
+              <thead><tr><th>Name</th><th>Booked</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                ${queue.booked.map((p) => `
+                  <tr>
+                    <td>${p.name}</td>
+                    <td>${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}</td>
+                    <td>${p.likelyNoShow ? '<span class="badge badge-likely">Likely no-show</span>' : '<span class="badge badge-booked">Expected</span>'}</td>
+                    <td>
+                      <button class="btn-sm primary" onclick="doMarkArrived('${p.id}')">Mark arrived</button>
+                      <button class="btn-sm danger" onclick="doMarkNoShow('${p.id}')">No-show</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `}
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('searchBox').addEventListener('input', renderSearch);
+
+    document.getElementById('walkinForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      Qlinic.addWalkIn({
+        name: document.getElementById('wName').value,
+        phone: document.getElementById('wPhone').value,
+        doctorId: document.getElementById('wDoctor').value,
+        reason: document.getElementById('wReason').value,
+      });
+      e.target.reset();
+      fillDoctorSelects();
+      renderQueues();
+      showToast('Walk-in added to the queue');
+    });
+
+    document.getElementById('apptForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      Qlinic.addAppointment({
+        name: document.getElementById('aName').value,
+        phone: document.getElementById('aPhone').value,
+        doctorId: document.getElementById('aDoctor').value,
+        bookedTime: document.getElementById('aTime').value,
+      });
+      e.target.reset();
+      fillDoctorSelects();
+      renderQueues();
+      showToast('Appointment added');
+    });
+
+    document.getElementById('advanceTimeBtn').addEventListener('click', () => {
+      Qlinic.advanceTime(15);
+      document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
+      renderSearch();
+      renderQueues();
+      showToast('Clinic time advanced by 15 minutes');
+    });
+
+    document.getElementById('logoutLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      Qlinic.logout();
+      window.location.href = 'login.html';
+    });
+
+    document.getElementById('clinicName').textContent = Qlinic.getClinic().name;
+    document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
+    fillDoctorSelects();
+    renderQueues();
+  </script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Log in — Qlinic</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-card">
+      <a href="index.html" class="brand">Qlinic</a>
+      <h1>Clinic admin login</h1>
+
+      <div id="loginError" class="login-error">Incorrect email or password. Try the demo credentials below.</div>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" value="demo@qlinic.in" required />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" value="demo123" required />
+        </div>
+        <button type="submit" class="btn btn-accent" style="width:100%;">Log in</button>
+      </form>
+
+      <div class="login-hint">
+        <strong>Prototype login</strong> — not real authentication.<br />
+        Demo clinic admin: <strong>demo@qlinic.in</strong> / <strong>demo123</strong>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const ok = Qlinic.login(email, password);
+      if (ok) {
+        window.location.href = 'dashboard.html';
+      } else {
+        document.getElementById('loginError').style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

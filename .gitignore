@@ -1,0 +1,11 @@
+.~lock.*
+*.tmp
+*.zip
+zine2riV
+.claude/
+*.pdf
+*.docx
+*.jpg
+QLINIC~2/
+app/
+styles/

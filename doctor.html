@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Doctor View — Qlinic</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <a href="index.html" class="brand">Qlinic</a>
+      <div class="clinic-name" id="clinicName">Loading…</div>
+      <nav>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="reception.html" class="nav-link">Reception</a>
+        <a href="doctor.html" class="nav-link active">Doctor View</a>
+        <a href="display.html" class="nav-link">Display Screen</a>
+      </nav>
+      <a href="#" id="logoutLink" class="logout-link">Log out</a>
+    </aside>
+
+    <main class="app-main">
+      <div class="app-topbar">
+        <h1>Doctor View</h1>
+        <div class="clock-pill">
+          <span>Clinic time: <span class="time" id="clockTime">--</span></span>
+          <button id="advanceTimeBtn">+15 min (demo)</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <label style="font-size:13px;font-weight:600;color:var(--grey-700);display:block;margin-bottom:8px;">Viewing as</label>
+        <select id="doctorSelect" style="padding:10px 14px;border-radius:8px;border:1px solid var(--grey-300);font-size:14px;min-width:260px;"></select>
+      </div>
+
+      <div class="panel">
+        <h2>Your status</h2>
+        <p style="font-size:13px;color:var(--grey-500);margin:0 0 16px;">
+          One tap updates every waiting patient's estimate and the waiting-room screen — no one needs to interrupt you to ask.
+        </p>
+        <div class="inline-form" style="margin-bottom:10px;">
+          <button class="btn-sm" data-status="on_time">On time</button>
+          <button class="btn-sm" data-status="running_late">Running late</button>
+          <button class="btn-sm" data-status="on_break">On a break</button>
+          <button class="btn-sm" data-status="emergency">Emergency</button>
+        </div>
+        <div id="delayInputWrap" style="display:none;margin-top:10px;">
+          <div class="inline-form">
+            <div class="field">
+              <label>How many minutes behind?</label>
+              <input type="number" id="delayMinsInput" min="0" step="5" value="15" style="max-width:140px;" />
+            </div>
+            <button class="btn-sm primary" id="confirmDelayBtn">Broadcast delay</button>
+          </div>
+        </div>
+        <div id="currentStatusLine" style="margin-top:14px;font-size:14px;"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Now serving</h2>
+        <div id="nowServingBox"></div>
+        <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;">Call next patient</button>
+      </div>
+
+      <div class="panel">
+        <h2>Waiting</h2>
+        <div id="waitingList"></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="data.js"></script>
+  <script>
+    Qlinic.requireLogin('login.html');
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    function statusLabel(status) {
+      return {
+        on_time: 'On time',
+        running_late: 'Running late',
+        on_break: 'On a break',
+        emergency: 'Emergency',
+      }[status] || status;
+    }
+
+    function currentDoctorId() {
+      return document.getElementById('doctorSelect').value;
+    }
+
+    function fillDoctorSelect() {
+      const sel = document.getElementById('doctorSelect');
+      sel.innerHTML = Qlinic.getDoctors().map((d) => `<option value="${d.id}">${d.name} — ${d.specialty}</option>`).join('');
+    }
+
+    function render() {
+      const doctorId = currentDoctorId();
+      const doc = Qlinic.getDoctor(doctorId);
+      const q = Qlinic.getQueueForDoctor(doctorId);
+
+      document.getElementById('currentStatusLine').innerHTML =
+        `Currently: <span class="status-pill status-${doc.status}">${statusLabel(doc.status)}${doc.delayMins ? ' · ' + doc.delayMins + ' min' : ''}</span>
+         <span style="color:var(--grey-500);"> — updated ${Qlinic.formatTime(Qlinic.parseTime(doc.statusUpdatedAt))}${doc.statusNote ? ' · "' + doc.statusNote + '"' : ''}</span>`;
+
+      document.getElementById('nowServingBox').innerHTML = q.nowServing
+        ? `<div style="font-size:20px;font-weight:700;">${q.nowServing.name}</div><div style="font-size:13px;color:var(--grey-500);">${q.nowServing.type === 'appointment' ? 'Appointment' : 'Walk-in'}</div>`
+        : `<div class="empty-state">No one in consultation. Tap "Call next patient" to begin.</div>`;
+
+      document.getElementById('waitingList').innerHTML = q.waiting.length === 0
+        ? '<div class="empty-state">No one waiting.</div>'
+        : `
+        <table class="qtable">
+          <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Arrived</th></tr></thead>
+          <tbody>
+            ${q.waiting.map((p) => `
+              <tr>
+                <td>${p.position}</td>
+                <td>${p.name}</td>
+                <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
+                <td>${p.arrivedAt ? Qlinic.formatTime(Qlinic.parseTime(p.arrivedAt)) : '—'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    document.querySelectorAll('[data-status]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const status = btn.getAttribute('data-status');
+        if (status === 'running_late') {
+          document.getElementById('delayInputWrap').style.display = 'block';
+          return;
+        }
+        document.getElementById('delayInputWrap').style.display = 'none';
+        Qlinic.setDoctorStatus(currentDoctorId(), status, 0, '');
+        render();
+        showToast('Status updated — patients notified');
+      });
+    });
+
+    document.getElementById('confirmDelayBtn').addEventListener('click', () => {
+      const mins = document.getElementById('delayMinsInput').value;
+      Qlinic.setDoctorStatus(currentDoctorId(), 'running_late', mins, `Running about ${mins} min behind.`);
+      document.getElementById('delayInputWrap').style.display = 'none';
+      render();
+      showToast('Delay broadcast to all waiting patients');
+    });
+
+    document.getElementById('callNextBtn').addEventListener('click', () => {
+      Qlinic.callNextPatient(currentDoctorId());
+      render();
+      showToast('Next patient called in');
+    });
+
+    document.getElementById('doctorSelect').addEventListener('change', render);
+
+    document.getElementById('advanceTimeBtn').addEventListener('click', () => {
+      Qlinic.advanceTime(15);
+      document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
+      render();
+      showToast('Clinic time advanced by 15 minutes');
+    });
+
+    document.getElementById('logoutLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      Qlinic.logout();
+      window.location.href = 'login.html';
+    });
+
+    document.getElementById('clinicName').textContent = Qlinic.getClinic().name;
+    document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
+    fillDoctorSelect();
+    render();
+  </script>
+</body>
+</html>

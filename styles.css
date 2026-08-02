@@ -1,0 +1,597 @@
+/* ============================================================
+   Qlinic — shared stylesheet (marketing page + logged-in app)
+   Monochrome + one accent color, Apple-product-page inspired.
+   ============================================================ */
+
+:root {
+  --accent: #0071e3;
+  --accent-dark: #0058b0;
+  --black: #1d1d1f;
+  --grey-900: #2b2b2d;
+  --grey-700: #4a4a4c;
+  --grey-500: #86868b;
+  --grey-300: #d2d2d7;
+  --grey-100: #f5f5f7;
+  --white: #ffffff;
+  --success: #1e8e3e;
+  --success-bg: #e6f4ea;
+  --warning: #b26a00;
+  --warning-bg: #fdf1dc;
+  --danger: #c5221f;
+  --danger-bg: #fce8e6;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--black);
+  background: var(--white);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; }
+
+/* ---------------- Marketing page ---------------- */
+
+.mkt-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 6vw;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid var(--grey-300);
+}
+
+.mkt-nav .brand {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.btn {
+  display: inline-block;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-accent {
+  background: var(--accent);
+  color: var(--white);
+}
+.btn-accent:hover { background: var(--accent-dark); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--black);
+  border: 1px solid var(--grey-300);
+}
+.btn-ghost:hover { border-color: var(--black); }
+
+.btn-large {
+  font-size: 18px;
+  padding: 14px 32px;
+}
+
+.mkt-section {
+  padding: 130px 6vw;
+  max-width: 1180px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.mkt-section.tight { padding-top: 70px; padding-bottom: 70px; }
+.mkt-section.dark {
+  background: var(--black);
+  color: var(--white);
+  max-width: none;
+  border-radius: 0;
+}
+.mkt-section.grey { background: var(--grey-100); max-width: none; }
+
+.eyebrow {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+}
+
+.mkt-h1 {
+  font-size: clamp(40px, 7vw, 88px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin: 0 0 24px;
+}
+
+.mkt-h2 {
+  font-size: clamp(30px, 4.5vw, 52px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0 0 20px;
+}
+
+.mkt-sub {
+  font-size: clamp(18px, 2.2vw, 26px);
+  color: var(--grey-700);
+  font-weight: 400;
+  max-width: 720px;
+  margin: 0 auto 40px;
+  line-height: 1.4;
+}
+.mkt-section.dark .mkt-sub { color: var(--grey-300); }
+
+.mkt-cta-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.mkt-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 40px;
+  margin-top: 60px;
+  text-align: left;
+}
+
+.mkt-step .num {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.mkt-step h3 {
+  font-size: 22px;
+  margin: 0 0 10px;
+  letter-spacing: -0.01em;
+}
+.mkt-step p {
+  font-size: 16px;
+  color: var(--grey-700);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.mkt-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  margin-top: 60px;
+  text-align: left;
+}
+
+.mkt-feature-card {
+  background: var(--white);
+  border: 1px solid var(--grey-300);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+}
+.mkt-feature-card h3 {
+  font-size: 20px;
+  margin: 0 0 10px;
+  letter-spacing: -0.01em;
+}
+.mkt-feature-card p {
+  font-size: 15px;
+  color: var(--grey-700);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.mkt-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 32px;
+  margin-top: 60px;
+}
+.mkt-stat .big { font-size: clamp(36px, 5vw, 56px); font-weight: 700; color: var(--accent); }
+.mkt-stat .label { font-size: 15px; color: var(--grey-500); margin-top: 6px; }
+.mkt-section.dark .mkt-stat .label { color: var(--grey-300); }
+
+.mkt-footer {
+  padding: 50px 6vw;
+  text-align: center;
+  color: var(--grey-500);
+  font-size: 13px;
+  border-top: 1px solid var(--grey-300);
+}
+.mkt-footer a { color: var(--grey-500); text-decoration: underline; }
+
+/* ---------------- Login page ---------------- */
+
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--grey-100);
+  padding: 24px;
+}
+
+.login-card {
+  background: var(--white);
+  border: 1px solid var(--grey-300);
+  border-radius: var(--radius);
+  padding: 44px 40px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-card .brand {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  margin-bottom: 6px;
+}
+
+.login-card h1 {
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+  margin: 0 0 28px;
+  color: var(--grey-700);
+}
+
+.field { margin-bottom: 18px; }
+.field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--grey-700);
+  margin-bottom: 6px;
+}
+.field input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  border: 1px solid var(--grey-300);
+  border-radius: 10px;
+  font-family: var(--font);
+}
+.field input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+
+.login-hint {
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--grey-500);
+  background: var(--grey-100);
+  border-radius: 10px;
+  padding: 12px 14px;
+  line-height: 1.5;
+}
+
+.login-error {
+  color: var(--danger);
+  font-size: 13px;
+  margin-bottom: 14px;
+  display: none;
+}
+
+/* ---------------- App shell (dashboard / reception / doctor) ---------------- */
+
+.app-shell { display: flex; min-height: 100vh; }
+
+.app-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--black);
+  color: var(--white);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-sidebar .brand {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--white);
+  text-decoration: none;
+  padding: 0 8px;
+  margin-bottom: 28px;
+  display: block;
+}
+
+.app-sidebar nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+
+.app-sidebar a.nav-link {
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--grey-300);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+.app-sidebar a.nav-link:hover { background: var(--grey-900); color: var(--white); }
+.app-sidebar a.nav-link.active { background: var(--accent); color: var(--white); }
+
+.app-sidebar .clinic-name {
+  font-size: 12px;
+  color: var(--grey-500);
+  padding: 0 8px;
+  margin-bottom: 16px;
+}
+
+.app-sidebar .logout-link {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--grey-500);
+  text-decoration: none;
+}
+.app-sidebar .logout-link:hover { color: var(--white); }
+
+.app-main {
+  flex: 1;
+  background: var(--grey-100);
+  padding: 32px 40px;
+  min-width: 0;
+}
+
+.app-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.app-topbar h1 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.clock-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--white);
+  border: 1px solid var(--grey-300);
+  border-radius: 999px;
+  padding: 8px 8px 8px 16px;
+  font-size: 14px;
+}
+.clock-pill .time { font-weight: 700; }
+.clock-pill button {
+  border: none;
+  background: var(--grey-100);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.clock-pill button:hover { background: var(--grey-300); }
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  background: var(--white);
+  border: 1px solid var(--grey-300);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+}
+.stat-card .value { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
+.stat-card .label { font-size: 13px; color: var(--grey-500); margin-top: 4px; }
+
+.panel {
+  background: var(--white);
+  border: 1px solid var(--grey-300);
+  border-radius: var(--radius);
+  padding: 24px 26px;
+  margin-bottom: 24px;
+}
+.panel h2 {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 16px;
+}
+
+table.qtable { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.qtable th {
+  text-align: left;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--grey-500);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--grey-300);
+}
+table.qtable td { padding: 12px 10px; border-bottom: 1px solid var(--grey-100); vertical-align: middle; }
+table.qtable tr:last-child td { border-bottom: none; }
+
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.badge-waiting { background: var(--grey-100); color: var(--grey-700); }
+.badge-in-consult { background: #e8f0fe; color: var(--accent-dark); }
+.badge-done { background: var(--success-bg); color: var(--success); }
+.badge-no-show { background: var(--danger-bg); color: var(--danger); }
+.badge-likely { background: var(--warning-bg); color: var(--warning); }
+.badge-booked { background: var(--grey-100); color: var(--grey-500); }
+
+.btn-sm {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--grey-300);
+  background: var(--white);
+  cursor: pointer;
+}
+.btn-sm:hover { border-color: var(--black); }
+.btn-sm.primary { background: var(--accent); color: var(--white); border-color: var(--accent); }
+.btn-sm.primary:hover { background: var(--accent-dark); }
+.btn-sm.danger { color: var(--danger); }
+
+.inline-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.inline-form .field { margin-bottom: 0; min-width: 160px; flex: 1; }
+.inline-form .field input, .inline-form .field select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid var(--grey-300);
+  border-radius: 8px;
+  font-family: var(--font);
+}
+
+.empty-state { color: var(--grey-500); font-size: 14px; padding: 20px 0; text-align: center; }
+
+.doctor-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--grey-100);
+}
+.doctor-status-row:last-child { border-bottom: none; }
+.doctor-status-row .doc-name { font-weight: 700; font-size: 15px; }
+.doctor-status-row .doc-specialty { font-size: 13px; color: var(--grey-500); }
+
+.status-pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+}
+.status-on_time { background: var(--success-bg); color: var(--success); }
+.status-running_late { background: var(--warning-bg); color: var(--warning); }
+.status-on_break { background: #ece9fc; color: #5b3ec9; }
+.status-emergency { background: var(--danger-bg); color: var(--danger); }
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--black);
+  color: var(--white);
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+  z-index: 200;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* ---------------- Waiting-room display screen ---------------- */
+
+.display-body {
+  background: var(--black);
+  color: var(--white);
+  min-height: 100vh;
+  padding: 40px 60px;
+  font-family: var(--font);
+}
+.display-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+.display-header .brand { font-size: 26px; font-weight: 700; }
+.display-header .clock { font-size: 26px; font-weight: 700; color: var(--grey-300); }
+
+.display-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 40px;
+}
+
+.display-doctor-card {
+  background: var(--grey-900);
+  border-radius: 24px;
+  padding: 36px 40px;
+}
+.display-doctor-card .doc-name { font-size: 30px; font-weight: 700; margin-bottom: 4px; }
+.display-doctor-card .doc-specialty { font-size: 16px; color: var(--grey-500); margin-bottom: 24px; }
+
+.display-now-serving {
+  background: var(--accent);
+  border-radius: 16px;
+  padding: 20px 26px;
+  margin-bottom: 24px;
+}
+.display-now-serving .tiny-label { font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.85; }
+.display-now-serving .name { font-size: 40px; font-weight: 700; margin-top: 4px; }
+
+.display-delay-banner {
+  background: var(--warning-bg);
+  color: var(--warning);
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.display-queue-list { display: flex; flex-direction: column; gap: 10px; }
+.display-queue-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 20px;
+  padding: 10px 0;
+  border-bottom: 1px solid #3a3a3c;
+}
+.display-queue-row .pos {
+  font-weight: 700;
+  color: var(--grey-500);
+  width: 34px;
+}
+.display-queue-row .name { flex: 1; }
+.display-queue-row .eta { color: var(--grey-500); font-size: 15px; }
+
+@media (max-width: 720px) {
+  .app-shell { flex-direction: column; }
+  .app-sidebar { width: 100%; flex-direction: row; overflow-x: auto; align-items: center; }
+  .app-sidebar nav { flex-direction: row; }
+  .app-sidebar .clinic-name, .app-sidebar .logout-link { display: none; }
+  .app-main { padding: 24px 20px; }
+}

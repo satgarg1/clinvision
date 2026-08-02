@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard — Qlinic</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <a href="index.html" class="brand">Qlinic</a>
+      <div class="clinic-name" id="clinicName">Loading…</div>
+      <nav>
+        <a href="dashboard.html" class="nav-link active">Dashboard</a>
+        <a href="reception.html" class="nav-link">Reception</a>
+        <a href="doctor.html" class="nav-link">Doctor View</a>
+        <a href="display.html" class="nav-link">Display Screen</a>
+      </nav>
+      <a href="#" id="logoutLink" class="logout-link">Log out</a>
+    </aside>
+
+    <main class="app-main">
+      <div class="app-topbar">
+        <h1>Dashboard</h1>
+        <div class="clock-pill">
+          <span>Clinic time: <span class="time" id="clockTime">--</span></span>
+          <button id="advanceTimeBtn">+15 min (demo)</button>
+        </div>
+      </div>
+
+      <div class="card-grid" id="statCards"></div>
+
+      <div class="panel">
+        <h2>Doctor status</h2>
+        <div id="doctorStatusList"></div>
+      </div>
+
+      <div class="panel">
+        <h2>End of day</h2>
+        <p style="font-size:14px;color:var(--grey-700);margin:0 0 14px;">
+          Anyone still marked "booked" (never arrived) will be closed out as a no-show.
+          This is the same event that would run automatically at clinic closing time in production.
+        </p>
+        <button class="btn-sm primary" id="closeDayBtn">Close the day &amp; finalize no-shows</button>
+      </div>
+
+      <div class="panel">
+        <h2>Demo controls</h2>
+        <p style="font-size:13px;color:var(--grey-500);margin:0 0 14px;">
+          This prototype stores its data in your browser only (localStorage), so you can reset it anytime.
+        </p>
+        <button class="btn-sm" id="resetBtn">Reset demo data</button>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="data.js"></script>
+  <script>
+    Qlinic.requireLogin('login.html');
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    function statusLabel(status) {
+      return {
+        on_time: 'On time',
+        running_late: 'Running late',
+        on_break: 'On a break',
+        emergency: 'Emergency',
+      }[status] || status;
+    }
+
+    function render() {
+      document.getElementById('clinicName').textContent = Qlinic.getClinic().name;
+      document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
+
+      const summary = Qlinic.getDailySummary();
+      const cards = [
+        { label: 'Footfall so far', value: summary.footfallSoFar },
+        { label: 'Waiting now', value: summary.waitingNow },
+        { label: 'Seen (done)', value: summary.doneCount },
+        { label: 'Likely no-shows (flagged)', value: summary.likelyNoShowCount },
+        { label: 'No-shows (closed)', value: summary.noShowCount },
+        { label: 'Booked today', value: summary.totalAppointments },
+      ];
+      document.getElementById('statCards').innerHTML = cards.map((c) => `
+        <div class="stat-card">
+          <div class="value">${c.value}</div>
+          <div class="label">${c.label}</div>
+        </div>
+      `).join('');
+
+      const doctors = Qlinic.getDoctors();
+      document.getElementById('doctorStatusList').innerHTML = doctors.map((d) => {
+        const q = Qlinic.getQueueForDoctor(d.id);
+        return `
+          <div class="doctor-status-row">
+            <div>
+              <div class="doc-name">${d.name}</div>
+              <div class="doc-specialty">${d.specialty} &middot; ${q.waiting.length} waiting ${q.nowServing ? '&middot; now with ' + q.nowServing.name : ''}</div>
+            </div>
+            <div style="text-align:right;">
+              <span class="status-pill status-${d.status}">${statusLabel(d.status)}${d.delayMins ? ' · ' + d.delayMins + ' min' : ''}</span>
+              <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">updated ${Qlinic.formatTime(Qlinic.parseTime(d.statusUpdatedAt))}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('advanceTimeBtn').addEventListener('click', () => {
+      Qlinic.advanceTime(15);
+      render();
+      showToast('Clinic time advanced by 15 minutes');
+    });
+
+    document.getElementById('closeDayBtn').addEventListener('click', () => {
+      if (confirm('Close the day? Everyone still "booked" and not arrived will be marked as no-show.')) {
+        Qlinic.closeDayNoShows();
+        render();
+        showToast('Day closed — no-shows finalized');
+      }
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if (confirm('Reset all demo data back to the seeded sample day?')) {
+        Qlinic.resetDemo();
+        render();
+        showToast('Demo data reset');
+      }
+    });
+
+    document.getElementById('logoutLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      Qlinic.logout();
+      window.location.href = 'login.html';
+    });
+
+    render();
+  </script>
+</body>
+</html>
