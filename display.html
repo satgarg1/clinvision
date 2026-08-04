@@ -41,6 +41,12 @@
     let combined = [];
     let currentPage = 0;
 
+    // Same 5-color identity palette used on reception and the doctor view —
+    // each doctor keeps the same color everywhere, so on a board mixing every
+    // doctor's patients together, a glance at the dot tells you whose it is
+    // without reading the name column.
+    const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
+
     function statusLabel(status) {
       return {
         on_time: 'On time',
@@ -60,8 +66,8 @@
 
     function renderDoctorStrip() {
       const all = Qlinic.getAllQueues();
-      document.getElementById('doctorStrip').innerHTML = all.map(({ doctor, queue }) => `
-        <div class="strip-card">
+      document.getElementById('doctorStrip').innerHTML = all.map(({ doctor, queue }, index) => `
+        <div class="strip-card accent-${ACCENT_COLORS[index % ACCENT_COLORS.length]}">
           <div class="strip-top">
             <div>
               <div class="strip-doc">${doctor.name}</div>
@@ -85,13 +91,15 @@
     function computeCombinedWaiting() {
       const all = Qlinic.getAllQueues();
       const rows = [];
-      all.forEach(({ doctor, queue }) => {
+      all.forEach(({ doctor, queue }, index) => {
+        const doctorAccent = ACCENT_COLORS[index % ACCENT_COLORS.length];
         queue.waiting.forEach((p) => {
           rows.push({
             name: p.name,
             address: p.address,
             type: p.type,
             doctorName: doctor.name,
+            doctorAccent,
             position: p.position,
             eta: estimateWaitLabel(p, doctor),
             effectiveMinutes: p.effectiveMinutes,
@@ -110,7 +118,7 @@
         <div class="board-row">
           <span class="board-pos">${startIdx + i + 1}</span>
           <span class="board-name">${p.name}${p.address ? `<span class="board-sub">${p.address}</span>` : ''}</span>
-          <span class="board-doc">${p.doctorName}</span>
+          <span class="board-doc"><span class="board-doc-dot dot-${p.doctorAccent}"></span>${p.doctorName}</span>
           <span class="board-type">${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</span>
           <span class="board-eta">~${p.eta}</span>
         </div>

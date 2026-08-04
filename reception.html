@@ -30,7 +30,7 @@
       </div>
 
       <div class="panel">
-        <h2>Find a patient who just arrived</h2>
+        <div class="panel-header"><span class="panel-icon icon-teal">🔍</span><h2>Find a patient who just arrived</h2></div>
         <p class="panel-note">
           Same as today — ask their name, search it here, tap "Mark arrived." That's the only new step.
         </p>
@@ -84,7 +84,7 @@
       </div>
 
       <div class="panel">
-        <label class="viewing-label">Viewing queue for</label>
+        <div class="panel-header"><span class="panel-icon icon-blue">👥</span><h2>Viewing queue for</h2></div>
         <select id="queueDoctorFilter" class="doctor-select"></select>
       </div>
 
@@ -103,6 +103,14 @@
     let queueDoctorId = null;
     let bookedExpanded = false;
     let bookedPage = 0;
+
+    // Same 5-color identity palette used app-wide — each doctor keeps the same
+    // color on reception, the doctor view, and the waiting-room board.
+    const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
+    function accentForDoctor(doctorId) {
+      const idx = Qlinic.getDoctors().findIndex((d) => d.id === doctorId);
+      return ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
+    }
 
     function showToast(msg) {
       const t = document.getElementById('toast');
@@ -275,8 +283,8 @@
       const likelyCount = queue.booked.filter((p) => p.likelyNoShow).length;
 
       panelEl.innerHTML = `
-        <div class="panel">
-          <h2>${doctor.name} — ${doctor.specialty}</h2>
+        <div class="panel accent-${accentForDoctor(queueDoctorId)}">
+          <div class="panel-header"><span class="board-doc-dot dot-${accentForDoctor(queueDoctorId)}"></span><h2>${doctor.name} — ${doctor.specialty}</h2></div>
           ${queue.nowServing ? `<p style="font-size:14px;margin:0 0 14px;"><strong>Now with:</strong> ${queue.nowServing.name}</p>` : '<p style="font-size:14px;color:var(--grey-500);margin:0 0 14px;">No one in consultation right now.</p>'}
 
           <h3 style="font-size:14px;margin:0 0 8px;color:var(--grey-700);">Waiting (${queue.waiting.length}) <span class="order-note">— ordered by scheduled time, not arrival order</span></h3>

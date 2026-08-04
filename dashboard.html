@@ -32,12 +32,12 @@
       <div class="card-grid" id="statCards"></div>
 
       <div class="panel">
-        <h2>Doctor status</h2>
+        <div class="panel-header"><span class="panel-icon icon-blue">🩺</span><h2>Doctor status</h2></div>
         <div id="doctorStatusList"></div>
       </div>
 
       <div class="panel">
-        <h2>End of day</h2>
+        <div class="panel-header"><span class="panel-icon icon-purple">🌙</span><h2>End of day</h2></div>
         <p style="font-size:14px;color:var(--grey-700);margin:0 0 14px;">
           Anyone still marked "booked" (never arrived) will be closed out as a no-show.
           This is the same event that would run automatically at clinic closing time in production.
@@ -46,7 +46,7 @@
       </div>
 
       <div class="panel">
-        <h2>Demo controls</h2>
+        <div class="panel-header"><span class="panel-icon icon-coral">🛠️</span><h2>Demo controls</h2></div>
         <p style="font-size:13px;color:var(--grey-500);margin:0 0 14px;">
           This prototype stores its data in your browser only (localStorage), so you can reset it anytime.
         </p>
@@ -77,22 +77,31 @@
       }[status] || status;
     }
 
+    // Same 5-color identity palette as the rest of the app — each doctor keeps
+    // the same color everywhere (reception, doctor view, waiting-room board)
+    // based on their position in the doctors list.
+    const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
+    function accentForDoctor(doctorId) {
+      const idx = Qlinic.getDoctors().findIndex((d) => d.id === doctorId);
+      return ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
+    }
+
     function render() {
       document.getElementById('clinicName').textContent = Qlinic.getClinic().name;
       document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
 
       const summary = Qlinic.getDailySummary();
       const cards = [
-        { label: 'Footfall so far', value: summary.footfallSoFar },
-        { label: 'Waiting now', value: summary.waitingNow },
-        { label: 'Seen (done)', value: summary.doneCount },
-        { label: 'Likely no-shows (flagged)', value: summary.likelyNoShowCount },
-        { label: 'No-shows (closed)', value: summary.noShowCount },
-        { label: 'Booked today', value: summary.totalAppointments },
+        { label: 'Footfall so far', value: summary.footfallSoFar, accent: 'teal' },
+        { label: 'Waiting now', value: summary.waitingNow, accent: 'coral' },
+        { label: 'Seen (done)', value: summary.doneCount, accent: 'blue' },
+        { label: 'Likely no-shows (flagged)', value: summary.likelyNoShowCount, accent: 'pink' },
+        { label: 'No-shows (closed)', value: summary.noShowCount, accent: 'purple' },
+        { label: 'Booked today', value: summary.totalAppointments, accent: 'teal' },
       ];
       document.getElementById('statCards').innerHTML = cards.map((c) => `
-        <div class="stat-card">
-          <div class="value">${c.value}</div>
+        <div class="stat-card accent-${c.accent}">
+          <div class="value value-${c.accent}">${c.value}</div>
           <div class="label">${c.label}</div>
         </div>
       `).join('');
@@ -102,9 +111,12 @@
         const q = Qlinic.getQueueForDoctor(d.id);
         return `
           <div class="doctor-status-row">
-            <div>
-              <div class="doc-name">${d.name}</div>
-              <div class="doc-specialty">${d.specialty} &middot; ${q.waiting.length} waiting ${q.nowServing ? '&middot; now with ' + q.nowServing.name : ''}</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="board-doc-dot dot-${accentForDoctor(d.id)}"></span>
+              <div>
+                <div class="doc-name">${d.name}</div>
+                <div class="doc-specialty">${d.specialty} &middot; ${q.waiting.length} waiting ${q.nowServing ? '&middot; now with ' + q.nowServing.name : ''}</div>
+              </div>
             </div>
             <div style="text-align:right;">
               <span class="status-pill status-${d.status}">${statusLabel(d.status)}${d.delayMins ? ' · ' + d.delayMins + ' min' : ''}</span>

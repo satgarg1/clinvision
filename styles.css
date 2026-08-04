@@ -392,6 +392,53 @@ a { color: inherit; }
 .icon-purple { background: var(--mkt-purple-bg); }
 .icon-pink { background: var(--mkt-pink-bg); }
 
+/* ---------------- Shared colorful accents (used across every logged-in page) ----------------
+   Same 5-color palette as the landing page, applied consistently: each doctor
+   gets a stable color (by their position in the doctors list) shown as a top
+   border wherever their queue is referenced, so "this doctor's stuff" reads
+   the same way on reception, the doctor view, and the waiting-room board.
+   Semantic status colors (success/warning/danger badges, status pills) are
+   untouched — this palette is identity/category color, not meaning. */
+
+.panel.accent-teal, .stat-card.accent-teal, .strip-card.accent-teal { border-top: 4px solid var(--mkt-teal); }
+.panel.accent-blue, .stat-card.accent-blue, .strip-card.accent-blue { border-top: 4px solid var(--mkt-blue); }
+.panel.accent-purple, .stat-card.accent-purple, .strip-card.accent-purple { border-top: 4px solid var(--mkt-purple); }
+.panel.accent-coral, .stat-card.accent-coral, .strip-card.accent-coral { border-top: 4px solid var(--mkt-coral); }
+.panel.accent-pink, .stat-card.accent-pink, .strip-card.accent-pink { border-top: 4px solid var(--mkt-pink); }
+
+.value-teal { color: var(--mkt-teal); }
+.value-blue { color: var(--mkt-blue); }
+.value-purple { color: var(--mkt-purple); }
+.value-coral { color: var(--mkt-coral); }
+.value-pink { color: var(--mkt-pink); }
+
+.panel-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.panel-header h2 { margin: 0; }
+.panel-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.board-doc-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.dot-teal { background: var(--mkt-teal); }
+.dot-blue { background: var(--mkt-blue); }
+.dot-purple { background: var(--mkt-purple); }
+.dot-coral { background: var(--mkt-coral); }
+.dot-pink { background: var(--mkt-pink); }
+
 /* ---------------- Login page ---------------- */
 
 .login-wrap {
@@ -401,9 +448,24 @@ a { color: inherit; }
   justify-content: center;
   background: var(--grey-100);
   padding: 24px;
+  position: relative;
+  overflow: hidden;
 }
 
+.login-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(55px);
+  opacity: 0.4;
+  z-index: 0;
+}
+.login-blob-teal { width: 280px; height: 280px; background: var(--mkt-teal); top: -70px; left: -70px; }
+.login-blob-coral { width: 240px; height: 240px; background: var(--mkt-coral); bottom: -60px; right: -50px; }
+.login-blob-purple { width: 200px; height: 200px; background: var(--mkt-purple); bottom: 60px; left: -60px; }
+
 .login-card {
+  position: relative;
+  z-index: 1;
   background: var(--white);
   border: 1px solid var(--grey-300);
   border-radius: var(--radius);

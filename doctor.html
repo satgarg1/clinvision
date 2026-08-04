@@ -29,13 +29,13 @@
         </div>
       </div>
 
-      <div class="panel">
-        <label style="font-size:13px;font-weight:600;color:var(--grey-700);display:block;margin-bottom:8px;">Viewing as</label>
+      <div class="panel" id="viewingPanel">
+        <div class="panel-header"><span class="panel-icon icon-blue">👀</span><h2 style="font-size:15px;">Viewing as</h2></div>
         <select id="doctorSelect" style="padding:10px 14px;border-radius:8px;border:1px solid var(--grey-300);font-size:14px;min-width:260px;"></select>
       </div>
 
-      <div class="panel">
-        <h2>Your status</h2>
+      <div class="panel" id="statusPanel">
+        <div class="panel-header"><span class="panel-icon icon-purple">🩺</span><h2>Your status</h2></div>
         <p style="font-size:13px;color:var(--grey-500);margin:0 0 16px;">
           One tap updates every waiting patient's estimate and the waiting-room screen — no one needs to interrupt you to ask.
         </p>
@@ -57,14 +57,14 @@
         <div id="currentStatusLine" style="margin-top:14px;font-size:14px;"></div>
       </div>
 
-      <div class="panel">
-        <h2>Now serving</h2>
+      <div class="panel" id="nowServingPanel">
+        <div class="panel-header"><span class="panel-icon icon-teal">▶️</span><h2>Now serving</h2></div>
         <div id="nowServingBox"></div>
         <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;">Call next patient</button>
       </div>
 
-      <div class="panel">
-        <h2 id="waitingHeading">Waiting</h2>
+      <div class="panel" id="waitingPanel">
+        <div class="panel-header"><span class="panel-icon icon-coral">⏳</span><h2 id="waitingHeading">Waiting</h2></div>
         <div id="waitingList"></div>
       </div>
     </main>
@@ -101,10 +101,25 @@
       sel.innerHTML = Qlinic.getDoctors().map((d) => `<option value="${d.id}">${d.name} — ${d.specialty}</option>`).join('');
     }
 
+    // Same 5-color identity palette used app-wide — whichever doctor is
+    // selected here tints all four panels, so switching doctors is confirmed
+    // at a glance, and the color matches this doctor everywhere else too.
+    const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
+    function applyDoctorAccent(doctorId) {
+      const idx = Qlinic.getDoctors().findIndex((d) => d.id === doctorId);
+      const accent = ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
+      ['viewingPanel', 'statusPanel', 'nowServingPanel', 'waitingPanel'].forEach((id) => {
+        const el = document.getElementById(id);
+        Array.from(el.classList).forEach((c) => { if (c.startsWith('accent-')) el.classList.remove(c); });
+        el.classList.add('accent-' + accent);
+      });
+    }
+
     function render() {
       const doctorId = currentDoctorId();
       const doc = Qlinic.getDoctor(doctorId);
       const q = Qlinic.getQueueForDoctor(doctorId);
+      applyDoctorAccent(doctorId);
 
       document.getElementById('currentStatusLine').innerHTML =
         `Currently: <span class="status-pill status-${doc.status}">${statusLabel(doc.status)}${doc.delayMins ? ' · ' + doc.delayMins + ' min' : ''}</span>
