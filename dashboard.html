@@ -24,7 +24,7 @@
       <div class="app-topbar">
         <h1>Dashboard</h1>
         <div class="clock-pill">
-          <span>Clinic time: <span class="time" id="clockTime">--</span></span>
+          <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Clinic time: <span class="time" id="clockTime">--</span></span>
           <button id="advanceTimeBtn">+15 min (demo)</button>
         </div>
       </div>
@@ -144,6 +144,7 @@
     });
 
     render();
+    Qlinic.onExternalChange(render);
   </script>
 </body>
 </html>

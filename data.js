@@ -11,8 +11,10 @@
  * and the note in README.md for what a production version needs instead.
  */
 (function (global) {
-  const STORAGE_KEY = 'qlinic_demo_state_v1';
+  const STORAGE_KEY = 'qlinic_demo_state_v2';
   const GRACE_WINDOW_MINS = 25;
+  const SLOT_INTERVAL_MINS = 15; // appointment slots are bucketed into 15-min windows
+  const SLOT_CAPACITY = 3; // how many patients a doctor can reasonably be booked for in the same slot
 
   function parseTime(hhmm) {
     const [h, m] = hhmm.split(':').map(Number);
@@ -26,6 +28,18 @@
     const period = h < 12 ? 'AM' : 'PM';
     const h12 = h % 12 === 0 ? 12 : h % 12;
     return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+  }
+
+  // 24h "HH:MM" string, matching what an <input type="time"> expects.
+  function formatHHMM(totalMins) {
+    const wrapped = ((totalMins % 1440) + 1440) % 1440;
+    const h = String(Math.floor(wrapped / 60)).padStart(2, '0');
+    const m = String(wrapped % 60).padStart(2, '0');
+    return `${h}:${m}`;
+  }
+
+  function bucketStart(mins) {
+    return Math.floor(mins / SLOT_INTERVAL_MINS) * SLOT_INTERVAL_MINS;
   }
 
   function seedState() {
@@ -58,18 +72,32 @@
         },
       ],
       patients: [
-        { id: 'p1', name: 'Ramesh Kumar', phone: '9876500001', doctorId: 'd1', type: 'appointment', bookedTime: '09:00', status: 'done', arrivedAt: '08:55' },
-        { id: 'p2', name: 'Suman Devi', phone: '9876500002', doctorId: 'd1', type: 'appointment', bookedTime: '09:15', status: 'done', arrivedAt: '09:10' },
-        { id: 'p3', name: 'Anil Verma', phone: '9876500003', doctorId: 'd1', type: 'appointment', bookedTime: '09:30', status: 'in_consult', arrivedAt: '09:28' },
-        { id: 'p4', name: 'Pooja Singh', phone: '9876500004', doctorId: 'd1', type: 'walkin', bookedTime: null, status: 'waiting', arrivedAt: '09:40' },
-        { id: 'p5', name: 'Rahul Kumar Verma', phone: '9876500005', doctorId: 'd1', type: 'appointment', bookedTime: '09:45', status: 'waiting', arrivedAt: '09:50' },
-        { id: 'p6', name: 'Meena Kumari', phone: '9876500006', doctorId: 'd1', type: 'appointment', bookedTime: '10:00', status: 'booked', arrivedAt: null },
-        { id: 'p7', name: 'Sanjay Gupta', phone: '9876500007', doctorId: 'd1', type: 'appointment', bookedTime: '09:20', status: 'booked', arrivedAt: null },
-        { id: 'p8', name: 'Fatima Sheikh (for Ayaan)', phone: '9876500008', doctorId: 'd2', type: 'appointment', bookedTime: '09:30', status: 'in_consult', arrivedAt: '09:25' },
-        { id: 'p9', name: 'Kavya Reddy', phone: '9876500009', doctorId: 'd2', type: 'appointment', bookedTime: '09:45', status: 'waiting', arrivedAt: '09:44' },
-        { id: 'p10', name: 'Arjun Nair', phone: '9876500010', doctorId: 'd2', type: 'appointment', bookedTime: '10:15', status: 'booked', arrivedAt: null },
+        { id: 'p1', name: 'Ramesh Kumar', phone: '9876500001', address: 'Sector 12, near market', doctorId: 'd1', type: 'appointment', bookedTime: '09:00', status: 'done', arrivedAt: '08:55' },
+        { id: 'p2', name: 'Suman Devi', phone: '9876500002', address: 'Old Town, Gali No. 4', doctorId: 'd1', type: 'appointment', bookedTime: '09:15', status: 'done', arrivedAt: '09:10' },
+        { id: 'p3', name: 'Anil Verma', phone: '9876500003', address: 'Shastri Nagar', doctorId: 'd1', type: 'appointment', bookedTime: '09:30', status: 'in_consult', arrivedAt: '09:28' },
+        { id: 'p4', name: 'Pooja Singh', phone: '9876500004', address: 'Civil Lines', doctorId: 'd1', type: 'walkin', bookedTime: null, status: 'waiting', arrivedAt: '09:40' },
+        { id: 'p5', name: 'Rahul Kumar Verma', phone: '9876500005', address: 'Sector 9', doctorId: 'd1', type: 'appointment', bookedTime: '09:45', status: 'waiting', arrivedAt: '09:50' },
+        { id: 'p6', name: 'Meena Kumari', phone: '9876500006', address: 'Model Town', doctorId: 'd1', type: 'appointment', bookedTime: '10:00', status: 'booked', arrivedAt: null },
+        { id: 'p7', name: 'Sanjay Gupta', phone: '9876500007', address: 'Green Park', doctorId: 'd1', type: 'appointment', bookedTime: '09:20', status: 'booked', arrivedAt: null },
+        { id: 'p8', name: 'Fatima Sheikh (for Ayaan)', phone: '9876500008', address: 'Sector 22', doctorId: 'd2', type: 'appointment', bookedTime: '09:30', status: 'in_consult', arrivedAt: '09:25' },
+        { id: 'p9', name: 'Kavya Reddy', phone: '9876500009', address: 'Sector 8', doctorId: 'd2', type: 'appointment', bookedTime: '09:45', status: 'waiting', arrivedAt: '09:44' },
+        { id: 'p10', name: 'Arjun Nair', phone: '9876500010', address: 'Phase 3', doctorId: 'd2', type: 'appointment', bookedTime: '10:15', status: 'booked', arrivedAt: null },
+        { id: 'p11', name: 'Vikas Choudhary', phone: '9876500011', address: 'Rajpura Road', doctorId: 'd1', type: 'appointment', bookedTime: '09:35', status: 'waiting', arrivedAt: '09:38' },
+        { id: 'p12', name: 'Anita Sharma', phone: '9876500012', address: 'Sector 15', doctorId: 'd1', type: 'appointment', bookedTime: '09:50', status: 'waiting', arrivedAt: '09:48' },
+        { id: 'p13', name: 'Ramesh Kumar', phone: '9876500013', address: 'MG Road, near bus stand', doctorId: 'd1', type: 'walkin', bookedTime: null, status: 'waiting', arrivedAt: '09:55' },
+        { id: 'p14', name: 'Deepak Yadav', phone: '9876500014', address: 'Industrial Area', doctorId: 'd1', type: 'appointment', bookedTime: '10:10', status: 'booked', arrivedAt: null },
+        { id: 'p15', name: 'Neha Kapoor', phone: '9876500015', address: 'Phase 2', doctorId: 'd1', type: 'appointment', bookedTime: '10:10', status: 'booked', arrivedAt: null },
+        { id: 'p16', name: 'Ritu Malhotra', phone: '9876500016', address: 'Sector 5', doctorId: 'd2', type: 'appointment', bookedTime: '09:55', status: 'waiting', arrivedAt: '09:53' },
+        { id: 'p17', name: 'Suresh Iyer', phone: '9876500017', address: 'Sector 11', doctorId: 'd2', type: 'appointment', bookedTime: '10:05', status: 'waiting', arrivedAt: '10:02' },
+        { id: 'p18', name: 'Priya Menon', phone: '9876500018', address: 'Green Avenue', doctorId: 'd2', type: 'appointment', bookedTime: '10:20', status: 'booked', arrivedAt: null },
+        { id: 'p19', name: 'Manoj Tiwari', phone: '9876500019', address: 'Sector 7', doctorId: 'd2', type: 'appointment', bookedTime: '10:20', status: 'booked', arrivedAt: null },
+        { id: 'p20', name: 'Kiran Bedi', phone: '9876500020', address: 'Sector 3', doctorId: 'd2', type: 'appointment', bookedTime: '10:20', status: 'booked', arrivedAt: null },
+        { id: 'p21', name: 'Harpreet Singh', phone: '9876500021', address: 'Sector 18', doctorId: 'd1', type: 'walkin', bookedTime: null, status: 'waiting', arrivedAt: '09:58' },
+        { id: 'p22', name: 'Vivek Chandra', phone: '9876500022', address: 'Sector 21', doctorId: 'd1', type: 'appointment', bookedTime: '09:52', status: 'waiting', arrivedAt: '09:54' },
+        { id: 'p23', name: 'Meenakshi Rao', phone: '9876500023', address: 'Lake View', doctorId: 'd2', type: 'appointment', bookedTime: '09:58', status: 'waiting', arrivedAt: '09:57' },
+        { id: 'p24', name: 'Farah Khan', phone: '9876500024', address: 'Sector 6', doctorId: 'd2', type: 'walkin', bookedTime: null, status: 'waiting', arrivedAt: '10:00' },
       ],
-      nextPatientNum: 11,
+      nextPatientNum: 25,
     };
   }
 
@@ -113,8 +141,34 @@
     return nowMins > effectiveMinutes(patient) + state.graceWindowMins;
   }
 
+  // How many active (not done/no-show) appointments a doctor already has in the
+  // 15-min bucket containing `timeStr`. Used to warn reception before they stack
+  // up 20 patients on the same slot.
+  function countActiveAtSlot(doctorId, timeStr, excludePatientId) {
+    const targetBucket = bucketStart(parseTime(timeStr));
+    return state.patients.filter((p) =>
+      p.id !== excludePatientId &&
+      p.doctorId === doctorId &&
+      p.type === 'appointment' &&
+      p.bookedTime &&
+      bucketStart(parseTime(p.bookedTime)) === targetBucket &&
+      (p.status === 'booked' || p.status === 'waiting' || p.status === 'in_consult')
+    ).length;
+  }
+
+  function findNextAvailableSlot(doctorId, fromTimeStr) {
+    let bucket = bucketStart(parseTime(fromTimeStr));
+    for (let i = 0; i < 48; i++) {
+      if (countActiveAtSlot(doctorId, formatHHMM(bucket)) < SLOT_CAPACITY) return formatHHMM(bucket);
+      bucket += SLOT_INTERVAL_MINS;
+    }
+    return formatHHMM(bucket);
+  }
+
   const Qlinic = {
     GRACE_WINDOW_MINS,
+    SLOT_INTERVAL_MINS,
+    SLOT_CAPACITY,
     parseTime,
     formatTime,
 
@@ -189,6 +243,7 @@
         id,
         name: info.name,
         phone: info.phone,
+        address: info.address || '',
         doctorId: info.doctorId,
         type: 'walkin',
         bookedTime: null,
@@ -206,6 +261,7 @@
         id,
         name: info.name,
         phone: info.phone,
+        address: info.address || '',
         doctorId: info.doctorId,
         type: 'appointment',
         bookedTime: info.bookedTime,
@@ -214,6 +270,20 @@
       });
       persist();
       return id;
+    },
+
+    // { count, capacity, isFull, suggestion } — suggestion is the next HH:MM
+    // bucket (24h, for <input type="time">) that still has room, or null.
+    getSlotAvailability(doctorId, timeStr) {
+      if (!doctorId || !timeStr) return null;
+      const count = countActiveAtSlot(doctorId, timeStr);
+      const isFull = count >= SLOT_CAPACITY;
+      return {
+        count,
+        capacity: SLOT_CAPACITY,
+        isFull,
+        suggestion: isFull ? findNextAvailableSlot(doctorId, timeStr) : null,
+      };
     },
 
     callNextPatient(doctorId) {
@@ -297,6 +367,30 @@
       const m = String(wrapped % 60).padStart(2, '0');
       state.currentTime = `${h}:${m}`;
       persist();
+    },
+
+    // Re-reads state from localStorage. The reception desk, doctor's screen, and
+    // waiting-room display are meant to run as separate tabs/devices sharing one
+    // browser's storage — call this before re-rendering a "live" screen so it
+    // picks up changes made from another tab.
+    refresh() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) state = JSON.parse(raw);
+      } catch (e) {
+        /* keep current in-memory state */
+      }
+    },
+
+    // Fires `cb` the moment another tab changes clinic data (instant cross-tab
+    // sync), in addition to whatever polling interval a screen already runs.
+    onExternalChange(cb) {
+      window.addEventListener('storage', (e) => {
+        if (e.key === STORAGE_KEY) {
+          Qlinic.refresh();
+          cb();
+        }
+      });
     },
   };
 

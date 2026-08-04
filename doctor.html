@@ -24,7 +24,7 @@
       <div class="app-topbar">
         <h1>Doctor View</h1>
         <div class="clock-pill">
-          <span>Clinic time: <span class="time" id="clockTime">--</span></span>
+          <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Clinic time: <span class="time" id="clockTime">--</span></span>
           <button id="advanceTimeBtn">+15 min (demo)</button>
         </div>
       </div>
@@ -64,7 +64,7 @@
       </div>
 
       <div class="panel">
-        <h2>Waiting</h2>
+        <h2 id="waitingHeading">Waiting</h2>
         <div id="waitingList"></div>
       </div>
     </main>
@@ -111,8 +111,10 @@
          <span style="color:var(--grey-500);"> — updated ${Qlinic.formatTime(Qlinic.parseTime(doc.statusUpdatedAt))}${doc.statusNote ? ' · "' + doc.statusNote + '"' : ''}</span>`;
 
       document.getElementById('nowServingBox').innerHTML = q.nowServing
-        ? `<div style="font-size:20px;font-weight:700;">${q.nowServing.name}</div><div style="font-size:13px;color:var(--grey-500);">${q.nowServing.type === 'appointment' ? 'Appointment' : 'Walk-in'}</div>`
+        ? `<div style="font-size:20px;font-weight:700;">${q.nowServing.name}</div><div style="font-size:13px;color:var(--grey-500);">${q.nowServing.address ? q.nowServing.address + ' · ' : ''}${q.nowServing.type === 'appointment' ? 'Appointment' : 'Walk-in'}</div>`
         : `<div class="empty-state">No one in consultation. Tap "Call next patient" to begin.</div>`;
+
+      document.getElementById('waitingHeading').innerHTML = `Waiting <span class="order-note">— ordered by scheduled time, not arrival order</span>`;
 
       document.getElementById('waitingList').innerHTML = q.waiting.length === 0
         ? '<div class="empty-state">No one waiting.</div>'
@@ -123,7 +125,7 @@
             ${q.waiting.map((p) => `
               <tr>
                 <td>${p.position}</td>
-                <td>${p.name}</td>
+                <td><div>${p.name}</div><div class="sub-line">${p.address || 'No address on file'}</div></td>
                 <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
                 <td>${p.arrivedAt ? Qlinic.formatTime(Qlinic.parseTime(p.arrivedAt)) : '—'}</td>
               </tr>
@@ -180,6 +182,11 @@
     document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
     fillDoctorSelect();
     render();
+
+    Qlinic.onExternalChange(() => {
+      document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
+      render();
+    });
   </script>
 </body>
 </html>

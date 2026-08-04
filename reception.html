@@ -24,7 +24,7 @@
       <div class="app-topbar">
         <h1>Reception</h1>
         <div class="clock-pill">
-          <span>Clinic time: <span class="time" id="clockTime">--</span></span>
+          <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Clinic time: <span class="time" id="clockTime">--</span></span>
           <button id="advanceTimeBtn">+15 min (demo)</button>
         </div>
       </div>
@@ -50,6 +50,10 @@
           <div class="field">
             <label>Phone</label>
             <input type="tel" id="wPhone" required />
+          </div>
+          <div class="field">
+            <label>Address / locality</label>
+            <input type="text" id="wAddress" placeholder="e.g., Sector 12, near market" required />
           </div>
           <div class="field">
             <label>Doctor</label>
@@ -78,12 +82,17 @@
             <input type="tel" id="aPhone" required />
           </div>
           <div class="field">
+            <label>Address / locality</label>
+            <input type="text" id="aAddress" placeholder="e.g., Sector 12, near market" required />
+          </div>
+          <div class="field">
             <label>Doctor</label>
             <select id="aDoctor" required></select>
           </div>
           <div class="field">
             <label>Booked time</label>
             <input type="time" id="aTime" required />
+            <div id="slotHint" class="slot-hint"></div>
           </div>
           <button type="submit" class="btn-sm primary">Add appointment</button>
         </form>
@@ -112,6 +121,32 @@
       document.getElementById('aDoctor').innerHTML = opts;
     }
 
+    // Two "Ramesh Kumar"s look identical in a name-only list — the address line
+    // is what actually tells reception (or the doctor) which one is which.
+    function nameCell(p) {
+      return `<div>${p.name}</div><div class="sub-line">${p.address ? p.address : 'No address on file'}</div>`;
+    }
+
+    function updateSlotHint() {
+      const hint = document.getElementById('slotHint');
+      const doctorId = document.getElementById('aDoctor').value;
+      const time = document.getElementById('aTime').value;
+      if (!doctorId || !time) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
+      const avail = Qlinic.getSlotAvailability(doctorId, time);
+      if (!avail) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
+      if (avail.isFull) {
+        hint.className = 'slot-hint warn';
+        hint.innerHTML = `⚠ ${avail.count} patients already booked around this time (max ${avail.capacity} per slot). Next open slot: <strong>${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}</strong> — <button type="button" class="btn-sm" id="useSuggestedTimeBtn">Use this time</button>`;
+        document.getElementById('useSuggestedTimeBtn').addEventListener('click', () => {
+          document.getElementById('aTime').value = avail.suggestion;
+          updateSlotHint();
+        });
+      } else {
+        hint.className = 'slot-hint ok';
+        hint.innerHTML = `✓ ${avail.count}/${avail.capacity} booked at this time — room to add.`;
+      }
+    }
+
     function renderSearch() {
       const q = document.getElementById('searchBox').value;
       const box = document.getElementById('searchResults');
@@ -129,7 +164,7 @@
               const doc = Qlinic.getDoctor(p.doctorId);
               return `
                 <tr>
-                  <td>${p.name}</td>
+                  <td>${nameCell(p)}</td>
                   <td>${p.phone}</td>
                   <td>${doc.name}</td>
                   <td>${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}</td>
@@ -166,7 +201,7 @@
           <h2>${doctor.name} — ${doctor.specialty}</h2>
           ${queue.nowServing ? `<p style="font-size:14px;margin:0 0 14px;"><strong>Now with:</strong> ${queue.nowServing.name}</p>` : '<p style="font-size:14px;color:var(--grey-500);margin:0 0 14px;">No one in consultation right now.</p>'}
 
-          <h3 style="font-size:14px;margin:0 0 8px;color:var(--grey-700);">Waiting (${queue.waiting.length})</h3>
+          <h3 style="font-size:14px;margin:0 0 8px;color:var(--grey-700);">Waiting (${queue.waiting.length}) <span class="order-note">— ordered by scheduled time, not arrival order</span></h3>
           ${queue.waiting.length === 0 ? '<div class="empty-state">No one waiting.</div>' : `
             <table class="qtable">
               <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Arrived</th><th></th></tr></thead>
@@ -174,7 +209,7 @@
                 ${queue.waiting.map((p) => `
                   <tr>
                     <td>${p.position}</td>
-                    <td>${p.name}</td>
+                    <td>${nameCell(p)}</td>
                     <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
                     <td>${p.arrivedAt ? Qlinic.formatTime(Qlinic.parseTime(p.arrivedAt)) : '—'}</td>
                     <td></td>
@@ -191,7 +226,7 @@
               <tbody>
                 ${queue.booked.map((p) => `
                   <tr>
-                    <td>${p.name}</td>
+                    <td>${nameCell(p)}</td>
                     <td>${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}</td>
                     <td>${p.likelyNoShow ? '<span class="badge badge-likely">Likely no-show</span>' : '<span class="badge badge-booked">Expected</span>'}</td>
                     <td>
@@ -214,6 +249,7 @@
       Qlinic.addWalkIn({
         name: document.getElementById('wName').value,
         phone: document.getElementById('wPhone').value,
+        address: document.getElementById('wAddress').value,
         doctorId: document.getElementById('wDoctor').value,
         reason: document.getElementById('wReason').value,
       });
@@ -225,17 +261,28 @@
 
     document.getElementById('apptForm').addEventListener('submit', (e) => {
       e.preventDefault();
+      const doctorId = document.getElementById('aDoctor').value;
+      const time = document.getElementById('aTime').value;
+      const avail = Qlinic.getSlotAvailability(doctorId, time);
+      if (avail && avail.isFull && !confirm(`This slot already has ${avail.count} patients booked (max ${avail.capacity}). The next open slot is ${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}. Add anyway at the requested time?`)) {
+        return;
+      }
       Qlinic.addAppointment({
         name: document.getElementById('aName').value,
         phone: document.getElementById('aPhone').value,
-        doctorId: document.getElementById('aDoctor').value,
-        bookedTime: document.getElementById('aTime').value,
+        address: document.getElementById('aAddress').value,
+        doctorId,
+        bookedTime: time,
       });
       e.target.reset();
       fillDoctorSelects();
+      updateSlotHint();
       renderQueues();
       showToast('Appointment added');
     });
+
+    document.getElementById('aDoctor').addEventListener('change', updateSlotHint);
+    document.getElementById('aTime').addEventListener('input', updateSlotHint);
 
     document.getElementById('advanceTimeBtn').addEventListener('click', () => {
       Qlinic.advanceTime(15);
@@ -255,6 +302,13 @@
     document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
     fillDoctorSelects();
     renderQueues();
+    updateSlotHint();
+
+    Qlinic.onExternalChange(() => {
+      document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
+      renderSearch();
+      renderQueues();
+    });
   </script>
 </body>
 </html>

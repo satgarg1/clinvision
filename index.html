@@ -29,7 +29,7 @@
   </section>
 
   <!-- PROBLEM -->
-  <section class="mkt-section grey">
+  <section class="mkt-section grey reveal">
     <div class="eyebrow">The problem</div>
     <h2 class="mkt-h2">Your waiting room already knows<br />something your patients don't.</h2>
     <p class="mkt-sub">
@@ -55,7 +55,7 @@
   </section>
 
   <!-- HOW IT WORKS -->
-  <section class="mkt-section" id="how-it-works">
+  <section class="mkt-section reveal" id="how-it-works">
     <div class="eyebrow">How it works</div>
     <h2 class="mkt-h2">One shared queue. No new habits<br />for your staff or your patients.</h2>
     <div class="mkt-steps">
@@ -93,7 +93,7 @@
   </section>
 
   <!-- FEATURES -->
-  <section class="mkt-section grey">
+  <section class="mkt-section grey reveal">
     <div class="eyebrow">What's inside</div>
     <h2 class="mkt-h2">Built around the three people<br />who decide if this actually gets used.</h2>
     <div class="mkt-feature-grid">
@@ -125,7 +125,7 @@
   </section>
 
   <!-- WHY PAY -->
-  <section class="mkt-section dark">
+  <section class="mkt-section dark reveal">
     <div class="eyebrow">Why clinics choose Qlinic</div>
     <h2 class="mkt-h2">This isn't software that makes<br />waiting feel nicer.</h2>
     <p class="mkt-sub">
@@ -142,6 +142,18 @@
     Qlinic — Intelligent Clinic Flow Management &nbsp;·&nbsp; Prototype build, not for clinical or production use &nbsp;·&nbsp;
     <a href="login.html">Clinic admin login</a>
   </footer>
+
+  <script>
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
+  </script>
 
 </body>
 </html>
