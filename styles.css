@@ -21,6 +21,20 @@
   --danger-bg: #fce8e6;
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --radius: 14px;
+
+  /* Marketing-page-only accent palette (the logged-in app keeps its single
+     --accent blue; the landing page uses this wider set for use-case cards,
+     feature icons, and hero decoration). */
+  --mkt-teal: #0d9488;
+  --mkt-teal-bg: #ccfbf1;
+  --mkt-blue: #2563eb;
+  --mkt-blue-bg: #dbeafe;
+  --mkt-purple: #7c3aed;
+  --mkt-purple-bg: #ede9fe;
+  --mkt-coral: #f97316;
+  --mkt-coral-bg: #ffedd5;
+  --mkt-pink: #db2777;
+  --mkt-pink-bg: #fce7f3;
 }
 
 * { box-sizing: border-box; }
@@ -220,6 +234,163 @@ a { color: inherit; }
   border-top: 1px solid var(--grey-300);
 }
 .mkt-footer a { color: var(--grey-500); text-decoration: underline; }
+
+/* ---------------- Hero: two-column layout + decorative visual ---------------- */
+
+.mkt-hero { overflow: hidden; }
+.mkt-hero-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 48px;
+  align-items: center;
+  text-align: left;
+}
+.mkt-hero-copy { max-width: 560px; }
+.mkt-sub-left { margin-left: 0; margin-right: 0; }
+.mkt-cta-row-left { justify-content: flex-start; }
+
+.hero-visual {
+  position: relative;
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(50px);
+  opacity: 0.4;
+  z-index: 0;
+}
+.hero-blob-teal { width: 260px; height: 260px; background: var(--mkt-teal); top: -20px; left: -30px; }
+.hero-blob-coral { width: 220px; height: 220px; background: var(--mkt-coral); bottom: -20px; right: 10px; }
+.hero-blob-purple { width: 200px; height: 200px; background: var(--mkt-purple); top: 100px; right: -40px; }
+
+.hero-card {
+  position: relative;
+  z-index: 1;
+  background: var(--white);
+  border-radius: 20px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.14);
+  padding: 22px 24px;
+  width: 100%;
+  max-width: 340px;
+}
+.hero-card-header {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--grey-700);
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--grey-100);
+}
+.hero-card-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  padding: 8px 0;
+}
+.hero-card-row-serving {
+  background: var(--mkt-teal-bg);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+.hero-card-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--mkt-teal); }
+.hero-card-pos { font-weight: 700; color: var(--grey-500); width: 16px; }
+.hero-card-name { flex: 1; font-weight: 600; }
+.hero-card-eta { color: var(--grey-500); font-size: 13px; }
+.hero-card-footer {
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--grey-100);
+  font-size: 12px;
+  color: var(--grey-500);
+}
+
+@media (max-width: 860px) {
+  .mkt-hero-grid { grid-template-columns: 1fr; text-align: center; }
+  .mkt-hero-copy { max-width: none; margin: 0 auto; }
+  .mkt-sub-left { margin-left: auto; margin-right: auto; }
+  .mkt-cta-row-left { justify-content: center; }
+  .hero-visual { margin-top: 20px; }
+}
+
+/* ---------------- Colored eyebrows, stats, use-case cards, feature icons ---------------- */
+
+.eyebrow-coral { color: var(--mkt-coral); }
+.eyebrow-coral::before { background: var(--mkt-coral); }
+.eyebrow-blue { color: var(--mkt-blue); }
+.eyebrow-blue::before { background: var(--mkt-blue); }
+.eyebrow-purple { color: var(--mkt-purple); }
+.eyebrow-purple::before { background: var(--mkt-purple); }
+.eyebrow-pink { color: var(--mkt-pink); }
+.eyebrow-pink::before { background: var(--mkt-pink); }
+
+.stat-teal { color: var(--mkt-teal) !important; }
+.stat-coral { color: var(--mkt-coral) !important; }
+.stat-purple { color: var(--mkt-purple) !important; }
+
+.usecase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 60px;
+  text-align: left;
+}
+.usecase-card {
+  background: var(--white);
+  border: 1px solid var(--grey-300);
+  border-top: 4px solid var(--grey-300);
+  border-radius: var(--radius);
+  padding: 28px 26px;
+}
+.usecase-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: 16px;
+  background: var(--grey-100);
+}
+.usecase-card h3 { font-size: 18px; margin: 0 0 12px; letter-spacing: -0.01em; }
+.usecase-pain { font-size: 14px; color: var(--grey-500); line-height: 1.5; margin: 0 0 10px; }
+.usecase-fix { font-size: 14px; color: var(--grey-900); font-weight: 600; line-height: 1.5; margin: 0; }
+
+.usecase-card.accent-teal { border-top-color: var(--mkt-teal); }
+.usecase-card.accent-teal .usecase-icon { background: var(--mkt-teal-bg); }
+.usecase-card.accent-blue { border-top-color: var(--mkt-blue); }
+.usecase-card.accent-blue .usecase-icon { background: var(--mkt-blue-bg); }
+.usecase-card.accent-coral { border-top-color: var(--mkt-coral); }
+.usecase-card.accent-coral .usecase-icon { background: var(--mkt-coral-bg); }
+.usecase-card.accent-purple { border-top-color: var(--mkt-purple); }
+.usecase-card.accent-purple .usecase-icon { background: var(--mkt-purple-bg); }
+.usecase-card.accent-pink { border-top-color: var(--mkt-pink); }
+.usecase-card.accent-pink .usecase-icon { background: var(--mkt-pink-bg); }
+
+.feature-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: 16px;
+}
+.icon-teal { background: var(--mkt-teal-bg); }
+.icon-blue { background: var(--mkt-blue-bg); }
+.icon-coral { background: var(--mkt-coral-bg); }
+.icon-purple { background: var(--mkt-purple-bg); }
+.icon-pink { background: var(--mkt-pink-bg); }
 
 /* ---------------- Login page ---------------- */
 
