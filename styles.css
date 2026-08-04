@@ -669,6 +669,39 @@ table.qtable tr:last-child td { border-bottom: none; }
   margin-top: 2px;
 }
 
+/* Add-patient mode toggle: walk-in vs. phoned appointment used to be two
+   separate, near-identical forms — easy to fill in the wrong one. Now it's
+   one form whose accent color and fields change with the chosen mode, so
+   there's only one place to type and the choice has to be made on purpose. */
+.patient-panel {
+  border-width: 2px;
+  transition: border-color 0.2s ease;
+}
+.patient-panel.mode-walkin { border-color: var(--grey-500); }
+.patient-panel.mode-appointment { border-color: var(--accent); }
+
+.mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.mode-btn {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--grey-300);
+  background: var(--white);
+  color: var(--grey-700);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.mode-btn:hover { border-color: var(--grey-500); }
+.mode-btn.active[data-mode="walkin"] { background: var(--grey-900); border-color: var(--grey-900); color: var(--white); }
+.mode-btn.active[data-mode="appointment"] { background: var(--accent); border-color: var(--accent); color: var(--white); }
+
 .order-note {
   font-weight: 400;
   color: var(--grey-500);

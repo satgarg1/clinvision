@@ -40,61 +40,42 @@
         <div id="searchResults"></div>
       </div>
 
-      <div class="panel">
-        <h2>Register a walk-in</h2>
-        <form id="walkinForm" class="inline-form">
-          <div class="field">
-            <label>Name</label>
-            <input type="text" id="wName" required />
-          </div>
-          <div class="field">
-            <label>Phone</label>
-            <input type="tel" id="wPhone" required />
-          </div>
-          <div class="field">
-            <label>Address / locality</label>
-            <input type="text" id="wAddress" placeholder="e.g., Sector 12, near market" required />
-          </div>
-          <div class="field">
-            <label>Doctor</label>
-            <select id="wDoctor" required></select>
-          </div>
-          <div class="field">
-            <label>Reason (optional)</label>
-            <input type="text" id="wReason" />
-          </div>
-          <button type="submit" class="btn-sm primary">Add walk-in &amp; queue now</button>
-        </form>
-      </div>
-
-      <div class="panel">
-        <h2>Add a phoned-in appointment</h2>
-        <p style="font-size:13px;color:var(--grey-500);margin:0 0 14px;">
-          For v1, booking still happens by phone call — you enter it here, same as your register.
+      <div class="panel patient-panel mode-walkin" id="patientPanel">
+        <h2>Add a patient</h2>
+        <div class="mode-toggle" role="tablist" aria-label="How is this patient being added">
+          <button type="button" class="mode-btn active" data-mode="walkin" role="tab" aria-selected="true">🚶 Walk-in — here right now</button>
+          <button type="button" class="mode-btn" data-mode="appointment" role="tab" aria-selected="false">📞 Phoned-in appointment — booking ahead</button>
+        </div>
+        <p id="modeHint" style="font-size:13px;color:var(--grey-500);margin:0 0 16px;">
+          They're standing at the desk — this queues them immediately.
         </p>
-        <form id="apptForm" class="inline-form">
+        <form id="patientForm" class="inline-form">
           <div class="field">
             <label>Name</label>
-            <input type="text" id="aName" required />
+            <input type="text" id="pName" required />
           </div>
           <div class="field">
             <label>Phone</label>
-            <input type="tel" id="aPhone" required />
+            <input type="tel" id="pPhone" required />
           </div>
           <div class="field">
             <label>Address / locality</label>
-            <input type="text" id="aAddress" placeholder="e.g., Sector 12, near market" required />
+            <input type="text" id="pAddress" placeholder="e.g., Sector 12, near market" required />
           </div>
           <div class="field">
             <label>Doctor</label>
-            <select id="aDoctor" required></select>
+            <select id="pDoctor" required></select>
           </div>
-          <div class="field">
+          <div class="field mode-only mode-only-walkin">
+            <label>Reason (optional)</label>
+            <input type="text" id="pReason" />
+          </div>
+          <div class="field mode-only mode-only-appointment" style="display:none;">
             <label>Booked time</label>
-            <input type="time" id="aTime" required />
+            <input type="time" id="pTime" />
             <div id="slotHint" class="slot-hint"></div>
           </div>
-          <button type="submit" class="btn-sm primary">Add appointment</button>
+          <button type="submit" class="btn-sm primary" id="patientSubmitBtn">Add walk-in &amp; queue now</button>
         </form>
       </div>
 
@@ -117,9 +98,37 @@
 
     function fillDoctorSelects() {
       const opts = Qlinic.getDoctors().map((d) => `<option value="${d.id}">${d.name} — ${d.specialty}</option>`).join('');
-      document.getElementById('wDoctor').innerHTML = opts;
-      document.getElementById('aDoctor').innerHTML = opts;
+      document.getElementById('pDoctor').innerHTML = opts;
     }
+
+    // Walk-in and phoned-appointment used to be two separate, near-identical
+    // forms stacked on the page — easy to fill in the wrong one by habit. One
+    // form with an explicit mode toggle means there's only one place to type,
+    // and the choice of "who is this" has to be made on purpose first.
+    let patientMode = 'walkin';
+
+    function setPatientMode(mode) {
+      patientMode = mode;
+      document.querySelectorAll('.mode-btn').forEach((btn) => {
+        const active = btn.getAttribute('data-mode') === mode;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', String(active));
+      });
+      document.getElementById('patientPanel').classList.toggle('mode-walkin', mode === 'walkin');
+      document.getElementById('patientPanel').classList.toggle('mode-appointment', mode === 'appointment');
+      document.querySelector('.mode-only-walkin').style.display = mode === 'walkin' ? '' : 'none';
+      document.querySelector('.mode-only-appointment').style.display = mode === 'appointment' ? '' : 'none';
+      document.getElementById('pTime').required = mode === 'appointment';
+      document.getElementById('modeHint').textContent = mode === 'walkin'
+        ? "They're standing at the desk — this queues them immediately."
+        : 'Booking a call-in appointment ahead of time — pick when they should arrive.';
+      document.getElementById('patientSubmitBtn').textContent = mode === 'walkin' ? 'Add walk-in & queue now' : 'Add appointment';
+      updateSlotHint();
+    }
+
+    document.querySelectorAll('.mode-btn').forEach((btn) => {
+      btn.addEventListener('click', () => setPatientMode(btn.getAttribute('data-mode')));
+    });
 
     // Two "Ramesh Kumar"s look identical in a name-only list — the address line
     // is what actually tells reception (or the doctor) which one is which.
@@ -129,8 +138,9 @@
 
     function updateSlotHint() {
       const hint = document.getElementById('slotHint');
-      const doctorId = document.getElementById('aDoctor').value;
-      const time = document.getElementById('aTime').value;
+      if (patientMode !== 'appointment') { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
+      const doctorId = document.getElementById('pDoctor').value;
+      const time = document.getElementById('pTime').value;
       if (!doctorId || !time) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
       const avail = Qlinic.getSlotAvailability(doctorId, time);
       if (!avail) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
@@ -138,7 +148,7 @@
         hint.className = 'slot-hint warn';
         hint.innerHTML = `⚠ ${avail.count} patients already booked around this time (max ${avail.capacity} per slot). Next open slot: <strong>${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}</strong> — <button type="button" class="btn-sm" id="useSuggestedTimeBtn">Use this time</button>`;
         document.getElementById('useSuggestedTimeBtn').addEventListener('click', () => {
-          document.getElementById('aTime').value = avail.suggestion;
+          document.getElementById('pTime').value = avail.suggestion;
           updateSlotHint();
         });
       } else {
@@ -244,45 +254,34 @@
 
     document.getElementById('searchBox').addEventListener('input', renderSearch);
 
-    document.getElementById('walkinForm').addEventListener('submit', (e) => {
+    document.getElementById('patientForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      Qlinic.addWalkIn({
-        name: document.getElementById('wName').value,
-        phone: document.getElementById('wPhone').value,
-        address: document.getElementById('wAddress').value,
-        doctorId: document.getElementById('wDoctor').value,
-        reason: document.getElementById('wReason').value,
-      });
-      e.target.reset();
-      fillDoctorSelects();
-      renderQueues();
-      showToast('Walk-in added to the queue');
-    });
+      const name = document.getElementById('pName').value;
+      const phone = document.getElementById('pPhone').value;
+      const address = document.getElementById('pAddress').value;
+      const doctorId = document.getElementById('pDoctor').value;
 
-    document.getElementById('apptForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const doctorId = document.getElementById('aDoctor').value;
-      const time = document.getElementById('aTime').value;
-      const avail = Qlinic.getSlotAvailability(doctorId, time);
-      if (avail && avail.isFull && !confirm(`This slot already has ${avail.count} patients booked (max ${avail.capacity}). The next open slot is ${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}. Add anyway at the requested time?`)) {
-        return;
+      if (patientMode === 'walkin') {
+        Qlinic.addWalkIn({ name, phone, address, doctorId, reason: document.getElementById('pReason').value });
+        showToast('Walk-in added to the queue');
+      } else {
+        const time = document.getElementById('pTime').value;
+        const avail = Qlinic.getSlotAvailability(doctorId, time);
+        if (avail && avail.isFull && !confirm(`This slot already has ${avail.count} patients booked (max ${avail.capacity}). The next open slot is ${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}. Add anyway at the requested time?`)) {
+          return;
+        }
+        Qlinic.addAppointment({ name, phone, address, doctorId, bookedTime: time });
+        showToast('Appointment added');
       }
-      Qlinic.addAppointment({
-        name: document.getElementById('aName').value,
-        phone: document.getElementById('aPhone').value,
-        address: document.getElementById('aAddress').value,
-        doctorId,
-        bookedTime: time,
-      });
+
       e.target.reset();
       fillDoctorSelects();
-      updateSlotHint();
+      setPatientMode(patientMode);
       renderQueues();
-      showToast('Appointment added');
     });
 
-    document.getElementById('aDoctor').addEventListener('change', updateSlotHint);
-    document.getElementById('aTime').addEventListener('input', updateSlotHint);
+    document.getElementById('pDoctor').addEventListener('change', updateSlotHint);
+    document.getElementById('pTime').addEventListener('input', updateSlotHint);
 
     document.getElementById('advanceTimeBtn').addEventListener('click', () => {
       Qlinic.advanceTime(15);
@@ -302,7 +301,7 @@
     document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
     fillDoctorSelects();
     renderQueues();
-    updateSlotHint();
+    setPatientMode('walkin');
 
     Qlinic.onExternalChange(() => {
       document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
