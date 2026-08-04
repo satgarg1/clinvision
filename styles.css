@@ -967,6 +967,7 @@ table.qtable tr:last-child td { border-bottom: none; }
 }
 .slot-hint.ok { color: var(--success); }
 .slot-hint.warn { color: var(--warning); }
+.slot-hint.error { color: var(--danger); font-weight: 600; }
 .slot-hint .btn-sm { margin-left: 4px; padding: 3px 10px; font-size: 12px; }
 
 .sub-line {

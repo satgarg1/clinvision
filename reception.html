@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Reception — Qlinic</title>
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
   <div class="app-shell">
@@ -94,7 +94,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="data.js"></script>
+  <script src="data.js?v=3"></script>
   <script>
     Qlinic.requireLogin('login.html');
 
@@ -171,12 +171,24 @@
       return `<div>${primary}</div><div class="sub-line">${secondary}</div>`;
     }
 
+    // A phoned-in appointment can't be booked for a time that's already
+    // passed on the clinic clock — there's nothing to override here, unlike
+    // the slot-capacity warning below, so this is a hard block.
+    function isPastClinicTime(time) {
+      return Qlinic.parseTime(time) < Qlinic.parseTime(Qlinic.getCurrentTime());
+    }
+
     function updateSlotHint() {
       const hint = document.getElementById('slotHint');
       if (patientMode !== 'appointment') { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
       const doctorId = document.getElementById('pDoctor').value;
       const time = document.getElementById('pTime').value;
       if (!doctorId || !time) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
+      if (isPastClinicTime(time)) {
+        hint.className = 'slot-hint error';
+        hint.innerHTML = `⛔ That time has already passed — it's ${Qlinic.getCurrentTimeLabel()} at the clinic right now. Pick a later time.`;
+        return;
+      }
       const avail = Qlinic.getSlotAvailability(doctorId, time);
       if (!avail) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
       if (avail.isFull) {
@@ -364,6 +376,11 @@
         showToast('Walk-in added to the queue');
       } else {
         const time = document.getElementById('pTime').value;
+        if (isPastClinicTime(time)) {
+          updateSlotHint();
+          showToast("Can't book — that time has already passed");
+          return;
+        }
         const avail = Qlinic.getSlotAvailability(doctorId, time);
         if (avail && avail.isFull && !confirm(`This slot already has ${avail.count} patients booked (max ${avail.capacity}). The next open slot is ${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}. Add anyway at the requested time?`)) {
           return;

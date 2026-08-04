@@ -127,12 +127,20 @@
     return state.doctors.find((d) => d.id === doctorId);
   }
 
+  // A patient's queue position is based on whichever is LATER: their
+  // scheduled slot, or when they actually walked in. On time or early, the
+  // scheduled slot governs (arriving early can't jump ahead of patients
+  // booked in between). Late, their real arrival time governs, so they
+  // correctly queue behind everyone whose slot fell between their original
+  // appointment and when they actually showed up — instead of keeping an
+  // unearned position at their original, already-passed slot time.
   function effectiveMinutes(patient) {
     const doc = getDoctor(patient.doctorId);
     if (patient.type === 'walkin') {
       return patient.arrivedAt ? parseTime(patient.arrivedAt) : parseTime(state.currentTime);
     }
-    return parseTime(patient.bookedTime) + ((doc && doc.delayMins) || 0);
+    const scheduled = parseTime(patient.bookedTime) + ((doc && doc.delayMins) || 0);
+    return patient.arrivedAt ? Math.max(scheduled, parseTime(patient.arrivedAt)) : scheduled;
   }
 
   function isLikelyNoShow(patient) {
