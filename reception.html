@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Reception — Qlinic</title>
-<link rel="stylesheet" href="styles.css?v=4" />
+<link rel="stylesheet" href="styles.css?v=5" />
 </head>
 <body>
   <div class="app-shell">
@@ -89,7 +89,17 @@
 
       <div class="panel">
         <div class="panel-header"><span class="panel-icon icon-blue">👥</span><h2>Viewing queue for</h2></div>
-        <select id="queueDoctorFilter" class="doctor-select"></select>
+        <div class="inline-form">
+          <div class="field" style="min-width:320px;">
+            <label>Doctor</label>
+            <select id="queueDoctorFilter" class="doctor-select"></select>
+          </div>
+          <div class="field" style="min-width:180px;flex:0;">
+            <label>Date</label>
+            <input type="date" id="queueDateFilter" />
+          </div>
+          <button type="button" class="btn-sm" id="queueTodayBtn">Today</button>
+        </div>
       </div>
 
       <div id="queuePanel"></div>
@@ -98,13 +108,14 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="data.js?v=4"></script>
+  <script src="data.js?v=5"></script>
   <script>
     Qlinic.requireLogin('login.html');
 
     const BOOKED_PAGE_SIZE = 8;
     let patientMode = 'appointment';
     let queueDoctorId = null;
+    let queueViewDate = null;
     let bookedExpanded = false;
     let bookedPage = 0;
 
@@ -258,6 +269,7 @@
     // View page) instead of stacking every doctor's full queue on the page —
     // with 2 doctors that's a long scroll, with 20 it's unusable. Picking a
     // doctor by name is a dropdown regardless of whether there are 2 or 20.
+    // Counts shown reflect whichever date is currently selected, not always today.
     function fillQueueDoctorFilter() {
       const sel = document.getElementById('queueDoctorFilter');
       const doctors = Qlinic.getDoctors();
@@ -265,8 +277,9 @@
         queueDoctorId = doctors.length ? doctors[0].id : null;
       }
       sel.innerHTML = doctors.map((d) => {
-        const q = Qlinic.getQueueForDoctor(d.id);
-        return `<option value="${d.id}" ${d.id === queueDoctorId ? 'selected' : ''}>${d.name} — ${d.specialty} (${q.waiting.length} waiting)</option>`;
+        const q = Qlinic.getQueueForDoctor(d.id, queueViewDate);
+        const countLabel = queueViewDate === Qlinic.getTodayDate() ? `${q.waiting.length} waiting` : `${q.booked.length} booked`;
+        return `<option value="${d.id}" ${d.id === queueDoctorId ? 'selected' : ''}>${d.name} — ${d.specialty} (${countLabel})</option>`;
       }).join('');
     }
 
@@ -277,13 +290,31 @@
       renderQueues();
     });
 
+    document.getElementById('queueDateFilter').addEventListener('change', (e) => {
+      queueViewDate = e.target.value || Qlinic.getTodayDate();
+      bookedExpanded = false;
+      bookedPage = 0;
+      renderQueues();
+    });
+
+    document.getElementById('queueTodayBtn').addEventListener('click', () => {
+      queueViewDate = Qlinic.getTodayDate();
+      document.getElementById('queueDateFilter').value = queueViewDate;
+      bookedExpanded = false;
+      bookedPage = 0;
+      renderQueues();
+    });
+
     function renderQueues() {
+      if (!queueViewDate) queueViewDate = Qlinic.getTodayDate();
+      document.getElementById('queueDateFilter').value = queueViewDate;
       fillQueueDoctorFilter();
       const panelEl = document.getElementById('queuePanel');
       if (!queueDoctorId) { panelEl.innerHTML = ''; return; }
 
+      const isTodayView = queueViewDate === Qlinic.getTodayDate();
       const doctor = Qlinic.getDoctor(queueDoctorId);
-      const queue = Qlinic.getQueueForDoctor(queueDoctorId);
+      const queue = Qlinic.getQueueForDoctor(queueDoctorId, queueViewDate);
 
       // Waiting is bounded by how many people can physically be in the room —
       // it stays fully visible since it's the list reception acts on minute to
@@ -296,48 +327,55 @@
       if (bookedPage >= totalBookedPages) bookedPage = 0;
       const bookedPageItems = queue.booked.slice(bookedPage * BOOKED_PAGE_SIZE, bookedPage * BOOKED_PAGE_SIZE + BOOKED_PAGE_SIZE);
       const likelyCount = queue.booked.filter((p) => p.likelyNoShow).length;
+      const dateLabel = Qlinic.formatDateLabel(queueViewDate);
 
       panelEl.innerHTML = `
         <div class="panel accent-${accentForDoctor(queueDoctorId)}">
-          <div class="panel-header"><span class="board-doc-dot dot-${accentForDoctor(queueDoctorId)}"></span><h2>${doctor.name} — ${doctor.specialty}</h2></div>
-          ${queue.nowServing ? `<p style="font-size:14px;margin:0 0 14px;"><strong>Now with:</strong> ${queue.nowServing.name}</p>` : '<p style="font-size:14px;color:var(--grey-500);margin:0 0 14px;">No one in consultation right now.</p>'}
+          <div class="panel-header"><span class="board-doc-dot dot-${accentForDoctor(queueDoctorId)}"></span><h2>${doctor.name} — ${doctor.specialty}</h2><span class="date-pill">${dateLabel}</span></div>
+          ${isTodayView ? `
+            ${queue.nowServing ? `<p style="font-size:14px;margin:0 0 14px;"><strong>Now with:</strong> ${queue.nowServing.name}</p>` : '<p style="font-size:14px;color:var(--grey-500);margin:0 0 14px;">No one in consultation right now.</p>'}
 
-          <h3 style="font-size:14px;margin:0 0 8px;color:var(--grey-700);">Waiting (${queue.waiting.length}) <span class="order-note">— ordered by scheduled time, not arrival order</span></h3>
-          ${queue.waiting.length === 0 ? '<div class="empty-state">No one waiting.</div>' : `
-            <table class="qtable">
-              <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Queue time</th></tr></thead>
-              <tbody>
-                ${queue.waiting.map((p) => `
-                  <tr>
-                    <td>${p.position}</td>
-                    <td>${nameCell(p)}</td>
-                    <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
-                    <td>${queueTimeCell(p)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
+            <h3 style="font-size:14px;margin:0 0 8px;color:var(--grey-700);">Waiting (${queue.waiting.length}) <span class="order-note">— ordered by scheduled time, not arrival order</span></h3>
+            ${queue.waiting.length === 0 ? '<div class="empty-state">No one waiting.</div>' : `
+              <table class="qtable">
+                <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Queue time</th></tr></thead>
+                <tbody>
+                  ${queue.waiting.map((p) => `
+                    <tr>
+                      <td>${p.position}</td>
+                      <td>${nameCell(p)}</td>
+                      <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
+                      <td>${queueTimeCell(p)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            `}
+          ` : `
+            <p class="panel-note">Live queue details (now serving, waiting) only apply to today — this is showing what's booked for ${dateLabel}.</p>
           `}
 
           <div class="booked-section">
             <button type="button" class="booked-toggle" id="bookedToggleBtn" aria-expanded="${bookedExpanded}">
-              <span>${bookedExpanded ? '▾' : '▸'} Booked, not yet arrived (${queue.booked.length})</span>
+              <span>${bookedExpanded ? '▾' : '▸'} Booked${isTodayView ? ', not yet arrived' : ''} (${queue.booked.length})</span>
               ${likelyCount > 0 ? `<span class="badge badge-likely">${likelyCount} likely no-show</span>` : ''}
             </button>
             <div class="booked-body" style="display:${bookedExpanded ? 'block' : 'none'};">
-              ${queue.booked.length === 0 ? '<div class="empty-state">Everyone booked has arrived.</div>' : `
+              ${queue.booked.length === 0 ? `<div class="empty-state">${isTodayView ? 'Everyone booked has arrived.' : 'Nothing booked for ' + dateLabel + '.'}</div>` : `
                 <table class="qtable">
-                  <thead><tr><th>Name</th><th>Booked</th><th>Status</th><th></th></tr></thead>
+                  <thead><tr><th>Name</th><th>Booked</th><th>Status</th>${isTodayView ? '<th></th>' : ''}</tr></thead>
                   <tbody>
                     ${bookedPageItems.map((p) => `
                       <tr>
                         <td>${nameCell(p)}</td>
                         <td>${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}</td>
                         <td>${p.likelyNoShow ? '<span class="badge badge-likely">Likely no-show</span>' : '<span class="badge badge-booked">Expected</span>'}</td>
-                        <td>
-                          <button class="btn-sm primary" onclick="doMarkArrived('${p.id}')">Mark arrived</button>
-                          <button class="btn-sm danger" onclick="doMarkNoShow('${p.id}')">No-show</button>
-                        </td>
+                        ${isTodayView ? `
+                          <td>
+                            <button class="btn-sm primary" onclick="doMarkArrived('${p.id}')">Mark arrived</button>
+                            <button class="btn-sm danger" onclick="doMarkNoShow('${p.id}')">No-show</button>
+                          </td>
+                        ` : ''}
                       </tr>
                     `).join('')}
                   </tbody>

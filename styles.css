@@ -1017,6 +1017,16 @@ table.qtable tr:last-child td { border-bottom: none; }
   letter-spacing: normal;
 }
 
+.date-pill {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--grey-700);
+  background: var(--grey-100);
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
 /* ---------------- Interactive polish: hover lift + micro-interactions ---------------- */
 
 .panel, .stat-card, .mkt-feature-card {

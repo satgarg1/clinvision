@@ -73,13 +73,18 @@
     return target.getTime() < Date.now();
   }
 
-  // A walk-in is inherently "today" (they're standing at the desk right
-  // now). An appointment belongs to today's live queue only if it was
-  // actually booked for today's real date — otherwise it's a future
-  // booking and shouldn't appear in today's waiting list, get flagged as a
-  // no-show, or count against today's slot capacity.
+  // A walk-in only ever belongs to today (they're standing at the desk right
+  // now) — there's no such thing as a future or past walk-in. An
+  // appointment belongs to whichever date it was actually booked for.
+  function belongsToDate(patient, dateStr) {
+    return patient.type === 'walkin' ? dateStr === todayDateStr() : patient.bookedDate === dateStr;
+  }
+
+  // The operational rules (no-show flagging, daily summary, closing the day,
+  // slot capacity) always mean the real, actual today — regardless of
+  // whichever date reception might currently be browsing in the UI.
   function isForToday(patient) {
-    return patient.type === 'walkin' || patient.bookedDate === todayDateStr();
+    return belongsToDate(patient, todayDateStr());
   }
 
   function seedState() {
@@ -244,10 +249,14 @@
     getDoctor,
 
     // Returns { nowServing, waiting: [...sorted with .position], booked: [...], done: [...], noShow: [...] }
-    // Scoped to today — a patient booked for a future date doesn't belong in
-    // today's live queue at all.
-    getQueueForDoctor(doctorId) {
-      const mine = state.patients.filter((p) => p.doctorId === doctorId && isForToday(p));
+    // Defaults to today; pass a dateStr to browse a different day's bookings
+    // (e.g. reception checking what's booked for tomorrow). Live-queue
+    // concepts like "now serving"/"waiting" naturally come back empty for
+    // any date that isn't today, since nothing can have happened yet (or
+    // ever will have, for a past date left over in the demo data).
+    getQueueForDoctor(doctorId, dateStr) {
+      const targetDate = dateStr || todayDateStr();
+      const mine = state.patients.filter((p) => p.doctorId === doctorId && belongsToDate(p, targetDate));
       const nowServing = mine.find((p) => p.status === 'in_consult') || null;
       const waiting = mine
         .filter((p) => p.status === 'waiting')
@@ -262,8 +271,8 @@
       return { nowServing, waiting, booked, done, noShow };
     },
 
-    getAllQueues() {
-      return state.doctors.map((d) => ({ doctor: d, queue: Qlinic.getQueueForDoctor(d.id) }));
+    getAllQueues(dateStr) {
+      return state.doctors.map((d) => ({ doctor: d, queue: Qlinic.getQueueForDoctor(d.id, dateStr) }));
     },
 
     // Searches only today's bookings — "mark arrived" only makes sense for
