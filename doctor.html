@@ -120,19 +120,31 @@
         ? '<div class="empty-state">No one waiting.</div>'
         : `
         <table class="qtable">
-          <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Arrived</th></tr></thead>
+          <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Queue time</th></tr></thead>
           <tbody>
             ${q.waiting.map((p) => `
               <tr>
                 <td>${p.position}</td>
                 <td><div>${p.name}</div><div class="sub-line">${p.address || 'No address on file'}</div></td>
                 <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
-                <td>${p.arrivedAt ? Qlinic.formatTime(Qlinic.parseTime(p.arrivedAt)) : '—'}</td>
+                <td>${queueTimeCell(p)}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
       `;
+    }
+
+    // The list is sorted by scheduled/effective time, not raw arrival time — a
+    // walk-in's slot is when they arrived, an appointment's is its booked time
+    // plus any doctor delay. Showing only arrival time made the order look
+    // random; this shows the actual sort key first, raw time underneath.
+    function queueTimeCell(p) {
+      const primary = Qlinic.formatTime(p.effectiveMinutes);
+      const secondary = p.type === 'appointment'
+        ? `booked ${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}`
+        : `arrived ${p.arrivedAt ? Qlinic.formatTime(Qlinic.parseTime(p.arrivedAt)) : '—'}`;
+      return `<div>${primary}</div><div class="sub-line">${secondary}</div>`;
     }
 
     document.querySelectorAll('[data-status]').forEach((btn) => {

@@ -477,6 +477,79 @@ table.qtable tr:last-child td { border-bottom: none; }
   font-family: var(--font);
 }
 
+/* Add-patient form: a grid (not flex-wrap) so a field that grows taller than
+   its neighbors — e.g. the slot-availability hint — can never shove the other
+   fields out of alignment. The hint and submit button live below the grid
+   entirely, in their own row, for the same reason. */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.form-grid .field { margin-bottom: 0; }
+.form-grid .field input, .form-grid .field select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid var(--grey-300);
+  border-radius: 8px;
+  font-family: var(--font);
+}
+.form-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.panel-note { font-size: 13px; color: var(--grey-500); margin: 0 0 14px; }
+
+.viewing-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--grey-700);
+  display: block;
+  margin-bottom: 8px;
+}
+.doctor-select {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--grey-300);
+  font-size: 14px;
+  min-width: 320px;
+  font-family: var(--font);
+}
+
+.booked-section { margin-top: 22px; }
+.booked-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--grey-100);
+  padding: 14px 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--grey-700);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font);
+}
+.booked-toggle:hover { color: var(--black); }
+.booked-body { padding-top: 6px; }
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding-top: 14px;
+}
+.pager-label { font-size: 13px; color: var(--grey-500); }
+
 .empty-state { color: var(--grey-500); font-size: 14px; padding: 20px 0; text-align: center; }
 
 .doctor-status-row {
