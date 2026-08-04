@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Reception — Qlinic</title>
-<link rel="stylesheet" href="styles.css?v=3" />
+<link rel="stylesheet" href="styles.css?v=4" />
 </head>
 <body>
   <div class="app-shell">
@@ -68,6 +68,10 @@
               <select id="pDoctor" required></select>
             </div>
             <div class="field mode-only mode-only-appointment">
+              <label>Appointment date</label>
+              <input type="date" id="pDate" />
+            </div>
+            <div class="field mode-only mode-only-appointment">
               <label>Appointment time</label>
               <input type="time" id="pTime" />
             </div>
@@ -94,7 +98,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="data.js?v=3"></script>
+  <script src="data.js?v=4"></script>
   <script>
     Qlinic.requireLogin('login.html');
 
@@ -137,9 +141,10 @@
       });
       document.getElementById('patientPanel').classList.toggle('mode-walkin', mode === 'walkin');
       document.getElementById('patientPanel').classList.toggle('mode-appointment', mode === 'appointment');
-      document.querySelector('.mode-only-walkin').style.display = mode === 'walkin' ? '' : 'none';
-      document.querySelector('.mode-only-appointment').style.display = mode === 'appointment' ? '' : 'none';
+      document.querySelectorAll('.mode-only-walkin').forEach((el) => { el.style.display = mode === 'walkin' ? '' : 'none'; });
+      document.querySelectorAll('.mode-only-appointment').forEach((el) => { el.style.display = mode === 'appointment' ? '' : 'none'; });
       document.getElementById('pTime').required = mode === 'appointment';
+      document.getElementById('pDate').required = mode === 'appointment';
       document.getElementById('modeHint').textContent = mode === 'walkin'
         ? "They're standing at the desk — this queues them immediately."
         : 'Booking a call-in appointment ahead of time — pick when they should arrive.';
@@ -171,25 +176,23 @@
       return `<div>${primary}</div><div class="sub-line">${secondary}</div>`;
     }
 
-    // A phoned-in appointment can't be booked for a time that's already
-    // passed on the clinic clock — there's nothing to override here, unlike
-    // the slot-capacity warning below, so this is a hard block.
-    function isPastClinicTime(time) {
-      return Qlinic.parseTime(time) < Qlinic.parseTime(Qlinic.getCurrentTime());
-    }
-
     function updateSlotHint() {
       const hint = document.getElementById('slotHint');
       if (patientMode !== 'appointment') { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
       const doctorId = document.getElementById('pDoctor').value;
+      const date = document.getElementById('pDate').value;
       const time = document.getElementById('pTime').value;
-      if (!doctorId || !time) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
-      if (isPastClinicTime(time)) {
+      if (!doctorId || !date || !time) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
+      // Checked against the REAL device clock, not the simulated clinic
+      // clock — a phone call happens in real time regardless of how far the
+      // demo's "+15 min" button has fast-forwarded the clinic's day. Hard
+      // block, nothing to override.
+      if (Qlinic.isPastRealDateTime(date, time)) {
         hint.className = 'slot-hint error';
-        hint.innerHTML = `⛔ That time has already passed — it's ${Qlinic.getCurrentTimeLabel()} at the clinic right now. Pick a later time.`;
+        hint.innerHTML = `⛔ That date and time has already passed. Pick a later time.`;
         return;
       }
-      const avail = Qlinic.getSlotAvailability(doctorId, time);
+      const avail = Qlinic.getSlotAvailability(doctorId, date, time);
       if (!avail) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
       if (avail.isFull) {
         hint.className = 'slot-hint warn';
@@ -371,37 +374,47 @@
       const address = document.getElementById('pAddress').value;
       const doctorId = document.getElementById('pDoctor').value;
 
+      let bookedForToday = true;
+
       if (patientMode === 'walkin') {
         Qlinic.addWalkIn({ name, phone, address, doctorId, reason: document.getElementById('pReason').value });
         showToast('Walk-in added to the queue');
       } else {
+        const date = document.getElementById('pDate').value;
         const time = document.getElementById('pTime').value;
-        if (isPastClinicTime(time)) {
+        if (Qlinic.isPastRealDateTime(date, time)) {
           updateSlotHint();
-          showToast("Can't book — that time has already passed");
+          showToast("Can't book — that date/time has already passed");
           return;
         }
-        const avail = Qlinic.getSlotAvailability(doctorId, time);
+        const avail = Qlinic.getSlotAvailability(doctorId, date, time);
         if (avail && avail.isFull && !confirm(`This slot already has ${avail.count} patients booked (max ${avail.capacity}). The next open slot is ${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}. Add anyway at the requested time?`)) {
           return;
         }
-        Qlinic.addAppointment({ name, phone, address, doctorId, bookedTime: time });
-        showToast('Appointment added');
+        Qlinic.addAppointment({ name, phone, address, doctorId, bookedDate: date, bookedTime: time });
+        bookedForToday = date === Qlinic.getTodayDate();
+        showToast(bookedForToday ? 'Appointment added' : `Appointment booked for ${Qlinic.formatDateLabel(date)} (${Qlinic.formatTime(Qlinic.parseTime(time))})`);
       }
 
       // Jump the queue view to whichever doctor this patient was just added
-      // for, so reception immediately sees where they landed.
-      queueDoctorId = doctorId;
-      bookedExpanded = false;
-      bookedPage = 0;
+      // for, so reception immediately sees where they landed — but only if
+      // they're actually on today's queue; a future booking won't show up
+      // until its date arrives, so jumping there would just look empty.
+      if (bookedForToday) {
+        queueDoctorId = doctorId;
+        bookedExpanded = false;
+        bookedPage = 0;
+      }
 
       e.target.reset();
       fillDoctorSelects();
       setPatientMode(patientMode);
+      document.getElementById('pDate').value = Qlinic.getTodayDate();
       renderQueues();
     });
 
     document.getElementById('pDoctor').addEventListener('change', updateSlotHint);
+    document.getElementById('pDate').addEventListener('change', updateSlotHint);
     document.getElementById('pTime').addEventListener('input', updateSlotHint);
 
     document.getElementById('advanceTimeBtn').addEventListener('click', () => {
@@ -420,6 +433,8 @@
 
     document.getElementById('clinicName').textContent = Qlinic.getClinic().name;
     document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
+    document.getElementById('pDate').min = Qlinic.getTodayDate();
+    document.getElementById('pDate').value = Qlinic.getTodayDate();
     fillDoctorSelects();
     setPatientMode('appointment');
     renderQueues();
