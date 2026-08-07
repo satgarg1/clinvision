@@ -30,7 +30,11 @@
         <h1>Account &amp; security</h1>
       </div>
 
-      <div class="panel">
+      <p class="panel-note" id="staffRestrictedNote" style="display:none;">
+        Only a clinic admin can change your login email or password. Ask your admin if you need either updated.
+      </p>
+
+      <div class="panel" id="emailPanel">
         <div class="panel-header"><h2>Email</h2></div>
         <p class="panel-note">Current: <strong id="currentEmail">—</strong></p>
         <form id="emailForm" class="inline-form">
@@ -43,7 +47,7 @@
         <p class="panel-note" id="emailNote" style="display:none;"></p>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="passwordPanel">
         <div class="panel-header"><h2>Password</h2></div>
         <form id="passwordForm" class="inline-form">
           <div class="field">
@@ -71,12 +75,16 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=9"></script>
+  <script src="clinic-data.js?v=10"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
-      if (!(await Qlinic.isAdmin())) {
+      const admin = await Qlinic.isAdmin();
+      if (!admin) {
         document.getElementById('settingsNavLink').style.display = 'none';
+        document.getElementById('emailPanel').style.display = 'none';
+        document.getElementById('passwordPanel').style.display = 'none';
+        document.getElementById('staffRestrictedNote').style.display = 'block';
       }
 
       function showToast(msg) {

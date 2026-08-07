@@ -12,7 +12,7 @@
 <body class="display-body">
 
   <div class="display-header">
-    <div class="brand"><span class="live-dot" aria-hidden="true"></span>Qlinic <span style="color:var(--grey-500);font-weight:400;font-size:16px;">— live queue</span></div>
+    <div class="brand"><span class="live-dot" aria-hidden="true"></span>Qlinic <span id="taglineText" style="color:var(--grey-500);font-weight:400;font-size:16px;">— live queue</span></div>
     <div class="clock" id="clockTime">--</div>
   </div>
 
@@ -20,11 +20,11 @@
 
   <div class="board">
     <div class="board-head">
-      <div class="board-title">Waiting now <span id="boardCount" class="board-count"></span></div>
+      <div class="board-title"><span id="waitingNowText">Waiting now</span> <span id="boardCount" class="board-count"></span></div>
       <div class="board-page-indicator" id="pageDots"></div>
     </div>
     <div class="board-cols">
-      <span>#</span><span>Patient</span><span>Doctor</span><span>Type</span><span>Est. wait</span>
+      <span id="colPos">#</span><span id="colPatient">Patient</span><span id="colDoctor">Doctor</span><span id="colType">Type</span><span id="colWait">Est. wait</span>
     </div>
     <div class="board-rows" id="boardRows"></div>
   </div>
@@ -35,7 +35,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=9"></script>
+  <script src="clinic-data.js?v=10"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -53,12 +53,56 @@
       // whose it is without reading the name column.
       const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
 
+      // This board is read by patients, not staff, so its language follows
+      // the clinic-wide "Display screen" setting (Settings), not the
+      // per-device day/night theme. Patient/doctor names and addresses are
+      // real data, never translated — only these fixed UI labels are.
+      const STRINGS = {
+        en: {
+          tagline: 'live queue',
+          waitingNow: 'Waiting now',
+          colPos: '#',
+          colPatient: 'Patient',
+          colDoctor: 'Doctor',
+          colType: 'Type',
+          colWait: 'Est. wait',
+          nowServing: 'Now serving',
+          onTime: 'On time',
+          runningLate: 'Running late',
+          onBreak: 'On a break',
+          emergency: 'Emergency — please bear with us',
+          appointment: 'Appointment',
+          walkin: 'Walk-in',
+          empty: 'No one waiting right now — the waiting room is clear.',
+          acrossAllDoctors: (n) => `(${n} across all doctors)`,
+        },
+        hi: {
+          tagline: 'लाइव कतार',
+          waitingNow: 'अभी प्रतीक्षा में',
+          colPos: '#',
+          colPatient: 'मरीज़',
+          colDoctor: 'डॉक्टर',
+          colType: 'प्रकार',
+          colWait: 'अनुमानित प्रतीक्षा',
+          nowServing: 'अभी देखा जा रहा है',
+          onTime: 'समय पर',
+          runningLate: 'देरी से',
+          onBreak: 'ब्रेक पर',
+          emergency: 'आपातकाल — कृपया थोड़ा इंतज़ार करें',
+          appointment: 'अपॉइंटमेंट',
+          walkin: 'वॉक-इन',
+          empty: 'अभी कोई प्रतीक्षा में नहीं है — प्रतीक्षालय खाली है।',
+          acrossAllDoctors: (n) => `(सभी डॉक्टरों को मिलाकर ${n})`,
+        },
+      };
+      let T = STRINGS.en;
+
       function statusLabel(status) {
         return {
-          on_time: 'On time',
-          running_late: 'Running late',
-          on_break: 'On a break',
-          emergency: 'Emergency — please bear with us',
+          on_time: T.onTime,
+          running_late: T.runningLate,
+          on_break: T.onBreak,
+          emergency: T.emergency,
         }[status] || status;
       }
 
@@ -79,11 +123,11 @@
                 <div class="strip-spec">${doctor.specialty}</div>
               </div>
               ${doctor.status === 'on_time'
-                ? '<span class="strip-pill strip-pill-ok">On time</span>'
+                ? `<span class="strip-pill strip-pill-ok">${T.onTime}</span>`
                 : `<span class="strip-pill strip-pill-warn">${statusLabel(doctor.status)}${doctor.delayMins ? ' · +' + doctor.delayMins + 'm' : ''}</span>`}
             </div>
             <div class="strip-serving">
-              <span class="tiny-label">Now serving</span>
+              <span class="tiny-label">${T.nowServing}</span>
               <span class="strip-serving-name">${queue.nowServing ? queue.nowServing.name : '—'}</span>
             </div>
           </div>
@@ -116,17 +160,27 @@
 
       function buildRowsHTML(pageItems, startIdx) {
         if (pageItems.length === 0) {
-          return '<div class="board-empty">No one waiting right now — the waiting room is clear.</div>';
+          return `<div class="board-empty">${T.empty}</div>`;
         }
         return pageItems.map((p, i) => `
           <div class="board-row">
             <span class="board-pos">${startIdx + i + 1}</span>
             <span class="board-name">${p.name}${p.address ? `<span class="board-sub">${p.address}</span>` : ''}</span>
             <span class="board-doc"><span class="board-doc-dot dot-${p.doctorAccent}"></span>${p.doctorName}</span>
-            <span class="board-type">${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</span>
+            <span class="board-type">${p.type === 'appointment' ? T.appointment : T.walkin}</span>
             <span class="board-eta">~${p.eta}</span>
           </div>
         `).join('');
+      }
+
+      function applyStaticStrings() {
+        document.getElementById('taglineText').textContent = '— ' + T.tagline;
+        document.getElementById('waitingNowText').textContent = T.waitingNow;
+        document.getElementById('colPos').textContent = T.colPos;
+        document.getElementById('colPatient').textContent = T.colPatient;
+        document.getElementById('colDoctor').textContent = T.colDoctor;
+        document.getElementById('colType').textContent = T.colType;
+        document.getElementById('colWait').textContent = T.colWait;
       }
 
       function renderDots(totalPages) {
@@ -143,12 +197,15 @@
         const start = currentPage * PAGE_SIZE;
         const pageItems = combined.slice(start, start + PAGE_SIZE);
         document.getElementById('boardRows').innerHTML = buildRowsHTML(pageItems, start);
-        document.getElementById('boardCount').textContent = combined.length ? `(${combined.length} across all doctors)` : '';
+        document.getElementById('boardCount').textContent = combined.length ? T.acrossAllDoctors(combined.length) : '';
         renderDots(totalPages);
       }
 
       async function refreshData() {
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
+        const clinic = await Qlinic.getClinic();
+        T = STRINGS[clinic && clinic.display_language] || STRINGS.en;
+        applyStaticStrings();
         const all = await Qlinic.getAllQueues();
         renderDoctorStrip(all);
         combined = computeCombinedWaiting(all);
