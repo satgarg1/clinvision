@@ -209,7 +209,8 @@
       // Short durations in round minutes, longer ones in half-hour steps —
       // "90 min" reads slower than "1.5 hr" once you're past an hour.
       const DURATION_OPTIONS = [];
-      for (let m = 10; m <= 60; m += 10) DURATION_OPTIONS.push({ value: m, label: `${m} min` });
+      for (let m = 10; m < 60; m += 10) DURATION_OPTIONS.push({ value: m, label: `${m} min` });
+      DURATION_OPTIONS.push({ value: 60, label: '1 hr' });
       for (let m = 90; m <= 240; m += 30) DURATION_OPTIONS.push({ value: m, label: `${m / 60} hr` });
 
       function renderDelayPanel() {
