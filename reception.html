@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=11" />
+<link rel="stylesheet" href="styles.css?v=12" />
 </head>
 <body>
   <div class="app-shell">
@@ -85,7 +85,13 @@
             </div>
             <div class="field mode-only mode-only-appointment">
               <label>Appointment time</label>
-              <select id="pTime"></select>
+              <div class="time-picker" id="pTimePicker">
+                <button type="button" class="time-picker-trigger placeholder" id="pTimeTrigger">
+                  <span id="pTimeTriggerText">Select a time</span><span class="time-picker-caret">▾</span>
+                </button>
+                <input type="hidden" id="pTime" />
+                <div class="time-picker-panel" id="pTimePanel" style="display:none;"></div>
+              </div>
             </div>
             <div class="field mode-only mode-only-walkin" style="display:none;">
               <label>Reason (optional)</label>
@@ -163,21 +169,88 @@
         document.getElementById('pDoctor').innerHTML = opts;
       }
 
-      // Native <input type="time"> renders a different, inconsistent picker
-      // per browser/OS and defaults to 1-minute granularity. A plain select
-      // in 5-minute steps matches every other dropdown in the app and gives
-      // exact control over the interval — values stay "HH:MM" 24-hour
-      // strings, so nothing else that reads/sets pTime.value has to change.
-      function fillTimeOptions() {
-        const sel = document.getElementById('pTime');
-        const opts = ['<option value="" disabled selected>Select a time</option>'];
-        for (let m = 0; m < 1440; m += 5) {
+      // Custom time picker — a native <input type="time"> renders a
+      // different, unstylable scrolling wheel per browser/OS, and a plain
+      // <select> can't filter out past times or control where the list
+      // opens. Values stay "HH:MM" 24-hour strings in a hidden input, so
+      // nothing else that reads/sets pTime.value has to change.
+      let timePickerOptions = [];
+
+      function buildTimePickerOptions() {
+        const dateVal = document.getElementById('pDate').value;
+        const isToday = dateVal === Qlinic.getTodayDate();
+        let startMin = 0;
+        if (isToday) {
+          const now = new Date();
+          startMin = Math.ceil((now.getHours() * 60 + now.getMinutes()) / 5) * 5;
+        }
+        const opts = [];
+        for (let m = startMin; m < 1440; m += 5) {
           const hh = String(Math.floor(m / 60)).padStart(2, '0');
           const mm = String(m % 60).padStart(2, '0');
-          opts.push(`<option value="${hh}:${mm}">${Qlinic.formatTime(m)}</option>`);
+          opts.push({ value: `${hh}:${mm}`, label: Qlinic.formatTime(m) });
         }
-        sel.innerHTML = opts.join('');
+        timePickerOptions = opts;
       }
+
+      function renderTimePanel() {
+        const panel = document.getElementById('pTimePanel');
+        const currentVal = document.getElementById('pTime').value;
+        if (timePickerOptions.length === 0) {
+          panel.innerHTML = '<div class="time-picker-empty">No times left today — pick another date.</div>';
+          return;
+        }
+        panel.innerHTML = timePickerOptions.map((o) => `
+          <div class="time-picker-option ${o.value === currentVal ? 'selected' : ''}" data-value="${o.value}" data-label="${o.label}">${o.label}</div>
+        `).join('');
+      }
+
+      function openTimePanel() {
+        buildTimePickerOptions();
+        renderTimePanel();
+        document.getElementById('pTimePanel').style.display = 'block';
+        const panel = document.getElementById('pTimePanel');
+        const target = panel.querySelector('.selected') || panel.querySelector('.time-picker-option');
+        if (target) target.scrollIntoView({ block: 'nearest' });
+      }
+
+      function closeTimePanel() {
+        document.getElementById('pTimePanel').style.display = 'none';
+      }
+
+      function selectTime(value, label) {
+        document.getElementById('pTime').value = value;
+        const trigger = document.getElementById('pTimeTrigger');
+        document.getElementById('pTimeTriggerText').textContent = label;
+        trigger.classList.remove('placeholder');
+        closeTimePanel();
+        updateSlotHint();
+      }
+
+      function resetTimePicker() {
+        document.getElementById('pTime').value = '';
+        document.getElementById('pTimeTriggerText').textContent = 'Select a time';
+        document.getElementById('pTimeTrigger').classList.add('placeholder');
+        closeTimePanel();
+      }
+
+      document.getElementById('pTimeTrigger').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const panel = document.getElementById('pTimePanel');
+        if (panel.style.display === 'block') closeTimePanel();
+        else openTimePanel();
+      });
+      document.getElementById('pTimePanel').addEventListener('click', (e) => {
+        const opt = e.target.closest('.time-picker-option');
+        if (!opt) return;
+        selectTime(opt.getAttribute('data-value'), opt.getAttribute('data-label'));
+      });
+      document.addEventListener('click', (e) => {
+        if (!document.getElementById('pTimePicker').contains(e.target)) closeTimePanel();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeTimePanel();
+      });
 
       // Walk-in and phoned-appointment used to be two separate, near-identical
       // forms stacked on the page — easy to fill in the wrong one by habit.
@@ -195,7 +268,6 @@
         document.getElementById('patientPanel').classList.toggle('mode-appointment', mode === 'appointment');
         document.querySelectorAll('.mode-only-walkin').forEach((el) => { el.style.display = mode === 'walkin' ? '' : 'none'; });
         document.querySelectorAll('.mode-only-appointment').forEach((el) => { el.style.display = mode === 'appointment' ? '' : 'none'; });
-        document.getElementById('pTime').required = mode === 'appointment';
         document.getElementById('pDate').required = mode === 'appointment';
         document.getElementById('modeHint').textContent = mode === 'walkin'
           ? "They're standing at the desk — this queues them immediately."
@@ -246,8 +318,7 @@
           hint.className = 'slot-hint warn';
           hint.innerHTML = `⚠ ${avail.count} patients already booked around this time (max ${avail.capacity} per slot). Next open slot: <strong>${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}</strong> — <button type="button" class="btn-sm" id="useSuggestedTimeBtn">Use this time</button>`;
           document.getElementById('useSuggestedTimeBtn').addEventListener('click', () => {
-            document.getElementById('pTime').value = avail.suggestion;
-            updateSlotHint();
+            selectTime(avail.suggestion, Qlinic.formatTime(Qlinic.parseTime(avail.suggestion)));
           });
         } else {
           hint.className = 'slot-hint ok';
@@ -466,6 +537,10 @@
         } else {
           const date = document.getElementById('pDate').value;
           const time = document.getElementById('pTime').value;
+          if (!time) {
+            showToast('Pick an appointment time first');
+            return;
+          }
           if (Qlinic.isPastRealDateTime(date, time)) {
             updateSlotHint();
             showToast("Can't book — that date/time has already passed");
@@ -493,12 +568,15 @@
         fillDoctorSelects();
         setPatientMode(patientMode);
         document.getElementById('pDate').value = Qlinic.getTodayDate();
+        resetTimePicker();
         renderQueues();
       });
 
       document.getElementById('pDoctor').addEventListener('change', updateSlotHint);
-      document.getElementById('pDate').addEventListener('change', updateSlotHint);
-      document.getElementById('pTime').addEventListener('change', updateSlotHint);
+      document.getElementById('pDate').addEventListener('change', () => {
+        resetTimePicker();
+        updateSlotHint();
+      });
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
@@ -506,7 +584,6 @@
       setInterval(() => { document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date()); }, 30000);
       document.getElementById('pDate').min = Qlinic.getTodayDate();
       document.getElementById('pDate').value = Qlinic.getTodayDate();
-      fillTimeOptions();
 
       await refreshDoctorsCache();
       fillDoctorSelects();

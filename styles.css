@@ -784,6 +784,56 @@ table.qtable tr:last-child td { border-bottom: none; }
   border-radius: 8px;
   font-family: var(--font);
 }
+
+/* Custom time picker — a native <input type="time"> renders a different,
+   unstylable scrolling wheel per browser/OS, and a plain <select> can't
+   filter out past times or control where the list opens. This gives full
+   control over both: past times are excluded entirely for today's date,
+   and opening the list starts at a useful position instead of midnight. */
+.time-picker { position: relative; }
+.time-picker-trigger {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: var(--font);
+  border: 1px solid var(--grey-300);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--black);
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.time-picker-trigger.placeholder { color: var(--grey-500); }
+.time-picker-trigger:hover { border-color: var(--grey-500); }
+.time-picker-trigger:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+.time-picker-caret { color: var(--grey-500); font-size: 11px; flex-shrink: 0; }
+.time-picker-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--white);
+  border: 1px solid var(--grey-300);
+  border-radius: 10px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.14);
+  z-index: 50;
+  padding: 6px;
+}
+.time-picker-option {
+  padding: 9px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.time-picker-option:hover { background: var(--grey-100); }
+.time-picker-option.selected { background: var(--accent); color: #ffffff; font-weight: 600; }
+.time-picker-empty { padding: 16px 12px; text-align: center; color: var(--grey-500); font-size: 13px; }
 .form-actions {
   margin-top: 16px;
   display: flex;
