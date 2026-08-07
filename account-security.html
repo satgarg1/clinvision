@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Account &amp; security — Qlinic</title>
+<script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=11" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <a href="index.html" class="brand">Qlinic</a>
+      <div class="clinic-name" id="clinicName">Loading…</div>
+      <nav>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="reception.html" class="nav-link">Reception</a>
+        <a href="doctor.html" class="nav-link">Doctor View</a>
+        <a href="display.html" class="nav-link">Display Screen</a>
+        <a href="settings.html" class="nav-link active">Settings</a>
+      </nav>
+    </aside>
+
+    <main class="app-main">
+      <div class="app-topbar">
+        <div>
+          <div class="breadcrumb"><a href="settings.html">Settings</a> <span>/</span> Account &amp; security</div>
+          <h1>Account &amp; security</h1>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>Email</h2></div>
+        <p class="panel-note">Current: <strong id="currentEmail">—</strong></p>
+        <form id="emailForm" class="inline-form">
+          <div class="field">
+            <label>New email</label>
+            <input type="email" id="newEmailInput" required />
+          </div>
+          <button type="submit" class="btn-sm primary">Change email</button>
+        </form>
+        <p class="panel-note" id="emailNote" style="display:none;"></p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>Password</h2></div>
+        <form id="passwordForm" class="inline-form">
+          <div class="field">
+            <label>New password</label>
+            <input type="password" id="newPasswordInput" minlength="6" required />
+          </div>
+          <div class="field">
+            <label>Confirm new password</label>
+            <input type="password" id="confirmPasswordInput" minlength="6" required />
+          </div>
+          <button type="submit" class="btn-sm primary">Change password</button>
+        </form>
+        <p class="panel-note" id="passwordNote" style="display:none;"></p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>Session</h2></div>
+        <p class="panel-note">Signed in on this device. Logging out ends this session everywhere it's open.</p>
+        <a href="#" id="logoutLink" class="btn-sm danger" style="display:inline-block;text-decoration:none;">Log out</a>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=8"></script>
+  <script>
+    (async function () {
+      await Qlinic.requireLogin('login.html');
+
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      document.getElementById('emailForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const note = document.getElementById('emailNote');
+        try {
+          await Qlinic.changeEmail(document.getElementById('newEmailInput').value);
+          note.style.display = 'block';
+          note.textContent = 'Check both your old and new inbox to confirm this change — it won’t take effect until then.';
+          e.target.reset();
+        } catch (err) {
+          note.style.display = 'block';
+          note.textContent = err.message || 'Could not change email.';
+        }
+      });
+
+      document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const note = document.getElementById('passwordNote');
+        const newPassword = document.getElementById('newPasswordInput').value;
+        const confirmPassword = document.getElementById('confirmPasswordInput').value;
+        if (newPassword !== confirmPassword) {
+          note.style.display = 'block';
+          note.textContent = "Passwords don't match.";
+          return;
+        }
+        try {
+          await Qlinic.changePassword(newPassword);
+          note.style.display = 'block';
+          note.textContent = 'Password updated.';
+          e.target.reset();
+        } catch (err) {
+          note.style.display = 'block';
+          note.textContent = err.message || 'Could not change password.';
+        }
+      });
+
+      document.getElementById('logoutLink').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await Qlinic.logout();
+        window.location.href = 'login.html';
+      });
+
+      const clinic = await Qlinic.getClinic();
+      document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      document.getElementById('currentEmail').textContent = (await Qlinic.getCurrentUserEmail()) || '—';
+    })();
+  </script>
+</body>
+</html>
