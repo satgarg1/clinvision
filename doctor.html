@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Doctor View — Qlinic</title>
-<link rel="stylesheet" href="styles.css?v=5" />
+<link rel="stylesheet" href="styles.css?v=7" />
 </head>
 <body>
   <div class="app-shell">
@@ -24,8 +24,7 @@
       <div class="app-topbar">
         <h1>Doctor View</h1>
         <div class="clock-pill">
-          <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Clinic time: <span class="time" id="clockTime">--</span></span>
-          <button id="advanceTimeBtn">+15 min (demo)</button>
+          <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Time: <span class="time" id="clockTime">--</span></span>
         </div>
       </div>
 
@@ -34,186 +33,198 @@
         <select id="doctorSelect" style="padding:10px 14px;border-radius:8px;border:1px solid var(--grey-300);font-size:14px;min-width:260px;"></select>
       </div>
 
-      <div class="panel" id="statusPanel">
-        <div class="panel-header"><span class="panel-icon icon-purple">🩺</span><h2>Your status</h2></div>
-        <p style="font-size:13px;color:var(--grey-500);margin:0 0 16px;">
-          One tap updates every waiting patient's estimate and the waiting-room screen — no one needs to interrupt you to ask.
-        </p>
-        <div class="inline-form" style="margin-bottom:10px;">
-          <button class="btn-sm" data-status="on_time">On time</button>
-          <button class="btn-sm" data-status="running_late">Running late</button>
-          <button class="btn-sm" data-status="on_break">On a break</button>
-          <button class="btn-sm" data-status="emergency">Emergency</button>
-        </div>
-        <div id="delayInputWrap" style="display:none;margin-top:10px;">
-          <div class="inline-form">
-            <div class="field">
-              <label>How many minutes behind?</label>
-              <input type="number" id="delayMinsInput" min="0" step="5" value="15" style="max-width:140px;" />
-            </div>
-            <button class="btn-sm primary" id="confirmDelayBtn">Broadcast delay</button>
+      <div id="doctorPanels" style="display:none;">
+        <div class="panel" id="statusPanel">
+          <div class="panel-header"><span class="panel-icon icon-purple">🩺</span><h2>Your status</h2></div>
+          <p style="font-size:13px;color:var(--grey-500);margin:0 0 16px;">
+            One tap updates every waiting patient's estimate and the waiting-room screen — no one needs to interrupt you to ask.
+          </p>
+          <div class="inline-form" style="margin-bottom:10px;">
+            <button class="btn-sm" data-status="on_time">On time</button>
+            <button class="btn-sm" data-status="running_late">Running late</button>
+            <button class="btn-sm" data-status="on_break">On a break</button>
+            <button class="btn-sm" data-status="emergency">Emergency</button>
           </div>
+          <div id="delayInputWrap" style="display:none;margin-top:10px;">
+            <div class="inline-form">
+              <div class="field">
+                <label>How many minutes behind?</label>
+                <input type="number" id="delayMinsInput" min="0" step="5" value="15" style="max-width:140px;" />
+              </div>
+              <button class="btn-sm primary" id="confirmDelayBtn">Broadcast delay</button>
+            </div>
+          </div>
+          <div id="currentStatusLine" style="margin-top:14px;font-size:14px;"></div>
         </div>
-        <div id="currentStatusLine" style="margin-top:14px;font-size:14px;"></div>
+
+        <div class="panel" id="nowServingPanel">
+          <div class="panel-header"><span class="panel-icon icon-teal">▶️</span><h2>Now serving</h2></div>
+          <div id="nowServingBox"></div>
+          <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;">Call next patient</button>
+        </div>
+
+        <div class="panel" id="waitingPanel">
+          <div class="panel-header"><span class="panel-icon icon-coral">⏳</span><h2 id="waitingHeading">Waiting</h2></div>
+          <div id="waitingList"></div>
+        </div>
       </div>
 
-      <div class="panel" id="nowServingPanel">
-        <div class="panel-header"><span class="panel-icon icon-teal">▶️</span><h2>Now serving</h2></div>
-        <div id="nowServingBox"></div>
-        <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;">Call next patient</button>
-      </div>
-
-      <div class="panel" id="waitingPanel">
-        <div class="panel-header"><span class="panel-icon icon-coral">⏳</span><h2 id="waitingHeading">Waiting</h2></div>
-        <div id="waitingList"></div>
+      <div class="panel" id="noDoctorsPanel" style="display:none;">
+        <div class="empty-state">No doctors set up yet. Add one from the <a href="dashboard.html">Dashboard</a> first.</div>
       </div>
     </main>
   </div>
 
   <div class="toast" id="toast"></div>
 
-  <script src="data.js?v=5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=7"></script>
   <script>
-    Qlinic.requireLogin('login.html');
+    (async function () {
+      await Qlinic.requireLogin('login.html');
 
-    function showToast(msg) {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 2200);
-    }
+      let doctors = [];
 
-    function statusLabel(status) {
-      return {
-        on_time: 'On time',
-        running_late: 'Running late',
-        on_break: 'On a break',
-        emergency: 'Emergency',
-      }[status] || status;
-    }
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+      }
 
-    function currentDoctorId() {
-      return document.getElementById('doctorSelect').value;
-    }
+      function statusLabel(status) {
+        return {
+          on_time: 'On time',
+          running_late: 'Running late',
+          on_break: 'On a break',
+          emergency: 'Emergency',
+        }[status] || status;
+      }
 
-    function fillDoctorSelect() {
-      const sel = document.getElementById('doctorSelect');
-      sel.innerHTML = Qlinic.getDoctors().map((d) => `<option value="${d.id}">${d.name} — ${d.specialty}</option>`).join('');
-    }
+      function currentDoctorId() {
+        return document.getElementById('doctorSelect').value;
+      }
 
-    // Same 5-color identity palette used app-wide — whichever doctor is
-    // selected here tints all four panels, so switching doctors is confirmed
-    // at a glance, and the color matches this doctor everywhere else too.
-    const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
-    function applyDoctorAccent(doctorId) {
-      const idx = Qlinic.getDoctors().findIndex((d) => d.id === doctorId);
-      const accent = ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
-      ['viewingPanel', 'statusPanel', 'nowServingPanel', 'waitingPanel'].forEach((id) => {
-        const el = document.getElementById(id);
-        Array.from(el.classList).forEach((c) => { if (c.startsWith('accent-')) el.classList.remove(c); });
-        el.classList.add('accent-' + accent);
-      });
-    }
+      // Same 5-color identity palette used app-wide — whichever doctor is
+      // selected here tints all three panels, so switching doctors is
+      // confirmed at a glance, and the color matches this doctor everywhere
+      // else too.
+      const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
+      function applyDoctorAccent(doctorId) {
+        const idx = doctors.findIndex((d) => d.id === doctorId);
+        const accent = ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
+        ['statusPanel', 'nowServingPanel', 'waitingPanel'].forEach((id) => {
+          const el = document.getElementById(id);
+          Array.from(el.classList).forEach((c) => { if (c.startsWith('accent-')) el.classList.remove(c); });
+          el.classList.add('accent-' + accent);
+        });
+      }
 
-    function render() {
-      const doctorId = currentDoctorId();
-      const doc = Qlinic.getDoctor(doctorId);
-      const q = Qlinic.getQueueForDoctor(doctorId);
-      applyDoctorAccent(doctorId);
+      // The list is sorted by scheduled/effective time, not raw arrival time —
+      // a walk-in's slot is when they arrived, an appointment's is its booked
+      // time plus any doctor delay.
+      function queueTimeCell(p) {
+        const primary = Qlinic.formatTimestamp(p.effectiveTime);
+        const secondary = p.type === 'appointment'
+          ? `booked ${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}`
+          : `arrived ${Qlinic.formatTimestamp(p.arrivedAt)}`;
+        return `<div>${primary}</div><div class="sub-line">${secondary}</div>`;
+      }
 
-      document.getElementById('currentStatusLine').innerHTML =
-        `Currently: <span class="status-pill status-${doc.status}">${statusLabel(doc.status)}${doc.delayMins ? ' · ' + doc.delayMins + ' min' : ''}</span>
-         <span style="color:var(--grey-500);"> — updated ${Qlinic.formatTime(Qlinic.parseTime(doc.statusUpdatedAt))}${doc.statusNote ? ' · "' + doc.statusNote + '"' : ''}</span>`;
+      async function render() {
+        doctors = await Qlinic.getDoctors();
+        const sel = document.getElementById('doctorSelect');
+        const prevSelected = sel.value;
+        sel.innerHTML = doctors.map((d) => `<option value="${d.id}">${d.name} — ${d.specialty}</option>`).join('');
 
-      document.getElementById('nowServingBox').innerHTML = q.nowServing
-        ? `<div style="font-size:20px;font-weight:700;">${q.nowServing.name}</div><div style="font-size:13px;color:var(--grey-500);">${q.nowServing.address ? q.nowServing.address + ' · ' : ''}${q.nowServing.type === 'appointment' ? 'Appointment' : 'Walk-in'}</div>`
-        : `<div class="empty-state">No one in consultation. Tap "Call next patient" to begin.</div>`;
-
-      document.getElementById('waitingHeading').innerHTML = `Waiting <span class="order-note">— ordered by scheduled time, not arrival order</span>`;
-
-      document.getElementById('waitingList').innerHTML = q.waiting.length === 0
-        ? '<div class="empty-state">No one waiting.</div>'
-        : `
-        <table class="qtable">
-          <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Queue time</th></tr></thead>
-          <tbody>
-            ${q.waiting.map((p) => `
-              <tr>
-                <td>${p.position}</td>
-                <td><div>${p.name}</div><div class="sub-line">${p.address || 'No address on file'}</div></td>
-                <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
-                <td>${queueTimeCell(p)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-    }
-
-    // The list is sorted by scheduled/effective time, not raw arrival time — a
-    // walk-in's slot is when they arrived, an appointment's is its booked time
-    // plus any doctor delay. Showing only arrival time made the order look
-    // random; this shows the actual sort key first, raw time underneath.
-    function queueTimeCell(p) {
-      const primary = Qlinic.formatTime(p.effectiveMinutes);
-      const secondary = p.type === 'appointment'
-        ? `booked ${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}`
-        : `arrived ${p.arrivedAt ? Qlinic.formatTime(Qlinic.parseTime(p.arrivedAt)) : '—'}`;
-      return `<div>${primary}</div><div class="sub-line">${secondary}</div>`;
-    }
-
-    document.querySelectorAll('[data-status]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const status = btn.getAttribute('data-status');
-        if (status === 'running_late') {
-          document.getElementById('delayInputWrap').style.display = 'block';
+        if (doctors.length === 0) {
+          document.getElementById('doctorPanels').style.display = 'none';
+          document.getElementById('noDoctorsPanel').style.display = 'block';
           return;
         }
-        document.getElementById('delayInputWrap').style.display = 'none';
-        Qlinic.setDoctorStatus(currentDoctorId(), status, 0, '');
-        render();
-        showToast('Status updated — patients notified');
+        document.getElementById('doctorPanels').style.display = 'block';
+        document.getElementById('noDoctorsPanel').style.display = 'none';
+        sel.value = doctors.find((d) => d.id === prevSelected) ? prevSelected : doctors[0].id;
+
+        const doctorId = currentDoctorId();
+        const doc = doctors.find((d) => d.id === doctorId);
+        const q = await Qlinic.getQueueForDoctor(doctorId);
+        applyDoctorAccent(doctorId);
+
+        document.getElementById('currentStatusLine').innerHTML =
+          `Currently: <span class="status-pill status-${doc.status}">${statusLabel(doc.status)}${doc.delayMins ? ' · ' + doc.delayMins + ' min' : ''}</span>
+           <span style="color:var(--grey-500);"> — updated ${Qlinic.formatTimestamp(doc.statusUpdatedAt)}${doc.statusNote ? ' · "' + doc.statusNote + '"' : ''}</span>`;
+
+        document.getElementById('nowServingBox').innerHTML = q.nowServing
+          ? `<div style="font-size:20px;font-weight:700;">${q.nowServing.name}</div><div style="font-size:13px;color:var(--grey-500);">${q.nowServing.address ? q.nowServing.address + ' · ' : ''}${q.nowServing.type === 'appointment' ? 'Appointment' : 'Walk-in'}</div>`
+          : `<div class="empty-state">No one in consultation. Tap "Call next patient" to begin.</div>`;
+
+        document.getElementById('waitingHeading').innerHTML = `Waiting <span class="order-note">— ordered by scheduled time, not arrival order</span>`;
+
+        document.getElementById('waitingList').innerHTML = q.waiting.length === 0
+          ? '<div class="empty-state">No one waiting.</div>'
+          : `
+          <table class="qtable">
+            <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Queue time</th></tr></thead>
+            <tbody>
+              ${q.waiting.map((p) => `
+                <tr>
+                  <td>${p.position}</td>
+                  <td><div>${p.name}</div><div class="sub-line">${p.address || 'No address on file'}</div></td>
+                  <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
+                  <td>${queueTimeCell(p)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+
+      document.querySelectorAll('[data-status]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const status = btn.getAttribute('data-status');
+          if (status === 'running_late') {
+            document.getElementById('delayInputWrap').style.display = 'block';
+            return;
+          }
+          document.getElementById('delayInputWrap').style.display = 'none';
+          await Qlinic.setDoctorStatus(currentDoctorId(), status, 0, '');
+          render();
+          showToast('Status updated — patients notified');
+        });
       });
-    });
 
-    document.getElementById('confirmDelayBtn').addEventListener('click', () => {
-      const mins = document.getElementById('delayMinsInput').value;
-      Qlinic.setDoctorStatus(currentDoctorId(), 'running_late', mins, `Running about ${mins} min behind.`);
-      document.getElementById('delayInputWrap').style.display = 'none';
+      document.getElementById('confirmDelayBtn').addEventListener('click', async () => {
+        const mins = document.getElementById('delayMinsInput').value;
+        await Qlinic.setDoctorStatus(currentDoctorId(), 'running_late', mins, `Running about ${mins} min behind.`);
+        document.getElementById('delayInputWrap').style.display = 'none';
+        render();
+        showToast('Delay broadcast to all waiting patients');
+      });
+
+      document.getElementById('callNextBtn').addEventListener('click', async () => {
+        await Qlinic.callNextPatient(currentDoctorId());
+        render();
+        showToast('Next patient called in');
+      });
+
+      document.getElementById('doctorSelect').addEventListener('change', render);
+
+      document.getElementById('logoutLink').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await Qlinic.logout();
+        window.location.href = 'login.html';
+      });
+
+      const clinic = await Qlinic.getClinic();
+      document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
+      setInterval(() => { document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date()); }, 30000);
+
       render();
-      showToast('Delay broadcast to all waiting patients');
-    });
-
-    document.getElementById('callNextBtn').addEventListener('click', () => {
-      Qlinic.callNextPatient(currentDoctorId());
-      render();
-      showToast('Next patient called in');
-    });
-
-    document.getElementById('doctorSelect').addEventListener('change', render);
-
-    document.getElementById('advanceTimeBtn').addEventListener('click', () => {
-      Qlinic.advanceTime(15);
-      document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
-      render();
-      showToast('Clinic time advanced by 15 minutes');
-    });
-
-    document.getElementById('logoutLink').addEventListener('click', (e) => {
-      e.preventDefault();
-      Qlinic.logout();
-      window.location.href = 'login.html';
-    });
-
-    document.getElementById('clinicName').textContent = Qlinic.getClinic().name;
-    document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
-    fillDoctorSelect();
-    render();
-
-    Qlinic.onExternalChange(() => {
-      document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
-      render();
-    });
+      Qlinic.onLiveChange(render);
+    })();
   </script>
 </body>
 </html>
