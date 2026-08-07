@@ -4,7 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Dashboard — Qlinic</title>
-<link rel="stylesheet" href="styles.css?v=7" />
+<script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
+<link rel="stylesheet" href="styles.css?v=9" />
 </head>
 <body>
   <div class="app-shell">
@@ -16,6 +17,7 @@
         <a href="reception.html" class="nav-link">Reception</a>
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="display.html" class="nav-link">Display Screen</a>
+        <a href="settings.html" class="nav-link">Settings</a>
       </nav>
       <a href="#" id="logoutLink" class="logout-link">Log out</a>
     </aside>
@@ -36,21 +38,6 @@
       </div>
 
       <div class="panel">
-        <div class="panel-header"><span class="panel-icon icon-teal">➕</span><h2>Add a doctor</h2></div>
-        <form id="addDoctorForm" class="inline-form">
-          <div class="field">
-            <label>Name</label>
-            <input type="text" id="newDoctorName" placeholder="Dr. Jane Doe" required />
-          </div>
-          <div class="field">
-            <label>Specialty</label>
-            <input type="text" id="newDoctorSpecialty" placeholder="General Physician" />
-          </div>
-          <button type="submit" class="btn-sm primary">Add doctor</button>
-        </form>
-      </div>
-
-      <div class="panel">
         <div class="panel-header"><span class="panel-icon icon-purple">🌙</span><h2>End of day</h2></div>
         <p style="font-size:14px;color:var(--grey-700);margin:0 0 14px;">
           Anyone still marked "booked" (never arrived) today will be closed out as a no-show.
@@ -64,7 +51,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=7"></script>
+  <script src="clinic-data.js?v=8"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -118,7 +105,7 @@
 
         const doctors = await Qlinic.getDoctors();
         if (doctors.length === 0) {
-          document.getElementById('doctorStatusList').innerHTML = '<div class="empty-state">No doctors yet — add your first one below.</div>';
+          document.getElementById('doctorStatusList').innerHTML = '<div class="empty-state">No doctors yet — add one from <a href="settings.html">Settings</a>.</div>';
           return;
         }
         const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id)));
@@ -141,16 +128,6 @@
           `;
         }).join('');
       }
-
-      document.getElementById('addDoctorForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = document.getElementById('newDoctorName').value;
-        const specialty = document.getElementById('newDoctorSpecialty').value;
-        await Qlinic.addDoctor({ name, specialty });
-        e.target.reset();
-        showToast('Doctor added');
-        render();
-      });
 
       document.getElementById('closeDayBtn').addEventListener('click', async () => {
         if (confirm('Close the day? Everyone still "booked" and not arrived today will be marked as no-show.')) {

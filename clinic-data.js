@@ -121,6 +121,7 @@
       delayMins: row.delay_mins,
       statusNote: row.status_note,
       statusUpdatedAt: row.status_updated_at,
+      isActive: row.is_active,
     };
   }
 
@@ -178,16 +179,36 @@
     return currentClinic;
   }
 
-  async function getDoctors() {
+  // fields: { name, graceWindowMins, slotIntervalMins, slotCapacity } — any
+  // subset. Used by the Settings page for clinic profile + queue rules.
+  async function updateClinic(fields) {
+    const clinicId = await ensureClinicContext();
+    const payload = {};
+    if (fields.name !== undefined) payload.name = fields.name;
+    if (fields.graceWindowMins !== undefined) payload.grace_window_mins = Number(fields.graceWindowMins);
+    if (fields.slotIntervalMins !== undefined) payload.slot_interval_mins = Number(fields.slotIntervalMins);
+    if (fields.slotCapacity !== undefined) payload.slot_capacity = Number(fields.slotCapacity);
+    const { error } = await sb.from('clinics').update(payload).eq('id', clinicId);
+    if (error) throw error;
+    currentClinic = null; // force a fresh read next time
+  }
+
+  // Defaults to active doctors only — that's what every operational screen
+  // (reception, doctor view, dashboard, display) should ever see. Settings
+  // passes { includeInactive: true } since it's the one place that needs to
+  // manage doctors who've been deactivated too.
+  async function getDoctors(opts) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    const { data, error } = await sb.from('doctors').select('*').eq('clinic_id', clinicId).order('created_at');
+    let query = sb.from('doctors').select('*').eq('clinic_id', clinicId);
+    if (!(opts && opts.includeInactive)) query = query.eq('is_active', true);
+    const { data, error } = await query.order('created_at');
     if (error) throw error;
     return data.map(normalizeDoctor);
   }
 
   async function getDoctor(doctorId) {
-    const doctors = await getDoctors();
+    const doctors = await getDoctors({ includeInactive: true });
     return doctors.find((d) => d.id === doctorId) || null;
   }
 
@@ -196,6 +217,19 @@
     const { data, error } = await sb.from('doctors').insert({ clinic_id: clinicId, name, specialty: specialty || '' }).select().single();
     if (error) throw error;
     return normalizeDoctor(data);
+  }
+
+  async function updateDoctor(doctorId, { name, specialty }) {
+    const { error } = await sb.from('doctors').update({ name, specialty: specialty || '' }).eq('id', doctorId);
+    if (error) throw error;
+  }
+
+  // Deactivating (not deleting) a doctor — see supabase/002_doctor_active_flag.sql
+  // for why: patients.doctor_id cascades on delete, so a hard delete would
+  // wipe that doctor's entire patient history.
+  async function setDoctorActive(doctorId, isActive) {
+    const { error } = await sb.from('doctors').update({ is_active: isActive }).eq('id', doctorId);
+    if (error) throw error;
   }
 
   // ---------------- patient queries ----------------
@@ -468,6 +502,57 @@
     }
   }
 
+  async function getCurrentUserEmail() {
+    const { data: { session } } = await sb.auth.getSession();
+    return session ? session.user.email : null;
+  }
+
+  // Changing email triggers Supabase's own confirmation flow (checks both
+  // the old and new address, per the "Secure email change" project
+  // setting) — the change isn't live until that's confirmed.
+  async function changeEmail(newEmail) {
+    const { error } = await sb.auth.updateUser({ email: newEmail });
+    if (error) throw error;
+  }
+
+  // Changes the password for the CURRENTLY logged-in user.
+  async function changePassword(newPassword) {
+    const { error } = await sb.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  }
+
+  // For the "forgot password" flow (not logged in) — sends a reset link to
+  // the given email; redirectTo should point at reset-password.html.
+  async function requestPasswordReset(email, redirectTo) {
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
+  }
+
+  // Called on reset-password.html once the user lands there from the
+  // emailed link (which establishes a temporary "recovery" session) and
+  // submits a new password.
+  async function completePasswordReset(newPassword) {
+    const { error } = await sb.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  }
+
+  // ---------------- appearance (local device preference, not synced
+  // across devices — this is a personal UI setting, not clinic data)
+  // ----------------
+
+  function getTheme() {
+    return localStorage.getItem('qlinic_theme') || 'light';
+  }
+
+  function setTheme(theme) {
+    localStorage.setItem('qlinic_theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+  }
+
   // ---------------- realtime ----------------
 
   // Fires `cb` whenever any doctor or patient row in this clinic changes —
@@ -491,9 +576,12 @@
     isPastRealDateTime,
 
     getClinic,
+    updateClinic,
     getDoctors,
     getDoctor,
     addDoctor,
+    updateDoctor,
+    setDoctorActive,
 
     getQueueForDoctor,
     getAllQueues,
@@ -514,6 +602,14 @@
     logout,
     isLoggedIn,
     requireLogin,
+    getCurrentUserEmail,
+    changeEmail,
+    changePassword,
+    requestPasswordReset,
+    completePasswordReset,
+
+    getTheme,
+    setTheme,
 
     onLiveChange,
   };
