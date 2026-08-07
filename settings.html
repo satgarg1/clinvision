@@ -74,34 +74,8 @@
 
       <div class="panel">
         <div class="panel-header"><h2>Account &amp; security</h2></div>
-
-        <h3 style="font-size:14px;margin:0 0 8px;color:var(--grey-700);">Email</h3>
-        <p class="panel-note">Current: <strong id="currentEmail">—</strong></p>
-        <form id="emailForm" class="inline-form">
-          <div class="field">
-            <label>New email</label>
-            <input type="email" id="newEmailInput" required />
-          </div>
-          <button type="submit" class="btn-sm primary">Change email</button>
-        </form>
-        <p class="panel-note" id="emailNote" style="display:none;"></p>
-
-        <h3 style="font-size:14px;margin:24px 0 8px;color:var(--grey-700);">Password</h3>
-        <form id="passwordForm" class="inline-form">
-          <div class="field">
-            <label>New password</label>
-            <input type="password" id="newPasswordInput" minlength="6" required />
-          </div>
-          <div class="field">
-            <label>Confirm new password</label>
-            <input type="password" id="confirmPasswordInput" minlength="6" required />
-          </div>
-          <button type="submit" class="btn-sm primary">Change password</button>
-        </form>
-        <p class="panel-note" id="passwordNote" style="display:none;"></p>
-
-        <h3 style="font-size:14px;margin:24px 0 8px;color:var(--grey-700);">Session</h3>
-        <a href="#" id="logoutLink" class="btn-sm danger" style="display:inline-block;text-decoration:none;">Log out</a>
+        <p class="panel-note">Signed in as <strong id="currentEmail">—</strong></p>
+        <a href="account-security.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage account &amp; security</a>
       </div>
 
       <div class="panel">
@@ -166,41 +140,6 @@
         showToast('Queue rules updated');
       });
 
-      document.getElementById('emailForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const note = document.getElementById('emailNote');
-        try {
-          await Qlinic.changeEmail(document.getElementById('newEmailInput').value);
-          note.style.display = 'block';
-          note.textContent = 'Check both your old and new inbox to confirm this change — it won’t take effect until then.';
-          e.target.reset();
-        } catch (err) {
-          note.style.display = 'block';
-          note.textContent = err.message || 'Could not change email.';
-        }
-      });
-
-      document.getElementById('passwordForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const note = document.getElementById('passwordNote');
-        const newPassword = document.getElementById('newPasswordInput').value;
-        const confirmPassword = document.getElementById('confirmPasswordInput').value;
-        if (newPassword !== confirmPassword) {
-          note.style.display = 'block';
-          note.textContent = "Passwords don't match.";
-          return;
-        }
-        try {
-          await Qlinic.changePassword(newPassword);
-          note.style.display = 'block';
-          note.textContent = 'Password updated.';
-          e.target.reset();
-        } catch (err) {
-          note.style.display = 'block';
-          note.textContent = err.message || 'Could not change password.';
-        }
-      });
-
       function applyTheme(theme) {
         Qlinic.setTheme(theme);
         document.querySelectorAll('[data-theme-choice]').forEach((btn) => {
@@ -209,12 +148,6 @@
       }
       document.querySelectorAll('[data-theme-choice]').forEach((btn) => {
         btn.addEventListener('click', () => applyTheme(btn.getAttribute('data-theme-choice')));
-      });
-
-      document.getElementById('logoutLink').addEventListener('click', async (e) => {
-        e.preventDefault();
-        await Qlinic.logout();
-        window.location.href = 'login.html';
       });
 
       document.getElementById('currentEmail').textContent = (await Qlinic.getCurrentUserEmail()) || '—';
