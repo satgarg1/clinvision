@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Doctors — Qlinic</title>
 <script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
-<link rel="stylesheet" href="styles.css?v=10" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=11" />
 </head>
 <body>
   <div class="app-shell">
@@ -30,7 +33,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-header"><span class="panel-icon icon-teal">🩺</span><h2>Add a doctor</h2></div>
+        <div class="panel-header"><h2>Add a doctor</h2></div>
         <form id="addDoctorForm" class="inline-form">
           <div class="field">
             <label>Name</label>
@@ -49,7 +52,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-header"><span class="panel-icon icon-blue">📋</span><h2>All doctors</h2></div>
+        <div class="panel-header"><h2>All doctors</h2></div>
         <div class="doctor-search-row">
           <input type="search" id="doctorSearch" placeholder="Search by name…" class="doctor-search-input" />
           <span class="panel-note" id="doctorCountNote"></span>
@@ -125,7 +128,7 @@
         }
         pager.innerHTML = `
           <button class="btn-sm" id="pagerPrev" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
-          <span class="pager-status">Page ${currentPage} of ${totalPages}</span>
+          <span class="pager-label">Page ${currentPage} of ${totalPages}</span>
           <button class="btn-sm" id="pagerNext" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
         `;
         document.getElementById('pagerPrev').addEventListener('click', () => { currentPage -= 1; renderDoctors(); });

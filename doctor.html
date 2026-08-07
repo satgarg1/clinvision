@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Doctor View — Qlinic</title>
 <script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
-<link rel="stylesheet" href="styles.css?v=10" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=11" />
 </head>
 <body>
   <div class="app-shell">
@@ -30,13 +33,13 @@
       </div>
 
       <div class="panel" id="viewingPanel">
-        <div class="panel-header"><span class="panel-icon icon-blue">👀</span><h2 style="font-size:15px;">Viewing as</h2></div>
+        <div class="panel-header"><h2 style="font-size:15px;">Viewing as</h2></div>
         <select id="doctorSelect" style="padding:10px 14px;border-radius:8px;border:1px solid var(--grey-300);font-size:14px;min-width:260px;"></select>
       </div>
 
       <div id="doctorPanels" style="display:none;">
         <div class="panel" id="statusPanel">
-          <div class="panel-header"><span class="panel-icon icon-purple">🩺</span><h2>Your status</h2></div>
+          <div class="panel-header"><h2>Your status</h2></div>
           <p style="font-size:13px;color:var(--grey-500);margin:0 0 16px;">
             One tap updates every waiting patient's estimate and the waiting-room screen — no one needs to interrupt you to ask.
           </p>
@@ -59,13 +62,13 @@
         </div>
 
         <div class="panel" id="nowServingPanel">
-          <div class="panel-header"><span class="panel-icon icon-teal">▶️</span><h2>Now serving</h2></div>
+          <div class="panel-header"><h2>Now serving</h2></div>
           <div id="nowServingBox"></div>
           <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;">Call next patient</button>
         </div>
 
         <div class="panel" id="waitingPanel">
-          <div class="panel-header"><span class="panel-icon icon-coral">⏳</span><h2 id="waitingHeading">Waiting</h2></div>
+          <div class="panel-header"><h2 id="waitingHeading">Waiting</h2></div>
           <div id="waitingList"></div>
         </div>
       </div>
