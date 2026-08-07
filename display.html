@@ -97,6 +97,136 @@
       };
       let T = STRINGS.en;
 
+      // Doctor/patient names and addresses are free text typed by staff in
+      // Latin script — there's no fixed translation for a person's name,
+      // only a phonetic transliteration into Devanagari. Plain English
+      // spelling is genuinely ambiguous about Hindi vowel length (e.g.
+      // "Yadav" is pronounced with a long first "a" — यादव, not यदव — that
+      // a purely mechanical letter-by-letter pass can't know), so common
+      // Indian names/surnames/place-words are special-cased here for
+      // accuracy; anything not in this list falls back to the phonetic
+      // approximation below, which won't always be perfect. This only
+      // affects what's rendered on this board — the stored data (and every
+      // other screen) always shows exactly what was typed.
+      const HI_WORD_DICT = {
+        garg: 'गर्ग', gupta: 'गुप्ता', sharma: 'शर्मा', verma: 'वर्मा', yadav: 'यादव',
+        singh: 'सिंह', kumar: 'कुमार', kumari: 'कुमारी', devi: 'देवी', khan: 'खान',
+        rao: 'राव', mehta: 'मेहता', patel: 'पटेल', reddy: 'रेड्डी', nair: 'नायर',
+        iyer: 'अय्यर', chopra: 'चोपड़ा', malhotra: 'मल्होत्रा', kapoor: 'कपूर',
+        agarwal: 'अग्रवाल', bansal: 'बंसल', jain: 'जैन', shah: 'शाह', joshi: 'जोशी',
+        pandey: 'पांडे', mishra: 'मिश्रा', tiwari: 'तिवारी', chauhan: 'चौहान',
+        rajput: 'राजपूत', thakur: 'ठाकुर', naidu: 'नायडू', rai: 'राय', dubey: 'दुबे',
+        trivedi: 'त्रिवेदी', saxena: 'सक्सेना', srivastava: 'श्रीवास्तव', bhatt: 'भट्ट',
+        menon: 'मेनन', mohammed: 'मोहम्मद', mohd: 'मोहम्मद', irfan: 'इरफ़ान',
+        ramesh: 'रमेश', suresh: 'सुरेश', rajesh: 'राजेश', mahesh: 'महेश',
+        dinesh: 'दिनेश', naresh: 'नरेश', mukesh: 'मुकेश', rakesh: 'राकेश',
+        ganesh: 'गणेश', umesh: 'उमेश', satyam: 'सत्यम', amit: 'अमित', sumit: 'सुमित',
+        vikram: 'विक्रम', vikas: 'विकास', ankit: 'अंकित', rohit: 'रोहित',
+        mohit: 'मोहित', sunil: 'सुनील', anil: 'अनिल', kapil: 'कपिल', nikhil: 'निखिल',
+        akhil: 'अखिल', sanjay: 'संजय', vijay: 'विजय', ajay: 'अजय', vinay: 'विनय',
+        uday: 'उदय', ravi: 'रवि', anand: 'आनंद', mohan: 'मोहन', rohan: 'रोहन',
+        karan: 'करण', arjun: 'अर्जुन', krishna: 'कृष्ण', ram: 'राम', shyam: 'श्याम',
+        deepak: 'दीपक', pankaj: 'पंकज', rajiv: 'राजीव', sanjiv: 'संजीव',
+        sanjeev: 'संजीव', manoj: 'मनोज', pramod: 'प्रमोद', vinod: 'विनोद',
+        ashok: 'अशोक', prakash: 'प्रकाश', subhash: 'सुभाष', venu: 'वेणु',
+        khushi: 'खुशी', priya: 'प्रिया', anjali: 'अंजलि', pooja: 'पूजा',
+        sunita: 'सुनीता', geeta: 'गीता', gita: 'गीता', rekha: 'रेखा', kavita: 'कविता',
+        sita: 'सीता', meena: 'मीना', reena: 'रीना', seema: 'सीमा', neha: 'नेहा',
+        neeta: 'नीता', anita: 'अनीता', sarita: 'सरिता', savita: 'सविता',
+        lata: 'लता', mamta: 'ममता', kiran: 'किरण', nisha: 'निशा', shanti: 'शांति',
+        radha: 'राधा', uma: 'उमा', usha: 'उषा', asha: 'आशा', vandana: 'वंदना',
+        archana: 'अर्चना', kalpana: 'कल्पना', indira: 'इंदिरा', sushma: 'सुष्मा',
+        kamla: 'कमला', kamala: 'कमला', vimla: 'विमला', nirmala: 'निर्मला',
+        vidya: 'विद्या', lakshmi: 'लक्ष्मी', saraswati: 'सरस्वती', durga: 'दुर्गा',
+        parvati: 'पार्वती', ganga: 'गंगा',
+        nagar: 'नगर', colony: 'कॉलोनी', sector: 'सेक्टर', vihar: 'विहार',
+        puram: 'पुरम', marg: 'मार्ग', chowk: 'चौक', bazaar: 'बाज़ार', gali: 'गली',
+        road: 'रोड', society: 'सोसाइटी', enclave: 'एन्क्लेव', park: 'पार्क',
+        mohalla: 'मोहल्ला', basti: 'बस्ती', camp: 'कैंप', ganj: 'गंज',
+        gandhi: 'गांधी', civil: 'सिविल', lines: 'लाइंस', shastri: 'शास्त्री',
+        model: 'मॉडल', town: 'टाउन', old: 'ओल्ड', city: 'सिटी', new: 'न्यू',
+        near: 'नियर', market: 'मार्केट',
+      };
+
+      function phoneticToDevanagari(word) {
+        const w = word.toLowerCase();
+        const consonants = [
+          ['ksh', 'क्ष'], ['gy', 'ज्ञ'], ['shh', 'ष'], ['chh', 'छ'],
+          ['kh', 'ख'], ['gh', 'घ'], ['ch', 'च'], ['jh', 'झ'], ['ng', 'ङ'], ['ny', 'ञ'],
+          ['th', 'थ'], ['dh', 'ध'], ['ph', 'फ'], ['bh', 'भ'], ['sh', 'श'],
+          ['k', 'क'], ['g', 'ग'], ['c', 'क'], ['j', 'ज'], ['t', 'त'], ['d', 'द'],
+          ['n', 'न'], ['p', 'प'], ['b', 'ब'], ['m', 'म'], ['y', 'य'], ['r', 'र'],
+          ['l', 'ल'], ['v', 'व'], ['w', 'व'], ['s', 'स'], ['h', 'ह'], ['f', 'फ़'],
+          ['z', 'ज़'], ['q', 'क़'], ['x', 'क्स'],
+        ];
+        const vowels = [
+          ['aa', 'आ', 'ा'], ['ee', 'ई', 'ी'], ['ii', 'ई', 'ी'], ['oo', 'ऊ', 'ू'],
+          ['ai', 'ऐ', 'ै'], ['au', 'औ', 'ौ'],
+          ['a', 'अ', ''], ['i', 'इ', 'ि'], ['u', 'उ', 'ु'], ['e', 'ए', 'े'], ['o', 'ओ', 'ो'],
+        ];
+        let out = '';
+        let i = 0;
+        while (i < w.length) {
+          const cons = consonants.find(([pat]) => w.startsWith(pat, i));
+          if (cons) {
+            i += cons[0].length;
+            const vow = vowels.find(([pat]) => w.startsWith(pat, i));
+            if (vow) { out += cons[1] + vow[2]; i += vow[0].length; }
+            else { out += cons[1]; }
+            continue;
+          }
+          const vow = vowels.find(([pat]) => w.startsWith(pat, i));
+          if (vow) { out += vow[1]; i += vow[0].length; continue; }
+          out += w[i]; // digits/punctuation pass through
+          i += 1;
+        }
+        return out;
+      }
+
+      function toDevanagari(text) {
+        if (!text) return text;
+        return text.split(/(\s+)/).map((token) => {
+          if (/^\s*$/.test(token)) return token;
+          const m = token.match(/^([A-Za-z]+)([^A-Za-z]*)$/);
+          if (!m) return token;
+          const [, word, rest] = m;
+          return (HI_WORD_DICT[word.toLowerCase()] || phoneticToDevanagari(word)) + rest;
+        }).join('');
+      }
+
+      // Specialty is picked from a fixed dropdown (Settings > Doctors), so
+      // unlike names it has a real, known-good Hindi translation rather
+      // than a phonetic guess — used whenever the value matches a known
+      // specialty; free-text "Other" specialties fall back to transliteration.
+      const SPECIALTY_HI = {
+        'General Physician': 'सामान्य चिकित्सक',
+        'Pediatrician': 'बाल रोग विशेषज्ञ',
+        'Gynecologist': 'स्त्री रोग विशेषज्ञ',
+        'Dermatologist': 'त्वचा रोग विशेषज्ञ',
+        'Dentist': 'दंत चिकित्सक',
+        'ENT Specialist': 'कान-नाक-गला विशेषज्ञ',
+        'Ophthalmologist': 'नेत्र रोग विशेषज्ञ',
+        'Orthopedic': 'अस्थि रोग विशेषज्ञ',
+        'Cardiologist': 'हृदय रोग विशेषज्ञ',
+        'Neurologist': 'तंत्रिका रोग विशेषज्ञ',
+        'Psychiatrist': 'मनोचिकित्सक',
+        'General Surgeon': 'सामान्य सर्जन',
+        'Urologist': 'मूत्र रोग विशेषज्ञ',
+        'Gastroenterologist': 'पेट रोग विशेषज्ञ',
+        'Endocrinologist': 'अंतःस्रावी रोग विशेषज्ञ',
+        'Pulmonologist': 'फेफड़ा रोग विशेषज्ञ',
+        'Diabetologist': 'मधुमेह विशेषज्ञ',
+        'Physiotherapist': 'फिजियोथेरेपिस्ट',
+      };
+
+      function localizeName(text) {
+        return T === STRINGS.hi ? toDevanagari(text) : text;
+      }
+      function localizeSpecialty(text) {
+        if (T !== STRINGS.hi) return text;
+        return SPECIALTY_HI[text] || toDevanagari(text);
+      }
+
       function statusLabel(status) {
         return {
           on_time: T.onTime,
@@ -119,8 +249,8 @@
           <div class="strip-card accent-${ACCENT_COLORS[index % ACCENT_COLORS.length]}">
             <div class="strip-top">
               <div>
-                <div class="strip-doc">${doctor.name}</div>
-                <div class="strip-spec">${doctor.specialty}</div>
+                <div class="strip-doc">${localizeName(doctor.name)}</div>
+                <div class="strip-spec">${localizeSpecialty(doctor.specialty)}</div>
               </div>
               ${doctor.status === 'on_time'
                 ? `<span class="strip-pill strip-pill-ok">${T.onTime}</span>`
@@ -128,7 +258,7 @@
             </div>
             <div class="strip-serving">
               <span class="tiny-label">${T.nowServing}</span>
-              <span class="strip-serving-name">${queue.nowServing ? queue.nowServing.name : '—'}</span>
+              <span class="strip-serving-name">${queue.nowServing ? localizeName(queue.nowServing.name) : '—'}</span>
             </div>
           </div>
         `).join('');
@@ -165,8 +295,8 @@
         return pageItems.map((p, i) => `
           <div class="board-row">
             <span class="board-pos">${startIdx + i + 1}</span>
-            <span class="board-name">${p.name}${p.address ? `<span class="board-sub">${p.address}</span>` : ''}</span>
-            <span class="board-doc"><span class="board-doc-dot dot-${p.doctorAccent}"></span>${p.doctorName}</span>
+            <span class="board-name">${localizeName(p.name)}${p.address ? `<span class="board-sub">${localizeName(p.address)}</span>` : ''}</span>
+            <span class="board-doc"><span class="board-doc-dot dot-${p.doctorAccent}"></span>${localizeName(p.doctorName)}</span>
             <span class="board-type">${p.type === 'appointment' ? T.appointment : T.walkin}</span>
             <span class="board-eta">~${p.eta}</span>
           </div>
