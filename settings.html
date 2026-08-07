@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Settings — Qlinic</title>
+<script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
+<link rel="stylesheet" href="styles.css?v=9" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <a href="index.html" class="brand">Qlinic</a>
+      <div class="clinic-name" id="clinicName">Loading…</div>
+      <nav>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="reception.html" class="nav-link">Reception</a>
+        <a href="doctor.html" class="nav-link">Doctor View</a>
+        <a href="display.html" class="nav-link">Display Screen</a>
+        <a href="settings.html" class="nav-link active">Settings</a>
+      </nav>
+      <a href="#" id="logoutLink" class="logout-link">Log out</a>
+    </aside>
+
+    <main class="app-main">
+      <div class="app-topbar">
+        <h1>Settings</h1>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><span class="panel-icon icon-blue">🏥</span><h2>Clinic profile</h2></div>
+        <form id="clinicForm" class="inline-form">
+          <div class="field" style="min-width:260px;">
+            <label>Clinic name</label>
+            <input type="text" id="clinicNameInput" required />
+          </div>
+          <button type="submit" class="btn-sm primary">Save</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><span class="panel-icon icon-purple">⏱️</span><h2>Queue rules</h2></div>
+        <p class="panel-note">
+          These control how the queue behaves for every doctor in your clinic.
+        </p>
+        <form id="rulesForm" class="inline-form">
+          <div class="field">
+            <label>Grace window (minutes)</label>
+            <input type="number" id="graceWindowInput" min="0" step="5" required />
+          </div>
+          <div class="field">
+            <label>Slot length (minutes)</label>
+            <input type="number" id="slotIntervalInput" min="5" step="5" required />
+          </div>
+          <div class="field">
+            <label>Max patients per slot</label>
+            <input type="number" id="slotCapacityInput" min="1" step="1" required />
+          </div>
+          <button type="submit" class="btn-sm primary">Save</button>
+        </form>
+        <p class="panel-note" style="margin-top:10px;margin-bottom:0;">
+          Grace window: how many minutes past a booked time before a no-show patient gets flagged as "likely no-show."
+          Slot length &amp; capacity: how bookings get bucketed for the overbooking warning in Reception.
+        </p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><span class="panel-icon icon-teal">🩺</span><h2>Doctors</h2></div>
+        <div id="doctorList"></div>
+        <h3 style="font-size:14px;margin:20px 0 8px;color:var(--grey-700);">Add a doctor</h3>
+        <form id="addDoctorForm" class="inline-form">
+          <div class="field">
+            <label>Name</label>
+            <input type="text" id="newDoctorName" placeholder="Dr. Jane Doe" required />
+          </div>
+          <div class="field">
+            <label>Specialty</label>
+            <input type="text" id="newDoctorSpecialty" placeholder="General Physician" />
+          </div>
+          <button type="submit" class="btn-sm primary">Add doctor</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><span class="panel-icon icon-coral">🔒</span><h2>Account &amp; security</h2></div>
+
+        <h3 style="font-size:14px;margin:0 0 8px;color:var(--grey-700);">Email</h3>
+        <p class="panel-note">Current: <strong id="currentEmail">—</strong></p>
+        <form id="emailForm" class="inline-form">
+          <div class="field">
+            <label>New email</label>
+            <input type="email" id="newEmailInput" required />
+          </div>
+          <button type="submit" class="btn-sm primary">Change email</button>
+        </form>
+        <p class="panel-note" id="emailNote" style="display:none;"></p>
+
+        <h3 style="font-size:14px;margin:24px 0 8px;color:var(--grey-700);">Password</h3>
+        <form id="passwordForm" class="inline-form">
+          <div class="field">
+            <label>New password</label>
+            <input type="password" id="newPasswordInput" minlength="6" required />
+          </div>
+          <div class="field">
+            <label>Confirm new password</label>
+            <input type="password" id="confirmPasswordInput" minlength="6" required />
+          </div>
+          <button type="submit" class="btn-sm primary">Change password</button>
+        </form>
+        <p class="panel-note" id="passwordNote" style="display:none;"></p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><span class="panel-icon icon-pink">🌗</span><h2>Appearance</h2></div>
+        <p class="panel-note">Applies on this device, for the Qlinic app screens (not the waiting-room display).</p>
+        <div class="mode-toggle" role="tablist" aria-label="Day or night theme">
+          <button type="button" class="mode-btn" data-theme-choice="light">☀️ Day</button>
+          <button type="button" class="mode-btn" data-theme-choice="dark">🌙 Night</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=8"></script>
+  <script>
+    (async function () {
+      await Qlinic.requireLogin('login.html');
+
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      function nameCell(p) {
+        return `<div>${p.name}</div><div class="sub-line">${p.specialty || 'No specialty on file'}</div>`;
+      }
+
+      async function renderDoctors() {
+        const doctors = await Qlinic.getDoctors({ includeInactive: true });
+        const box = document.getElementById('doctorList');
+        if (doctors.length === 0) {
+          box.innerHTML = '<div class="empty-state">No doctors yet — add your first one below.</div>';
+          return;
+        }
+        box.innerHTML = `
+          <table class="qtable">
+            <thead><tr><th>Name</th><th>Specialty</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              ${doctors.map((d) => `
+                <tr style="${d.isActive ? '' : 'opacity:0.5;'}">
+                  <td><input type="text" class="doc-edit-name" data-id="${d.id}" value="${d.name.replace(/"/g, '&quot;')}" style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);" /></td>
+                  <td><input type="text" class="doc-edit-specialty" data-id="${d.id}" value="${(d.specialty || '').replace(/"/g, '&quot;')}" style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);" /></td>
+                  <td>${d.isActive ? '<span class="badge badge-booked">Active</span>' : '<span class="badge badge-no-show">Deactivated</span>'}</td>
+                  <td style="white-space:nowrap;">
+                    <button class="btn-sm primary" onclick="doSaveDoctor('${d.id}')">Save</button>
+                    ${d.isActive
+                      ? `<button class="btn-sm danger" onclick="doSetDoctorActive('${d.id}', false)">Deactivate</button>`
+                      : `<button class="btn-sm" onclick="doSetDoctorActive('${d.id}', true)">Reactivate</button>`}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+
+      async function doSaveDoctor(id) {
+        const name = document.querySelector(`.doc-edit-name[data-id="${id}"]`).value;
+        const specialty = document.querySelector(`.doc-edit-specialty[data-id="${id}"]`).value;
+        await Qlinic.updateDoctor(id, { name, specialty });
+        showToast('Doctor updated');
+        renderDoctors();
+      }
+
+      async function doSetDoctorActive(id, isActive) {
+        if (!isActive && !confirm('Deactivate this doctor? They’ll disappear from Reception, Doctor View, and the display board, but their patient history is kept. You can reactivate them anytime.')) {
+          return;
+        }
+        await Qlinic.setDoctorActive(id, isActive);
+        showToast(isActive ? 'Doctor reactivated' : 'Doctor deactivated');
+        renderDoctors();
+      }
+      window.doSaveDoctor = doSaveDoctor;
+      window.doSetDoctorActive = doSetDoctorActive;
+
+      document.getElementById('addDoctorForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('newDoctorName').value;
+        const specialty = document.getElementById('newDoctorSpecialty').value;
+        await Qlinic.addDoctor({ name, specialty });
+        e.target.reset();
+        showToast('Doctor added');
+        renderDoctors();
+      });
+
+      async function loadClinic() {
+        const clinic = await Qlinic.getClinic();
+        if (!clinic) return;
+        document.getElementById('clinicName').textContent = clinic.name;
+        document.getElementById('clinicNameInput').value = clinic.name;
+        document.getElementById('graceWindowInput').value = clinic.grace_window_mins;
+        document.getElementById('slotIntervalInput').value = clinic.slot_interval_mins;
+        document.getElementById('slotCapacityInput').value = clinic.slot_capacity;
+      }
+
+      document.getElementById('clinicForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await Qlinic.updateClinic({ name: document.getElementById('clinicNameInput').value });
+        showToast('Clinic name updated');
+        loadClinic();
+      });
+
+      document.getElementById('rulesForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await Qlinic.updateClinic({
+          graceWindowMins: document.getElementById('graceWindowInput').value,
+          slotIntervalMins: document.getElementById('slotIntervalInput').value,
+          slotCapacity: document.getElementById('slotCapacityInput').value,
+        });
+        showToast('Queue rules updated');
+      });
+
+      document.getElementById('emailForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const note = document.getElementById('emailNote');
+        try {
+          await Qlinic.changeEmail(document.getElementById('newEmailInput').value);
+          note.style.display = 'block';
+          note.textContent = 'Check both your old and new inbox to confirm this change — it won’t take effect until then.';
+          e.target.reset();
+        } catch (err) {
+          note.style.display = 'block';
+          note.textContent = err.message || 'Could not change email.';
+        }
+      });
+
+      document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const note = document.getElementById('passwordNote');
+        const newPassword = document.getElementById('newPasswordInput').value;
+        const confirmPassword = document.getElementById('confirmPasswordInput').value;
+        if (newPassword !== confirmPassword) {
+          note.style.display = 'block';
+          note.textContent = "Passwords don't match.";
+          return;
+        }
+        try {
+          await Qlinic.changePassword(newPassword);
+          note.style.display = 'block';
+          note.textContent = 'Password updated.';
+          e.target.reset();
+        } catch (err) {
+          note.style.display = 'block';
+          note.textContent = err.message || 'Could not change password.';
+        }
+      });
+
+      function applyTheme(theme) {
+        Qlinic.setTheme(theme);
+        document.querySelectorAll('[data-theme-choice]').forEach((btn) => {
+          btn.classList.toggle('active', btn.getAttribute('data-theme-choice') === theme);
+        });
+      }
+      document.querySelectorAll('[data-theme-choice]').forEach((btn) => {
+        btn.addEventListener('click', () => applyTheme(btn.getAttribute('data-theme-choice')));
+      });
+
+      document.getElementById('logoutLink').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await Qlinic.logout();
+        window.location.href = 'login.html';
+      });
+
+      document.getElementById('currentEmail').textContent = (await Qlinic.getCurrentUserEmail()) || '—';
+      await loadClinic();
+      await renderDoctors();
+      applyTheme(Qlinic.getTheme());
+      Qlinic.onLiveChange(renderDoctors);
+    })();
+  </script>
+</body>
+</html>

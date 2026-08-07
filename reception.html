@@ -4,7 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Reception — Qlinic</title>
-<link rel="stylesheet" href="styles.css?v=7" />
+<script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
+<link rel="stylesheet" href="styles.css?v=9" />
 </head>
 <body>
   <div class="app-shell">
@@ -16,6 +17,7 @@
         <a href="reception.html" class="nav-link active">Reception</a>
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="display.html" class="nav-link">Display Screen</a>
+        <a href="settings.html" class="nav-link">Settings</a>
       </nav>
       <a href="#" id="logoutLink" class="logout-link">Log out</a>
     </aside>
@@ -109,7 +111,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=7"></script>
+  <script src="clinic-data.js?v=8"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');

@@ -21,6 +21,13 @@
   --danger-bg: #fce8e6;
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --radius: 14px;
+  /* Fixed dark surface + text colors that stay the same regardless of the
+     day/night toggle (the app sidebar) — deliberately NOT the same
+     variables as --black/--white/--grey-*, which flip in dark mode. */
+  --sidebar-bg: #1d1d1f;
+  --sidebar-text: #d2d2d7;
+  --sidebar-text-muted: #86868b;
+  --sidebar-hover-bg: #2b2b2d;
 
   /* Marketing-page-only accent palette (the logged-in app keeps its single
      --accent blue; the landing page uses this wider set for use-case cards,
@@ -35,6 +42,29 @@
   --mkt-coral-bg: #ffedd5;
   --mkt-pink: #db2777;
   --mkt-pink-bg: #fce7f3;
+}
+
+/* Day/Night toggle (Settings page) — a personal, local-device preference
+   for the logged-in app only (reception/doctor/dashboard/settings). The
+   marketing site, login/signup, and the waiting-room display board are
+   intentionally unaffected: the display board's dark look is a fixed
+   product/design choice for a TV screen, not a "night mode" preference. */
+:root[data-theme="dark"] {
+  --black: #f2f2f4;
+  --grey-900: #3a3a3c;
+  --grey-700: #c7c7cc;
+  --grey-500: #98989d;
+  --grey-300: #48484a;
+  --grey-100: #232325;
+  --white: #1c1c1e;
+  --success-bg: rgba(30, 142, 62, 0.22);
+  --warning-bg: rgba(178, 106, 0, 0.24);
+  --danger-bg: rgba(197, 34, 31, 0.22);
+  --mkt-teal-bg: rgba(13, 148, 136, 0.22);
+  --mkt-blue-bg: rgba(37, 99, 235, 0.24);
+  --mkt-purple-bg: rgba(124, 58, 237, 0.24);
+  --mkt-coral-bg: rgba(249, 115, 22, 0.22);
+  --mkt-pink-bg: rgba(219, 39, 119, 0.22);
 }
 
 * { box-sizing: border-box; }
@@ -500,6 +530,10 @@ a { color: inherit; }
   color: var(--grey-700);
   margin-bottom: 6px;
 }
+.field input, .field select {
+  background: var(--white);
+  color: var(--black);
+}
 .field input {
   width: 100%;
   padding: 12px 14px;
@@ -534,8 +568,8 @@ a { color: inherit; }
 .app-sidebar {
   width: 220px;
   flex-shrink: 0;
-  background: var(--black);
-  color: var(--white);
+  background: var(--sidebar-bg);
+  color: #ffffff;
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
@@ -544,7 +578,7 @@ a { color: inherit; }
 .app-sidebar .brand {
   font-size: 18px;
   font-weight: 700;
-  color: var(--white);
+  color: #ffffff;
   text-decoration: none;
   padding: 0 8px;
   margin-bottom: 28px;
@@ -556,17 +590,17 @@ a { color: inherit; }
 .app-sidebar a.nav-link {
   padding: 10px 12px;
   border-radius: 8px;
-  color: var(--grey-300);
+  color: var(--sidebar-text);
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
 }
-.app-sidebar a.nav-link:hover { background: var(--grey-900); color: var(--white); }
-.app-sidebar a.nav-link.active { background: var(--accent); color: var(--white); }
+.app-sidebar a.nav-link:hover { background: var(--sidebar-hover-bg); color: #ffffff; }
+.app-sidebar a.nav-link.active { background: var(--accent); color: #ffffff; }
 
 .app-sidebar .clinic-name {
   font-size: 12px;
-  color: var(--grey-500);
+  color: var(--sidebar-text-muted);
   padding: 0 8px;
   margin-bottom: 16px;
 }
@@ -574,10 +608,10 @@ a { color: inherit; }
 .app-sidebar .logout-link {
   padding: 10px 12px;
   font-size: 13px;
-  color: var(--grey-500);
+  color: var(--sidebar-text-muted);
   text-decoration: none;
 }
-.app-sidebar .logout-link:hover { color: var(--white); }
+.app-sidebar .logout-link:hover { color: #ffffff; }
 
 .app-main {
   flex: 1;
@@ -690,7 +724,7 @@ table.qtable tr:last-child td { border-bottom: none; }
   cursor: pointer;
 }
 .btn-sm:hover { border-color: var(--black); }
-.btn-sm.primary { background: var(--accent); color: var(--white); border-color: var(--accent); }
+.btn-sm.primary { background: var(--accent); color: #ffffff; border-color: var(--accent); }
 .btn-sm.primary:hover { background: var(--accent-dark); }
 .btn-sm.danger { color: var(--danger); }
 
@@ -813,8 +847,8 @@ table.qtable tr:last-child td { border-bottom: none; }
   position: fixed;
   bottom: 24px;
   right: 24px;
-  background: var(--black);
-  color: var(--white);
+  background: var(--sidebar-bg);
+  color: #ffffff;
   padding: 12px 20px;
   border-radius: 10px;
   font-size: 14px;
@@ -1006,8 +1040,10 @@ table.qtable tr:last-child td { border-bottom: none; }
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .mode-btn:hover { border-color: var(--grey-500); }
-.mode-btn.active[data-mode="walkin"] { background: var(--grey-900); border-color: var(--grey-900); color: var(--white); }
-.mode-btn.active[data-mode="appointment"] { background: var(--accent); border-color: var(--accent); color: var(--white); }
+.mode-btn.active[data-mode="walkin"] { background: var(--grey-900); border-color: var(--grey-900); color: #ffffff; }
+.mode-btn.active[data-mode="appointment"] { background: var(--accent); border-color: var(--accent); color: #ffffff; }
+.mode-btn.active[data-theme-choice="light"] { background: var(--accent); border-color: var(--accent); color: #ffffff; }
+.mode-btn.active[data-theme-choice="dark"] { background: var(--grey-900); border-color: var(--grey-900); color: #ffffff; }
 
 .order-note {
   font-weight: 400;
