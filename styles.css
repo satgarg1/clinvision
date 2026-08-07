@@ -628,6 +628,43 @@ a { color: inherit; }
   margin: 0;
 }
 
+.breadcrumb {
+  font-size: 13px;
+  color: var(--grey-500);
+  margin-bottom: 4px;
+}
+.breadcrumb a { color: var(--grey-500); text-decoration: none; }
+.breadcrumb a:hover { color: var(--accent); }
+.breadcrumb span { margin: 0 4px; }
+
+.doctor-search-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.doctor-search-input {
+  flex: 1;
+  max-width: 320px;
+  padding: 10px 14px;
+  border: 1px solid var(--grey-300);
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 14px;
+  background: var(--white);
+  color: var(--black);
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 18px;
+}
+.pager-status { font-size: 13px; color: var(--grey-500); }
+
 .clock-pill {
   display: flex;
   align-items: center;
@@ -715,6 +752,7 @@ table.qtable tr:last-child td { border-bottom: none; }
   background: var(--white);
   cursor: pointer;
 }
+.btn-sm:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-sm:hover { border-color: var(--black); }
 .btn-sm.primary { background: var(--accent); color: #ffffff; border-color: var(--accent); }
 .btn-sm.primary:hover { background: var(--accent-dark); }
