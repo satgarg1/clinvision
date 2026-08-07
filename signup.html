@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Register your clinic — Qlinic</title>
+<link rel="stylesheet" href="styles.css?v=7" />
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-blob login-blob-teal"></div>
+    <div class="login-blob login-blob-coral"></div>
+    <div class="login-blob login-blob-purple"></div>
+    <div class="login-card" style="max-width:440px;">
+      <a href="index.html" class="brand">Qlinic</a>
+      <h1>Register your clinic</h1>
+
+      <div id="signupError" class="login-error"></div>
+
+      <form id="signupForm">
+        <div class="field">
+          <label for="clinicName">Clinic name</label>
+          <input type="text" id="clinicName" placeholder="e.g., Rao Family Clinic" required />
+        </div>
+        <div class="field">
+          <label for="email">Your email</label>
+          <input type="email" id="email" required />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" minlength="6" required />
+        </div>
+        <button type="submit" class="btn btn-accent" id="signupBtn" style="width:100%;">Create account</button>
+      </form>
+
+      <div class="login-hint" id="signupHint">
+        Already registered? <a href="login.html">Log in</a> instead.
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=7"></script>
+  <script>
+    document.getElementById('signupForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const btn = document.getElementById('signupBtn');
+      const errorBox = document.getElementById('signupError');
+      errorBox.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+      try {
+        const clinicName = document.getElementById('clinicName').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const result = await Qlinic.signUp(email, password, clinicName);
+
+        if (result.session) {
+          // Email confirmation is off for this project — clinic is set up
+          // and the user is already logged in.
+          window.location.href = 'dashboard.html';
+          return;
+        }
+
+        // Email confirmation is required — the clinic gets created
+        // automatically the moment they confirm and log in for the first
+        // time (see finishClinicSetupIfNeeded in clinic-data.js).
+        document.getElementById('signupForm').style.display = 'none';
+        document.getElementById('signupHint').innerHTML =
+          `<strong>Check your email</strong> to confirm your account. Once confirmed, ` +
+          `<a href="login.html">log in</a> and "${clinicName}" will be set up automatically.`;
+      } catch (err) {
+        errorBox.textContent = err.message || 'Something went wrong creating your account.';
+        errorBox.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create account';
+      }
+    });
+  </script>
+</body>
+</html>

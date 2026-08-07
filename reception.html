@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Reception — Qlinic</title>
-<link rel="stylesheet" href="styles.css?v=5" />
+<link rel="stylesheet" href="styles.css?v=7" />
 </head>
 <body>
   <div class="app-shell">
@@ -24,8 +24,7 @@
       <div class="app-topbar">
         <h1>Reception</h1>
         <div class="clock-pill">
-          <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Clinic time: <span class="time" id="clockTime">--</span></span>
-          <button id="advanceTimeBtn">+15 min (demo)</button>
+          <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Time: <span class="time" id="clockTime">--</span></span>
         </div>
       </div>
 
@@ -108,380 +107,389 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="data.js?v=5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=7"></script>
   <script>
-    Qlinic.requireLogin('login.html');
+    (async function () {
+      await Qlinic.requireLogin('login.html');
 
-    const BOOKED_PAGE_SIZE = 8;
-    let patientMode = 'appointment';
-    let queueDoctorId = null;
-    let queueViewDate = null;
-    let bookedExpanded = false;
-    let bookedPage = 0;
+      const BOOKED_PAGE_SIZE = 8;
+      let patientMode = 'appointment';
+      let queueDoctorId = null;
+      let queueViewDate = null;
+      let bookedExpanded = false;
+      let bookedPage = 0;
+      let doctorsCache = [];
 
-    // Same 5-color identity palette used app-wide — each doctor keeps the same
-    // color on reception, the doctor view, and the waiting-room board.
-    const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
-    function accentForDoctor(doctorId) {
-      const idx = Qlinic.getDoctors().findIndex((d) => d.id === doctorId);
-      return ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
-    }
-
-    function showToast(msg) {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 2200);
-    }
-
-    function fillDoctorSelects() {
-      const opts = Qlinic.getDoctors().map((d) => `<option value="${d.id}">${d.name} — ${d.specialty}</option>`).join('');
-      document.getElementById('pDoctor').innerHTML = opts;
-    }
-
-    // Walk-in and phoned-appointment used to be two separate, near-identical
-    // forms stacked on the page — easy to fill in the wrong one by habit. One
-    // form with an explicit mode toggle means there's only one place to type,
-    // and the choice of "who is this" has to be made on purpose first.
-    function setPatientMode(mode) {
-      patientMode = mode;
-      document.querySelectorAll('.mode-btn').forEach((btn) => {
-        const active = btn.getAttribute('data-mode') === mode;
-        btn.classList.toggle('active', active);
-        btn.setAttribute('aria-selected', String(active));
-      });
-      document.getElementById('patientPanel').classList.toggle('mode-walkin', mode === 'walkin');
-      document.getElementById('patientPanel').classList.toggle('mode-appointment', mode === 'appointment');
-      document.querySelectorAll('.mode-only-walkin').forEach((el) => { el.style.display = mode === 'walkin' ? '' : 'none'; });
-      document.querySelectorAll('.mode-only-appointment').forEach((el) => { el.style.display = mode === 'appointment' ? '' : 'none'; });
-      document.getElementById('pTime').required = mode === 'appointment';
-      document.getElementById('pDate').required = mode === 'appointment';
-      document.getElementById('modeHint').textContent = mode === 'walkin'
-        ? "They're standing at the desk — this queues them immediately."
-        : 'Booking a call-in appointment ahead of time — pick when they should arrive.';
-      document.getElementById('patientSubmitBtn').textContent = mode === 'walkin' ? 'Add walk-in & queue now' : 'Add appointment';
-      updateSlotHint();
-    }
-
-    document.querySelectorAll('.mode-btn').forEach((btn) => {
-      btn.addEventListener('click', () => setPatientMode(btn.getAttribute('data-mode')));
-    });
-
-    // Two "Ramesh Kumar"s look identical in a name-only list — the address line
-    // is what actually tells reception (or the doctor) which one is which.
-    function nameCell(p) {
-      return `<div>${p.name}</div><div class="sub-line">${p.address ? p.address : 'No address on file'}</div>`;
-    }
-
-    // The Waiting list is sorted by scheduled/effective time, not raw arrival
-    // time — a walk-in's "effective" slot is when they arrived, an appointment's
-    // is its booked time plus any doctor delay. Showing arrival time as the only
-    // visible column made the order look random, since that's not what it's
-    // sorted by. This shows the actual sort key first, with the raw time as
-    // context underneath.
-    function queueTimeCell(p) {
-      const primary = Qlinic.formatTime(p.effectiveMinutes);
-      const secondary = p.type === 'appointment'
-        ? `booked ${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}`
-        : `arrived ${p.arrivedAt ? Qlinic.formatTime(Qlinic.parseTime(p.arrivedAt)) : '—'}`;
-      return `<div>${primary}</div><div class="sub-line">${secondary}</div>`;
-    }
-
-    function updateSlotHint() {
-      const hint = document.getElementById('slotHint');
-      if (patientMode !== 'appointment') { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
-      const doctorId = document.getElementById('pDoctor').value;
-      const date = document.getElementById('pDate').value;
-      const time = document.getElementById('pTime').value;
-      if (!doctorId || !date || !time) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
-      // Checked against the REAL device clock, not the simulated clinic
-      // clock — a phone call happens in real time regardless of how far the
-      // demo's "+15 min" button has fast-forwarded the clinic's day. Hard
-      // block, nothing to override.
-      if (Qlinic.isPastRealDateTime(date, time)) {
-        hint.className = 'slot-hint error';
-        hint.innerHTML = `⛔ That date and time has already passed. Pick a later time.`;
-        return;
+      // Same 5-color identity palette used app-wide — each doctor keeps the
+      // same color on reception, the doctor view, and the waiting-room board.
+      const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
+      function accentForDoctor(doctorId) {
+        const idx = doctorsCache.findIndex((d) => d.id === doctorId);
+        return ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
       }
-      const avail = Qlinic.getSlotAvailability(doctorId, date, time);
-      if (!avail) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
-      if (avail.isFull) {
-        hint.className = 'slot-hint warn';
-        hint.innerHTML = `⚠ ${avail.count} patients already booked around this time (max ${avail.capacity} per slot). Next open slot: <strong>${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}</strong> — <button type="button" class="btn-sm" id="useSuggestedTimeBtn">Use this time</button>`;
-        document.getElementById('useSuggestedTimeBtn').addEventListener('click', () => {
-          document.getElementById('pTime').value = avail.suggestion;
-          updateSlotHint();
+
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      async function refreshDoctorsCache() {
+        doctorsCache = await Qlinic.getDoctors();
+        return doctorsCache;
+      }
+
+      function fillDoctorSelects() {
+        const opts = doctorsCache.map((d) => `<option value="${d.id}">${d.name} — ${d.specialty}</option>`).join('');
+        document.getElementById('pDoctor').innerHTML = opts;
+      }
+
+      // Walk-in and phoned-appointment used to be two separate, near-identical
+      // forms stacked on the page — easy to fill in the wrong one by habit.
+      // One form with an explicit mode toggle means there's only one place
+      // to type, and the choice of "who is this" has to be made on purpose
+      // first.
+      function setPatientMode(mode) {
+        patientMode = mode;
+        document.querySelectorAll('.mode-btn').forEach((btn) => {
+          const active = btn.getAttribute('data-mode') === mode;
+          btn.classList.toggle('active', active);
+          btn.setAttribute('aria-selected', String(active));
         });
-      } else {
-        hint.className = 'slot-hint ok';
-        hint.innerHTML = `✓ ${avail.count}/${avail.capacity} booked at this time — room to add.`;
+        document.getElementById('patientPanel').classList.toggle('mode-walkin', mode === 'walkin');
+        document.getElementById('patientPanel').classList.toggle('mode-appointment', mode === 'appointment');
+        document.querySelectorAll('.mode-only-walkin').forEach((el) => { el.style.display = mode === 'walkin' ? '' : 'none'; });
+        document.querySelectorAll('.mode-only-appointment').forEach((el) => { el.style.display = mode === 'appointment' ? '' : 'none'; });
+        document.getElementById('pTime').required = mode === 'appointment';
+        document.getElementById('pDate').required = mode === 'appointment';
+        document.getElementById('modeHint').textContent = mode === 'walkin'
+          ? "They're standing at the desk — this queues them immediately."
+          : 'Booking a call-in appointment ahead of time — pick when they should arrive.';
+        document.getElementById('patientSubmitBtn').textContent = mode === 'walkin' ? 'Add walk-in & queue now' : 'Add appointment';
+        updateSlotHint();
       }
-    }
 
-    function renderSearch() {
-      const q = document.getElementById('searchBox').value;
-      const box = document.getElementById('searchResults');
-      if (!q.trim()) { box.innerHTML = ''; return; }
-      const results = Qlinic.searchBookedPatients(q);
-      if (results.length === 0) {
-        box.innerHTML = '<div class="empty-state">No booked patient matches "' + q + '". Add them as a walk-in instead.</div>';
-        return;
+      document.querySelectorAll('.mode-btn').forEach((btn) => {
+        btn.addEventListener('click', () => setPatientMode(btn.getAttribute('data-mode')));
+      });
+
+      // Two "Ramesh Kumar"s look identical in a name-only list — the address
+      // line is what actually tells reception (or the doctor) which one is
+      // which.
+      function nameCell(p) {
+        return `<div>${p.name}</div><div class="sub-line">${p.address ? p.address : 'No address on file'}</div>`;
       }
-      box.innerHTML = `
-        <table class="qtable">
-          <thead><tr><th>Name</th><th>Phone</th><th>Doctor</th><th>Booked</th><th>Status</th><th></th></tr></thead>
-          <tbody>
-            ${results.map((p) => {
-              const doc = Qlinic.getDoctor(p.doctorId);
-              return `
-                <tr>
-                  <td>${nameCell(p)}</td>
-                  <td>${p.phone}</td>
-                  <td>${doc.name}</td>
-                  <td>${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}</td>
-                  <td>${p.likelyNoShow ? '<span class="badge badge-likely">Likely no-show</span>' : '<span class="badge badge-booked">Not yet arrived</span>'}</td>
-                  <td><button class="btn-sm primary" onclick="doMarkArrived('${p.id}')">Mark arrived</button></td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      `;
-    }
 
-    function doMarkArrived(id) {
-      Qlinic.markArrived(id);
-      document.getElementById('searchBox').value = '';
-      renderSearch();
-      renderQueues();
-      showToast('Marked arrived — added to the live queue');
-    }
+      // The Waiting list is sorted by scheduled/effective time, not raw
+      // arrival time — a walk-in's "effective" slot is when they arrived, an
+      // appointment's is its booked time plus any doctor delay.
+      function queueTimeCell(p) {
+        const primary = Qlinic.formatTimestamp(p.effectiveTime);
+        const secondary = p.type === 'appointment'
+          ? `booked ${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}`
+          : `arrived ${Qlinic.formatTimestamp(p.arrivedAt)}`;
+        return `<div>${primary}</div><div class="sub-line">${secondary}</div>`;
+      }
 
-    function doMarkNoShow(id) {
-      if (confirm('Mark this patient as a no-show?')) {
-        Qlinic.markNoShow(id);
+      async function updateSlotHint() {
+        const hint = document.getElementById('slotHint');
+        if (patientMode !== 'appointment') { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
+        const doctorId = document.getElementById('pDoctor').value;
+        const date = document.getElementById('pDate').value;
+        const time = document.getElementById('pTime').value;
+        if (!doctorId || !date || !time) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
+        // Checked against the REAL device clock — a phone call happens in
+        // real time. Hard block, nothing to override.
+        if (Qlinic.isPastRealDateTime(date, time)) {
+          hint.className = 'slot-hint error';
+          hint.innerHTML = `⛔ That date and time has already passed. Pick a later time.`;
+          return;
+        }
+        const avail = await Qlinic.getSlotAvailability(doctorId, date, time);
+        if (!avail) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
+        if (avail.isFull) {
+          hint.className = 'slot-hint warn';
+          hint.innerHTML = `⚠ ${avail.count} patients already booked around this time (max ${avail.capacity} per slot). Next open slot: <strong>${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}</strong> — <button type="button" class="btn-sm" id="useSuggestedTimeBtn">Use this time</button>`;
+          document.getElementById('useSuggestedTimeBtn').addEventListener('click', () => {
+            document.getElementById('pTime').value = avail.suggestion;
+            updateSlotHint();
+          });
+        } else {
+          hint.className = 'slot-hint ok';
+          hint.innerHTML = `✓ ${avail.count}/${avail.capacity} booked at this time — room to add.`;
+        }
+      }
+
+      async function renderSearch() {
+        const q = document.getElementById('searchBox').value;
+        const box = document.getElementById('searchResults');
+        if (!q.trim()) { box.innerHTML = ''; return; }
+        const results = await Qlinic.searchBookedPatients(q);
+        if (results.length === 0) {
+          box.innerHTML = '<div class="empty-state">No booked patient matches "' + q + '". Add them as a walk-in instead.</div>';
+          return;
+        }
+        const doctorById = Object.fromEntries(doctorsCache.map((d) => [d.id, d]));
+        box.innerHTML = `
+          <table class="qtable">
+            <thead><tr><th>Name</th><th>Phone</th><th>Doctor</th><th>Booked</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              ${results.map((p) => {
+                const doc = doctorById[p.doctorId];
+                return `
+                  <tr>
+                    <td>${nameCell(p)}</td>
+                    <td>${p.phone}</td>
+                    <td>${doc ? doc.name : '—'}</td>
+                    <td>${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}</td>
+                    <td>${p.likelyNoShow ? '<span class="badge badge-likely">Likely no-show</span>' : '<span class="badge badge-booked">Not yet arrived</span>'}</td>
+                    <td><button class="btn-sm primary" onclick="doMarkArrived('${p.id}')">Mark arrived</button></td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+
+      async function doMarkArrived(id) {
+        await Qlinic.markArrived(id);
+        document.getElementById('searchBox').value = '';
+        renderSearch();
         renderQueues();
-        showToast('Marked as no-show');
+        showToast('Marked arrived — added to the live queue');
       }
-    }
 
-    // A dropdown per doctor (mirroring the "Viewing as" pattern on the Doctor
-    // View page) instead of stacking every doctor's full queue on the page —
-    // with 2 doctors that's a long scroll, with 20 it's unusable. Picking a
-    // doctor by name is a dropdown regardless of whether there are 2 or 20.
-    // Counts shown reflect whichever date is currently selected, not always today.
-    function fillQueueDoctorFilter() {
-      const sel = document.getElementById('queueDoctorFilter');
-      const doctors = Qlinic.getDoctors();
-      if (!queueDoctorId || !doctors.find((d) => d.id === queueDoctorId)) {
-        queueDoctorId = doctors.length ? doctors[0].id : null;
+      async function doMarkNoShow(id) {
+        if (confirm('Mark this patient as a no-show?')) {
+          await Qlinic.markNoShow(id);
+          renderQueues();
+          showToast('Marked as no-show');
+        }
       }
-      sel.innerHTML = doctors.map((d) => {
-        const q = Qlinic.getQueueForDoctor(d.id, queueViewDate);
-        const countLabel = queueViewDate === Qlinic.getTodayDate() ? `${q.waiting.length} waiting` : `${q.booked.length} booked`;
-        return `<option value="${d.id}" ${d.id === queueDoctorId ? 'selected' : ''}>${d.name} — ${d.specialty} (${countLabel})</option>`;
-      }).join('');
-    }
+      window.doMarkArrived = doMarkArrived;
+      window.doMarkNoShow = doMarkNoShow;
 
-    document.getElementById('queueDoctorFilter').addEventListener('change', (e) => {
-      queueDoctorId = e.target.value;
-      bookedExpanded = false;
-      bookedPage = 0;
-      renderQueues();
-    });
+      // A dropdown per doctor (mirroring the "Viewing as" pattern on the
+      // Doctor View page) instead of stacking every doctor's full queue on
+      // the page. Counts shown reflect whichever date is currently selected.
+      async function fillQueueDoctorFilter() {
+        const sel = document.getElementById('queueDoctorFilter');
+        const doctors = doctorsCache;
+        if (!queueDoctorId || !doctors.find((d) => d.id === queueDoctorId)) {
+          queueDoctorId = doctors.length ? doctors[0].id : null;
+        }
+        const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id, queueViewDate)));
+        const isToday = queueViewDate === Qlinic.getTodayDate();
+        sel.innerHTML = doctors.map((d, i) => {
+          const q = queues[i];
+          const countLabel = isToday ? `${q.waiting.length} waiting` : `${q.booked.length} booked`;
+          return `<option value="${d.id}" ${d.id === queueDoctorId ? 'selected' : ''}>${d.name} — ${d.specialty} (${countLabel})</option>`;
+        }).join('');
+      }
 
-    document.getElementById('queueDateFilter').addEventListener('change', (e) => {
-      queueViewDate = e.target.value || Qlinic.getTodayDate();
-      bookedExpanded = false;
-      bookedPage = 0;
-      renderQueues();
-    });
+      document.getElementById('queueDoctorFilter').addEventListener('change', (e) => {
+        queueDoctorId = e.target.value;
+        bookedExpanded = false;
+        bookedPage = 0;
+        renderQueues();
+      });
 
-    document.getElementById('queueTodayBtn').addEventListener('click', () => {
-      queueViewDate = Qlinic.getTodayDate();
-      document.getElementById('queueDateFilter').value = queueViewDate;
-      bookedExpanded = false;
-      bookedPage = 0;
-      renderQueues();
-    });
+      document.getElementById('queueDateFilter').addEventListener('change', (e) => {
+        queueViewDate = e.target.value || Qlinic.getTodayDate();
+        bookedExpanded = false;
+        bookedPage = 0;
+        renderQueues();
+      });
 
-    function renderQueues() {
-      if (!queueViewDate) queueViewDate = Qlinic.getTodayDate();
-      document.getElementById('queueDateFilter').value = queueViewDate;
-      fillQueueDoctorFilter();
-      const panelEl = document.getElementById('queuePanel');
-      if (!queueDoctorId) { panelEl.innerHTML = ''; return; }
+      document.getElementById('queueTodayBtn').addEventListener('click', () => {
+        queueViewDate = Qlinic.getTodayDate();
+        document.getElementById('queueDateFilter').value = queueViewDate;
+        bookedExpanded = false;
+        bookedPage = 0;
+        renderQueues();
+      });
 
-      const isTodayView = queueViewDate === Qlinic.getTodayDate();
-      const doctor = Qlinic.getDoctor(queueDoctorId);
-      const queue = Qlinic.getQueueForDoctor(queueDoctorId, queueViewDate);
+      async function renderQueues() {
+        await refreshDoctorsCache();
+        if (!queueViewDate) queueViewDate = Qlinic.getTodayDate();
+        document.getElementById('queueDateFilter').value = queueViewDate;
 
-      // Waiting is bounded by how many people can physically be in the room —
-      // it stays fully visible since it's the list reception acts on minute to
-      // minute. Booked-not-yet-arrived is the day's full schedule (could be
-      // dozens on a busy day), so it's the one that's collapsed by default and
-      // paginated — it's reference data reception checks occasionally, not
-      // something that needs to dominate the screen (the search box above
-      // already covers "find one specific booked patient").
-      const totalBookedPages = Math.max(1, Math.ceil(queue.booked.length / BOOKED_PAGE_SIZE));
-      if (bookedPage >= totalBookedPages) bookedPage = 0;
-      const bookedPageItems = queue.booked.slice(bookedPage * BOOKED_PAGE_SIZE, bookedPage * BOOKED_PAGE_SIZE + BOOKED_PAGE_SIZE);
-      const likelyCount = queue.booked.filter((p) => p.likelyNoShow).length;
-      const dateLabel = Qlinic.formatDateLabel(queueViewDate);
+        const panelEl = document.getElementById('queuePanel');
+        if (doctorsCache.length === 0) {
+          panelEl.innerHTML = '<div class="panel"><div class="empty-state">No doctors set up yet. Add one from the <a href="dashboard.html">Dashboard</a> first.</div></div>';
+          document.getElementById('queueDoctorFilter').innerHTML = '';
+          return;
+        }
 
-      panelEl.innerHTML = `
-        <div class="panel accent-${accentForDoctor(queueDoctorId)}">
-          <div class="panel-header"><span class="board-doc-dot dot-${accentForDoctor(queueDoctorId)}"></span><h2>${doctor.name} — ${doctor.specialty}</h2><span class="date-pill">${dateLabel}</span></div>
-          ${isTodayView ? `
-            ${queue.nowServing ? `<p style="font-size:14px;margin:0 0 14px;"><strong>Now with:</strong> ${queue.nowServing.name}</p>` : '<p style="font-size:14px;color:var(--grey-500);margin:0 0 14px;">No one in consultation right now.</p>'}
+        await fillQueueDoctorFilter();
+        if (!queueDoctorId) { panelEl.innerHTML = ''; return; }
 
-            <h3 style="font-size:14px;margin:0 0 8px;color:var(--grey-700);">Waiting (${queue.waiting.length}) <span class="order-note">— ordered by scheduled time, not arrival order</span></h3>
-            ${queue.waiting.length === 0 ? '<div class="empty-state">No one waiting.</div>' : `
-              <table class="qtable">
-                <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Queue time</th></tr></thead>
-                <tbody>
-                  ${queue.waiting.map((p) => `
-                    <tr>
-                      <td>${p.position}</td>
-                      <td>${nameCell(p)}</td>
-                      <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
-                      <td>${queueTimeCell(p)}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            `}
-          ` : `
-            <p class="panel-note">Live queue details (now serving, waiting) only apply to today — this is showing what's booked for ${dateLabel}.</p>
-          `}
+        const isTodayView = queueViewDate === Qlinic.getTodayDate();
+        const doctor = doctorsCache.find((d) => d.id === queueDoctorId);
+        const queue = await Qlinic.getQueueForDoctor(queueDoctorId, queueViewDate);
 
-          <div class="booked-section">
-            <button type="button" class="booked-toggle" id="bookedToggleBtn" aria-expanded="${bookedExpanded}">
-              <span>${bookedExpanded ? '▾' : '▸'} Booked${isTodayView ? ', not yet arrived' : ''} (${queue.booked.length})</span>
-              ${likelyCount > 0 ? `<span class="badge badge-likely">${likelyCount} likely no-show</span>` : ''}
-            </button>
-            <div class="booked-body" style="display:${bookedExpanded ? 'block' : 'none'};">
-              ${queue.booked.length === 0 ? `<div class="empty-state">${isTodayView ? 'Everyone booked has arrived.' : 'Nothing booked for ' + dateLabel + '.'}</div>` : `
+        // Waiting is bounded by how many people can physically be in the
+        // room — it stays fully visible since it's the list reception acts
+        // on minute to minute. Booked-not-yet-arrived is the day's full
+        // schedule, so it's collapsed by default and paginated.
+        const totalBookedPages = Math.max(1, Math.ceil(queue.booked.length / BOOKED_PAGE_SIZE));
+        if (bookedPage >= totalBookedPages) bookedPage = 0;
+        const bookedPageItems = queue.booked.slice(bookedPage * BOOKED_PAGE_SIZE, bookedPage * BOOKED_PAGE_SIZE + BOOKED_PAGE_SIZE);
+        const likelyCount = queue.booked.filter((p) => p.likelyNoShow).length;
+        const dateLabel = Qlinic.formatDateLabel(queueViewDate);
+
+        panelEl.innerHTML = `
+          <div class="panel accent-${accentForDoctor(queueDoctorId)}">
+            <div class="panel-header"><span class="board-doc-dot dot-${accentForDoctor(queueDoctorId)}"></span><h2>${doctor.name} — ${doctor.specialty}</h2><span class="date-pill">${dateLabel}</span></div>
+            ${isTodayView ? `
+              ${queue.nowServing ? `<p style="font-size:14px;margin:0 0 14px;"><strong>Now with:</strong> ${queue.nowServing.name}</p>` : '<p style="font-size:14px;color:var(--grey-500);margin:0 0 14px;">No one in consultation right now.</p>'}
+
+              <h3 style="font-size:14px;margin:0 0 8px;color:var(--grey-700);">Waiting (${queue.waiting.length}) <span class="order-note">— ordered by scheduled time, not arrival order</span></h3>
+              ${queue.waiting.length === 0 ? '<div class="empty-state">No one waiting.</div>' : `
                 <table class="qtable">
-                  <thead><tr><th>Name</th><th>Booked</th><th>Status</th>${isTodayView ? '<th></th>' : ''}</tr></thead>
+                  <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Queue time</th></tr></thead>
                   <tbody>
-                    ${bookedPageItems.map((p) => `
+                    ${queue.waiting.map((p) => `
                       <tr>
+                        <td>${p.position}</td>
                         <td>${nameCell(p)}</td>
-                        <td>${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}</td>
-                        <td>${p.likelyNoShow ? '<span class="badge badge-likely">Likely no-show</span>' : '<span class="badge badge-booked">Expected</span>'}</td>
-                        ${isTodayView ? `
-                          <td>
-                            <button class="btn-sm primary" onclick="doMarkArrived('${p.id}')">Mark arrived</button>
-                            <button class="btn-sm danger" onclick="doMarkNoShow('${p.id}')">No-show</button>
-                          </td>
-                        ` : ''}
+                        <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
+                        <td>${queueTimeCell(p)}</td>
                       </tr>
                     `).join('')}
                   </tbody>
                 </table>
-                ${totalBookedPages > 1 ? `
-                  <div class="pager">
-                    <button type="button" class="btn-sm" id="bookedPrevBtn" ${bookedPage === 0 ? 'disabled' : ''}>‹ Prev</button>
-                    <span class="pager-label">Page ${bookedPage + 1} of ${totalBookedPages}</span>
-                    <button type="button" class="btn-sm" id="bookedNextBtn" ${bookedPage >= totalBookedPages - 1 ? 'disabled' : ''}>Next ›</button>
-                  </div>
-                ` : ''}
               `}
+            ` : `
+              <p class="panel-note">Live queue details (now serving, waiting) only apply to today — this is showing what's booked for ${dateLabel}.</p>
+            `}
+
+            <div class="booked-section">
+              <button type="button" class="booked-toggle" id="bookedToggleBtn" aria-expanded="${bookedExpanded}">
+                <span>${bookedExpanded ? '▾' : '▸'} Booked${isTodayView ? ', not yet arrived' : ''} (${queue.booked.length})</span>
+                ${likelyCount > 0 ? `<span class="badge badge-likely">${likelyCount} likely no-show</span>` : ''}
+              </button>
+              <div class="booked-body" style="display:${bookedExpanded ? 'block' : 'none'};">
+                ${queue.booked.length === 0 ? `<div class="empty-state">${isTodayView ? 'Everyone booked has arrived.' : 'Nothing booked for ' + dateLabel + '.'}</div>` : `
+                  <table class="qtable">
+                    <thead><tr><th>Name</th><th>Booked</th><th>Status</th>${isTodayView ? '<th></th>' : ''}</tr></thead>
+                    <tbody>
+                      ${bookedPageItems.map((p) => `
+                        <tr>
+                          <td>${nameCell(p)}</td>
+                          <td>${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}</td>
+                          <td>${p.likelyNoShow ? '<span class="badge badge-likely">Likely no-show</span>' : '<span class="badge badge-booked">Expected</span>'}</td>
+                          ${isTodayView ? `
+                            <td>
+                              <button class="btn-sm primary" onclick="doMarkArrived('${p.id}')">Mark arrived</button>
+                              <button class="btn-sm danger" onclick="doMarkNoShow('${p.id}')">No-show</button>
+                            </td>
+                          ` : ''}
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                  ${totalBookedPages > 1 ? `
+                    <div class="pager">
+                      <button type="button" class="btn-sm" id="bookedPrevBtn" ${bookedPage === 0 ? 'disabled' : ''}>‹ Prev</button>
+                      <span class="pager-label">Page ${bookedPage + 1} of ${totalBookedPages}</span>
+                      <button type="button" class="btn-sm" id="bookedNextBtn" ${bookedPage >= totalBookedPages - 1 ? 'disabled' : ''}>Next ›</button>
+                    </div>
+                  ` : ''}
+                `}
+              </div>
             </div>
           </div>
-        </div>
-      `;
+        `;
 
-      document.getElementById('bookedToggleBtn').addEventListener('click', () => {
-        bookedExpanded = !bookedExpanded;
+        document.getElementById('bookedToggleBtn').addEventListener('click', () => {
+          bookedExpanded = !bookedExpanded;
+          renderQueues();
+        });
+        const prevBtn = document.getElementById('bookedPrevBtn');
+        const nextBtn = document.getElementById('bookedNextBtn');
+        if (prevBtn) prevBtn.addEventListener('click', () => { bookedPage = Math.max(0, bookedPage - 1); renderQueues(); });
+        if (nextBtn) nextBtn.addEventListener('click', () => { bookedPage = Math.min(totalBookedPages - 1, bookedPage + 1); renderQueues(); });
+      }
+
+      document.getElementById('searchBox').addEventListener('input', renderSearch);
+
+      document.getElementById('patientForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('pName').value;
+        const phone = document.getElementById('pPhone').value;
+        const address = document.getElementById('pAddress').value;
+        const doctorId = document.getElementById('pDoctor').value;
+
+        let bookedForToday = true;
+
+        if (patientMode === 'walkin') {
+          await Qlinic.addWalkIn({ name, phone, address, doctorId, reason: document.getElementById('pReason').value });
+          showToast('Walk-in added to the queue');
+        } else {
+          const date = document.getElementById('pDate').value;
+          const time = document.getElementById('pTime').value;
+          if (Qlinic.isPastRealDateTime(date, time)) {
+            updateSlotHint();
+            showToast("Can't book — that date/time has already passed");
+            return;
+          }
+          const avail = await Qlinic.getSlotAvailability(doctorId, date, time);
+          if (avail && avail.isFull && !confirm(`This slot already has ${avail.count} patients booked (max ${avail.capacity}). The next open slot is ${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}. Add anyway at the requested time?`)) {
+            return;
+          }
+          await Qlinic.addAppointment({ name, phone, address, doctorId, bookedDate: date, bookedTime: time });
+          bookedForToday = date === Qlinic.getTodayDate();
+          showToast(bookedForToday ? 'Appointment added' : `Appointment booked for ${Qlinic.formatDateLabel(date)} (${Qlinic.formatTime(Qlinic.parseTime(time))})`);
+        }
+
+        // Jump the queue view to whichever doctor this patient was just
+        // added for, so reception immediately sees where they landed — but
+        // only if they're actually on today's queue.
+        if (bookedForToday) {
+          queueDoctorId = doctorId;
+          bookedExpanded = false;
+          bookedPage = 0;
+        }
+
+        e.target.reset();
+        fillDoctorSelects();
+        setPatientMode(patientMode);
+        document.getElementById('pDate').value = Qlinic.getTodayDate();
         renderQueues();
       });
-      const prevBtn = document.getElementById('bookedPrevBtn');
-      const nextBtn = document.getElementById('bookedNextBtn');
-      if (prevBtn) prevBtn.addEventListener('click', () => { bookedPage = Math.max(0, bookedPage - 1); renderQueues(); });
-      if (nextBtn) nextBtn.addEventListener('click', () => { bookedPage = Math.min(totalBookedPages - 1, bookedPage + 1); renderQueues(); });
-    }
 
-    document.getElementById('searchBox').addEventListener('input', renderSearch);
+      document.getElementById('pDoctor').addEventListener('change', updateSlotHint);
+      document.getElementById('pDate').addEventListener('change', updateSlotHint);
+      document.getElementById('pTime').addEventListener('input', updateSlotHint);
 
-    document.getElementById('patientForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const name = document.getElementById('pName').value;
-      const phone = document.getElementById('pPhone').value;
-      const address = document.getElementById('pAddress').value;
-      const doctorId = document.getElementById('pDoctor').value;
+      document.getElementById('logoutLink').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await Qlinic.logout();
+        window.location.href = 'login.html';
+      });
 
-      let bookedForToday = true;
-
-      if (patientMode === 'walkin') {
-        Qlinic.addWalkIn({ name, phone, address, doctorId, reason: document.getElementById('pReason').value });
-        showToast('Walk-in added to the queue');
-      } else {
-        const date = document.getElementById('pDate').value;
-        const time = document.getElementById('pTime').value;
-        if (Qlinic.isPastRealDateTime(date, time)) {
-          updateSlotHint();
-          showToast("Can't book — that date/time has already passed");
-          return;
-        }
-        const avail = Qlinic.getSlotAvailability(doctorId, date, time);
-        if (avail && avail.isFull && !confirm(`This slot already has ${avail.count} patients booked (max ${avail.capacity}). The next open slot is ${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}. Add anyway at the requested time?`)) {
-          return;
-        }
-        Qlinic.addAppointment({ name, phone, address, doctorId, bookedDate: date, bookedTime: time });
-        bookedForToday = date === Qlinic.getTodayDate();
-        showToast(bookedForToday ? 'Appointment added' : `Appointment booked for ${Qlinic.formatDateLabel(date)} (${Qlinic.formatTime(Qlinic.parseTime(time))})`);
-      }
-
-      // Jump the queue view to whichever doctor this patient was just added
-      // for, so reception immediately sees where they landed — but only if
-      // they're actually on today's queue; a future booking won't show up
-      // until its date arrives, so jumping there would just look empty.
-      if (bookedForToday) {
-        queueDoctorId = doctorId;
-        bookedExpanded = false;
-        bookedPage = 0;
-      }
-
-      e.target.reset();
-      fillDoctorSelects();
-      setPatientMode(patientMode);
+      const clinic = await Qlinic.getClinic();
+      document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
+      setInterval(() => { document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date()); }, 30000);
+      document.getElementById('pDate').min = Qlinic.getTodayDate();
       document.getElementById('pDate').value = Qlinic.getTodayDate();
+
+      await refreshDoctorsCache();
+      fillDoctorSelects();
+      setPatientMode('appointment');
       renderQueues();
-    });
 
-    document.getElementById('pDoctor').addEventListener('change', updateSlotHint);
-    document.getElementById('pDate').addEventListener('change', updateSlotHint);
-    document.getElementById('pTime').addEventListener('input', updateSlotHint);
-
-    document.getElementById('advanceTimeBtn').addEventListener('click', () => {
-      Qlinic.advanceTime(15);
-      document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
-      renderSearch();
-      renderQueues();
-      showToast('Clinic time advanced by 15 minutes');
-    });
-
-    document.getElementById('logoutLink').addEventListener('click', (e) => {
-      e.preventDefault();
-      Qlinic.logout();
-      window.location.href = 'login.html';
-    });
-
-    document.getElementById('clinicName').textContent = Qlinic.getClinic().name;
-    document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
-    document.getElementById('pDate').min = Qlinic.getTodayDate();
-    document.getElementById('pDate').value = Qlinic.getTodayDate();
-    fillDoctorSelects();
-    setPatientMode('appointment');
-    renderQueues();
-
-    Qlinic.onExternalChange(() => {
-      document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
-      renderSearch();
-      renderQueues();
-    });
+      Qlinic.onLiveChange(() => {
+        renderSearch();
+        renderQueues();
+      });
+    })();
   </script>
 </body>
 </html>

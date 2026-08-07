@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Dashboard — Qlinic</title>
-<link rel="stylesheet" href="styles.css?v=5" />
+<link rel="stylesheet" href="styles.css?v=7" />
 </head>
 <body>
   <div class="app-shell">
@@ -25,7 +25,6 @@
         <h1>Dashboard</h1>
         <div class="clock-pill">
           <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Clinic time: <span class="time" id="clockTime">--</span></span>
-          <button id="advanceTimeBtn">+15 min (demo)</button>
         </div>
       </div>
 
@@ -37,126 +36,140 @@
       </div>
 
       <div class="panel">
-        <div class="panel-header"><span class="panel-icon icon-purple">🌙</span><h2>End of day</h2></div>
-        <p style="font-size:14px;color:var(--grey-700);margin:0 0 14px;">
-          Anyone still marked "booked" (never arrived) will be closed out as a no-show.
-          This is the same event that would run automatically at clinic closing time in production.
-        </p>
-        <button class="btn-sm primary" id="closeDayBtn">Close the day &amp; finalize no-shows</button>
+        <div class="panel-header"><span class="panel-icon icon-teal">➕</span><h2>Add a doctor</h2></div>
+        <form id="addDoctorForm" class="inline-form">
+          <div class="field">
+            <label>Name</label>
+            <input type="text" id="newDoctorName" placeholder="Dr. Jane Doe" required />
+          </div>
+          <div class="field">
+            <label>Specialty</label>
+            <input type="text" id="newDoctorSpecialty" placeholder="General Physician" />
+          </div>
+          <button type="submit" class="btn-sm primary">Add doctor</button>
+        </form>
       </div>
 
       <div class="panel">
-        <div class="panel-header"><span class="panel-icon icon-coral">🛠️</span><h2>Demo controls</h2></div>
-        <p style="font-size:13px;color:var(--grey-500);margin:0 0 14px;">
-          This prototype stores its data in your browser only (localStorage), so you can reset it anytime.
+        <div class="panel-header"><span class="panel-icon icon-purple">🌙</span><h2>End of day</h2></div>
+        <p style="font-size:14px;color:var(--grey-700);margin:0 0 14px;">
+          Anyone still marked "booked" (never arrived) today will be closed out as a no-show.
         </p>
-        <button class="btn-sm" id="resetBtn">Reset demo data</button>
+        <button class="btn-sm primary" id="closeDayBtn">Close the day &amp; finalize no-shows</button>
       </div>
     </main>
   </div>
 
   <div class="toast" id="toast"></div>
 
-  <script src="data.js?v=5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=7"></script>
   <script>
-    Qlinic.requireLogin('login.html');
+    (async function () {
+      await Qlinic.requireLogin('login.html');
 
-    function showToast(msg) {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 2200);
-    }
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+      }
 
-    function statusLabel(status) {
-      return {
-        on_time: 'On time',
-        running_late: 'Running late',
-        on_break: 'On a break',
-        emergency: 'Emergency',
-      }[status] || status;
-    }
+      function statusLabel(status) {
+        return {
+          on_time: 'On time',
+          running_late: 'Running late',
+          on_break: 'On a break',
+          emergency: 'Emergency',
+        }[status] || status;
+      }
 
-    // Same 5-color identity palette as the rest of the app — each doctor keeps
-    // the same color everywhere (reception, doctor view, waiting-room board)
-    // based on their position in the doctors list.
-    const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
-    function accentForDoctor(doctorId) {
-      const idx = Qlinic.getDoctors().findIndex((d) => d.id === doctorId);
-      return ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
-    }
+      // Same 5-color identity palette as the rest of the app — each doctor
+      // keeps the same color everywhere, based on their position in the
+      // clinic's doctor list.
+      const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
+      function accentForDoctor(doctorId, doctors) {
+        const idx = doctors.findIndex((d) => d.id === doctorId);
+        return ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
+      }
 
-    function render() {
-      document.getElementById('clinicName').textContent = Qlinic.getClinic().name;
-      document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
+      async function render() {
+        document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
 
-      const summary = Qlinic.getDailySummary();
-      const cards = [
-        { label: 'Footfall so far', value: summary.footfallSoFar, accent: 'teal' },
-        { label: 'Waiting now', value: summary.waitingNow, accent: 'coral' },
-        { label: 'Seen (done)', value: summary.doneCount, accent: 'blue' },
-        { label: 'Likely no-shows (flagged)', value: summary.likelyNoShowCount, accent: 'pink' },
-        { label: 'No-shows (closed)', value: summary.noShowCount, accent: 'purple' },
-        { label: 'Booked today', value: summary.totalAppointments, accent: 'teal' },
-      ];
-      document.getElementById('statCards').innerHTML = cards.map((c) => `
-        <div class="stat-card accent-${c.accent}">
-          <div class="value value-${c.accent}">${c.value}</div>
-          <div class="label">${c.label}</div>
-        </div>
-      `).join('');
+        const clinic = await Qlinic.getClinic();
+        document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
 
-      const doctors = Qlinic.getDoctors();
-      document.getElementById('doctorStatusList').innerHTML = doctors.map((d) => {
-        const q = Qlinic.getQueueForDoctor(d.id);
-        return `
-          <div class="doctor-status-row">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span class="board-doc-dot dot-${accentForDoctor(d.id)}"></span>
-              <div>
-                <div class="doc-name">${d.name}</div>
-                <div class="doc-specialty">${d.specialty} &middot; ${q.waiting.length} waiting ${q.nowServing ? '&middot; now with ' + q.nowServing.name : ''}</div>
+        const summary = await Qlinic.getDailySummary();
+        const cards = [
+          { label: 'Footfall so far', value: summary.footfallSoFar, accent: 'teal' },
+          { label: 'Waiting now', value: summary.waitingNow, accent: 'coral' },
+          { label: 'Seen (done)', value: summary.doneCount, accent: 'blue' },
+          { label: 'Likely no-shows (flagged)', value: summary.likelyNoShowCount, accent: 'pink' },
+          { label: 'No-shows (closed)', value: summary.noShowCount, accent: 'purple' },
+          { label: 'Booked today', value: summary.totalAppointments, accent: 'teal' },
+        ];
+        document.getElementById('statCards').innerHTML = cards.map((c) => `
+          <div class="stat-card accent-${c.accent}">
+            <div class="value value-${c.accent}">${c.value}</div>
+            <div class="label">${c.label}</div>
+          </div>
+        `).join('');
+
+        const doctors = await Qlinic.getDoctors();
+        if (doctors.length === 0) {
+          document.getElementById('doctorStatusList').innerHTML = '<div class="empty-state">No doctors yet — add your first one below.</div>';
+          return;
+        }
+        const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id)));
+        document.getElementById('doctorStatusList').innerHTML = doctors.map((d, i) => {
+          const q = queues[i];
+          return `
+            <div class="doctor-status-row">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span class="board-doc-dot dot-${accentForDoctor(d.id, doctors)}"></span>
+                <div>
+                  <div class="doc-name">${d.name}</div>
+                  <div class="doc-specialty">${d.specialty} &middot; ${q.waiting.length} waiting ${q.nowServing ? '&middot; now with ' + q.nowServing.name : ''}</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <span class="status-pill status-${d.status}">${statusLabel(d.status)}${d.delayMins ? ' · ' + d.delayMins + ' min' : ''}</span>
+                <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">updated ${Qlinic.formatTimestamp(d.statusUpdatedAt)}</div>
               </div>
             </div>
-            <div style="text-align:right;">
-              <span class="status-pill status-${d.status}">${statusLabel(d.status)}${d.delayMins ? ' · ' + d.delayMins + ' min' : ''}</span>
-              <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">updated ${Qlinic.formatTime(Qlinic.parseTime(d.statusUpdatedAt))}</div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
+          `;
+        }).join('');
+      }
 
-    document.getElementById('advanceTimeBtn').addEventListener('click', () => {
-      Qlinic.advanceTime(15);
+      document.getElementById('addDoctorForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('newDoctorName').value;
+        const specialty = document.getElementById('newDoctorSpecialty').value;
+        await Qlinic.addDoctor({ name, specialty });
+        e.target.reset();
+        showToast('Doctor added');
+        render();
+      });
+
+      document.getElementById('closeDayBtn').addEventListener('click', async () => {
+        if (confirm('Close the day? Everyone still "booked" and not arrived today will be marked as no-show.')) {
+          await Qlinic.closeDayNoShows();
+          showToast('Day closed — no-shows finalized');
+          render();
+        }
+      });
+
+      document.getElementById('logoutLink').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await Qlinic.logout();
+        window.location.href = 'login.html';
+      });
+
       render();
-      showToast('Clinic time advanced by 15 minutes');
-    });
-
-    document.getElementById('closeDayBtn').addEventListener('click', () => {
-      if (confirm('Close the day? Everyone still "booked" and not arrived will be marked as no-show.')) {
-        Qlinic.closeDayNoShows();
-        render();
-        showToast('Day closed — no-shows finalized');
-      }
-    });
-
-    document.getElementById('resetBtn').addEventListener('click', () => {
-      if (confirm('Reset all demo data back to the seeded sample day?')) {
-        Qlinic.resetDemo();
-        render();
-        showToast('Demo data reset');
-      }
-    });
-
-    document.getElementById('logoutLink').addEventListener('click', (e) => {
-      e.preventDefault();
-      Qlinic.logout();
-      window.location.href = 'login.html';
-    });
-
-    render();
-    Qlinic.onExternalChange(render);
+      setInterval(() => { document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date()); }, 30000);
+      Qlinic.onLiveChange(render);
+    })();
   </script>
 </body>
 </html>
