@@ -4,24 +4,48 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Waiting Room Display — Qlinic</title>
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles.css?v=5" />
 </head>
 <body class="display-body">
 
   <div class="display-header">
-    <div class="brand">Qlinic <span style="color:var(--grey-500);font-weight:400;font-size:16px;">— live queue</span></div>
+    <div class="brand"><span class="live-dot" aria-hidden="true"></span>Qlinic <span style="color:var(--grey-500);font-weight:400;font-size:16px;">— live queue</span></div>
     <div class="clock" id="clockTime">--</div>
   </div>
 
-  <div class="display-grid" id="displayGrid"></div>
+  <div class="display-strip" id="doctorStrip"></div>
 
-  <div style="position:fixed;bottom:20px;left:60px;right:60px;text-align:center;">
+  <div class="board">
+    <div class="board-head">
+      <div class="board-title">Waiting now <span id="boardCount" class="board-count"></span></div>
+      <div class="board-page-indicator" id="pageDots"></div>
+    </div>
+    <div class="board-cols">
+      <span>#</span><span>Patient</span><span>Doctor</span><span>Type</span><span>Est. wait</span>
+    </div>
+    <div class="board-rows" id="boardRows"></div>
+  </div>
+
+  <div style="position:fixed;bottom:16px;left:60px;right:60px;text-align:center;">
     <a href="dashboard.html" style="color:var(--grey-500);font-size:13px;text-decoration:none;">&larr; Back to app (this screen is meant to run on a TV/monitor in the waiting room)</a>
   </div>
 
-  <script src="data.js"></script>
+  <script src="data.js?v=5"></script>
   <script>
     Qlinic.requireLogin('login.html');
+
+    const PAGE_SIZE = 8;
+    const ROTATE_MS = 4500;
+    const REFRESH_MS = 5000;
+
+    let combined = [];
+    let currentPage = 0;
+
+    // Same 5-color identity palette used on reception and the doctor view —
+    // each doctor keeps the same color everywhere, so on a board mixing every
+    // doctor's patients together, a glance at the dot tells you whose it is
+    // without reading the name column.
+    const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
 
     function statusLabel(status) {
       return {
@@ -32,40 +56,6 @@
       }[status] || status;
     }
 
-    function render() {
-      document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
-      const all = Qlinic.getAllQueues();
-
-      document.getElementById('displayGrid').innerHTML = all.map(({ doctor, queue }) => `
-        <div class="display-doctor-card">
-          <div class="doc-name">${doctor.name}</div>
-          <div class="doc-specialty">${doctor.specialty}</div>
-
-          ${doctor.status === 'running_late' || doctor.status === 'on_break' || doctor.status === 'emergency' ? `
-            <div class="display-delay-banner">${statusLabel(doctor.status)}${doctor.delayMins ? ' — about ' + doctor.delayMins + ' min behind' : ''}</div>
-          ` : ''}
-
-          <div class="display-now-serving">
-            <div class="tiny-label">Now serving</div>
-            <div class="name">${queue.nowServing ? queue.nowServing.name : '—'}</div>
-          </div>
-
-          <div class="display-queue-list">
-            ${queue.waiting.length === 0
-              ? '<div style="color:var(--grey-500);">No one else waiting right now.</div>'
-              : queue.waiting.slice(0, 6).map((p) => `
-                <div class="display-queue-row">
-                  <span class="pos">${p.position}</span>
-                  <span class="name">${p.name}</span>
-                  <span class="eta">~${estimateWaitLabel(p, doctor)}</span>
-                </div>
-              `).join('')
-            }
-          </div>
-        </div>
-      `).join('');
-    }
-
     function estimateWaitLabel(patient, doctor) {
       // Simple confidence-band estimate: position * doctor's typical pace, shown as a range not a false-precise number.
       const paceMins = 12;
@@ -74,8 +64,109 @@
       return `${Math.max(low, 0)}–${high} min`;
     }
 
-    render();
-    setInterval(render, 5000); // auto-refresh, simulating a live screen
+    function renderDoctorStrip() {
+      const all = Qlinic.getAllQueues();
+      document.getElementById('doctorStrip').innerHTML = all.map(({ doctor, queue }, index) => `
+        <div class="strip-card accent-${ACCENT_COLORS[index % ACCENT_COLORS.length]}">
+          <div class="strip-top">
+            <div>
+              <div class="strip-doc">${doctor.name}</div>
+              <div class="strip-spec">${doctor.specialty}</div>
+            </div>
+            ${doctor.status === 'on_time'
+              ? '<span class="strip-pill strip-pill-ok">On time</span>'
+              : `<span class="strip-pill strip-pill-warn">${statusLabel(doctor.status)}${doctor.delayMins ? ' · +' + doctor.delayMins + 'm' : ''}</span>`}
+          </div>
+          <div class="strip-serving">
+            <span class="tiny-label">Now serving</span>
+            <span class="strip-serving-name">${queue.nowServing ? queue.nowServing.name : '—'}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // One combined, clinic-wide board sorted by scheduled/effective time — an
+    // appointment for 9:15 outranks a walk-in that happened to arrive first,
+    // same as the reception and doctor screens.
+    function computeCombinedWaiting() {
+      const all = Qlinic.getAllQueues();
+      const rows = [];
+      all.forEach(({ doctor, queue }, index) => {
+        const doctorAccent = ACCENT_COLORS[index % ACCENT_COLORS.length];
+        queue.waiting.forEach((p) => {
+          rows.push({
+            name: p.name,
+            address: p.address,
+            type: p.type,
+            doctorName: doctor.name,
+            doctorAccent,
+            position: p.position,
+            eta: estimateWaitLabel(p, doctor),
+            effectiveMinutes: p.effectiveMinutes,
+          });
+        });
+      });
+      rows.sort((a, b) => a.effectiveMinutes - b.effectiveMinutes);
+      return rows;
+    }
+
+    function buildRowsHTML(pageItems, startIdx) {
+      if (pageItems.length === 0) {
+        return '<div class="board-empty">No one waiting right now — the waiting room is clear.</div>';
+      }
+      return pageItems.map((p, i) => `
+        <div class="board-row">
+          <span class="board-pos">${startIdx + i + 1}</span>
+          <span class="board-name">${p.name}${p.address ? `<span class="board-sub">${p.address}</span>` : ''}</span>
+          <span class="board-doc"><span class="board-doc-dot dot-${p.doctorAccent}"></span>${p.doctorName}</span>
+          <span class="board-type">${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</span>
+          <span class="board-eta">~${p.eta}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderDots(totalPages) {
+      const dotsEl = document.getElementById('pageDots');
+      if (totalPages <= 1) { dotsEl.innerHTML = ''; return; }
+      dotsEl.innerHTML = Array.from({ length: totalPages }).map((_, i) =>
+        `<span class="dot ${i === currentPage ? 'active' : ''}"></span>`
+      ).join('');
+    }
+
+    function renderPage() {
+      const totalPages = Math.max(1, Math.ceil(combined.length / PAGE_SIZE));
+      if (currentPage >= totalPages) currentPage = 0;
+      const start = currentPage * PAGE_SIZE;
+      const pageItems = combined.slice(start, start + PAGE_SIZE);
+      document.getElementById('boardRows').innerHTML = buildRowsHTML(pageItems, start);
+      document.getElementById('boardCount').textContent = combined.length ? `(${combined.length} across all doctors)` : '';
+      renderDots(totalPages);
+    }
+
+    function refreshData() {
+      Qlinic.refresh();
+      document.getElementById('clockTime').textContent = Qlinic.getCurrentTimeLabel();
+      renderDoctorStrip();
+      combined = computeCombinedWaiting();
+      renderPage();
+    }
+
+    function rotatePage() {
+      const totalPages = Math.max(1, Math.ceil(combined.length / PAGE_SIZE));
+      if (totalPages <= 1) return;
+      const rows = document.getElementById('boardRows');
+      rows.classList.add('flip-out');
+      setTimeout(() => {
+        currentPage = (currentPage + 1) % totalPages;
+        renderPage();
+        rows.classList.remove('flip-out');
+      }, 320);
+    }
+
+    refreshData();
+    setInterval(refreshData, REFRESH_MS); // dynamically pick up changes from reception/doctor screens
+    setInterval(rotatePage, ROTATE_MS); // airport-board style: cycle to the next set of names
+    Qlinic.onExternalChange(refreshData); // instant update the moment another tab changes the queue
   </script>
 </body>
 </html>

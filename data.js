@@ -11,8 +11,10 @@
  * and the note in README.md for what a production version needs instead.
  */
 (function (global) {
-  const STORAGE_KEY = 'qlinic_demo_state_v1';
+  const STORAGE_KEY = 'qlinic_demo_state_v3';
   const GRACE_WINDOW_MINS = 25;
+  const SLOT_INTERVAL_MINS = 15; // appointment slots are bucketed into 15-min windows
+  const SLOT_CAPACITY = 3; // how many patients a doctor can reasonably be booked for in the same slot
 
   function parseTime(hhmm) {
     const [h, m] = hhmm.split(':').map(Number);
@@ -28,7 +30,65 @@
     return `${h12}:${String(m).padStart(2, '0')} ${period}`;
   }
 
+  // 24h "HH:MM" string, matching what an <input type="time"> expects.
+  function formatHHMM(totalMins) {
+    const wrapped = ((totalMins % 1440) + 1440) % 1440;
+    const h = String(Math.floor(wrapped / 60)).padStart(2, '0');
+    const m = String(wrapped % 60).padStart(2, '0');
+    return `${h}:${m}`;
+  }
+
+  function bucketStart(mins) {
+    return Math.floor(mins / SLOT_INTERVAL_MINS) * SLOT_INTERVAL_MINS;
+  }
+
+  // Real calendar date (device clock), independent of the simulated clinic
+  // clock used to fast-forward through a demo day. "Today" for the purposes
+  // of what belongs in the live queue is always the real date.
+  function todayDateStr() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function formatDateLabel(dateStr) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const target = new Date(y, m - 1, d);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((target - today) / 86400000);
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Tomorrow';
+    return target.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+
+  // Whether booking dateStr/timeStr would already be in the past on the
+  // REAL device clock — not the simulated clinic clock, which can be
+  // fast-forwarded for demo purposes and shouldn't be able to make a real
+  // booking rule lie.
+  function isPastRealDateTime(dateStr, timeStr) {
+    const target = new Date(`${dateStr}T${timeStr}:00`);
+    return target.getTime() < Date.now();
+  }
+
+  // A walk-in only ever belongs to today (they're standing at the desk right
+  // now) — there's no such thing as a future or past walk-in. An
+  // appointment belongs to whichever date it was actually booked for.
+  function belongsToDate(patient, dateStr) {
+    return patient.type === 'walkin' ? dateStr === todayDateStr() : patient.bookedDate === dateStr;
+  }
+
+  // The operational rules (no-show flagging, daily summary, closing the day,
+  // slot capacity) always mean the real, actual today — regardless of
+  // whichever date reception might currently be browsing in the UI.
+  function isForToday(patient) {
+    return belongsToDate(patient, todayDateStr());
+  }
+
   function seedState() {
+    const today = todayDateStr();
     return {
       clinic: {
         name: 'Qlinic Demo Clinic',
@@ -58,18 +118,32 @@
         },
       ],
       patients: [
-        { id: 'p1', name: 'Ramesh Kumar', phone: '9876500001', doctorId: 'd1', type: 'appointment', bookedTime: '09:00', status: 'done', arrivedAt: '08:55' },
-        { id: 'p2', name: 'Suman Devi', phone: '9876500002', doctorId: 'd1', type: 'appointment', bookedTime: '09:15', status: 'done', arrivedAt: '09:10' },
-        { id: 'p3', name: 'Anil Verma', phone: '9876500003', doctorId: 'd1', type: 'appointment', bookedTime: '09:30', status: 'in_consult', arrivedAt: '09:28' },
-        { id: 'p4', name: 'Pooja Singh', phone: '9876500004', doctorId: 'd1', type: 'walkin', bookedTime: null, status: 'waiting', arrivedAt: '09:40' },
-        { id: 'p5', name: 'Rahul Kumar Verma', phone: '9876500005', doctorId: 'd1', type: 'appointment', bookedTime: '09:45', status: 'waiting', arrivedAt: '09:50' },
-        { id: 'p6', name: 'Meena Kumari', phone: '9876500006', doctorId: 'd1', type: 'appointment', bookedTime: '10:00', status: 'booked', arrivedAt: null },
-        { id: 'p7', name: 'Sanjay Gupta', phone: '9876500007', doctorId: 'd1', type: 'appointment', bookedTime: '09:20', status: 'booked', arrivedAt: null },
-        { id: 'p8', name: 'Fatima Sheikh (for Ayaan)', phone: '9876500008', doctorId: 'd2', type: 'appointment', bookedTime: '09:30', status: 'in_consult', arrivedAt: '09:25' },
-        { id: 'p9', name: 'Kavya Reddy', phone: '9876500009', doctorId: 'd2', type: 'appointment', bookedTime: '09:45', status: 'waiting', arrivedAt: '09:44' },
-        { id: 'p10', name: 'Arjun Nair', phone: '9876500010', doctorId: 'd2', type: 'appointment', bookedTime: '10:15', status: 'booked', arrivedAt: null },
+        { id: 'p1', name: 'Ramesh Kumar', phone: '9876500001', address: 'Sector 12, near market', doctorId: 'd1', type: 'appointment', bookedDate: today, bookedTime: '09:00', status: 'done', arrivedAt: '08:55' },
+        { id: 'p2', name: 'Suman Devi', phone: '9876500002', address: 'Old Town, Gali No. 4', doctorId: 'd1', type: 'appointment', bookedDate: today, bookedTime: '09:15', status: 'done', arrivedAt: '09:10' },
+        { id: 'p3', name: 'Anil Verma', phone: '9876500003', address: 'Shastri Nagar', doctorId: 'd1', type: 'appointment', bookedDate: today, bookedTime: '09:30', status: 'in_consult', arrivedAt: '09:28' },
+        { id: 'p4', name: 'Pooja Singh', phone: '9876500004', address: 'Civil Lines', doctorId: 'd1', type: 'walkin', bookedTime: null, status: 'waiting', arrivedAt: '09:40' },
+        { id: 'p5', name: 'Rahul Kumar Verma', phone: '9876500005', address: 'Sector 9', doctorId: 'd1', type: 'appointment', bookedDate: today, bookedTime: '09:45', status: 'waiting', arrivedAt: '09:50' },
+        { id: 'p6', name: 'Meena Kumari', phone: '9876500006', address: 'Model Town', doctorId: 'd1', type: 'appointment', bookedDate: today, bookedTime: '10:00', status: 'booked', arrivedAt: null },
+        { id: 'p7', name: 'Sanjay Gupta', phone: '9876500007', address: 'Green Park', doctorId: 'd1', type: 'appointment', bookedDate: today, bookedTime: '09:20', status: 'booked', arrivedAt: null },
+        { id: 'p8', name: 'Fatima Sheikh (for Ayaan)', phone: '9876500008', address: 'Sector 22', doctorId: 'd2', type: 'appointment', bookedDate: today, bookedTime: '09:30', status: 'in_consult', arrivedAt: '09:25' },
+        { id: 'p9', name: 'Kavya Reddy', phone: '9876500009', address: 'Sector 8', doctorId: 'd2', type: 'appointment', bookedDate: today, bookedTime: '09:45', status: 'waiting', arrivedAt: '09:44' },
+        { id: 'p10', name: 'Arjun Nair', phone: '9876500010', address: 'Phase 3', doctorId: 'd2', type: 'appointment', bookedDate: today, bookedTime: '10:15', status: 'booked', arrivedAt: null },
+        { id: 'p11', name: 'Vikas Choudhary', phone: '9876500011', address: 'Rajpura Road', doctorId: 'd1', type: 'appointment', bookedDate: today, bookedTime: '09:35', status: 'waiting', arrivedAt: '09:38' },
+        { id: 'p12', name: 'Anita Sharma', phone: '9876500012', address: 'Sector 15', doctorId: 'd1', type: 'appointment', bookedDate: today, bookedTime: '09:50', status: 'waiting', arrivedAt: '09:48' },
+        { id: 'p13', name: 'Ramesh Kumar', phone: '9876500013', address: 'MG Road, near bus stand', doctorId: 'd1', type: 'walkin', bookedTime: null, status: 'waiting', arrivedAt: '09:55' },
+        { id: 'p14', name: 'Deepak Yadav', phone: '9876500014', address: 'Industrial Area', doctorId: 'd1', type: 'appointment', bookedDate: today, bookedTime: '10:10', status: 'booked', arrivedAt: null },
+        { id: 'p15', name: 'Neha Kapoor', phone: '9876500015', address: 'Phase 2', doctorId: 'd1', type: 'appointment', bookedDate: today, bookedTime: '10:10', status: 'booked', arrivedAt: null },
+        { id: 'p16', name: 'Ritu Malhotra', phone: '9876500016', address: 'Sector 5', doctorId: 'd2', type: 'appointment', bookedDate: today, bookedTime: '09:55', status: 'waiting', arrivedAt: '09:53' },
+        { id: 'p17', name: 'Suresh Iyer', phone: '9876500017', address: 'Sector 11', doctorId: 'd2', type: 'appointment', bookedDate: today, bookedTime: '10:05', status: 'waiting', arrivedAt: '10:02' },
+        { id: 'p18', name: 'Priya Menon', phone: '9876500018', address: 'Green Avenue', doctorId: 'd2', type: 'appointment', bookedDate: today, bookedTime: '10:20', status: 'booked', arrivedAt: null },
+        { id: 'p19', name: 'Manoj Tiwari', phone: '9876500019', address: 'Sector 7', doctorId: 'd2', type: 'appointment', bookedDate: today, bookedTime: '10:20', status: 'booked', arrivedAt: null },
+        { id: 'p20', name: 'Kiran Bedi', phone: '9876500020', address: 'Sector 3', doctorId: 'd2', type: 'appointment', bookedDate: today, bookedTime: '10:20', status: 'booked', arrivedAt: null },
+        { id: 'p21', name: 'Harpreet Singh', phone: '9876500021', address: 'Sector 18', doctorId: 'd1', type: 'walkin', bookedTime: null, status: 'waiting', arrivedAt: '09:58' },
+        { id: 'p22', name: 'Vivek Chandra', phone: '9876500022', address: 'Sector 21', doctorId: 'd1', type: 'appointment', bookedDate: today, bookedTime: '09:52', status: 'waiting', arrivedAt: '09:54' },
+        { id: 'p23', name: 'Meenakshi Rao', phone: '9876500023', address: 'Lake View', doctorId: 'd2', type: 'appointment', bookedDate: today, bookedTime: '09:58', status: 'waiting', arrivedAt: '09:57' },
+        { id: 'p24', name: 'Farah Khan', phone: '9876500024', address: 'Sector 6', doctorId: 'd2', type: 'walkin', bookedTime: null, status: 'waiting', arrivedAt: '10:00' },
       ],
-      nextPatientNum: 11,
+      nextPatientNum: 25,
     };
   }
 
@@ -99,22 +173,58 @@
     return state.doctors.find((d) => d.id === doctorId);
   }
 
+  // A patient's queue position is based on whichever is LATER: their
+  // scheduled slot, or when they actually walked in. On time or early, the
+  // scheduled slot governs (arriving early can't jump ahead of patients
+  // booked in between). Late, their real arrival time governs, so they
+  // correctly queue behind everyone whose slot fell between their original
+  // appointment and when they actually showed up — instead of keeping an
+  // unearned position at their original, already-passed slot time.
   function effectiveMinutes(patient) {
     const doc = getDoctor(patient.doctorId);
     if (patient.type === 'walkin') {
       return patient.arrivedAt ? parseTime(patient.arrivedAt) : parseTime(state.currentTime);
     }
-    return parseTime(patient.bookedTime) + ((doc && doc.delayMins) || 0);
+    const scheduled = parseTime(patient.bookedTime) + ((doc && doc.delayMins) || 0);
+    return patient.arrivedAt ? Math.max(scheduled, parseTime(patient.arrivedAt)) : scheduled;
   }
 
   function isLikelyNoShow(patient) {
-    if (patient.status !== 'booked') return false;
+    if (patient.status !== 'booked' || !isForToday(patient)) return false;
     const nowMins = parseTime(state.currentTime);
     return nowMins > effectiveMinutes(patient) + state.graceWindowMins;
   }
 
+  // How many active (not done/no-show) appointments a doctor already has in the
+  // 15-min bucket containing `timeStr` on `dateStr`. Used to warn reception
+  // before they stack up 20 patients on the same slot — scoped to a specific
+  // date so a busy 10:20 AM tomorrow doesn't count against today's capacity.
+  function countActiveAtSlot(doctorId, dateStr, timeStr, excludePatientId) {
+    const targetBucket = bucketStart(parseTime(timeStr));
+    return state.patients.filter((p) =>
+      p.id !== excludePatientId &&
+      p.doctorId === doctorId &&
+      p.type === 'appointment' &&
+      p.bookedDate === dateStr &&
+      p.bookedTime &&
+      bucketStart(parseTime(p.bookedTime)) === targetBucket &&
+      (p.status === 'booked' || p.status === 'waiting' || p.status === 'in_consult')
+    ).length;
+  }
+
+  function findNextAvailableSlot(doctorId, dateStr, fromTimeStr) {
+    let bucket = bucketStart(parseTime(fromTimeStr));
+    for (let i = 0; i < 48; i++) {
+      if (countActiveAtSlot(doctorId, dateStr, formatHHMM(bucket)) < SLOT_CAPACITY) return formatHHMM(bucket);
+      bucket += SLOT_INTERVAL_MINS;
+    }
+    return formatHHMM(bucket);
+  }
+
   const Qlinic = {
     GRACE_WINDOW_MINS,
+    SLOT_INTERVAL_MINS,
+    SLOT_CAPACITY,
     parseTime,
     formatTime,
 
@@ -139,8 +249,14 @@
     getDoctor,
 
     // Returns { nowServing, waiting: [...sorted with .position], booked: [...], done: [...], noShow: [...] }
-    getQueueForDoctor(doctorId) {
-      const mine = state.patients.filter((p) => p.doctorId === doctorId);
+    // Defaults to today; pass a dateStr to browse a different day's bookings
+    // (e.g. reception checking what's booked for tomorrow). Live-queue
+    // concepts like "now serving"/"waiting" naturally come back empty for
+    // any date that isn't today, since nothing can have happened yet (or
+    // ever will have, for a past date left over in the demo data).
+    getQueueForDoctor(doctorId, dateStr) {
+      const targetDate = dateStr || todayDateStr();
+      const mine = state.patients.filter((p) => p.doctorId === doctorId && belongsToDate(p, targetDate));
       const nowServing = mine.find((p) => p.status === 'in_consult') || null;
       const waiting = mine
         .filter((p) => p.status === 'waiting')
@@ -155,15 +271,17 @@
       return { nowServing, waiting, booked, done, noShow };
     },
 
-    getAllQueues() {
-      return state.doctors.map((d) => ({ doctor: d, queue: Qlinic.getQueueForDoctor(d.id) }));
+    getAllQueues(dateStr) {
+      return state.doctors.map((d) => ({ doctor: d, queue: Qlinic.getQueueForDoctor(d.id, dateStr) }));
     },
 
+    // Searches only today's bookings — "mark arrived" only makes sense for
+    // someone who could plausibly be standing at the desk right now.
     searchBookedPatients(query) {
       const q = query.trim().toLowerCase();
       if (!q) return [];
       return state.patients
-        .filter((p) => p.status === 'booked')
+        .filter((p) => p.status === 'booked' && isForToday(p))
         .filter((p) => p.name.toLowerCase().includes(q) || p.phone.includes(q))
         .map((p) => Object.assign({}, p, { likelyNoShow: isLikelyNoShow(p), effectiveMinutes: effectiveMinutes(p) }));
     },
@@ -189,6 +307,7 @@
         id,
         name: info.name,
         phone: info.phone,
+        address: info.address || '',
         doctorId: info.doctorId,
         type: 'walkin',
         bookedTime: null,
@@ -206,8 +325,10 @@
         id,
         name: info.name,
         phone: info.phone,
+        address: info.address || '',
         doctorId: info.doctorId,
         type: 'appointment',
+        bookedDate: info.bookedDate,
         bookedTime: info.bookedTime,
         status: 'booked',
         arrivedAt: null,
@@ -216,8 +337,22 @@
       return id;
     },
 
+    // { count, capacity, isFull, suggestion } — suggestion is the next HH:MM
+    // bucket (24h, for <input type="time">) that still has room, or null.
+    getSlotAvailability(doctorId, dateStr, timeStr) {
+      if (!doctorId || !dateStr || !timeStr) return null;
+      const count = countActiveAtSlot(doctorId, dateStr, timeStr);
+      const isFull = count >= SLOT_CAPACITY;
+      return {
+        count,
+        capacity: SLOT_CAPACITY,
+        isFull,
+        suggestion: isFull ? findNextAvailableSlot(doctorId, dateStr, timeStr) : null,
+      };
+    },
+
     callNextPatient(doctorId) {
-      const mine = state.patients.filter((p) => p.doctorId === doctorId);
+      const mine = state.patients.filter((p) => p.doctorId === doctorId && isForToday(p));
       const current = mine.find((p) => p.status === 'in_consult');
       if (current) current.status = 'done';
       const waiting = mine
@@ -239,14 +374,17 @@
       persist();
     },
 
+    // Scoped to today — a future booking shouldn't count toward today's
+    // footfall, no-show rate, or totals.
     getDailySummary() {
-      const totalAppointments = state.patients.filter((p) => p.type === 'appointment').length;
-      const totalWalkIns = state.patients.filter((p) => p.type === 'walkin').length;
-      const arrivedOrDone = state.patients.filter((p) => ['waiting', 'in_consult', 'done'].indexOf(p.status) !== -1).length;
-      const noShowCount = state.patients.filter((p) => p.status === 'no_show').length;
-      const likelyNoShowCount = state.patients.filter((p) => isLikelyNoShow(p)).length;
-      const waitingNow = state.patients.filter((p) => p.status === 'waiting').length;
-      const doneCount = state.patients.filter((p) => p.status === 'done').length;
+      const todays = state.patients.filter(isForToday);
+      const totalAppointments = todays.filter((p) => p.type === 'appointment').length;
+      const totalWalkIns = todays.filter((p) => p.type === 'walkin').length;
+      const arrivedOrDone = todays.filter((p) => ['waiting', 'in_consult', 'done'].indexOf(p.status) !== -1).length;
+      const noShowCount = todays.filter((p) => p.status === 'no_show').length;
+      const likelyNoShowCount = todays.filter((p) => isLikelyNoShow(p)).length;
+      const waitingNow = todays.filter((p) => p.status === 'waiting').length;
+      const doneCount = todays.filter((p) => p.status === 'done').length;
       return {
         totalAppointments,
         totalWalkIns,
@@ -258,15 +396,23 @@
       };
     },
 
+    // Only closes out today's unarrived bookings — a future appointment
+    // hasn't been missed yet.
     closeDayNoShows() {
       state.patients.forEach((p) => {
-        if (p.status === 'booked') p.status = 'no_show';
+        if (p.status === 'booked' && isForToday(p)) p.status = 'no_show';
       });
       persist();
     },
 
     isLikelyNoShow,
     effectiveMinutes,
+    isForToday,
+    getTodayDate() {
+      return todayDateStr();
+    },
+    formatDateLabel,
+    isPastRealDateTime,
 
     login(email, password) {
       const ok = email.trim().toLowerCase() === state.clinic.adminEmail && password === state.clinic.adminPassword;
@@ -297,6 +443,30 @@
       const m = String(wrapped % 60).padStart(2, '0');
       state.currentTime = `${h}:${m}`;
       persist();
+    },
+
+    // Re-reads state from localStorage. The reception desk, doctor's screen, and
+    // waiting-room display are meant to run as separate tabs/devices sharing one
+    // browser's storage — call this before re-rendering a "live" screen so it
+    // picks up changes made from another tab.
+    refresh() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) state = JSON.parse(raw);
+      } catch (e) {
+        /* keep current in-memory state */
+      }
+    },
+
+    // Fires `cb` the moment another tab changes clinic data (instant cross-tab
+    // sync), in addition to whatever polling interval a screen already runs.
+    onExternalChange(cb) {
+      window.addEventListener('storage', (e) => {
+        if (e.key === STORAGE_KEY) {
+          Qlinic.refresh();
+          cb();
+        }
+      });
     },
   };
 

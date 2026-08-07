@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Qlinic — No one should have to wait blind</title>
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles.css?v=5" />
 </head>
 <body>
 
@@ -14,23 +14,53 @@
   </nav>
 
   <!-- HERO -->
-  <section class="mkt-section tight">
-    <div class="eyebrow">For clinics in Tier 2 &amp; Tier 3 India</div>
-    <h1 class="mkt-h1">Nobody should sit<br />two hours not knowing why.</h1>
-    <p class="mkt-sub">
-      Qlinic tells every patient when to leave home, keeps your reception desk
-      out of "how much longer" conversations, and gives your doctor one tap to
-      say "running late" — without anyone standing at the door doing math.
-    </p>
-    <div class="mkt-cta-row">
-      <a href="login.html" class="btn btn-accent btn-large">See it running</a>
-      <a href="#how-it-works" class="btn btn-ghost btn-large">How it works</a>
+  <section class="mkt-section tight mkt-hero">
+    <div class="mkt-hero-grid">
+      <div class="mkt-hero-copy">
+        <div class="eyebrow">For clinics in Tier 2 &amp; Tier 3 India</div>
+        <h1 class="mkt-h1">Nobody should sit<br />two hours not knowing why.</h1>
+        <p class="mkt-sub mkt-sub-left">
+          Qlinic tells every patient when to leave home, keeps your reception desk
+          out of "how much longer" conversations, and gives your doctor one tap to
+          say "running late" — without anyone standing at the door doing math.
+        </p>
+        <div class="mkt-cta-row mkt-cta-row-left">
+          <a href="login.html" class="btn btn-accent btn-large">See it running</a>
+          <a href="#use-cases" class="btn btn-ghost btn-large">Is this for my clinic?</a>
+        </div>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <div class="hero-blob hero-blob-teal"></div>
+        <div class="hero-blob hero-blob-coral"></div>
+        <div class="hero-blob hero-blob-purple"></div>
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="live-dot" style="width:8px;height:8px;"></span>
+            Dr. Anjali Rao — running 15 min behind
+          </div>
+          <div class="hero-card-row hero-card-row-serving">
+            <span class="hero-card-tag">Now serving</span>
+            <span class="hero-card-name">Anil Verma</span>
+          </div>
+          <div class="hero-card-row">
+            <span class="hero-card-pos">1</span>
+            <span class="hero-card-name">Pooja Singh</span>
+            <span class="hero-card-eta">~5–15 min</span>
+          </div>
+          <div class="hero-card-row">
+            <span class="hero-card-pos">2</span>
+            <span class="hero-card-name">Rahul Verma</span>
+            <span class="hero-card-eta">~12–27 min</span>
+          </div>
+          <div class="hero-card-footer">Sent to Rahul by SMS at 9:52 AM — no app required</div>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- PROBLEM -->
-  <section class="mkt-section grey">
-    <div class="eyebrow">The problem</div>
+  <section class="mkt-section grey reveal">
+    <div class="eyebrow eyebrow-coral">The problem</div>
     <h2 class="mkt-h2">Your waiting room already knows<br />something your patients don't.</h2>
     <p class="mkt-sub">
       Patients arrive early "to be safe," ask your receptionist every ten
@@ -40,23 +70,71 @@
     </p>
     <div class="mkt-stats">
       <div class="mkt-stat">
-        <div class="big">₹2,000–8,000</div>
+        <div class="big stat-teal">₹2,000–8,000</div>
         <div class="label">what clinics already spend monthly on software that doesn't solve this</div>
       </div>
       <div class="mkt-stat">
-        <div class="big">2.5L+</div>
+        <div class="big stat-coral">2.5L+</div>
         <div class="label">facilities already on India's ABDM digital health network</div>
       </div>
       <div class="mkt-stat">
-        <div class="big">₹20</div>
+        <div class="big stat-purple">₹20</div>
         <div class="label">government incentive per ABHA-linked patient registration</div>
       </div>
     </div>
   </section>
 
+  <!-- USE CASES -->
+  <section class="mkt-section reveal" id="use-cases">
+    <div class="eyebrow eyebrow-purple">Built for how you actually run</div>
+    <h2 class="mkt-h2">Every clinic waits differently.<br />Qlinic adjusts to yours.</h2>
+    <p class="mkt-sub">
+      This isn't one-size-fits-all queue software. Here's what it looks like
+      depending on the kind of practice you run.
+    </p>
+    <div class="usecase-grid">
+      <div class="usecase-card accent-teal">
+        <div class="usecase-icon">🩺</div>
+        <h3>Solo GP &amp; family physician clinics</h3>
+        <p class="usecase-pain">One doctor, one receptionist, and a waiting room that fills up by 9am — every "how much longer" pulls staff away from patients.</p>
+        <p class="usecase-fix">A single shared queue means no one has to interrupt care to answer it.</p>
+      </div>
+      <div class="usecase-card accent-blue">
+        <div class="usecase-icon">🏥</div>
+        <h3>Multi-doctor polyclinics</h3>
+        <p class="usecase-pain">Two or three doctors running at different paces, and patients unsure which queue they're even in.</p>
+        <p class="usecase-fix">Each doctor's delay is tracked independently — the queue sorts itself out automatically.</p>
+      </div>
+      <div class="usecase-card accent-coral">
+        <div class="usecase-icon">🦷</div>
+        <h3>Dental &amp; specialty clinics</h3>
+        <p class="usecase-pain">Procedures that run 20 minutes or 2 hours make printed appointment slots meaningless by midday.</p>
+        <p class="usecase-fix">One tap from the dentist keeps every waiting patient's estimate honest, all afternoon.</p>
+      </div>
+      <div class="usecase-card accent-purple">
+        <div class="usecase-icon">🧪</div>
+        <h3>Diagnostic centers &amp; pathology labs</h3>
+        <p class="usecase-pain">Mostly walk-ins, mostly mornings, and a front desk that turns into a shouting match by 10am.</p>
+        <p class="usecase-fix">A waiting-room display patients can actually read, so the desk stops being the only source of truth.</p>
+      </div>
+      <div class="usecase-card accent-pink">
+        <div class="usecase-icon">🤸</div>
+        <h3>Physiotherapy &amp; rehab centers</h3>
+        <p class="usecase-pain">The same regulars rebooking the same popular morning slot, until one time bucket has twenty people in it.</p>
+        <p class="usecase-fix">Reception sees a slot filling up in real time and gets nudged to the next open one before it happens.</p>
+      </div>
+      <div class="usecase-card accent-teal">
+        <div class="usecase-icon">👶</div>
+        <h3>Pediatric clinics</h3>
+        <p class="usecase-pain">Anxious kids, unpredictable visit lengths, and parents who arrive early "just in case" and then wait anyway.</p>
+        <p class="usecase-fix">A realistic time-to-leave-home message means fewer families sitting with a toddler longer than they have to.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- HOW IT WORKS -->
-  <section class="mkt-section" id="how-it-works">
-    <div class="eyebrow">How it works</div>
+  <section class="mkt-section grey reveal" id="how-it-works">
+    <div class="eyebrow eyebrow-blue">How it works</div>
     <h2 class="mkt-h2">One shared queue. No new habits<br />for your staff or your patients.</h2>
     <div class="mkt-steps">
       <div class="mkt-step">
@@ -93,31 +171,37 @@
   </section>
 
   <!-- FEATURES -->
-  <section class="mkt-section grey">
-    <div class="eyebrow">What's inside</div>
+  <section class="mkt-section reveal">
+    <div class="eyebrow eyebrow-pink">What's inside</div>
     <h2 class="mkt-h2">Built around the three people<br />who decide if this actually gets used.</h2>
     <div class="mkt-feature-grid">
       <div class="mkt-feature-card">
+        <div class="feature-icon icon-teal">🧑‍💼</div>
         <h3>For your receptionist</h3>
         <p>A single screen to search, check in, and see the whole day's queue — replacing the register, not adding to it.</p>
       </div>
       <div class="mkt-feature-card">
+        <div class="feature-icon icon-blue">🩺</div>
         <h3>For your doctor</h3>
         <p>One tap to broadcast "running late," "on a break," or "back in 10" — no staff interruption required, no public scoreboard.</p>
       </div>
       <div class="mkt-feature-card">
+        <div class="feature-icon icon-coral">📱</div>
         <h3>For your patients</h3>
         <p>An honest, updating estimate by SMS or WhatsApp — no app to install, no smartphone required.</p>
       </div>
       <div class="mkt-feature-card">
+        <div class="feature-icon icon-purple">📺</div>
         <h3>For the waiting room</h3>
         <p>A simple display screen showing who's being seen and who's next — visible proof that the wait is being managed.</p>
       </div>
       <div class="mkt-feature-card">
+        <div class="feature-icon icon-pink">📊</div>
         <h3>For the owner</h3>
         <p>A daily summary of footfall, no-shows, and delays — turning "it felt busy" into a specific, actionable fact.</p>
       </div>
       <div class="mkt-feature-card">
+        <div class="feature-icon icon-teal">🚀</div>
         <h3>For the future</h3>
         <p>Built to grow into ABHA-linked registration, capturing government digital-health incentives as they become standard.</p>
       </div>
@@ -125,7 +209,7 @@
   </section>
 
   <!-- WHY PAY -->
-  <section class="mkt-section dark">
+  <section class="mkt-section dark reveal">
     <div class="eyebrow">Why clinics choose Qlinic</div>
     <h2 class="mkt-h2">This isn't software that makes<br />waiting feel nicer.</h2>
     <p class="mkt-sub">
@@ -142,6 +226,18 @@
     Qlinic — Intelligent Clinic Flow Management &nbsp;·&nbsp; Prototype build, not for clinical or production use &nbsp;·&nbsp;
     <a href="login.html">Clinic admin login</a>
   </footer>
+
+  <script>
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
+  </script>
 
 </body>
 </html>
