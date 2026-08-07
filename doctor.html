@@ -53,8 +53,8 @@
           <div id="delayInputWrap" style="display:none;margin-top:10px;">
             <div class="inline-form">
               <div class="field">
-                <label>How many minutes behind?</label>
-                <input type="number" id="delayMinsInput" min="0" step="5" value="15" style="max-width:140px;" />
+                <label id="delayInputLabel">How many minutes behind?</label>
+                <select id="delayMinsInput" style="max-width:140px;"></select>
               </div>
               <button class="btn-sm primary" id="confirmDelayBtn">Broadcast delay</button>
             </div>
@@ -189,10 +189,30 @@
         `;
       }
 
+      // Both "Running late" and "On a break" ask for a duration before
+      // broadcasting — the doctor picks how it'll show up, then confirms.
+      const DURATION_CONFIG = {
+        running_late: { label: 'How many minutes behind?', button: 'Broadcast delay', note: (m) => `Running about ${m} min behind.` },
+        on_break: { label: 'How long is your break?', button: 'Broadcast break', note: (m) => `On a break for about ${m} min.` },
+      };
+      let pendingStatus = null;
+
+      function fillDelayOptions() {
+        const sel = document.getElementById('delayMinsInput');
+        const opts = [];
+        for (let m = 5; m <= 120; m += 5) opts.push(`<option value="${m}" ${m === 15 ? 'selected' : ''}>${m} min</option>`);
+        sel.innerHTML = opts.join('');
+      }
+      fillDelayOptions();
+
       document.querySelectorAll('[data-status]').forEach((btn) => {
         btn.addEventListener('click', async () => {
           const status = btn.getAttribute('data-status');
-          if (status === 'running_late') {
+          const config = DURATION_CONFIG[status];
+          if (config) {
+            pendingStatus = status;
+            document.getElementById('delayInputLabel').textContent = config.label;
+            document.getElementById('confirmDelayBtn').textContent = config.button;
             document.getElementById('delayInputWrap').style.display = 'block';
             return;
           }
@@ -205,10 +225,11 @@
 
       document.getElementById('confirmDelayBtn').addEventListener('click', async () => {
         const mins = document.getElementById('delayMinsInput').value;
-        await Qlinic.setDoctorStatus(currentDoctorId(), 'running_late', mins, `Running about ${mins} min behind.`);
+        const config = DURATION_CONFIG[pendingStatus];
+        await Qlinic.setDoctorStatus(currentDoctorId(), pendingStatus, mins, config.note(mins));
         document.getElementById('delayInputWrap').style.display = 'none';
         render();
-        showToast('Delay broadcast to all waiting patients');
+        showToast(pendingStatus === 'on_break' ? 'Break broadcast to all waiting patients' : 'Delay broadcast to all waiting patients');
       });
 
       document.getElementById('callNextBtn').addEventListener('click', async () => {
