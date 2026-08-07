@@ -50,9 +50,15 @@
           These control how the queue behaves for every doctor in your clinic.
         </p>
         <form id="rulesForm" class="inline-form">
-          <div class="field">
-            <label>Grace window (minutes)</label>
-            <input type="number" id="graceWindowInput" min="0" step="5" required />
+          <div class="field" style="max-width:160px;">
+            <label>Grace window</label>
+            <div class="time-picker" id="graceWindowPicker">
+              <button type="button" class="time-picker-trigger" id="graceWindowTrigger">
+                <span id="graceWindowTriggerText">Loading…</span><span class="time-picker-caret">▾</span>
+              </button>
+              <input type="hidden" id="graceWindowInput" required />
+              <div class="time-picker-panel" id="graceWindowPanel" style="display:none;"></div>
+            </div>
           </div>
           <div class="field">
             <label>Slot length (minutes)</label>
@@ -158,12 +164,67 @@
           : `${active} active of ${doctors.length} total.`;
       }
 
+      // Same custom dropdown as Doctor View's delay/break picker: 10-min
+      // steps up to an hour, then 30-min steps expressed in hours.
+      const DURATION_OPTIONS = [];
+      for (let m = 10; m < 60; m += 10) DURATION_OPTIONS.push({ value: m, label: `${m} min` });
+      DURATION_OPTIONS.push({ value: 60, label: '1 hr' });
+      for (let m = 90; m <= 240; m += 30) DURATION_OPTIONS.push({ value: m, label: `${m / 60} hr` });
+
+      // Falls back to a plain "N min" label for a stored value that predates
+      // this picker and doesn't land on one of the preset options.
+      function formatDuration(mins) {
+        const known = DURATION_OPTIONS.find((o) => o.value === Number(mins));
+        return known ? known.label : `${mins} min`;
+      }
+
+      function renderGraceWindowPanel() {
+        const panel = document.getElementById('graceWindowPanel');
+        const currentVal = document.getElementById('graceWindowInput').value;
+        panel.innerHTML = DURATION_OPTIONS.map((o) => `
+          <div class="time-picker-option ${String(o.value) === String(currentVal) ? 'selected' : ''}" data-value="${o.value}" data-label="${o.label}">${o.label}</div>
+        `).join('');
+      }
+      function openGraceWindowPanel() {
+        renderGraceWindowPanel();
+        document.getElementById('graceWindowPanel').style.display = 'block';
+        const panel = document.getElementById('graceWindowPanel');
+        const target = panel.querySelector('.selected') || panel.querySelector('.time-picker-option');
+        if (target) target.scrollIntoView({ block: 'nearest' });
+      }
+      function closeGraceWindowPanel() {
+        document.getElementById('graceWindowPanel').style.display = 'none';
+      }
+      function selectGraceWindow(value, label) {
+        document.getElementById('graceWindowInput').value = value;
+        document.getElementById('graceWindowTriggerText').textContent = label;
+        closeGraceWindowPanel();
+      }
+      document.getElementById('graceWindowTrigger').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const panel = document.getElementById('graceWindowPanel');
+        if (panel.style.display === 'block') closeGraceWindowPanel();
+        else openGraceWindowPanel();
+      });
+      document.getElementById('graceWindowPanel').addEventListener('click', (e) => {
+        const opt = e.target.closest('.time-picker-option');
+        if (!opt) return;
+        selectGraceWindow(opt.getAttribute('data-value'), opt.getAttribute('data-label'));
+      });
+      document.addEventListener('click', (e) => {
+        if (!document.getElementById('graceWindowPicker').contains(e.target)) closeGraceWindowPanel();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeGraceWindowPanel();
+      });
+
       async function loadClinic() {
         const clinic = await Qlinic.getClinic();
         if (!clinic) return;
         document.getElementById('clinicName').textContent = clinic.name;
         document.getElementById('clinicNameInput').value = clinic.name;
         document.getElementById('graceWindowInput').value = clinic.grace_window_mins;
+        document.getElementById('graceWindowTriggerText').textContent = formatDuration(clinic.grace_window_mins);
         document.getElementById('slotIntervalInput').value = clinic.slot_interval_mins;
         document.getElementById('slotCapacityInput').value = clinic.slot_capacity;
         document.getElementById('displayLanguageInput').value = clinic.display_language;
