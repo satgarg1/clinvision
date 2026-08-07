@@ -21,6 +21,7 @@
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="display.html" class="nav-link">Display Screen</a>
         <a href="settings.html" class="nav-link active">Settings</a>
+        <a href="account-security.html" class="nav-link">Account</a>
       </nav>
     </aside>
 
@@ -67,10 +68,14 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=8"></script>
+  <script src="clinic-data.js?v=9"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
+      if (!(await Qlinic.isAdmin())) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
 
       const PAGE_SIZE = 10;
       let allDoctors = [];
