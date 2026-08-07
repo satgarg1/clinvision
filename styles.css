@@ -1069,6 +1069,7 @@ table.qtable tr:last-child td { border-bottom: none; }
   font-size: 13px;
   margin-top: 8px;
   line-height: 1.5;
+  min-height: 20px;
 }
 .slot-hint.ok { color: var(--success); }
 .slot-hint.warn { color: var(--warning); }
