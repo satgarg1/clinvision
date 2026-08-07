@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Settings — Qlinic</title>
 <script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
-<link rel="stylesheet" href="styles.css?v=10" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=11" />
 </head>
 <body>
   <div class="app-shell">
@@ -27,7 +30,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-header"><span class="panel-icon icon-blue">🏥</span><h2>Clinic profile</h2></div>
+        <div class="panel-header"><h2>Clinic profile</h2></div>
         <form id="clinicForm" class="inline-form">
           <div class="field" style="min-width:260px;">
             <label>Clinic name</label>
@@ -38,7 +41,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-header"><span class="panel-icon icon-purple">⏱️</span><h2>Queue rules</h2></div>
+        <div class="panel-header"><h2>Queue rules</h2></div>
         <p class="panel-note">
           These control how the queue behaves for every doctor in your clinic.
         </p>
@@ -64,13 +67,13 @@
       </div>
 
       <div class="panel">
-        <div class="panel-header"><span class="panel-icon icon-teal">🩺</span><h2>Doctors</h2></div>
+        <div class="panel-header"><h2>Doctors</h2></div>
         <p class="panel-note" id="doctorSummaryNote">Loading…</p>
         <a href="manage-doctors.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage doctors</a>
       </div>
 
       <div class="panel">
-        <div class="panel-header"><span class="panel-icon icon-coral">🔒</span><h2>Account &amp; security</h2></div>
+        <div class="panel-header"><h2>Account &amp; security</h2></div>
 
         <h3 style="font-size:14px;margin:0 0 8px;color:var(--grey-700);">Email</h3>
         <p class="panel-note">Current: <strong id="currentEmail">—</strong></p>
@@ -102,7 +105,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-header"><span class="panel-icon icon-pink">🌗</span><h2>Appearance</h2></div>
+        <div class="panel-header"><h2>Appearance</h2></div>
         <p class="panel-note">Applies on this device, for the Qlinic app screens (not the waiting-room display).</p>
         <div class="mode-toggle" role="tablist" aria-label="Day or night theme">
           <button type="button" class="mode-btn" data-theme-choice="light">☀️ Day</button>

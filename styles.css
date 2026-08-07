@@ -19,15 +19,12 @@
   --warning-bg: #fdf1dc;
   --danger: #c5221f;
   --danger-bg: #fce8e6;
-  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --radius: 14px;
-  /* Fixed dark surface + text colors that stay the same regardless of the
-     day/night toggle (the app sidebar) — deliberately NOT the same
-     variables as --black/--white/--grey-*, which flip in dark mode. */
-  --sidebar-bg: #1d1d1f;
-  --sidebar-text: #d2d2d7;
-  --sidebar-text-muted: #86868b;
-  --sidebar-hover-bg: #2b2b2d;
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --radius: 12px;
+  /* Fixed dark-surface colors for floating chrome that stays dark
+     regardless of the day/night toggle (the toast) — deliberately NOT the
+     same variables as --black/--white/--grey-*, which flip in dark mode. */
+  --dark-surface-bg: #1d1d1f;
 
   /* Marketing-page-only accent palette (the logged-in app keeps its single
      --accent blue; the landing page uses this wider set for use-case cards,
@@ -109,7 +106,7 @@ a { color: inherit; }
   font-size: 15px;
   font-weight: 600;
   padding: 10px 22px;
-  border-radius: 999px;
+  border-radius: 10px;
   text-decoration: none;
   border: none;
   cursor: pointer;
@@ -444,16 +441,6 @@ a { color: inherit; }
 
 .panel-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .panel-header h2 { margin: 0; }
-.panel-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-}
 
 .board-doc-dot {
   display: inline-block;
@@ -566,21 +553,23 @@ a { color: inherit; }
 .app-shell { display: flex; min-height: 100vh; }
 
 .app-sidebar {
-  width: 220px;
+  width: 224px;
   flex-shrink: 0;
-  background: var(--sidebar-bg);
-  color: #ffffff;
-  padding: 24px 16px;
+  background: var(--white);
+  border-right: 1px solid var(--grey-300);
+  color: var(--black);
+  padding: 24px 14px;
   display: flex;
   flex-direction: column;
 }
 
 .app-sidebar .brand {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
-  color: #ffffff;
+  letter-spacing: -0.01em;
+  color: var(--black);
   text-decoration: none;
-  padding: 0 8px;
+  padding: 0 10px;
   margin-bottom: 28px;
   display: block;
 }
@@ -588,27 +577,34 @@ a { color: inherit; }
 .app-sidebar nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 
 .app-sidebar a.nav-link {
-  padding: 10px 12px;
+  padding: 9px 12px;
   border-radius: 8px;
-  color: var(--sidebar-text);
+  color: var(--grey-700);
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
+  border-left: 2px solid transparent;
+  transition: background 0.12s ease, color 0.12s ease;
 }
-.app-sidebar a.nav-link:hover { background: var(--sidebar-hover-bg); color: #ffffff; }
-.app-sidebar a.nav-link.active { background: var(--accent); color: #ffffff; }
+.app-sidebar a.nav-link:hover { background: var(--grey-100); color: var(--black); }
+.app-sidebar a.nav-link.active {
+  background: var(--grey-100);
+  color: var(--accent);
+  font-weight: 600;
+  border-left-color: var(--accent);
+}
 
 .app-sidebar .clinic-name {
   font-size: 12px;
-  color: var(--sidebar-text-muted);
-  padding: 0 8px;
-  margin-bottom: 16px;
+  color: var(--grey-500);
+  padding: 0 10px;
+  margin-bottom: 18px;
 }
 
 .app-main {
   flex: 1;
   background: var(--grey-100);
-  padding: 32px 40px;
+  padding: 40px 48px;
   min-width: 0;
 }
 
@@ -616,15 +612,15 @@ a { color: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
   flex-wrap: wrap;
   gap: 12px;
 }
 
 .app-topbar h1 {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   margin: 0;
 }
 
@@ -655,15 +651,6 @@ a { color: inherit; }
   background: var(--white);
   color: var(--black);
 }
-
-.pager {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 18px;
-}
-.pager-status { font-size: 13px; color: var(--grey-500); }
 
 .clock-pill {
   display: flex;
@@ -707,12 +694,13 @@ a { color: inherit; }
   background: var(--white);
   border: 1px solid var(--grey-300);
   border-radius: var(--radius);
-  padding: 24px 26px;
-  margin-bottom: 24px;
+  padding: 26px 28px;
+  margin-bottom: 20px;
 }
 .panel h2 {
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   margin: 0 0 16px;
 }
 
@@ -744,19 +732,22 @@ table.qtable tr:last-child td { border-bottom: none; }
 .badge-booked { background: var(--grey-100); color: var(--grey-500); }
 
 .btn-sm {
+  font-family: var(--font);
   font-size: 13px;
   font-weight: 600;
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--grey-300);
-  background: var(--white);
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: var(--grey-100);
+  color: var(--grey-700);
   cursor: pointer;
 }
 .btn-sm:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn-sm:hover { border-color: var(--black); }
-.btn-sm.primary { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+.btn-sm:hover { background: var(--grey-300); color: var(--black); }
+.btn-sm.primary { background: var(--accent); color: #ffffff; }
 .btn-sm.primary:hover { background: var(--accent-dark); }
-.btn-sm.danger { color: var(--danger); }
+.btn-sm.danger { background: transparent; color: var(--danger); }
+.btn-sm.danger:hover { background: var(--danger-bg); }
 
 .inline-form {
   display: flex;
@@ -877,7 +868,7 @@ table.qtable tr:last-child td { border-bottom: none; }
   position: fixed;
   bottom: 24px;
   right: 24px;
-  background: var(--sidebar-bg);
+  background: var(--dark-surface-bg);
   color: #ffffff;
   padding: 12px 20px;
   border-radius: 10px;

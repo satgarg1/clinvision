@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Dashboard — Qlinic</title>
 <script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
-<link rel="stylesheet" href="styles.css?v=10" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=11" />
 </head>
 <body>
   <div class="app-shell">
@@ -32,12 +35,12 @@
       <div class="card-grid" id="statCards"></div>
 
       <div class="panel">
-        <div class="panel-header"><span class="panel-icon icon-blue">🩺</span><h2>Doctor status</h2></div>
+        <div class="panel-header"><h2>Doctor status</h2></div>
         <div id="doctorStatusList"></div>
       </div>
 
       <div class="panel">
-        <div class="panel-header"><span class="panel-icon icon-purple">🌙</span><h2>End of day</h2></div>
+        <div class="panel-header"><h2>End of day</h2></div>
         <p style="font-size:14px;color:var(--grey-700);margin:0 0 14px;">
           Anyone still marked "booked" (never arrived) today will be closed out as a no-show.
         </p>
