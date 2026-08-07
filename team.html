@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Team — Qlinic</title>
+<script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=11" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <a href="index.html" class="brand">Qlinic</a>
+      <div class="clinic-name" id="clinicName">Loading…</div>
+      <nav>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="reception.html" class="nav-link">Reception</a>
+        <a href="doctor.html" class="nav-link">Doctor View</a>
+        <a href="display.html" class="nav-link">Display Screen</a>
+        <a href="settings.html" class="nav-link active">Settings</a>
+        <a href="account-security.html" class="nav-link">Account</a>
+      </nav>
+    </aside>
+
+    <main class="app-main">
+      <div class="app-topbar">
+        <div>
+          <div class="breadcrumb"><a href="settings.html">Settings</a> <span>/</span> Team</div>
+          <h1>Team</h1>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>Add a staff member</h2></div>
+        <p class="panel-note">
+          Create their login here, then share the email and password with them yourself
+          (WhatsApp, in person, however you'd normally do it).
+        </p>
+        <form id="addStaffForm" class="inline-form">
+          <div class="field">
+            <label>Full name</label>
+            <input type="text" id="newStaffName" placeholder="Priya Sharma" required />
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input type="email" id="newStaffEmail" required />
+          </div>
+          <div class="field">
+            <label>Password</label>
+            <input type="text" id="newStaffPassword" minlength="6" required placeholder="At least 6 characters" />
+          </div>
+          <div class="field">
+            <label>Role</label>
+            <select id="newStaffRole">
+              <option value="reception">Reception</option>
+              <option value="doctor">Doctor</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-sm primary">Add staff member</button>
+        </form>
+        <p class="panel-note" id="addStaffNote" style="display:none;margin-top:12px;margin-bottom:0;"></p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>Everyone with access</h2></div>
+        <div id="teamList"></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=9"></script>
+  <script>
+    (async function () {
+      await Qlinic.requireLogin('login.html');
+      if (!(await Qlinic.isAdmin())) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+
+      let myProfileId = null;
+
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      function roleOptionsHtml(selected) {
+        return ['admin', 'reception', 'doctor'].map((r) =>
+          `<option value="${r}" ${r === selected ? 'selected' : ''}>${r.charAt(0).toUpperCase() + r.slice(1)}</option>`
+        ).join('');
+      }
+
+      async function renderTeam() {
+        const team = await Qlinic.getTeam();
+        const box = document.getElementById('teamList');
+        box.innerHTML = `
+          <table class="qtable">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              ${team.map((p) => {
+                const isSelf = p.id === myProfileId;
+                return `
+                <tr style="${p.isActive ? '' : 'opacity:0.5;'}">
+                  <td>${p.fullName || '—'}${isSelf ? ' <span class="sub-line">(you)</span>' : ''}</td>
+                  <td>${p.email}</td>
+                  <td>
+                    <select class="staff-role" data-id="${p.id}" ${isSelf ? 'disabled' : ''} style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);">${roleOptionsHtml(p.role)}</select>
+                  </td>
+                  <td>${p.isActive ? '<span class="badge badge-booked">Active</span>' : '<span class="badge badge-no-show">Deactivated</span>'}</td>
+                  <td style="white-space:nowrap;">
+                    ${isSelf ? '' : (p.isActive
+                      ? `<button class="btn-sm danger" onclick="doSetStaffActive('${p.id}', false)">Deactivate</button>`
+                      : `<button class="btn-sm" onclick="doSetStaffActive('${p.id}', true)">Reactivate</button>`)}
+                  </td>
+                </tr>
+              `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+
+      async function doSetStaffActive(id, isActive) {
+        if (!isActive && !confirm('Deactivate this person? They will lose access immediately. You can reactivate them anytime.')) {
+          return;
+        }
+        await Qlinic.setStaffActive(id, isActive);
+        showToast(isActive ? 'Access restored' : 'Access removed');
+        renderTeam();
+      }
+      window.doSetStaffActive = doSetStaffActive;
+
+      document.getElementById('teamList').addEventListener('change', async (e) => {
+        if (!e.target.classList.contains('staff-role')) return;
+        const id = e.target.getAttribute('data-id');
+        await Qlinic.updateStaffRole(id, e.target.value);
+        showToast('Role updated');
+        renderTeam();
+      });
+
+      document.getElementById('addStaffForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const note = document.getElementById('addStaffNote');
+        note.style.display = 'none';
+        const fullName = document.getElementById('newStaffName').value;
+        const email = document.getElementById('newStaffEmail').value;
+        const password = document.getElementById('newStaffPassword').value;
+        const role = document.getElementById('newStaffRole').value;
+        try {
+          await Qlinic.createStaffAccount({ email, password, fullName, role });
+          note.style.display = 'block';
+          note.textContent = `Added. Share these with ${fullName}: email ${email}, password ${password}.`;
+          e.target.reset();
+          showToast('Staff member added');
+          renderTeam();
+        } catch (err) {
+          note.style.display = 'block';
+          note.textContent = err.message || 'Could not add this staff member.';
+        }
+      });
+
+      const clinic = await Qlinic.getClinic();
+      document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      const myProfile = await Qlinic.getMyProfile();
+      myProfileId = myProfile ? myProfile.id : null;
+      await renderTeam();
+    })();
+  </script>
+</body>
+</html>

@@ -536,6 +536,70 @@
     if (error) throw error;
   }
 
+  // ---------------- staff & roles ----------------
+
+  function normalizeProfile(row) {
+    return {
+      id: row.id,
+      email: row.email,
+      fullName: row.full_name,
+      role: row.role,
+      isActive: row.is_active,
+      createdAt: row.created_at,
+    };
+  }
+
+  async function getMyProfile() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return null;
+    const { data, error } = await sb.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+    if (error) throw error;
+    return data ? normalizeProfile(data) : null;
+  }
+
+  async function isAdmin() {
+    const profile = await getMyProfile();
+    return !!profile && profile.role === 'admin' && profile.isActive;
+  }
+
+  async function getTeam() {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId) return [];
+    const { data, error } = await sb.from('profiles').select('*').eq('clinic_id', clinicId).order('created_at');
+    if (error) throw error;
+    return data.map(normalizeProfile);
+  }
+
+  // Creates a brand-new login for a staff member. Uses a throwaway,
+  // non-persisted Supabase client for the signUp call so it never touches
+  // (or overwrites) the admin's own session in this browser's storage —
+  // otherwise auth.signUp() would sign the admin's tab in as the new
+  // staff member instead.
+  async function createStaffAccount({ email, password, fullName, role }) {
+    const tempClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data, error } = await tempClient.auth.signUp({ email, password });
+    if (error) throw error;
+    const { error: linkError } = await sb.rpc('create_staff_profile', {
+      new_user_id: data.user.id,
+      staff_email: email,
+      staff_full_name: fullName,
+      staff_role: role,
+    });
+    if (linkError) throw linkError;
+  }
+
+  async function setStaffActive(profileId, isActive) {
+    const { error } = await sb.from('profiles').update({ is_active: isActive }).eq('id', profileId);
+    if (error) throw error;
+  }
+
+  async function updateStaffRole(profileId, role) {
+    const { error } = await sb.from('profiles').update({ role }).eq('id', profileId);
+    if (error) throw error;
+  }
+
   // ---------------- appearance (local device preference, not synced
   // across devices — this is a personal UI setting, not clinic data)
   // ----------------
@@ -607,6 +671,13 @@
     changePassword,
     requestPasswordReset,
     completePasswordReset,
+
+    getMyProfile,
+    isAdmin,
+    getTeam,
+    createStaffAccount,
+    setStaffActive,
+    updateStaffRole,
 
     getTheme,
     setTheme,

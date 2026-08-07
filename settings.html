@@ -21,6 +21,7 @@
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="display.html" class="nav-link">Display Screen</a>
         <a href="settings.html" class="nav-link active">Settings</a>
+        <a href="account-security.html" class="nav-link">Account</a>
       </nav>
     </aside>
 
@@ -73,6 +74,12 @@
       </div>
 
       <div class="panel">
+        <div class="panel-header"><h2>Team</h2></div>
+        <p class="panel-note" id="teamSummaryNote">Loading…</p>
+        <a href="team.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage team</a>
+      </div>
+
+      <div class="panel">
         <div class="panel-header"><h2>Account &amp; security</h2></div>
         <p class="panel-note">Signed in as <strong id="currentEmail">—</strong></p>
         <a href="account-security.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage account &amp; security</a>
@@ -93,16 +100,27 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=8"></script>
+  <script src="clinic-data.js?v=9"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
+      if (!(await Qlinic.isAdmin())) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
 
       function showToast(msg) {
         const t = document.getElementById('toast');
         t.textContent = msg;
         t.classList.add('show');
         setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      async function loadTeamSummary() {
+        const team = await Qlinic.getTeam();
+        const active = team.filter((p) => p.isActive).length;
+        document.getElementById('teamSummaryNote').textContent =
+          `${active} active of ${team.length} total.`;
       }
 
       async function loadDoctorSummary() {
@@ -153,6 +171,7 @@
       document.getElementById('currentEmail').textContent = (await Qlinic.getCurrentUserEmail()) || '—';
       await loadClinic();
       await loadDoctorSummary();
+      await loadTeamSummary();
       applyTheme(Qlinic.getTheme());
       Qlinic.onLiveChange(loadDoctorSummary);
     })();
