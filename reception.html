@@ -85,7 +85,7 @@
             </div>
             <div class="field mode-only mode-only-appointment">
               <label>Appointment time</label>
-              <input type="time" id="pTime" />
+              <select id="pTime"></select>
             </div>
             <div class="field mode-only mode-only-walkin" style="display:none;">
               <label>Reason (optional)</label>
@@ -161,6 +161,22 @@
       function fillDoctorSelects() {
         const opts = doctorsCache.map((d) => `<option value="${d.id}">${d.name} — ${d.specialty}</option>`).join('');
         document.getElementById('pDoctor').innerHTML = opts;
+      }
+
+      // Native <input type="time"> renders a different, inconsistent picker
+      // per browser/OS and defaults to 1-minute granularity. A plain select
+      // in 5-minute steps matches every other dropdown in the app and gives
+      // exact control over the interval — values stay "HH:MM" 24-hour
+      // strings, so nothing else that reads/sets pTime.value has to change.
+      function fillTimeOptions() {
+        const sel = document.getElementById('pTime');
+        const opts = ['<option value="" disabled selected>Select a time</option>'];
+        for (let m = 0; m < 1440; m += 5) {
+          const hh = String(Math.floor(m / 60)).padStart(2, '0');
+          const mm = String(m % 60).padStart(2, '0');
+          opts.push(`<option value="${hh}:${mm}">${Qlinic.formatTime(m)}</option>`);
+        }
+        sel.innerHTML = opts.join('');
       }
 
       // Walk-in and phoned-appointment used to be two separate, near-identical
@@ -482,7 +498,7 @@
 
       document.getElementById('pDoctor').addEventListener('change', updateSlotHint);
       document.getElementById('pDate').addEventListener('change', updateSlotHint);
-      document.getElementById('pTime').addEventListener('input', updateSlotHint);
+      document.getElementById('pTime').addEventListener('change', updateSlotHint);
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
@@ -490,6 +506,7 @@
       setInterval(() => { document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date()); }, 30000);
       document.getElementById('pDate').min = Qlinic.getTodayDate();
       document.getElementById('pDate').value = Qlinic.getTodayDate();
+      fillTimeOptions();
 
       await refreshDoctorsCache();
       fillDoctorSelects();
