@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Settings — Qlinic</title>
 <script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
-<link rel="stylesheet" href="styles.css?v=9" />
+<link rel="stylesheet" href="styles.css?v=10" />
 </head>
 <body>
   <div class="app-shell">
@@ -65,23 +65,8 @@
 
       <div class="panel">
         <div class="panel-header"><span class="panel-icon icon-teal">🩺</span><h2>Doctors</h2></div>
-        <div id="doctorList"></div>
-        <h3 style="font-size:14px;margin:20px 0 8px;color:var(--grey-700);">Add a doctor</h3>
-        <form id="addDoctorForm" class="inline-form">
-          <div class="field">
-            <label>Name</label>
-            <input type="text" id="newDoctorName" placeholder="Dr. Jane Doe" required />
-          </div>
-          <div class="field">
-            <label>Specialty</label>
-            <select id="newDoctorSpecialty"></select>
-          </div>
-          <div class="field" id="newDoctorSpecialtyOtherField" style="display:none;">
-            <label>Specify specialty</label>
-            <input type="text" id="newDoctorSpecialtyOther" placeholder="e.g. Podiatrist" />
-          </div>
-          <button type="submit" class="btn-sm primary">Add doctor</button>
-        </form>
+        <p class="panel-note" id="doctorSummaryNote">Loading…</p>
+        <a href="manage-doctors.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage doctors</a>
       </div>
 
       <div class="panel">
@@ -143,120 +128,13 @@
         setTimeout(() => t.classList.remove('show'), 2200);
       }
 
-      function nameCell(p) {
-        return `<div>${p.name}</div><div class="sub-line">${p.specialty || 'No specialty on file'}</div>`;
-      }
-
-      const SPECIALTIES = [
-        'General Physician',
-        'Pediatrician',
-        'Gynecologist',
-        'Dermatologist',
-        'Dentist',
-        'ENT Specialist',
-        'Ophthalmologist',
-        'Orthopedic',
-        'Cardiologist',
-        'Neurologist',
-        'Psychiatrist',
-        'General Surgeon',
-        'Urologist',
-        'Gastroenterologist',
-        'Endocrinologist',
-        'Pulmonologist',
-        'Diabetologist',
-        'Physiotherapist',
-      ];
-      const OTHER_SPECIALTY = '__other__';
-
-      function specialtyOptionsHtml(selected) {
-        const isKnown = SPECIALTIES.includes(selected);
-        return SPECIALTIES.map((s) => `<option value="${s}" ${s === selected ? 'selected' : ''}>${s}</option>`).join('')
-          + `<option value="${OTHER_SPECIALTY}" ${!isKnown && selected ? 'selected' : ''}>Other…</option>`;
-      }
-
-      async function renderDoctors() {
+      async function loadDoctorSummary() {
         const doctors = await Qlinic.getDoctors({ includeInactive: true });
-        const box = document.getElementById('doctorList');
-        if (doctors.length === 0) {
-          box.innerHTML = '<div class="empty-state">No doctors yet — add your first one below.</div>';
-          return;
-        }
-        box.innerHTML = `
-          <table class="qtable">
-            <thead><tr><th>Name</th><th>Specialty</th><th>Status</th><th></th></tr></thead>
-            <tbody>
-              ${doctors.map((d) => {
-                const isKnown = SPECIALTIES.includes(d.specialty);
-                return `
-                <tr style="${d.isActive ? '' : 'opacity:0.5;'}">
-                  <td><input type="text" class="doc-edit-name" data-id="${d.id}" value="${d.name.replace(/"/g, '&quot;')}" style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);" /></td>
-                  <td>
-                    <select class="doc-edit-specialty" data-id="${d.id}" style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);">${specialtyOptionsHtml(d.specialty)}</select>
-                    <input type="text" class="doc-edit-specialty-other" data-id="${d.id}" value="${(!isKnown ? (d.specialty || '') : '').replace(/"/g, '&quot;')}" placeholder="Specify specialty" style="width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);${isKnown ? 'display:none;' : ''}" />
-                  </td>
-                  <td>${d.isActive ? '<span class="badge badge-booked">Active</span>' : '<span class="badge badge-no-show">Deactivated</span>'}</td>
-                  <td style="white-space:nowrap;">
-                    <button class="btn-sm primary" onclick="doSaveDoctor('${d.id}')">Save</button>
-                    ${d.isActive
-                      ? `<button class="btn-sm danger" onclick="doSetDoctorActive('${d.id}', false)">Deactivate</button>`
-                      : `<button class="btn-sm" onclick="doSetDoctorActive('${d.id}', true)">Reactivate</button>`}
-                  </td>
-                </tr>
-              `;
-              }).join('')}
-            </tbody>
-          </table>
-        `;
+        const active = doctors.filter((d) => d.isActive).length;
+        document.getElementById('doctorSummaryNote').textContent = doctors.length === 0
+          ? 'No doctors yet.'
+          : `${active} active of ${doctors.length} total.`;
       }
-
-      async function doSaveDoctor(id) {
-        const name = document.querySelector(`.doc-edit-name[data-id="${id}"]`).value;
-        const specialtySelect = document.querySelector(`.doc-edit-specialty[data-id="${id}"]`).value;
-        const specialty = specialtySelect === OTHER_SPECIALTY
-          ? document.querySelector(`.doc-edit-specialty-other[data-id="${id}"]`).value
-          : specialtySelect;
-        await Qlinic.updateDoctor(id, { name, specialty });
-        showToast('Doctor updated');
-        renderDoctors();
-      }
-
-      document.getElementById('doctorList').addEventListener('change', (e) => {
-        if (!e.target.classList.contains('doc-edit-specialty')) return;
-        const id = e.target.getAttribute('data-id');
-        const otherField = document.querySelector(`.doc-edit-specialty-other[data-id="${id}"]`);
-        otherField.style.display = e.target.value === OTHER_SPECIALTY ? 'block' : 'none';
-      });
-
-      async function doSetDoctorActive(id, isActive) {
-        if (!isActive && !confirm('Deactivate this doctor? They’ll disappear from Reception, Doctor View, and the display board, but their patient history is kept. You can reactivate them anytime.')) {
-          return;
-        }
-        await Qlinic.setDoctorActive(id, isActive);
-        showToast(isActive ? 'Doctor reactivated' : 'Doctor deactivated');
-        renderDoctors();
-      }
-      window.doSaveDoctor = doSaveDoctor;
-      window.doSetDoctorActive = doSetDoctorActive;
-
-      document.getElementById('newDoctorSpecialty').innerHTML = specialtyOptionsHtml(null);
-      document.getElementById('newDoctorSpecialty').addEventListener('change', (e) => {
-        document.getElementById('newDoctorSpecialtyOtherField').style.display = e.target.value === OTHER_SPECIALTY ? 'block' : 'none';
-      });
-
-      document.getElementById('addDoctorForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = document.getElementById('newDoctorName').value;
-        const specialtySelect = document.getElementById('newDoctorSpecialty').value;
-        const specialty = specialtySelect === OTHER_SPECIALTY
-          ? document.getElementById('newDoctorSpecialtyOther').value
-          : specialtySelect;
-        await Qlinic.addDoctor({ name, specialty });
-        e.target.reset();
-        document.getElementById('newDoctorSpecialtyOtherField').style.display = 'none';
-        showToast('Doctor added');
-        renderDoctors();
-      });
 
       async function loadClinic() {
         const clinic = await Qlinic.getClinic();
@@ -338,9 +216,9 @@
 
       document.getElementById('currentEmail').textContent = (await Qlinic.getCurrentUserEmail()) || '—';
       await loadClinic();
-      await renderDoctors();
+      await loadDoctorSummary();
       applyTheme(Qlinic.getTheme());
-      Qlinic.onLiveChange(renderDoctors);
+      Qlinic.onLiveChange(loadDoctorSummary);
     })();
   </script>
 </body>
