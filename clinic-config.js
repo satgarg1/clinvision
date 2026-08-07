@@ -7,5 +7,5 @@
  * supabase/schema.sql. Never put your service_role key here or anywhere
  * client-side.
  */
-window.SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
-window.SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
+window.SUPABASE_URL = 'https://abnklugiknuwkmkjrrcl.supabase.co';
+window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFibmtsdWdpa251d2tta2pycmNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNTA0MDUsImV4cCI6MjEwMTYyNjQwNX0.GVtT0DzHmQGZZfUIpoH-u528g7VdnzKYZSzLS-Utrjk';
