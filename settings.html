@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=12" />
+<link rel="stylesheet" href="styles.css?v=13" />
 </head>
 <body>
   <div class="app-shell">
@@ -37,7 +37,10 @@
             <label>Clinic name</label>
             <input type="text" id="clinicNameInput" required />
           </div>
-          <button type="submit" class="btn-sm primary">Save</button>
+          <div class="field" style="flex:0;">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn-sm primary">Save</button>
+          </div>
         </form>
       </div>
 
@@ -59,7 +62,10 @@
             <label>Max patients per slot</label>
             <input type="number" id="slotCapacityInput" min="1" step="1" required />
           </div>
-          <button type="submit" class="btn-sm primary">Save</button>
+          <div class="field" style="flex:0;">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn-sm primary">Save</button>
+          </div>
         </form>
         <p class="panel-note" style="margin-top:10px;margin-bottom:0;">
           Grace window: how many minutes past a booked time before a no-show patient gets flagged as "likely no-show."
@@ -99,7 +105,10 @@
               <option value="hi">हिन्दी (Hindi)</option>
             </select>
           </div>
-          <button type="submit" class="btn-sm primary">Save</button>
+          <div class="field" style="flex:0;">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn-sm primary">Save</button>
+          </div>
         </form>
       </div>
 

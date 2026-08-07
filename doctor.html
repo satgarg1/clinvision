@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=12" />
+<link rel="stylesheet" href="styles.css?v=13" />
 </head>
 <body>
   <div class="app-shell">
@@ -52,11 +52,20 @@
           </div>
           <div id="delayInputWrap" style="display:none;margin-top:10px;">
             <div class="inline-form">
-              <div class="field">
+              <div class="field" style="max-width:160px;">
                 <label id="delayInputLabel">How many minutes behind?</label>
-                <select id="delayMinsInput" style="max-width:140px;"></select>
+                <div class="time-picker" id="delayPicker">
+                  <button type="button" class="time-picker-trigger" id="delayTrigger">
+                    <span id="delayTriggerText">30 min</span><span class="time-picker-caret">▾</span>
+                  </button>
+                  <input type="hidden" id="delayMinsInput" value="30" />
+                  <div class="time-picker-panel" id="delayPanel" style="display:none;"></div>
+                </div>
               </div>
-              <button class="btn-sm primary" id="confirmDelayBtn">Broadcast delay</button>
+              <div class="field">
+                <label>&nbsp;</label>
+                <button class="btn-sm primary" id="confirmDelayBtn">Broadcast delay</button>
+              </div>
             </div>
           </div>
           <div id="currentStatusLine" style="margin-top:14px;font-size:14px;"></div>
@@ -192,18 +201,56 @@
       // Both "Running late" and "On a break" ask for a duration before
       // broadcasting — the doctor picks how it'll show up, then confirms.
       const DURATION_CONFIG = {
-        running_late: { label: 'How many minutes behind?', button: 'Broadcast delay', note: (m) => `Running about ${m} min behind.` },
-        on_break: { label: 'How long is your break?', button: 'Broadcast break', note: (m) => `On a break for about ${m} min.` },
+        running_late: { label: 'How many minutes behind?', button: 'Broadcast delay', note: (l) => `Running about ${l} behind.` },
+        on_break: { label: 'How long is your break?', button: 'Broadcast break', note: (l) => `On a break for about ${l}.` },
       };
       let pendingStatus = null;
 
-      function fillDelayOptions() {
-        const sel = document.getElementById('delayMinsInput');
-        const opts = [];
-        for (let m = 5; m <= 120; m += 5) opts.push(`<option value="${m}" ${m === 15 ? 'selected' : ''}>${m} min</option>`);
-        sel.innerHTML = opts.join('');
+      // Short durations in round minutes, longer ones in half-hour steps —
+      // "90 min" reads slower than "1.5 hr" once you're past an hour.
+      const DURATION_OPTIONS = [];
+      for (let m = 10; m <= 60; m += 10) DURATION_OPTIONS.push({ value: m, label: `${m} min` });
+      for (let m = 90; m <= 240; m += 30) DURATION_OPTIONS.push({ value: m, label: `${m / 60} hr` });
+
+      function renderDelayPanel() {
+        const panel = document.getElementById('delayPanel');
+        const currentVal = document.getElementById('delayMinsInput').value;
+        panel.innerHTML = DURATION_OPTIONS.map((o) => `
+          <div class="time-picker-option ${String(o.value) === String(currentVal) ? 'selected' : ''}" data-value="${o.value}" data-label="${o.label}">${o.label}</div>
+        `).join('');
       }
-      fillDelayOptions();
+      function openDelayPanel() {
+        renderDelayPanel();
+        document.getElementById('delayPanel').style.display = 'block';
+        const panel = document.getElementById('delayPanel');
+        const target = panel.querySelector('.selected') || panel.querySelector('.time-picker-option');
+        if (target) target.scrollIntoView({ block: 'nearest' });
+      }
+      function closeDelayPanel() {
+        document.getElementById('delayPanel').style.display = 'none';
+      }
+      function selectDelay(value, label) {
+        document.getElementById('delayMinsInput').value = value;
+        document.getElementById('delayTriggerText').textContent = label;
+        closeDelayPanel();
+      }
+      document.getElementById('delayTrigger').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const panel = document.getElementById('delayPanel');
+        if (panel.style.display === 'block') closeDelayPanel();
+        else openDelayPanel();
+      });
+      document.getElementById('delayPanel').addEventListener('click', (e) => {
+        const opt = e.target.closest('.time-picker-option');
+        if (!opt) return;
+        selectDelay(opt.getAttribute('data-value'), opt.getAttribute('data-label'));
+      });
+      document.addEventListener('click', (e) => {
+        if (!document.getElementById('delayPicker').contains(e.target)) closeDelayPanel();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeDelayPanel();
+      });
 
       document.querySelectorAll('[data-status]').forEach((btn) => {
         btn.addEventListener('click', async () => {
@@ -225,8 +272,9 @@
 
       document.getElementById('confirmDelayBtn').addEventListener('click', async () => {
         const mins = document.getElementById('delayMinsInput').value;
+        const label = document.getElementById('delayTriggerText').textContent;
         const config = DURATION_CONFIG[pendingStatus];
-        await Qlinic.setDoctorStatus(currentDoctorId(), pendingStatus, mins, config.note(mins));
+        await Qlinic.setDoctorStatus(currentDoctorId(), pendingStatus, mins, config.note(label));
         document.getElementById('delayInputWrap').style.display = 'none';
         render();
         showToast(pendingStatus === 'on_break' ? 'Break broadcast to all waiting patients' : 'Delay broadcast to all waiting patients');

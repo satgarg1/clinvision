@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=12" />
+<link rel="stylesheet" href="styles.css?v=13" />
 </head>
 <body>
   <div class="app-shell">
@@ -42,7 +42,10 @@
             <label>New email</label>
             <input type="email" id="newEmailInput" required />
           </div>
-          <button type="submit" class="btn-sm primary">Change email</button>
+          <div class="field" style="flex:0;">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn-sm primary">Change email</button>
+          </div>
         </form>
         <p class="panel-note" id="emailNote" style="display:none;"></p>
       </div>
@@ -58,7 +61,10 @@
             <label>Confirm new password</label>
             <input type="password" id="confirmPasswordInput" minlength="6" required />
           </div>
-          <button type="submit" class="btn-sm primary">Change password</button>
+          <div class="field" style="flex:0;">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn-sm primary">Change password</button>
+          </div>
         </form>
         <p class="panel-note" id="passwordNote" style="display:none;"></p>
       </div>
