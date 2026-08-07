@@ -86,6 +86,24 @@
       </div>
 
       <div class="panel">
+        <div class="panel-header"><h2>Display screen</h2></div>
+        <p class="panel-note">
+          Language shown on the waiting-room TV board (queue positions, "now serving," etc). Applies to that shared
+          screen for everyone in the waiting room, not just this device.
+        </p>
+        <form id="displayLanguageForm" class="inline-form">
+          <div class="field">
+            <label>Language</label>
+            <select id="displayLanguageInput">
+              <option value="en">English</option>
+              <option value="hi">हिन्दी (Hindi)</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-sm primary">Save</button>
+        </form>
+      </div>
+
+      <div class="panel">
         <div class="panel-header"><h2>Appearance</h2></div>
         <p class="panel-note">Applies on this device, for the Qlinic app screens (not the waiting-room display).</p>
         <div class="mode-toggle" role="tablist" aria-label="Day or night theme">
@@ -100,7 +118,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=9"></script>
+  <script src="clinic-data.js?v=10"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -139,6 +157,7 @@
         document.getElementById('graceWindowInput').value = clinic.grace_window_mins;
         document.getElementById('slotIntervalInput').value = clinic.slot_interval_mins;
         document.getElementById('slotCapacityInput').value = clinic.slot_capacity;
+        document.getElementById('displayLanguageInput').value = clinic.display_language;
       }
 
       document.getElementById('clinicForm').addEventListener('submit', async (e) => {
@@ -156,6 +175,12 @@
           slotCapacity: document.getElementById('slotCapacityInput').value,
         });
         showToast('Queue rules updated');
+      });
+
+      document.getElementById('displayLanguageForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await Qlinic.updateClinic({ displayLanguage: document.getElementById('displayLanguageInput').value });
+        showToast('Display screen language updated');
       });
 
       function applyTheme(theme) {

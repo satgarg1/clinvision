@@ -188,6 +188,7 @@
     if (fields.graceWindowMins !== undefined) payload.grace_window_mins = Number(fields.graceWindowMins);
     if (fields.slotIntervalMins !== undefined) payload.slot_interval_mins = Number(fields.slotIntervalMins);
     if (fields.slotCapacity !== undefined) payload.slot_capacity = Number(fields.slotCapacity);
+    if (fields.displayLanguage !== undefined) payload.display_language = fields.displayLanguage;
     const { error } = await sb.from('clinics').update(payload).eq('id', clinicId);
     if (error) throw error;
     currentClinic = null; // force a fresh read next time
