@@ -19,7 +19,6 @@
         <a href="display.html" class="nav-link">Display Screen</a>
         <a href="settings.html" class="nav-link">Settings</a>
       </nav>
-      <a href="#" id="logoutLink" class="logout-link">Log out</a>
     </aside>
 
     <main class="app-main">
@@ -468,12 +467,6 @@
       document.getElementById('pDoctor').addEventListener('change', updateSlotHint);
       document.getElementById('pDate').addEventListener('change', updateSlotHint);
       document.getElementById('pTime').addEventListener('input', updateSlotHint);
-
-      document.getElementById('logoutLink').addEventListener('click', async (e) => {
-        e.preventDefault();
-        await Qlinic.logout();
-        window.location.href = 'login.html';
-      });
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';

@@ -605,14 +605,6 @@ a { color: inherit; }
   margin-bottom: 16px;
 }
 
-.app-sidebar .logout-link {
-  padding: 10px 12px;
-  font-size: 13px;
-  color: var(--sidebar-text-muted);
-  text-decoration: none;
-}
-.app-sidebar .logout-link:hover { color: #ffffff; }
-
 .app-main {
   flex: 1;
   background: var(--grey-100);
@@ -982,7 +974,7 @@ table.qtable tr:last-child td { border-bottom: none; }
   .app-shell { flex-direction: column; }
   .app-sidebar { width: 100%; flex-direction: row; overflow-x: auto; align-items: center; }
   .app-sidebar nav { flex-direction: row; }
-  .app-sidebar .clinic-name, .app-sidebar .logout-link { display: none; }
+  .app-sidebar .clinic-name { display: none; }
   .app-main { padding: 24px 20px; }
 }
 
