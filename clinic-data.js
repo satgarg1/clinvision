@@ -139,6 +139,7 @@
       status: row.status,
       arrivedAt: row.arrived_at,
       reason: row.reason,
+      tokenNumber: row.token_number,
     };
   }
 
@@ -335,9 +336,13 @@
       status: 'waiting',
       arrived_at: new Date().toISOString(),
       reason: info.reason || '',
+      token_date: todayDateStr(),
     }).select().single();
     if (error) throw error;
-    return data.id;
+    const message = await queueBookingNotification({
+      patientId: data.id, phone: info.phone, doctorId: info.doctorId, kind: 'walkin', tokenNumber: data.token_number,
+    });
+    return { id: data.id, message, tokenNumber: data.token_number };
   }
 
   async function addAppointment(info) {
@@ -353,9 +358,84 @@
       booked_date: info.bookedDate,
       booked_time: info.bookedTime,
       status: 'booked',
+      token_date: info.bookedDate,
     }).select().single();
     if (error) throw error;
-    return data.id;
+    const message = await queueBookingNotification({
+      patientId: data.id, phone: info.phone, doctorId: info.doctorId, kind: 'appointment',
+      bookedDate: info.bookedDate, bookedTime: info.bookedTime, tokenNumber: data.token_number,
+    });
+    return { id: data.id, message, tokenNumber: data.token_number };
+  }
+
+  // ---------------- patient notifications ----------------
+  // The tech for "text the patient their appointment time," built without
+  // a live SMS provider connected. Every booking composes a message and
+  // logs it as 'pending' in the notifications table — nothing is actually
+  // delivered yet. Wiring up a real provider later means adding a
+  // Supabase Edge Function that processes pending rows and flips them to
+  // sent/failed; the booking flow itself won't need to change.
+
+  function normalizeNotification(row) {
+    return {
+      id: row.id,
+      patientId: row.patient_id,
+      phone: row.phone,
+      message: row.message,
+      status: row.status,
+      createdAt: row.created_at,
+    };
+  }
+
+  // Composing the message needs the clinic's name and grace window, and
+  // the doctor's name — never lets a failure here block the booking
+  // itself, since the SMS log is a nice-to-have, not the core action.
+  async function queueBookingNotification({ patientId, phone, doctorId, kind, bookedDate, bookedTime, tokenNumber }) {
+    try {
+      const clinicId = await ensureClinicContext();
+      const [clinic, doctor] = await Promise.all([getClinic(), getDoctor(doctorId)]);
+      const tokenLine = tokenNumber ? ` Your token number is #${tokenNumber}.` : '';
+      const message = kind === 'appointment'
+        ? `Hi! Your appointment with ${doctor.name} at ${clinic.name} is booked for ` +
+          `${formatDateLabel(bookedDate)}, ${formatTime(parseTime(bookedTime))}.${tokenLine} ` +
+          `Please arrive ${clinic.grace_window_mins} min early. – ${clinic.name}`
+        : `Hi! You're in the queue for ${doctor.name} at ${clinic.name}.${tokenLine} ` +
+          `We'll keep you posted on your turn. – ${clinic.name}`;
+      const { error } = await sb.from('notifications').insert({
+        clinic_id: clinicId, patient_id: patientId, phone, message,
+      });
+      if (error) throw error;
+      return message;
+    } catch (err) {
+      console.warn('Could not queue patient notification:', err);
+      return null;
+    }
+  }
+
+  async function getNotifications(limit) {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId) return [];
+    const { data, error } = await sb
+      .from('notifications')
+      .select('*')
+      .eq('clinic_id', clinicId)
+      .order('created_at', { ascending: false })
+      .limit(limit || 20);
+    if (error) throw error;
+    return data.map(normalizeNotification);
+  }
+
+  // ---------------- public queue lookup (Phase 1 of the live-queue
+  // feature — no page reads this yet) ----------------
+  // Anonymous, no login required — this is the client-side counterpart
+  // to the get_queue_status() database function. Knowing a patient's own
+  // id (an unguessable UUID) is what authorizes seeing this; the
+  // function itself returns only a sanitized subset (never other
+  // patients' names/phone numbers).
+  async function getQueueStatus(patientId) {
+    const { data, error } = await sb.rpc('get_queue_status', { p_patient_id: patientId });
+    if (error) throw error;
+    return data;
   }
 
   async function callNextPatient(doctorId) {
@@ -664,6 +744,8 @@
     getDailySummary,
     closeDayNoShows,
     isLikelyNoShow,
+    getNotifications,
+    getQueueStatus,
 
     signUp,
     login,
