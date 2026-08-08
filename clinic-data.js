@@ -387,6 +387,15 @@
     };
   }
 
+  // The queue-status page lives next to whatever page is doing the
+  // booking (reception.html today), so building the link off the
+  // current page's own URL means this works on localhost, a staging
+  // copy, or the real GitHub Pages site without any hardcoded domain.
+  function queueLinkFor(patientId) {
+    const dir = window.location.href.replace(/[^/]*$/, '');
+    return `${dir}queue.html?id=${patientId}`;
+  }
+
   // Composing the message needs the clinic's name and grace window, and
   // the doctor's name — never lets a failure here block the booking
   // itself, since the SMS log is a nice-to-have, not the core action.
@@ -395,12 +404,16 @@
       const clinicId = await ensureClinicContext();
       const [clinic, doctor] = await Promise.all([getClinic(), getDoctor(doctorId)]);
       const tokenLine = tokenNumber ? ` Your token number is #${tokenNumber}.` : '';
+      const link = tokenNumber ? queueLinkFor(patientId) : '';
       const message = kind === 'appointment'
-        ? `Hi! Your appointment with ${doctor.name} at ${clinic.name} is booked for ` +
-          `${formatDateLabel(bookedDate)}, ${formatTime(parseTime(bookedTime))}.${tokenLine} ` +
-          `Please arrive ${clinic.grace_window_mins} min early. – ${clinic.name}`
-        : `Hi! You're in the queue for ${doctor.name} at ${clinic.name}.${tokenLine} ` +
-          `We'll keep you posted on your turn. – ${clinic.name}`;
+        ? `Hi! Your appointment with ${doctor.name} at ${clinic.name} is on ` +
+          `${formatDateLabel(bookedDate)} at ${formatTime(parseTime(bookedTime))}.${tokenLine} ` +
+          `Please arrive ${clinic.grace_window_mins} min early.` +
+          (link ? ` Track the live queue before you leave home: ${link}` : '') +
+          ` – ${clinic.name}`
+        : `Hi! You're in the queue for ${doctor.name} at ${clinic.name}.${tokenLine}` +
+          (link ? ` Track your live position here: ${link}` : ' We\'ll keep you posted on your turn.') +
+          ` – ${clinic.name}`;
       const { error } = await sb.from('notifications').insert({
         clinic_id: clinicId, patient_id: patientId, phone, message,
       });
