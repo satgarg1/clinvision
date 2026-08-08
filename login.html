@@ -34,17 +34,8 @@
 
       <div class="login-hint">
         New clinic? <a href="signup.html">Register your clinic</a> instead.<br />
-        <a href="#" id="forgotPasswordLink">Forgot your password?</a>
+        <a href="forgot-password.html">Forgot your password?</a>
       </div>
-
-      <form id="forgotForm" style="display:none;margin-top:18px;">
-        <div class="field">
-          <label for="forgotEmail">Email</label>
-          <input type="email" id="forgotEmail" required />
-        </div>
-        <button type="submit" class="btn btn-ghost" style="width:100%;">Send reset link</button>
-      </form>
-      <div class="login-hint" id="forgotNote" style="display:none;"></div>
     </div>
   </div>
 
@@ -74,28 +65,6 @@
       } finally {
         btn.disabled = false;
         btn.textContent = 'Log in';
-      }
-    });
-
-    document.getElementById('forgotPasswordLink').addEventListener('click', (e) => {
-      e.preventDefault();
-      e.target.style.display = 'none';
-      document.getElementById('forgotForm').style.display = 'block';
-    });
-
-    document.getElementById('forgotForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const note = document.getElementById('forgotNote');
-      try {
-        const email = document.getElementById('forgotEmail').value;
-        const redirectTo = window.location.href.replace(/login\.html.*$/, 'reset-password.html');
-        await Qlinic.requestPasswordReset(email, redirectTo);
-        document.getElementById('forgotForm').style.display = 'none';
-        note.style.display = 'block';
-        note.textContent = 'Check your email for a password reset link.';
-      } catch (err) {
-        note.style.display = 'block';
-        note.textContent = err.message || 'Could not send reset email.';
       }
     });
   </script>
