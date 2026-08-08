@@ -42,8 +42,13 @@
           <div class="panel-note" id="etaText" style="margin-top:2px;margin-bottom:0;"></div>
         </div>
 
+        <div id="nowServingBlock" style="display:none;text-align:center;margin-bottom:16px;">
+          <p class="panel-note" style="margin-bottom:6px;">Currently being served</p>
+          <span class="badge badge-in-consult" style="font-size:16px;" id="nowServingBadge"></span>
+        </div>
+
         <div id="nearbyBlock" style="display:none;margin-bottom:6px;">
-          <p class="panel-note" style="margin-bottom:8px;text-align:center;">Now serving around token</p>
+          <p class="panel-note" style="margin-bottom:8px;text-align:center;">Next up</p>
           <div id="nearbyTokens" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;"></div>
         </div>
 
@@ -58,7 +63,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=14"></script>
+  <script src="clinic-data.js?v=15"></script>
   <script>
     (async function () {
       const params = new URLSearchParams(window.location.search);
@@ -132,6 +137,14 @@
           document.getElementById('etaText').textContent = data.position === 1 ? '' : `Estimated wait: ${estimateWaitLabel(data.position)}`;
         } else {
           positionBlock.style.display = 'none';
+        }
+
+        const nowServingBlock = document.getElementById('nowServingBlock');
+        if (data.nowServingToken != null) {
+          nowServingBlock.style.display = 'block';
+          document.getElementById('nowServingBadge').textContent = `#${data.nowServingToken}`;
+        } else {
+          nowServingBlock.style.display = 'none';
         }
 
         const nearbyBlock = document.getElementById('nearbyBlock');

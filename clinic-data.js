@@ -405,14 +405,13 @@
       const [clinic, doctor] = await Promise.all([getClinic(), getDoctor(doctorId)]);
       const tokenLine = tokenNumber ? ` Your token number is #${tokenNumber}.` : '';
       const link = tokenNumber ? queueLinkFor(patientId) : '';
+      const queueLine = link ? ` See the current token being served and the next 5 in line, so you know when to leave home: ${link}` : '';
       const message = kind === 'appointment'
         ? `Hi! Your appointment with ${doctor.name} at ${clinic.name} is on ` +
           `${formatDateLabel(bookedDate)} at ${formatTime(parseTime(bookedTime))}.${tokenLine} ` +
-          `Please arrive ${clinic.grace_window_mins} min early.` +
-          (link ? ` Track the live queue before you leave home: ${link}` : '') +
-          ` – ${clinic.name}`
+          `Please arrive ${clinic.grace_window_mins} min early.${queueLine} – ${clinic.name}`
         : `Hi! You're in the queue for ${doctor.name} at ${clinic.name}.${tokenLine}` +
-          (link ? ` Track your live position here: ${link}` : ' We\'ll keep you posted on your turn.') +
+          (queueLine || ' We\'ll keep you posted on your turn.') +
           ` – ${clinic.name}`;
       const { error } = await sb.from('notifications').insert({
         clinic_id: clinicId, patient_id: patientId, phone, message,
