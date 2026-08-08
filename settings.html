@@ -60,13 +60,25 @@
               <div class="time-picker-panel" id="graceWindowPanel" style="display:none;"></div>
             </div>
           </div>
-          <div class="field">
-            <label>Slot length (minutes)</label>
-            <input type="number" id="slotIntervalInput" min="5" step="5" required />
+          <div class="field" style="max-width:160px;">
+            <label>Slot length</label>
+            <div class="time-picker" id="slotIntervalPicker">
+              <button type="button" class="time-picker-trigger" id="slotIntervalTrigger">
+                <span id="slotIntervalTriggerText">Loading…</span><span class="time-picker-caret">▾</span>
+              </button>
+              <input type="hidden" id="slotIntervalInput" required />
+              <div class="time-picker-panel" id="slotIntervalPanel" style="display:none;"></div>
+            </div>
           </div>
-          <div class="field">
+          <div class="field" style="max-width:160px;">
             <label>Max patients per slot</label>
-            <input type="number" id="slotCapacityInput" min="1" step="1" required />
+            <div class="time-picker" id="slotCapacityPicker">
+              <button type="button" class="time-picker-trigger" id="slotCapacityTrigger">
+                <span id="slotCapacityTriggerText">Loading…</span><span class="time-picker-caret">▾</span>
+              </button>
+              <input type="hidden" id="slotCapacityInput" required />
+              <div class="time-picker-panel" id="slotCapacityPanel" style="display:none;"></div>
+            </div>
           </div>
           <div class="field" style="flex:0;">
             <label>&nbsp;</label>
@@ -164,58 +176,88 @@
           : `${active} active of ${doctors.length} total.`;
       }
 
-      // Same custom dropdown as Doctor View's delay/break picker: 10-min
-      // steps up to an hour, then 30-min steps expressed in hours.
+      // Same custom dropdown component as Doctor View's delay/break picker,
+      // reused here for three separate fields — factored out since building
+      // it a third time inline would just be copy-pasted boilerplate.
+      function setupDropdownPicker({ pickerId, triggerId, triggerTextId, hiddenId, panelId, options, fallbackLabel }) {
+        function render() {
+          const panel = document.getElementById(panelId);
+          const currentVal = document.getElementById(hiddenId).value;
+          panel.innerHTML = options.map((o) => `
+            <div class="time-picker-option ${String(o.value) === String(currentVal) ? 'selected' : ''}" data-value="${o.value}" data-label="${o.label}">${o.label}</div>
+          `).join('');
+        }
+        function open() {
+          render();
+          document.getElementById(panelId).style.display = 'block';
+          const panel = document.getElementById(panelId);
+          const target = panel.querySelector('.selected') || panel.querySelector('.time-picker-option');
+          if (target) target.scrollIntoView({ block: 'nearest' });
+        }
+        function close() {
+          document.getElementById(panelId).style.display = 'none';
+        }
+        function select(value, label) {
+          document.getElementById(hiddenId).value = value;
+          document.getElementById(triggerTextId).textContent = label;
+          close();
+        }
+        // Falls back to a generic label for a stored value that predates
+        // this picker and doesn't land on one of the preset options.
+        function setValue(value) {
+          document.getElementById(hiddenId).value = value;
+          const known = options.find((o) => String(o.value) === String(value));
+          document.getElementById(triggerTextId).textContent = known ? known.label : fallbackLabel(value);
+        }
+        document.getElementById(triggerId).addEventListener('click', (e) => {
+          e.stopPropagation();
+          const panel = document.getElementById(panelId);
+          if (panel.style.display === 'block') close();
+          else open();
+        });
+        document.getElementById(panelId).addEventListener('click', (e) => {
+          const opt = e.target.closest('.time-picker-option');
+          if (!opt) return;
+          select(opt.getAttribute('data-value'), opt.getAttribute('data-label'));
+        });
+        document.addEventListener('click', (e) => {
+          if (!document.getElementById(pickerId).contains(e.target)) close();
+        });
+        return { close, setValue };
+      }
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          document.querySelectorAll('.time-picker-panel').forEach((p) => { p.style.display = 'none'; });
+        }
+      });
+
+      // 10-min steps up to an hour, then 30-min steps expressed in hours.
       const DURATION_OPTIONS = [];
       for (let m = 10; m < 60; m += 10) DURATION_OPTIONS.push({ value: m, label: `${m} min` });
       DURATION_OPTIONS.push({ value: 60, label: '1 hr' });
       for (let m = 90; m <= 240; m += 30) DURATION_OPTIONS.push({ value: m, label: `${m / 60} hr` });
 
-      // Falls back to a plain "N min" label for a stored value that predates
-      // this picker and doesn't land on one of the preset options.
-      function formatDuration(mins) {
-        const known = DURATION_OPTIONS.find((o) => o.value === Number(mins));
-        return known ? known.label : `${mins} min`;
-      }
+      const SLOT_LENGTH_OPTIONS = [];
+      for (let m = 5; m <= 30; m += 5) SLOT_LENGTH_OPTIONS.push({ value: m, label: `${m} min` });
 
-      function renderGraceWindowPanel() {
-        const panel = document.getElementById('graceWindowPanel');
-        const currentVal = document.getElementById('graceWindowInput').value;
-        panel.innerHTML = DURATION_OPTIONS.map((o) => `
-          <div class="time-picker-option ${String(o.value) === String(currentVal) ? 'selected' : ''}" data-value="${o.value}" data-label="${o.label}">${o.label}</div>
-        `).join('');
-      }
-      function openGraceWindowPanel() {
-        renderGraceWindowPanel();
-        document.getElementById('graceWindowPanel').style.display = 'block';
-        const panel = document.getElementById('graceWindowPanel');
-        const target = panel.querySelector('.selected') || panel.querySelector('.time-picker-option');
-        if (target) target.scrollIntoView({ block: 'nearest' });
-      }
-      function closeGraceWindowPanel() {
-        document.getElementById('graceWindowPanel').style.display = 'none';
-      }
-      function selectGraceWindow(value, label) {
-        document.getElementById('graceWindowInput').value = value;
-        document.getElementById('graceWindowTriggerText').textContent = label;
-        closeGraceWindowPanel();
-      }
-      document.getElementById('graceWindowTrigger').addEventListener('click', (e) => {
-        e.stopPropagation();
-        const panel = document.getElementById('graceWindowPanel');
-        if (panel.style.display === 'block') closeGraceWindowPanel();
-        else openGraceWindowPanel();
+      const CAPACITY_OPTIONS = [];
+      for (let n = 1; n <= 10; n += 1) CAPACITY_OPTIONS.push({ value: n, label: `${n}` });
+
+      const graceWindowPicker = setupDropdownPicker({
+        pickerId: 'graceWindowPicker', triggerId: 'graceWindowTrigger', triggerTextId: 'graceWindowTriggerText',
+        hiddenId: 'graceWindowInput', panelId: 'graceWindowPanel', options: DURATION_OPTIONS,
+        fallbackLabel: (v) => `${v} min`,
       });
-      document.getElementById('graceWindowPanel').addEventListener('click', (e) => {
-        const opt = e.target.closest('.time-picker-option');
-        if (!opt) return;
-        selectGraceWindow(opt.getAttribute('data-value'), opt.getAttribute('data-label'));
+      const slotIntervalPicker = setupDropdownPicker({
+        pickerId: 'slotIntervalPicker', triggerId: 'slotIntervalTrigger', triggerTextId: 'slotIntervalTriggerText',
+        hiddenId: 'slotIntervalInput', panelId: 'slotIntervalPanel', options: SLOT_LENGTH_OPTIONS,
+        fallbackLabel: (v) => `${v} min`,
       });
-      document.addEventListener('click', (e) => {
-        if (!document.getElementById('graceWindowPicker').contains(e.target)) closeGraceWindowPanel();
-      });
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeGraceWindowPanel();
+      const slotCapacityPicker = setupDropdownPicker({
+        pickerId: 'slotCapacityPicker', triggerId: 'slotCapacityTrigger', triggerTextId: 'slotCapacityTriggerText',
+        hiddenId: 'slotCapacityInput', panelId: 'slotCapacityPanel', options: CAPACITY_OPTIONS,
+        fallbackLabel: (v) => `${v}`,
       });
 
       async function loadClinic() {
@@ -223,10 +265,9 @@
         if (!clinic) return;
         document.getElementById('clinicName').textContent = clinic.name;
         document.getElementById('clinicNameInput').value = clinic.name;
-        document.getElementById('graceWindowInput').value = clinic.grace_window_mins;
-        document.getElementById('graceWindowTriggerText').textContent = formatDuration(clinic.grace_window_mins);
-        document.getElementById('slotIntervalInput').value = clinic.slot_interval_mins;
-        document.getElementById('slotCapacityInput').value = clinic.slot_capacity;
+        graceWindowPicker.setValue(clinic.grace_window_mins);
+        slotIntervalPicker.setValue(clinic.slot_interval_mins);
+        slotCapacityPicker.setValue(clinic.slot_capacity);
         document.getElementById('displayLanguageInput').value = clinic.display_language;
       }
 
