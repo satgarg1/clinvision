@@ -140,7 +140,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=12"></script>
+  <script src="clinic-data.js?v=13"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -567,10 +567,12 @@
 
         let bookedForToday = true;
         let queuedMessage = null;
+        let tokenNumber = null;
 
         if (patientMode === 'walkin') {
           const result = await Qlinic.addWalkIn({ name, phone, gender, address, doctorId, reason: document.getElementById('pReason').value });
           queuedMessage = result.message;
+          tokenNumber = result.tokenNumber;
           showToast('Walk-in added to the queue');
         } else {
           const date = document.getElementById('pDate').value;
@@ -590,6 +592,7 @@
           }
           const result = await Qlinic.addAppointment({ name, phone, gender, address, doctorId, bookedDate: date, bookedTime: time });
           queuedMessage = result.message;
+          tokenNumber = result.tokenNumber;
           bookedForToday = date === Qlinic.getTodayDate();
           showToast(bookedForToday ? 'Appointment added' : `Appointment booked for ${Qlinic.formatDateLabel(date)} (${Qlinic.formatTime(Qlinic.parseTime(time))})`);
         }
@@ -597,7 +600,9 @@
         if (queuedMessage) {
           const preview = document.getElementById('messagePreview');
           preview.style.display = 'block';
-          preview.innerHTML = `📱 <strong>SMS queued</strong> (not yet connected to a provider — this is what would be sent to ${phone}):<br>"${queuedMessage}"`;
+          preview.innerHTML =
+            (tokenNumber ? `<div style="font-size:20px;font-weight:700;margin-bottom:6px;">Token #${tokenNumber}</div>` : '') +
+            `📱 <strong>SMS queued</strong> (not yet connected to a provider — this is what would be sent to ${phone}):<br>"${queuedMessage}"`;
         }
         renderRecentMessages();
 
