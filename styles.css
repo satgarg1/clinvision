@@ -191,30 +191,15 @@ a { color: inherit; }
   margin-top: 8px;
 }
 
-.mkt-steps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 40px;
-  margin-top: 60px;
-  text-align: left;
-}
-
-.mkt-step .num {
-  font-size: 15px;
+/* Apple-style vertical step flow (how-it-works.html) — one big
+   statement per full-width section, read top to bottom rather than
+   scanned as a grid. */
+.step-flow-num {
+  font-size: clamp(44px, 6vw, 68px);
   font-weight: 700;
-  color: var(--accent);
-  margin-bottom: 10px;
-}
-.mkt-step h3 {
-  font-size: 22px;
-  margin: 0 0 10px;
-  letter-spacing: -0.01em;
-}
-.mkt-step p {
-  font-size: 16px;
-  color: var(--grey-700);
-  line-height: 1.5;
-  margin: 0;
+  line-height: 1;
+  margin-bottom: 14px;
+  font-variant-numeric: tabular-nums;
 }
 
 .mkt-feature-grid {
