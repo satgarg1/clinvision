@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=13" />
+<link rel="stylesheet" href="styles.css?v=14" />
 </head>
 <body class="display-body">
 
@@ -24,7 +24,7 @@
       <div class="board-page-indicator" id="pageDots"></div>
     </div>
     <div class="board-cols">
-      <span id="colPos">#</span><span id="colPatient">Patient</span><span id="colDoctor">Doctor</span><span id="colType">Type</span><span id="colWait">Est. wait</span>
+      <span id="colPos">#</span><span id="colPatient">Patient</span><span id="colDoctor">Doctor</span><span id="colType">Type</span>
     </div>
     <div class="board-rows" id="boardRows"></div>
   </div>
@@ -65,7 +65,6 @@
           colPatient: 'Patient',
           colDoctor: 'Doctor',
           colType: 'Type',
-          colWait: 'Est. wait',
           nowServing: 'Now serving',
           onTime: 'On time',
           runningLate: 'Running late',
@@ -83,7 +82,6 @@
           colPatient: 'मरीज़',
           colDoctor: 'डॉक्टर',
           colType: 'प्रकार',
-          colWait: 'अनुमानित प्रतीक्षा',
           nowServing: 'अभी देखा जा रहा है',
           onTime: 'समय पर',
           runningLate: 'देरी से',
@@ -146,7 +144,7 @@
         mohalla: 'मोहल्ला', basti: 'बस्ती', camp: 'कैंप', ganj: 'गंज',
         gandhi: 'गांधी', civil: 'सिविल', lines: 'लाइंस', shastri: 'शास्त्री',
         model: 'मॉडल', town: 'टाउन', old: 'ओल्ड', city: 'सिटी', new: 'न्यू',
-        near: 'नियर', market: 'मार्केट',
+        near: 'नियर', market: 'मार्केट', demo: 'डेमो', patient: 'पेशेंट',
       };
 
       function phoneticToDevanagari(word) {
@@ -237,14 +235,6 @@
         }[status] || status;
       }
 
-      function estimateWaitLabel(patient) {
-        // Simple confidence-band estimate: position * doctor's typical pace, shown as a range not a false-precise number.
-        const paceMins = 12;
-        const low = (patient.position - 1) * (paceMins - 3);
-        const high = patient.position * (paceMins + 3);
-        return `${Math.max(low, 0)}–${high} min`;
-      }
-
       function renderDoctorStrip(all) {
         document.getElementById('doctorStrip').innerHTML = all.map(({ doctor, queue }, index) => `
           <div class="strip-card accent-${ACCENT_COLORS[index % ACCENT_COLORS.length]}">
@@ -280,7 +270,6 @@
               doctorName: doctor.name,
               doctorAccent,
               position: p.position,
-              eta: estimateWaitLabel(p),
               effectiveTime: p.effectiveTime,
             });
           });
@@ -299,7 +288,6 @@
             <span class="board-name">${localizeName(p.name)}${p.address ? `<span class="board-sub">${localizeName(p.address)}</span>` : ''}</span>
             <span class="board-doc"><span class="board-doc-dot dot-${p.doctorAccent}"></span>${localizeName(p.doctorName)}</span>
             <span class="board-type">${p.type === 'appointment' ? T.appointment : T.walkin}</span>
-            <span class="board-eta">~${p.eta}</span>
           </div>
         `).join('');
       }
@@ -311,7 +299,6 @@
         document.getElementById('colPatient').textContent = T.colPatient;
         document.getElementById('colDoctor').textContent = T.colDoctor;
         document.getElementById('colType').textContent = T.colType;
-        document.getElementById('colWait').textContent = T.colWait;
       }
 
       function renderDots(totalPages) {

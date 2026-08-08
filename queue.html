@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=13" />
+<link rel="stylesheet" href="styles.css?v=14" />
 </head>
 <body>
   <div class="login-wrap">
@@ -39,7 +39,6 @@
 
         <div id="positionBlock" style="display:none;text-align:center;margin-bottom:18px;">
           <div style="font-size:16px;font-weight:600;" id="positionText"></div>
-          <div class="panel-note" id="etaText" style="margin-top:2px;margin-bottom:0;"></div>
         </div>
 
         <div id="nowServingBlock" style="display:none;text-align:center;margin-bottom:16px;">
@@ -96,16 +95,6 @@
         no_show: '<span class="badge badge-no-show">Marked as no-show</span>',
       };
 
-      // Same rough per-patient pace used on the waiting-room display board —
-      // a range, not a false-precise number, since consult length varies.
-      function estimateWaitLabel(position) {
-        const paceMins = 12;
-        const aheadCount = position - 1;
-        const low = Math.max(aheadCount * (paceMins - 3), 0);
-        const high = aheadCount * (paceMins + 3);
-        return `~${low}–${high} min`;
-      }
-
       async function render() {
         const data = await Qlinic.getQueueStatus(patientId);
         if (!data || data.error) {
@@ -134,7 +123,6 @@
           document.getElementById('positionText').textContent = data.position === 1
             ? "You're next!"
             : `${data.position - 1} ${data.position - 1 === 1 ? 'person' : 'people'} ahead of you`;
-          document.getElementById('etaText').textContent = data.position === 1 ? '' : `Estimated wait: ${estimateWaitLabel(data.position)}`;
         } else {
           positionBlock.style.display = 'none';
         }

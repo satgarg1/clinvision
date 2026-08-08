@@ -1033,7 +1033,7 @@ table.qtable tr:last-child td { border-bottom: none; }
 
 .board-row {
   display: grid;
-  grid-template-columns: 56px 2fr 1fr 1fr 1fr;
+  grid-template-columns: 56px 2fr 1fr 1fr;
   gap: 12px;
   align-items: center;
   padding: 14px 4px;
@@ -1046,7 +1046,6 @@ table.qtable tr:last-child td { border-bottom: none; }
 .board-sub { font-size: 13px; font-weight: 400; color: var(--grey-500); margin-top: 2px; }
 .board-doc { font-size: 15px; color: var(--grey-300); }
 .board-type { font-size: 14px; color: var(--grey-500); }
-.board-eta { font-size: 15px; color: var(--grey-300); }
 .board-empty { padding: 60px 0; text-align: center; color: var(--grey-500); font-size: 18px; }
 
 @media (max-width: 720px) {
@@ -1060,7 +1059,7 @@ table.qtable tr:last-child td { border-bottom: none; }
 @media (max-width: 900px) {
   .board-cols { display: none; }
   .board-row { grid-template-columns: 40px 1fr; row-gap: 4px; }
-  .board-doc, .board-type, .board-eta { grid-column: 2; font-size: 13px; }
+  .board-doc, .board-type { grid-column: 2; font-size: 13px; }
 }
 
 /* ---------------- Small shared components: slot hints, name/address cells ---------------- */
