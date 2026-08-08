@@ -13,19 +13,24 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=14" />
+<link rel="stylesheet" href="styles.css?v=15" />
 </head>
 <body>
 
   <nav class="mkt-nav">
     <a href="index.html" class="brand">Qlinic</a>
     <div style="display:flex;align-items:center;gap:24px;">
+      <a href="how-it-works.html" style="font-weight:600;font-size:15px;color:var(--black);text-decoration:none;">How it works</a>
       <a href="contact.html" style="font-weight:600;font-size:15px;color:var(--black);text-decoration:none;">Contact</a>
       <a href="login.html" class="btn btn-accent">Log in</a>
     </div>
   </nav>
 
-  <section class="mkt-section tight">
+  <section class="mkt-section tight" style="position:relative;overflow:hidden;">
+    <div class="hero-blob hero-blob-teal" aria-hidden="true"></div>
+    <div class="hero-blob hero-blob-coral" aria-hidden="true"></div>
+    <div class="hero-blob hero-blob-purple" aria-hidden="true"></div>
+    <div style="position:relative;z-index:1;">
     <div class="eyebrow">Book a demo, or just ask a question</div>
     <h2 class="mkt-h2">Tell us a bit about your clinic.<br />We'll take it from there.</h2>
     <p class="mkt-sub">
@@ -64,6 +69,7 @@
       <a href="#" id="directWhatsapp">Just message us directly</a>
       — or call <span id="phoneDisplay"></span>.
     </p>
+    </div>
   </section>
 
   <footer class="mkt-footer">
