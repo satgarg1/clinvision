@@ -376,17 +376,6 @@
   // Supabase Edge Function that processes pending rows and flips them to
   // sent/failed; the booking flow itself won't need to change.
 
-  function normalizeNotification(row) {
-    return {
-      id: row.id,
-      patientId: row.patient_id,
-      phone: row.phone,
-      message: row.message,
-      status: row.status,
-      createdAt: row.created_at,
-    };
-  }
-
   // The queue-status page lives next to whatever page is doing the
   // booking (reception.html today), so building the link off the
   // current page's own URL means this works on localhost, a staging
@@ -422,19 +411,6 @@
       console.warn('Could not queue patient notification:', err);
       return null;
     }
-  }
-
-  async function getNotifications(limit) {
-    const clinicId = await ensureClinicContext();
-    if (!clinicId) return [];
-    const { data, error } = await sb
-      .from('notifications')
-      .select('*')
-      .eq('clinic_id', clinicId)
-      .order('created_at', { ascending: false })
-      .limit(limit || 20);
-    if (error) throw error;
-    return data.map(normalizeNotification);
   }
 
   // ---------------- public queue lookup (Phase 1 of the live-queue
@@ -756,7 +732,6 @@
     getDailySummary,
     closeDayNoShows,
     isLikelyNoShow,
-    getNotifications,
     getQueueStatus,
 
     signUp,
