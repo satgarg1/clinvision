@@ -1,0 +1,105 @@
+<!--
+  TODO before this goes live to real visitors: WHATSAPP_NUMBER below is a
+  placeholder (91XXXXXXXXXX). Replace it with the real business WhatsApp
+  number — country code, no +, no spaces or dashes — before sharing this
+  page or its link anywhere public.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Contact &amp; book a demo — Qlinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=14" />
+</head>
+<body>
+
+  <nav class="mkt-nav">
+    <a href="index.html" class="brand">Qlinic</a>
+    <div style="display:flex;align-items:center;gap:24px;">
+      <a href="contact.html" style="font-weight:600;font-size:15px;color:var(--black);text-decoration:none;">Contact</a>
+      <a href="login.html" class="btn btn-accent">Log in</a>
+    </div>
+  </nav>
+
+  <section class="mkt-section tight">
+    <div class="eyebrow">Book a demo, or just ask a question</div>
+    <h2 class="mkt-h2">Tell us a bit about your clinic.<br />We'll take it from there.</h2>
+    <p class="mkt-sub">
+      No account needed to reach us. Fill in what you can — even just your
+      name and number — and we'll pick it up on WhatsApp.
+    </p>
+
+    <form id="contactForm" style="max-width:480px;margin:0 auto;text-align:left;">
+      <div class="field">
+        <label for="cName">Your name</label>
+        <input type="text" id="cName" required />
+      </div>
+      <div class="field">
+        <label for="cPhone">Phone number</label>
+        <input type="tel" id="cPhone" required />
+      </div>
+      <div class="field">
+        <label for="cClinic">Clinic name</label>
+        <input type="text" id="cClinic" placeholder="Optional" />
+      </div>
+      <div class="field">
+        <label for="cCity">City</label>
+        <input type="text" id="cCity" placeholder="Optional" />
+      </div>
+      <div class="field">
+        <label for="cNote">Anything specific you'd like to ask?</label>
+        <input type="text" id="cNote" placeholder="Optional" />
+      </div>
+      <div class="mkt-cta-row" style="justify-content:flex-start;margin-top:8px;">
+        <button type="submit" class="btn btn-accent btn-large">Continue on WhatsApp</button>
+      </div>
+    </form>
+
+    <p class="panel-note" style="margin-top:32px;">
+      Prefer not to fill anything in?
+      <a href="#" id="directWhatsapp">Just message us directly</a>
+      — or call <span id="phoneDisplay"></span>.
+    </p>
+  </section>
+
+  <footer class="mkt-footer">
+    Qlinic — Intelligent Clinic Flow Management &nbsp;·&nbsp; Prototype build, not for clinical or production use &nbsp;·&nbsp;
+    <a href="index.html">Back to home</a>
+  </footer>
+
+  <script>
+    // Placeholder — see the TODO comment at the top of this file.
+    const WHATSAPP_NUMBER = '91XXXXXXXXXX';
+    const DISPLAY_NUMBER = '+91 XXXXX XXXXX';
+
+    document.getElementById('phoneDisplay').textContent = DISPLAY_NUMBER;
+
+    function waLink(message) {
+      return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    }
+
+    document.getElementById('directWhatsapp').href = waLink("Hi, I'd like to know more about Qlinic.");
+
+    document.getElementById('contactForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('cName').value.trim();
+      const phone = document.getElementById('cPhone').value.trim();
+      const clinic = document.getElementById('cClinic').value.trim();
+      const city = document.getElementById('cCity').value.trim();
+      const note = document.getElementById('cNote').value.trim();
+
+      let message = `Hi, I'd like to book a demo of Qlinic. My name is ${name}, phone ${phone}.`;
+      if (clinic) message += ` Clinic: ${clinic}.`;
+      if (city) message += ` City: ${city}.`;
+      if (note) message += ` ${note}`;
+
+      window.open(waLink(message), '_blank', 'noopener');
+    });
+  </script>
+
+</body>
+</html>
