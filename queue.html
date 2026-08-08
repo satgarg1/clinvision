@@ -50,7 +50,7 @@
         <p class="panel-note" style="text-align:center;margin-top:20px;margin-bottom:0;" id="lastUpdated"></p>
       </div>
 
-      <p class="panel-note" style="text-align:center;margin-top:22px;margin-bottom:0;border-top:1px solid var(--grey-100);padding-top:14px;">
+      <p class="panel-note" id="footerNote" style="display:none;text-align:center;margin-top:22px;margin-bottom:0;border-top:1px solid var(--grey-100);padding-top:14px;">
         This is your own private link — no login needed. Refreshes automatically.
       </p>
     </div>
@@ -67,10 +67,12 @@
       const loadingEl = document.getElementById('loadingState');
       const errorEl = document.getElementById('errorState');
       const statusEl = document.getElementById('statusState');
+      const footerEl = document.getElementById('footerNote');
 
       function showError() {
         loadingEl.style.display = 'none';
         statusEl.style.display = 'none';
+        footerEl.style.display = 'none';
         errorEl.style.display = 'block';
       }
 
@@ -108,6 +110,7 @@
         loadingEl.style.display = 'none';
         errorEl.style.display = 'none';
         statusEl.style.display = 'block';
+        footerEl.style.display = 'block';
 
         document.getElementById('clinicName').textContent = data.clinicName;
         document.getElementById('doctorName').textContent = data.doctorName;
