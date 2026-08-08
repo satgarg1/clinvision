@@ -58,6 +58,17 @@
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
+
+      // The sidebar logo links to the marketing site, which has no way
+      // back into the app without logging in again — worth a heads-up
+      // before someone loses their place by accident.
+      document.querySelector('a.brand').addEventListener('click', (e) => {
+        e.preventDefault();
+        if (confirm("Going to the homepage will end your session here — you'll need to log in again to get back in. Continue?")) {
+          window.location.href = 'index.html';
+        }
+      });
+
       if (!(await Qlinic.isAdmin())) {
         document.getElementById('settingsNavLink').style.display = 'none';
       }
