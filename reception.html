@@ -103,6 +103,15 @@
             <button type="submit" class="btn-sm primary" id="patientSubmitBtn">Add appointment</button>
           </div>
         </form>
+        <p class="panel-note" id="messagePreview" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--grey-100);"></p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>Recent patient messages</h2></div>
+        <p class="panel-note">
+          What would be texted to patients when they're booked. No SMS provider is connected yet — nothing is actually sent.
+        </p>
+        <div id="recentMessages"></div>
       </div>
 
       <div class="panel">
@@ -131,7 +140,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=11"></script>
+  <script src="clinic-data.js?v=12"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -171,6 +180,19 @@
         t.textContent = msg;
         t.classList.add('show');
         setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      async function renderRecentMessages() {
+        const box = document.getElementById('recentMessages');
+        const notes = await Qlinic.getNotifications(5);
+        box.innerHTML = notes.length === 0
+          ? '<div class="empty-state">No messages yet — they show up here as patients are booked.</div>'
+          : notes.map((n) => `
+            <div style="padding:10px 0;border-bottom:1px solid var(--grey-100);">
+              <div style="font-size:13px;color:var(--grey-500);margin-bottom:2px;">${n.phone} &middot; <span class="badge badge-booked">Pending — not sent</span></div>
+              <div style="font-size:14px;">${n.message}</div>
+            </div>
+          `).join('');
       }
 
       async function refreshDoctorsCache() {
@@ -544,9 +566,11 @@
         const doctorId = document.getElementById('pDoctor').value;
 
         let bookedForToday = true;
+        let queuedMessage = null;
 
         if (patientMode === 'walkin') {
-          await Qlinic.addWalkIn({ name, phone, gender, address, doctorId, reason: document.getElementById('pReason').value });
+          const result = await Qlinic.addWalkIn({ name, phone, gender, address, doctorId, reason: document.getElementById('pReason').value });
+          queuedMessage = result.message;
           showToast('Walk-in added to the queue');
         } else {
           const date = document.getElementById('pDate').value;
@@ -564,10 +588,18 @@
           if (avail && avail.isFull && !confirm(`This slot already has ${avail.count} patients booked (max ${avail.capacity}). The next open slot is ${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}. Add anyway at the requested time?`)) {
             return;
           }
-          await Qlinic.addAppointment({ name, phone, gender, address, doctorId, bookedDate: date, bookedTime: time });
+          const result = await Qlinic.addAppointment({ name, phone, gender, address, doctorId, bookedDate: date, bookedTime: time });
+          queuedMessage = result.message;
           bookedForToday = date === Qlinic.getTodayDate();
           showToast(bookedForToday ? 'Appointment added' : `Appointment booked for ${Qlinic.formatDateLabel(date)} (${Qlinic.formatTime(Qlinic.parseTime(time))})`);
         }
+
+        if (queuedMessage) {
+          const preview = document.getElementById('messagePreview');
+          preview.style.display = 'block';
+          preview.innerHTML = `📱 <strong>SMS queued</strong> (not yet connected to a provider — this is what would be sent to ${phone}):<br>"${queuedMessage}"`;
+        }
+        renderRecentMessages();
 
         // Jump the queue view to whichever doctor this patient was just
         // added for, so reception immediately sees where they landed — but
@@ -603,6 +635,7 @@
       fillDoctorSelects();
       setPatientMode('appointment');
       renderQueues();
+      renderRecentMessages();
 
       Qlinic.onLiveChange(() => {
         renderSearch();
