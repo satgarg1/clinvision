@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20" />
+<link rel="stylesheet" href="styles.css?v=21" />
 <script>if (localStorage.getItem('qlinic_intro_seen')) document.documentElement.classList.add('qlinic-intro-seen');</script>
 </head>
 <body>
@@ -37,12 +37,18 @@
   <!-- INTRO CLOCK — plays once per browser, then this clock becomes the
        permanent mark next to "Qlinic" in the nav above. -->
   <div id="introOverlay" class="intro-overlay">
+    <span class="intro-bg-icon" style="top:10%;left:12%;" aria-hidden="true">🧑‍💼</span>
+    <span class="intro-bg-icon" style="top:14%;right:14%;" aria-hidden="true">🩺</span>
+    <span class="intro-bg-icon" style="bottom:16%;left:10%;" aria-hidden="true">📱</span>
+    <span class="intro-bg-icon" style="bottom:14%;right:12%;" aria-hidden="true">📺</span>
+    <span class="intro-bg-icon" style="top:48%;left:5%;" aria-hidden="true">📊</span>
+    <span class="intro-bg-icon" style="top:52%;right:6%;" aria-hidden="true">🚀</span>
     <div id="introClock" class="clock-face intro-clock">
-      <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;color:#fff;">
+      <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;color:var(--black);">
         <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="4"></circle>
         <line class="clock-hour" x1="50" y1="50" x2="50" y2="30" stroke="currentColor" stroke-width="5" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
         <line class="clock-min" x1="50" y1="50" x2="50" y2="18" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
-        <line class="clock-sec" x1="50" y1="50" x2="50" y2="14" stroke="var(--mkt-coral)" stroke-width="1.5" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+        <line class="clock-sec" x1="50" y1="50" x2="50" y2="14" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
         <circle cx="50" cy="50" r="2.5" fill="currentColor"></circle>
       </svg>
     </div>
@@ -183,7 +189,13 @@
       const overlay = document.getElementById('introOverlay');
       if (!overlay) return;
 
-      if (localStorage.getItem(INTRO_KEY)) {
+      // TEMPORARY, for development only: always show the intro so it's easy
+      // to keep testing/tweaking without clearing localStorage every time.
+      // Set this back to false before shipping, so it plays once per
+      // browser for real visitors again.
+      const FORCE_INTRO_FOR_TESTING = true;
+
+      if (!FORCE_INTRO_FOR_TESTING && localStorage.getItem(INTRO_KEY)) {
         overlay.remove();
         return;
       }
@@ -250,9 +262,9 @@
           beat2.style.display = 'block';
           requestAnimationFrame(() => { beat2.style.opacity = '1'; });
         }, 300);
-      }, 1500);
+      }, 6000);
 
-      setTimeout(shrink, 3500);
+      setTimeout(shrink, 10000);
     })();
   </script>
 

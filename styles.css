@@ -118,7 +118,7 @@ html.qlinic-intro-seen .brand-clock { visibility: visible; }
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: #000;
+  background: var(--grey-100);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -126,10 +126,21 @@ html.qlinic-intro-seen .brand-clock { visibility: visible; }
   gap: 32px;
   padding: 24px;
   text-align: center;
+  overflow: hidden;
+}
+/* Faint app icons scattered behind the clock -- a light, on-brand
+   background instead of a disconnected black screen, hinting that the
+   real product is what shows up once this finishes. */
+.intro-bg-icon {
+  position: absolute;
+  font-size: 56px;
+  opacity: 0.16;
+  pointer-events: none;
+  user-select: none;
 }
 .intro-clock { width: 200px; height: 200px; }
 .intro-beat {
-  color: #fff;
+  color: var(--black);
   font-size: clamp(18px, 3vw, 28px);
   max-width: 640px;
   line-height: 1.4;
@@ -143,14 +154,14 @@ html.qlinic-intro-seen .brand-clock { visibility: visible; }
   right: 28px;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--grey-500);
   font-size: 14px;
   font-family: var(--font);
   cursor: pointer;
   padding: 8px 12px;
   transition: opacity 300ms ease, color 150ms ease;
 }
-.intro-skip:hover { color: rgba(255, 255, 255, 0.85); }
+.intro-skip:hover { color: var(--black); }
 
 .btn {
   display: inline-block;
