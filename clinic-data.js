@@ -1,5 +1,5 @@
 /**
- * Qlinic — real backend client, backed by Supabase (Postgres + Auth +
+ * Qlinic: real backend client, backed by Supabase (Postgres + Auth +
  * Realtime). Replaces the old data.js, which stored everything in
  * localStorage as a stand-in for a real database.
  *
@@ -18,7 +18,7 @@
   let currentClinicId = null;
   let currentClinic = null;
 
-  // ---------------- time-of-day helpers (unchanged from the old data.js —
+  // ---------------- time-of-day helpers (unchanged from the old data.js:
   // these operate on "HH:MM" strings like <input type="time"> values, not
   // on real timestamps, so they don't need to change just because the
   // backend did). ----------------
@@ -43,10 +43,10 @@
     return `${h}:${m}`;
   }
 
-  // ---------------- real-timestamp helpers (new — this is what replaces
+  // ---------------- real-timestamp helpers (new: this is what replaces
   // the simulated clinic clock) ----------------
   function formatTimestamp(value) {
-    if (!value) return '—';
+    if (!value) return '·';
     const date = value instanceof Date ? value : new Date(value);
     return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   }
@@ -81,7 +81,7 @@
 
   // ---------------- queue-ordering logic (same rule as before: your
   // position is based on whichever is LATER, your scheduled slot or when
-  // you actually walked in — just expressed in real Date arithmetic now
+  // you actually walked in, just expressed in real Date arithmetic now
   // instead of simulated minutes-since-midnight). ----------------
   function scheduledMoment(patient, doctor) {
     if (patient.type === 'walkin' || !patient.bookedDate || !patient.bookedTime) return null;
@@ -157,7 +157,7 @@
 
   // If a user confirmed their email (or confirmation is off and they got
   // a session immediately) but has no profile/clinic yet, the clinic name
-  // they typed at signup time is sitting in their auth user_metadata —
+  // they typed at signup time is sitting in their auth user_metadata,
   // finish creating their clinic automatically instead of asking again.
   async function finishClinicSetupIfNeeded(session) {
     const { data: existing, error } = await sb.from('profiles').select('clinic_id').eq('id', session.user.id).maybeSingle();
@@ -181,7 +181,7 @@
     return currentClinic;
   }
 
-  // fields: { name, graceWindowMins, slotIntervalMins, slotCapacity } — any
+  // fields: { name, graceWindowMins, slotIntervalMins, slotCapacity }, any
   // subset. Used by the Settings page for clinic profile + queue rules.
   async function updateClinic(fields) {
     const clinicId = await ensureClinicContext();
@@ -196,7 +196,7 @@
     currentClinic = null; // force a fresh read next time
   }
 
-  // Defaults to active doctors only — that's what every operational screen
+  // Defaults to active doctors only: that's what every operational screen
   // (reception, doctor view, dashboard, display) should ever see. Settings
   // passes { includeInactive: true } since it's the one place that needs to
   // manage doctors who've been deactivated too.
@@ -227,7 +227,7 @@
     if (error) throw error;
   }
 
-  // Deactivating (not deleting) a doctor — see supabase/002_doctor_active_flag.sql
+  // Deactivating (not deleting) a doctor: see supabase/002_doctor_active_flag.sql
   // for why: patients.doctor_id cascades on delete, so a hard delete would
   // wipe that doctor's entire patient history.
   async function setDoctorActive(doctorId, isActive) {
@@ -289,7 +289,7 @@
     return doctors.map((d, i) => ({ doctor: d, queue: queues[i] }));
   }
 
-  // Searches only today's bookings — "mark arrived" only makes sense for
+  // Searches only today's bookings: "mark arrived" only makes sense for
   // someone who could plausibly be standing at the desk right now.
   async function searchBookedPatients(query) {
     const clinicId = await ensureClinicContext();
@@ -371,7 +371,7 @@
   // ---------------- patient notifications ----------------
   // The tech for "text the patient their appointment time," built without
   // a live SMS provider connected. Every booking composes a message and
-  // logs it as 'pending' in the notifications table — nothing is actually
+  // logs it as 'pending' in the notifications table; nothing is actually
   // delivered yet. Wiring up a real provider later means adding a
   // Supabase Edge Function that processes pending rows and flips them to
   // sent/failed; the booking flow itself won't need to change.
@@ -386,7 +386,7 @@
   }
 
   // Composing the message needs the clinic's name and grace window, and
-  // the doctor's name — never lets a failure here block the booking
+  // the doctor's name; never lets a failure here block the booking
   // itself, since the SMS log is a nice-to-have, not the core action.
   async function queueBookingNotification({ patientId, phone, doctorId, kind, bookedDate, bookedTime, tokenNumber }) {
     try {
@@ -414,8 +414,8 @@
   }
 
   // ---------------- public queue lookup (Phase 1 of the live-queue
-  // feature — no page reads this yet) ----------------
-  // Anonymous, no login required — this is the client-side counterpart
+  // feature: no page reads this yet) ----------------
+  // Anonymous, no login required; this is the client-side counterpart
   // to the get_queue_status() database function. Knowing a patient's own
   // id (an unguessable UUID) is what authorizes seeing this; the
   // function itself returns only a sanitized subset (never other
@@ -522,7 +522,7 @@
     };
   }
 
-  // Only closes out TODAY's unarrived bookings — a future appointment
+  // Only closes out TODAY's unarrived bookings; a future appointment
   // hasn't been missed yet.
   async function closeDayNoShows() {
     const clinicId = await ensureClinicContext();
@@ -581,7 +581,7 @@
 
   // Changing email triggers Supabase's own confirmation flow (checks both
   // the old and new address, per the "Secure email change" project
-  // setting) — the change isn't live until that's confirmed.
+  // setting); the change isn't live until that's confirmed.
   async function changeEmail(newEmail) {
     const { error } = await sb.auth.updateUser({ email: newEmail });
     if (error) throw error;
@@ -593,7 +593,7 @@
     if (error) throw error;
   }
 
-  // For the "forgot password" flow (not logged in) — sends a reset link to
+  // For the "forgot password" flow (not logged in): sends a reset link to
   // the given email; redirectTo should point at reset-password.html.
   async function requestPasswordReset(email, redirectTo) {
     const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
@@ -644,7 +644,7 @@
 
   // Creates a brand-new login for a staff member. Uses a throwaway,
   // non-persisted Supabase client for the signUp call so it never touches
-  // (or overwrites) the admin's own session in this browser's storage —
+  // (or overwrites) the admin's own session in this browser's storage;
   // otherwise auth.signUp() would sign the admin's tab in as the new
   // staff member instead.
   async function createStaffAccount({ email, password, fullName, role }) {
@@ -673,7 +673,7 @@
   }
 
   // ---------------- appearance (local device preference, not synced
-  // across devices — this is a personal UI setting, not clinic data)
+  // across devices; this is a personal UI setting, not clinic data)
   // ----------------
 
   function getTheme() {
@@ -691,7 +691,7 @@
 
   // ---------------- realtime ----------------
 
-  // Fires `cb` whenever any doctor or patient row in this clinic changes —
+  // Fires `cb` whenever any doctor or patient row in this clinic changes;
   // reception, doctor view, and the display board all use this to stay
   // in sync across genuinely different devices, not just browser tabs.
   async function onLiveChange(cb) {

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Waiting Room Display — Qlinic</title>
+<title>Waiting Room Display: Qlinic</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 <body class="display-body">
 
   <div class="display-header">
-    <div class="brand"><span class="live-dot" aria-hidden="true"></span>Qlinic <span id="taglineText" style="color:var(--grey-500);font-weight:400;font-size:16px;">— live queue</span></div>
+    <div class="brand"><span class="live-dot" aria-hidden="true"></span>Qlinic <span id="taglineText" style="color:var(--grey-500);font-weight:400;font-size:16px;">· live queue</span></div>
     <div class="clock" id="clockTime">--</div>
   </div>
 
@@ -47,7 +47,7 @@
       let combined = [];
       let currentPage = 0;
 
-      // Same 5-color identity palette used on reception and the doctor view —
+      // Same 5-color identity palette used on reception and the doctor view:
       // each doctor keeps the same color everywhere, so on a board mixing
       // every doctor's patients together, a glance at the dot tells you
       // whose it is without reading the name column.
@@ -56,7 +56,7 @@
       // This board is read by patients, not staff, so its language follows
       // the clinic-wide "Display screen" setting (Settings), not the
       // per-device day/night theme. Patient/doctor names and addresses are
-      // real data, never translated — only these fixed UI labels are.
+      // real data, never translated; only these fixed UI labels are.
       const STRINGS = {
         en: {
           tagline: 'live queue',
@@ -69,10 +69,10 @@
           onTime: 'On time',
           runningLate: 'Running late',
           onBreak: 'On a break',
-          emergency: 'Emergency — please bear with us',
+          emergency: 'Emergency, please bear with us',
           appointment: 'Appointment',
           walkin: 'Walk-in',
-          empty: 'No one waiting right now — the waiting room is clear.',
+          empty: 'No one waiting right now. The waiting room is clear.',
           acrossAllDoctors: (n) => `(${n} across all doctors)`,
         },
         hi: {
@@ -86,25 +86,25 @@
           onTime: 'समय पर',
           runningLate: 'देरी से',
           onBreak: 'ब्रेक पर',
-          emergency: 'आपातकाल — कृपया थोड़ा इंतज़ार करें',
+          emergency: 'आपातकाल, कृपया थोड़ा इंतज़ार करें',
           appointment: 'अपॉइंटमेंट',
           walkin: 'वॉक-इन',
-          empty: 'अभी कोई प्रतीक्षा में नहीं है — प्रतीक्षालय खाली है।',
+          empty: 'अभी कोई प्रतीक्षा में नहीं है। प्रतीक्षालय खाली है।',
           acrossAllDoctors: (n) => `(सभी डॉक्टरों को मिलाकर ${n})`,
         },
       };
       let T = STRINGS.en;
 
       // Doctor/patient names and addresses are free text typed by staff in
-      // Latin script — there's no fixed translation for a person's name,
+      // Latin script; there's no fixed translation for a person's name,
       // only a phonetic transliteration into Devanagari. Plain English
       // spelling is genuinely ambiguous about Hindi vowel length (e.g.
-      // "Yadav" is pronounced with a long first "a" — यादव, not यदव — that
+      // "Yadav" is pronounced with a long first "a", यादव, not यदव, that
       // a purely mechanical letter-by-letter pass can't know), so common
       // Indian names/surnames/place-words are special-cased here for
       // accuracy; anything not in this list falls back to the phonetic
       // approximation below, which won't always be perfect. This only
-      // affects what's rendered on this board — the stored data (and every
+      // affects what's rendered on this board; the stored data (and every
       // other screen) always shows exactly what was typed.
       const HI_WORD_DICT = {
         garg: 'गर्ग', gupta: 'गुप्ता', sharma: 'शर्मा', verma: 'वर्मा', yadav: 'यादव',
@@ -195,7 +195,7 @@
 
       // Specialty is picked from a fixed dropdown (Settings > Doctors), so
       // unlike names it has a real, known-good Hindi translation rather
-      // than a phonetic guess — used whenever the value matches a known
+      // than a phonetic guess, used whenever the value matches a known
       // specialty; free-text "Other" specialties fall back to transliteration.
       const SPECIALTY_HI = {
         'General Physician': 'सामान्य चिकित्सक',
@@ -249,13 +249,13 @@
             </div>
             <div class="strip-serving">
               <span class="tiny-label">${T.nowServing}</span>
-              <span class="strip-serving-name">${queue.nowServing ? localizeName(queue.nowServing.name) : '—'}</span>
+              <span class="strip-serving-name">${queue.nowServing ? localizeName(queue.nowServing.name) : '·'}</span>
             </div>
           </div>
         `).join('');
       }
 
-      // One combined, clinic-wide board sorted by scheduled/effective time —
+      // One combined, clinic-wide board sorted by scheduled/effective time:
       // an appointment for 9:15 outranks a walk-in that happened to arrive
       // first, same as the reception and doctor screens.
       function computeCombinedWaiting(all) {
@@ -293,7 +293,7 @@
       }
 
       function applyStaticStrings() {
-        document.getElementById('taglineText').textContent = '— ' + T.tagline;
+        document.getElementById('taglineText').textContent = '· ' + T.tagline;
         document.getElementById('waitingNowText').textContent = T.waitingNow;
         document.getElementById('colPos').textContent = T.colPos;
         document.getElementById('colPatient').textContent = T.colPatient;
@@ -345,7 +345,7 @@
       refreshData();
       setInterval(refreshData, REFRESH_MS); // catches anything Realtime might miss
       setInterval(rotatePage, ROTATE_MS); // airport-board style: cycle to the next set of names
-      Qlinic.onLiveChange(refreshData); // instant update the moment reception/doctor changes anything — genuinely cross-device now
+      Qlinic.onLiveChange(refreshData); // instant update the moment reception/doctor changes anything, genuinely cross-device now
     })();
   </script>
 </body>

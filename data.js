@@ -1,5 +1,5 @@
 /**
- * Qlinic — mock data & "backend" layer for the Phase 1 prototype.
+ * Qlinic, mock data & "backend" layer for the Phase 1 prototype.
  *
  * Everything in this file is a stand-in for a real backend. It is deliberately
  * written as a set of functions (addAppointment, markArrived, setDoctorStatus, ...)
@@ -7,7 +7,7 @@
  * fetch() call without touching any of the HTML/UI code that calls them.
  *
  * State is persisted to localStorage so the demo survives page navigation
- * and refresh. This is NOT real auth or a real database — see login.html
+ * and refresh. This is NOT real auth or a real database, see login.html
  * and the note in README.md for what a production version needs instead.
  */
 (function (global) {
@@ -65,7 +65,7 @@
   }
 
   // Whether booking dateStr/timeStr would already be in the past on the
-  // REAL device clock — not the simulated clinic clock, which can be
+  // REAL device clock, not the simulated clinic clock, which can be
   // fast-forwarded for demo purposes and shouldn't be able to make a real
   // booking rule lie.
   function isPastRealDateTime(dateStr, timeStr) {
@@ -74,14 +74,14 @@
   }
 
   // A walk-in only ever belongs to today (they're standing at the desk right
-  // now) — there's no such thing as a future or past walk-in. An
+  // now), there's no such thing as a future or past walk-in. An
   // appointment belongs to whichever date it was actually booked for.
   function belongsToDate(patient, dateStr) {
     return patient.type === 'walkin' ? dateStr === todayDateStr() : patient.bookedDate === dateStr;
   }
 
   // The operational rules (no-show flagging, daily summary, closing the day,
-  // slot capacity) always mean the real, actual today — regardless of
+  // slot capacity) always mean the real, actual today, regardless of
   // whichever date reception might currently be browsing in the UI.
   function isForToday(patient) {
     return belongsToDate(patient, todayDateStr());
@@ -178,7 +178,7 @@
   // scheduled slot governs (arriving early can't jump ahead of patients
   // booked in between). Late, their real arrival time governs, so they
   // correctly queue behind everyone whose slot fell between their original
-  // appointment and when they actually showed up — instead of keeping an
+  // appointment and when they actually showed up, instead of keeping an
   // unearned position at their original, already-passed slot time.
   function effectiveMinutes(patient) {
     const doc = getDoctor(patient.doctorId);
@@ -197,7 +197,7 @@
 
   // How many active (not done/no-show) appointments a doctor already has in the
   // 15-min bucket containing `timeStr` on `dateStr`. Used to warn reception
-  // before they stack up 20 patients on the same slot — scoped to a specific
+  // before they stack up 20 patients on the same slot, scoped to a specific
   // date so a busy 10:20 AM tomorrow doesn't count against today's capacity.
   function countActiveAtSlot(doctorId, dateStr, timeStr, excludePatientId) {
     const targetBucket = bucketStart(parseTime(timeStr));
@@ -275,7 +275,7 @@
       return state.doctors.map((d) => ({ doctor: d, queue: Qlinic.getQueueForDoctor(d.id, dateStr) }));
     },
 
-    // Searches only today's bookings — "mark arrived" only makes sense for
+    // Searches only today's bookings, "mark arrived" only makes sense for
     // someone who could plausibly be standing at the desk right now.
     searchBookedPatients(query) {
       const q = query.trim().toLowerCase();
@@ -337,7 +337,7 @@
       return id;
     },
 
-    // { count, capacity, isFull, suggestion } — suggestion is the next HH:MM
+    // { count, capacity, isFull, suggestion }, suggestion is the next HH:MM
     // bucket (24h, for <input type="time">) that still has room, or null.
     getSlotAvailability(doctorId, dateStr, timeStr) {
       if (!doctorId || !dateStr || !timeStr) return null;
@@ -374,7 +374,7 @@
       persist();
     },
 
-    // Scoped to today — a future booking shouldn't count toward today's
+    // Scoped to today, a future booking shouldn't count toward today's
     // footfall, no-show rate, or totals.
     getDailySummary() {
       const todays = state.patients.filter(isForToday);
@@ -396,7 +396,7 @@
       };
     },
 
-    // Only closes out today's unarrived bookings — a future appointment
+    // Only closes out today's unarrived bookings, a future appointment
     // hasn't been missed yet.
     closeDayNoShows() {
       state.patients.forEach((p) => {
@@ -447,7 +447,7 @@
 
     // Re-reads state from localStorage. The reception desk, doctor's screen, and
     // waiting-room display are meant to run as separate tabs/devices sharing one
-    // browser's storage — call this before re-rendering a "live" screen so it
+    // browser's storage, call this before re-rendering a "live" screen so it
     // picks up changes made from another tab.
     refresh() {
       try {

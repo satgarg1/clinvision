@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Doctors — Qlinic</title>
+<title>Doctors: Qlinic</title>
 <script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -74,11 +74,11 @@
       await Qlinic.requireLogin('login.html');
 
       // The sidebar logo links to the marketing site, which has no way
-      // back into the app without logging in again — worth a heads-up
+      // back into the app without logging in again, worth a heads-up
       // before someone loses their place by accident.
       document.querySelector('a.brand').addEventListener('click', (e) => {
         e.preventDefault();
-        if (confirm("Going to the homepage will end your session here — you'll need to log in again to get back in. Continue?")) {
+        if (confirm("Going to the homepage will end your session here, you'll need to log in again to get back in. Continue?")) {
           window.location.href = 'index.html';
         }
       });
@@ -157,7 +157,7 @@
         const countNote = document.getElementById('doctorCountNote');
 
         if (allDoctors.length === 0) {
-          box.innerHTML = '<div class="empty-state">No doctors yet — add your first one above.</div>';
+          box.innerHTML = '<div class="empty-state">No doctors yet, add your first one above.</div>';
           countNote.textContent = '';
           document.getElementById('doctorPager').innerHTML = '';
           return;

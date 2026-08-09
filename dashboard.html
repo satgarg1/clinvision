@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dashboard — Qlinic</title>
+<title>Dashboard: Qlinic</title>
 <script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -60,11 +60,11 @@
       await Qlinic.requireLogin('login.html');
 
       // The sidebar logo links to the marketing site, which has no way
-      // back into the app without logging in again — worth a heads-up
+      // back into the app without logging in again, worth a heads-up
       // before someone loses their place by accident.
       document.querySelector('a.brand').addEventListener('click', (e) => {
         e.preventDefault();
-        if (confirm("Going to the homepage will end your session here — you'll need to log in again to get back in. Continue?")) {
+        if (confirm("Going to the homepage will end your session here, you'll need to log in again to get back in. Continue?")) {
           window.location.href = 'index.html';
         }
       });
@@ -89,7 +89,7 @@
         }[status] || status;
       }
 
-      // Same 5-color identity palette as the rest of the app — each doctor
+      // Same 5-color identity palette as the rest of the app; each doctor
       // keeps the same color everywhere, based on their position in the
       // clinic's doctor list.
       const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
@@ -122,7 +122,7 @@
 
         const doctors = await Qlinic.getDoctors();
         if (doctors.length === 0) {
-          document.getElementById('doctorStatusList').innerHTML = '<div class="empty-state">No doctors yet — add one from <a href="settings.html">Settings</a>.</div>';
+          document.getElementById('doctorStatusList').innerHTML = '<div class="empty-state">No doctors yet, add one from <a href="settings.html">Settings</a>.</div>';
           return;
         }
         const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id)));
@@ -149,7 +149,7 @@
       document.getElementById('closeDayBtn').addEventListener('click', async () => {
         if (confirm('Close the day? Everyone still "booked" and not arrived today will be marked as no-show.')) {
           await Qlinic.closeDayNoShows();
-          showToast('Day closed — no-shows finalized');
+          showToast('Day closed, no-shows finalized');
           render();
         }
       });

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Account &amp; security — Qlinic</title>
+<title>Account &amp; security: Qlinic</title>
 <script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,7 +36,7 @@
 
       <div class="panel" id="emailPanel">
         <div class="panel-header"><h2>Email</h2></div>
-        <p class="panel-note">Current: <strong id="currentEmail">—</strong></p>
+        <p class="panel-note">Current: <strong id="currentEmail">·</strong></p>
         <form id="emailForm" class="inline-form">
           <div class="field">
             <label>New email</label>
@@ -87,11 +87,11 @@
       await Qlinic.requireLogin('login.html');
 
       // The sidebar logo links to the marketing site, which has no way
-      // back into the app without logging in again — worth a heads-up
+      // back into the app without logging in again, worth a heads-up
       // before someone loses their place by accident.
       document.querySelector('a.brand').addEventListener('click', (e) => {
         e.preventDefault();
-        if (confirm("Going to the homepage will end your session here — you'll need to log in again to get back in. Continue?")) {
+        if (confirm("Going to the homepage will end your session here, you'll need to log in again to get back in. Continue?")) {
           window.location.href = 'index.html';
         }
       });
@@ -117,7 +117,7 @@
         try {
           await Qlinic.changeEmail(document.getElementById('newEmailInput').value);
           note.style.display = 'block';
-          note.textContent = 'Check both your old and new inbox to confirm this change — it won’t take effect until then.';
+          note.textContent = 'Check both your old and new inbox to confirm this change; it won’t take effect until then.';
           e.target.reset();
         } catch (err) {
           note.style.display = 'block';
@@ -154,7 +154,7 @@
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
-      document.getElementById('currentEmail').textContent = (await Qlinic.getCurrentUserEmail()) || '—';
+      document.getElementById('currentEmail').textContent = (await Qlinic.getCurrentUserEmail()) || '·';
     })();
   </script>
 </body>

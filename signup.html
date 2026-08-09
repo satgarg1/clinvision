@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Register your clinic — Qlinic</title>
+<title>Register your clinic: Qlinic</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -60,13 +60,13 @@
         const result = await Qlinic.signUp(email, password, clinicName);
 
         if (result.session) {
-          // Email confirmation is off for this project — clinic is set up
+          // Email confirmation is off for this project: clinic is set up
           // and the user is already logged in.
           window.location.href = 'dashboard.html';
           return;
         }
 
-        // Email confirmation is required — the clinic gets created
+        // Email confirmation is required: the clinic gets created
         // automatically the moment they confirm and log in for the first
         // time (see finishClinicSetupIfNeeded in clinic-data.js).
         document.getElementById('signupForm').style.display = 'none';

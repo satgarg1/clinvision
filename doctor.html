@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Doctor View — Qlinic</title>
+<title>Doctor View: Qlinic</title>
 <script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,7 +42,7 @@
         <div class="panel" id="statusPanel">
           <div class="panel-header"><h2>Your status</h2></div>
           <p style="font-size:13px;color:var(--grey-500);margin:0 0 16px;">
-            One tap updates every waiting patient's estimate and the waiting-room screen — no one needs to interrupt you to ask.
+            One tap updates every waiting patient's estimate and the waiting-room screen, no one needs to interrupt you to ask.
           </p>
           <div class="inline-form" style="margin-bottom:10px;">
             <button class="btn-sm" data-status="on_time">On time</button>
@@ -99,11 +99,11 @@
       await Qlinic.requireLogin('login.html');
 
       // The sidebar logo links to the marketing site, which has no way
-      // back into the app without logging in again — worth a heads-up
+      // back into the app without logging in again, worth a heads-up
       // before someone loses their place by accident.
       document.querySelector('a.brand').addEventListener('click', (e) => {
         e.preventDefault();
-        if (confirm("Going to the homepage will end your session here — you'll need to log in again to get back in. Continue?")) {
+        if (confirm("Going to the homepage will end your session here, you'll need to log in again to get back in. Continue?")) {
           window.location.href = 'index.html';
         }
       });
@@ -134,7 +134,7 @@
         return document.getElementById('doctorSelect').value;
       }
 
-      // Same 5-color identity palette used app-wide — whichever doctor is
+      // Same 5-color identity palette used app-wide; whichever doctor is
       // selected here tints all three panels, so switching doctors is
       // confirmed at a glance, and the color matches this doctor everywhere
       // else too.
@@ -149,7 +149,7 @@
         });
       }
 
-      // The list is sorted by scheduled/effective time, not raw arrival time —
+      // The list is sorted by scheduled/effective time, not raw arrival time:
       // a walk-in's slot is when they arrived, an appointment's is its booked
       // time plus any doctor delay.
       function queueTimeCell(p) {
@@ -164,7 +164,7 @@
         doctors = await Qlinic.getDoctors();
         const sel = document.getElementById('doctorSelect');
         const prevSelected = sel.value;
-        sel.innerHTML = doctors.map((d) => `<option value="${d.id}">${d.name} — ${d.specialty}</option>`).join('');
+        sel.innerHTML = doctors.map((d) => `<option value="${d.id}">${d.name}, ${d.specialty}</option>`).join('');
 
         if (doctors.length === 0) {
           document.getElementById('doctorPanels').style.display = 'none';
@@ -182,13 +182,13 @@
 
         document.getElementById('currentStatusLine').innerHTML =
           `Currently: <span class="status-pill status-${doc.status}">${statusLabel(doc.status)}${doc.delayMins ? ' · ' + doc.delayMins + ' min' : ''}</span>
-           <span style="color:var(--grey-500);"> — updated ${Qlinic.formatTimestamp(doc.statusUpdatedAt)}${doc.statusNote ? ' · "' + doc.statusNote + '"' : ''}</span>`;
+           <span style="color:var(--grey-500);"> · updated ${Qlinic.formatTimestamp(doc.statusUpdatedAt)}${doc.statusNote ? ' · "' + doc.statusNote + '"' : ''}</span>`;
 
         document.getElementById('nowServingBox').innerHTML = q.nowServing
           ? `<div style="font-size:20px;font-weight:700;">${q.nowServing.name}</div><div style="font-size:13px;color:var(--grey-500);">${q.nowServing.address ? q.nowServing.address + ' · ' : ''}${q.nowServing.type === 'appointment' ? 'Appointment' : 'Walk-in'}</div>`
           : `<div class="empty-state">No one in consultation. Tap "Call next patient" to begin.</div>`;
 
-        document.getElementById('waitingHeading').innerHTML = `Waiting <span class="order-note">— ordered by scheduled time, not arrival order</span>`;
+        document.getElementById('waitingHeading').innerHTML = `Waiting <span class="order-note">· ordered by scheduled time, not arrival order</span>`;
 
         document.getElementById('waitingList').innerHTML = q.waiting.length === 0
           ? '<div class="empty-state">No one waiting.</div>'
@@ -210,14 +210,14 @@
       }
 
       // Both "Running late" and "On a break" ask for a duration before
-      // broadcasting — the doctor picks how it'll show up, then confirms.
+      // broadcasting: the doctor picks how it'll show up, then confirms.
       const DURATION_CONFIG = {
         running_late: { label: 'How many minutes behind?', button: 'Broadcast delay', note: (l) => `Running about ${l} behind.` },
         on_break: { label: 'How long is your break?', button: 'Broadcast break', note: (l) => `On a break for about ${l}.` },
       };
       let pendingStatus = null;
 
-      // Short durations in round minutes, longer ones in half-hour steps —
+      // Short durations in round minutes, longer ones in half-hour steps:
       // "90 min" reads slower than "1.5 hr" once you're past an hour.
       const DURATION_OPTIONS = [];
       for (let m = 10; m < 60; m += 10) DURATION_OPTIONS.push({ value: m, label: `${m} min` });
@@ -278,7 +278,7 @@
           document.getElementById('delayInputWrap').style.display = 'none';
           await Qlinic.setDoctorStatus(currentDoctorId(), status, 0, '');
           render();
-          showToast('Status updated — patients notified');
+          showToast('Status updated, patients notified');
         });
       });
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Settings — Qlinic</title>
+<title>Settings: Qlinic</title>
 <script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -105,7 +105,7 @@
 
       <div class="panel">
         <div class="panel-header"><h2>Account &amp; security</h2></div>
-        <p class="panel-note">Signed in as <strong id="currentEmail">—</strong></p>
+        <p class="panel-note">Signed in as <strong id="currentEmail">·</strong></p>
         <a href="account-security.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage account &amp; security</a>
       </div>
 
@@ -151,11 +151,11 @@
       await Qlinic.requireLogin('login.html');
 
       // The sidebar logo links to the marketing site, which has no way
-      // back into the app without logging in again — worth a heads-up
+      // back into the app without logging in again, worth a heads-up
       // before someone loses their place by accident.
       document.querySelector('a.brand').addEventListener('click', (e) => {
         e.preventDefault();
-        if (confirm("Going to the homepage will end your session here — you'll need to log in again to get back in. Continue?")) {
+        if (confirm("Going to the homepage will end your session here, you'll need to log in again to get back in. Continue?")) {
           window.location.href = 'index.html';
         }
       });
@@ -188,7 +188,7 @@
       }
 
       // Same custom dropdown component as Doctor View's delay/break picker,
-      // reused here for three separate fields — factored out since building
+      // reused here for three separate fields; factored out since building
       // it a third time inline would just be copy-pasted boilerplate.
       function setupDropdownPicker({ pickerId, triggerId, triggerTextId, hiddenId, panelId, options, fallbackLabel }) {
         function render() {
@@ -315,7 +315,7 @@
         btn.addEventListener('click', () => applyTheme(btn.getAttribute('data-theme-choice')));
       });
 
-      document.getElementById('currentEmail').textContent = (await Qlinic.getCurrentUserEmail()) || '—';
+      document.getElementById('currentEmail').textContent = (await Qlinic.getCurrentUserEmail()) || '·';
       await loadClinic();
       await loadDoctorSummary();
       await loadTeamSummary();

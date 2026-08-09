@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Your queue status — Qlinic</title>
+<title>Your queue status: Qlinic</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -32,7 +32,7 @@
 
         <div style="text-align:center;margin-bottom:16px;">
           <div style="font-size:13px;color:var(--grey-500);">Your token number</div>
-          <div style="font-size:56px;font-weight:700;line-height:1.15;" id="tokenNumber">—</div>
+          <div style="font-size:56px;font-weight:700;line-height:1.15;" id="tokenNumber">·</div>
         </div>
 
         <div id="statusBadgeRow" style="text-align:center;margin-bottom:18px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;"></div>
@@ -55,7 +55,7 @@
       </div>
 
       <p class="panel-note" id="footerNote" style="display:none;text-align:center;margin-top:22px;margin-bottom:0;border-top:1px solid var(--grey-100);padding-top:14px;">
-        This is your own private link — no login needed. Refreshes automatically.
+        This is your own private link, no login needed. Refreshes automatically.
       </p>
     </div>
   </div>
@@ -84,11 +84,11 @@
         on_time: 'On time',
         running_late: 'Running late',
         on_break: 'On a break',
-        emergency: 'Emergency — please bear with us',
+        emergency: 'Emergency, please bear with us',
       };
 
       const PATIENT_STATUS_BADGE = {
-        booked: '<span class="badge badge-booked">Booked — not checked in yet</span>',
+        booked: '<span class="badge badge-booked">Booked, not checked in yet</span>',
         waiting: '<span class="badge badge-waiting">Waiting</span>',
         in_consult: '<span class="badge badge-in-consult">With the doctor now</span>',
         done: '<span class="badge badge-done">Visit complete</span>',
@@ -108,7 +108,7 @@
 
         document.getElementById('clinicName').textContent = data.clinicName;
         document.getElementById('doctorName').textContent = data.doctorName;
-        document.getElementById('tokenNumber').textContent = data.tokenNumber != null ? '#' + data.tokenNumber : '—';
+        document.getElementById('tokenNumber').textContent = data.tokenNumber != null ? '#' + data.tokenNumber : '·';
 
         let badgeHtml = PATIENT_STATUS_BADGE[data.status] || '';
         if (data.doctorStatus && data.doctorStatus !== 'on_time') {
