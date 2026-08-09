@@ -373,6 +373,8 @@ html.qlinic-intro-seen .brand-clock { visibility: visible; }
   border-radius: 20px;
   padding: 36px 32px;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
+  display: flex;
+  flex-direction: column;
 }
 .teaser-card:hover {
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08);
@@ -390,6 +392,7 @@ html.qlinic-intro-seen .brand-clock { visibility: visible; }
   color: var(--grey-700);
   line-height: 1.5;
   margin: 0 0 20px;
+  flex: 1;
 }
 .teaser-card .teaser-link {
   font-size: 15px;
