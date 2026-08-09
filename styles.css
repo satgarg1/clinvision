@@ -147,6 +147,15 @@ a { color: inherit; }
 }
 .mkt-section.grey { background: var(--grey-100); max-width: none; }
 
+/* A plain .mkt-section is capped at 1180px and centered, which is right
+   for text but wrong for decoration: blobs placed inside it read as a
+   visible rectangle on any screen wider than that, since the color never
+   reaches the real edges of the page. Wrapping the section in this
+   full-bleed container instead lets absolutely-positioned blobs spread
+   across the actual viewport, while the section itself still centers its
+   text content normally. */
+.mkt-fullbleed { position: relative; overflow: hidden; }
+
 .eyebrow {
   display: inline-block;
   font-size: 14px;
