@@ -359,6 +359,46 @@ html.qlinic-intro-seen .brand-clock { visibility: visible; }
 .icon-purple { background: var(--mkt-purple-bg); }
 .icon-pink { background: var(--mkt-pink-bg); }
 
+/* Homepage teaser cards, linking out to the three deep-dive pages */
+.mkt-teasers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 28px;
+  margin-top: 56px;
+  text-align: left;
+}
+.teaser-card {
+  background: var(--white);
+  border: 1px solid var(--grey-300);
+  border-radius: 20px;
+  padding: 36px 32px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.teaser-card:hover {
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+}
+.teaser-card .feature-icon { margin-bottom: 22px; }
+.teaser-card h3 {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 10px;
+}
+.teaser-card p {
+  font-size: 15px;
+  color: var(--grey-700);
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+.teaser-card .teaser-link {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+.teaser-card .teaser-link:hover { text-decoration: underline; }
+
 /* ---------------- Shared colorful accents (used across every logged-in page) ----------------
    Same 5-color palette as the landing page, applied consistently: each doctor
    gets a stable color (by their position in the doctors list) shown as a top
