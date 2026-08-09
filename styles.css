@@ -114,11 +114,18 @@ a { color: inherit; }
 }
 html.qlinic-intro-seen .brand-clock { visibility: visible; }
 
+/* A translucent, lightly frosted layer over the real homepage
+   (already rendered underneath) -- not a solid screen -- so the nav,
+   hero text, and hero card mockup stay dimly visible through it, like
+   a PowerPoint object with transparency. The reveal at the end of the
+   sequence is this same layer fading to fully transparent. */
 .intro-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: var(--grey-100);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -126,17 +133,6 @@ html.qlinic-intro-seen .brand-clock { visibility: visible; }
   gap: 32px;
   padding: 24px;
   text-align: center;
-  overflow: hidden;
-}
-/* Faint app icons scattered behind the clock -- a light, on-brand
-   background instead of a disconnected black screen, hinting that the
-   real product is what shows up once this finishes. */
-.intro-bg-icon {
-  position: absolute;
-  font-size: 56px;
-  opacity: 0.16;
-  pointer-events: none;
-  user-select: none;
 }
 .intro-clock { width: 200px; height: 200px; }
 .intro-beat {
