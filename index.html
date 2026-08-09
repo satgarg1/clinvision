@@ -7,12 +7,24 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=19" />
+<link rel="stylesheet" href="styles.css?v=20" />
+<script>if (localStorage.getItem('qlinic_intro_seen')) document.documentElement.classList.add('qlinic-intro-seen');</script>
 </head>
 <body>
 
   <nav class="mkt-nav">
-    <a href="index.html" class="brand">Qlinic</a>
+    <a href="index.html" class="brand">
+      <span class="brand-clock clock-face" id="navClock">
+        <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;color:var(--black);">
+          <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="5"></circle>
+          <line class="clock-hour" x1="50" y1="50" x2="50" y2="30" stroke="currentColor" stroke-width="6" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+          <line class="clock-min" x1="50" y1="50" x2="50" y2="18" stroke="currentColor" stroke-width="4" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+          <line class="clock-sec" x1="50" y1="50" x2="50" y2="14" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+          <circle cx="50" cy="50" r="3" fill="currentColor"></circle>
+        </svg>
+      </span>
+      Qlinic
+    </a>
     <div style="display:flex;align-items:center;gap:24px;">
       <a href="who-its-for.html" style="font-weight:600;font-size:15px;color:var(--black);text-decoration:none;">Who it's for</a>
       <a href="whats-inside.html" style="font-weight:600;font-size:15px;color:var(--black);text-decoration:none;">What's inside</a>
@@ -21,6 +33,23 @@
       <a href="login.html" class="btn btn-accent">Log in</a>
     </div>
   </nav>
+
+  <!-- INTRO CLOCK — plays once per browser, then this clock becomes the
+       permanent mark next to "Qlinic" in the nav above. -->
+  <div id="introOverlay" class="intro-overlay">
+    <div id="introClock" class="clock-face intro-clock">
+      <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;color:#fff;">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="4"></circle>
+        <line class="clock-hour" x1="50" y1="50" x2="50" y2="30" stroke="currentColor" stroke-width="5" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+        <line class="clock-min" x1="50" y1="50" x2="50" y2="18" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+        <line class="clock-sec" x1="50" y1="50" x2="50" y2="14" stroke="var(--mkt-coral)" stroke-width="1.5" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+        <circle cx="50" cy="50" r="2.5" fill="currentColor"></circle>
+      </svg>
+    </div>
+    <p id="introBeat1" class="intro-beat">Somewhere in India, right now, someone is waiting — and no one's told them how long.</p>
+    <p id="introBeat2" class="intro-beat" style="display:none;opacity:0;">Time is the one asset nobody gets back.</p>
+    <button id="introSkip" class="intro-skip" type="button">Skip →</button>
+  </div>
 
   <!-- HERO -->
   <div class="mkt-fullbleed">
@@ -123,6 +152,108 @@
       });
     }, { threshold: 0.15 });
     document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
+  </script>
+
+  <script>
+    (function () {
+      const INTRO_KEY = 'qlinic_intro_seen';
+
+      // Keeps every clock on the page (the nav icon, and the intro's own
+      // clock while it's up) ticking to the real current time, in sync,
+      // so swapping which one is visible never shows a time jump.
+      function applyTime(root) {
+        const now = new Date();
+        const s = now.getSeconds();
+        const m = now.getMinutes();
+        const h = now.getHours() % 12;
+        const sec = root.querySelector('.clock-sec');
+        const min = root.querySelector('.clock-min');
+        const hour = root.querySelector('.clock-hour');
+        if (sec) sec.style.transform = `rotate(${s * 6}deg)`;
+        if (min) min.style.transform = `rotate(${m * 6 + s * 0.1}deg)`;
+        if (hour) hour.style.transform = `rotate(${h * 30 + m * 0.5}deg)`;
+      }
+      function tickAll() {
+        document.querySelectorAll('.clock-face').forEach(applyTime);
+      }
+      tickAll();
+      setInterval(tickAll, 1000);
+
+      const navClock = document.getElementById('navClock');
+      const overlay = document.getElementById('introOverlay');
+      if (!overlay) return;
+
+      if (localStorage.getItem(INTRO_KEY)) {
+        overlay.remove();
+        return;
+      }
+
+      const introClock = document.getElementById('introClock');
+      const beat1 = document.getElementById('introBeat1');
+      const beat2 = document.getElementById('introBeat2');
+      const skipBtn = document.getElementById('introSkip');
+      let done = false;
+
+      function finish() {
+        if (done) return;
+        done = true;
+        localStorage.setItem(INTRO_KEY, '1');
+        navClock.style.visibility = 'visible';
+        overlay.remove();
+      }
+
+      // The clock "travels" from big-and-centered to small-in-the-nav by
+      // measuring its own current position, pinning it there with
+      // position:fixed (no visual jump), then animating left/top/width/
+      // height to the real nav clock's position -- which has been sitting
+      // there all along, just invisible, so the swap at the end is seamless.
+      function shrink() {
+        if (done) return;
+        const startRect = introClock.getBoundingClientRect();
+        introClock.style.position = 'fixed';
+        introClock.style.left = startRect.left + 'px';
+        introClock.style.top = startRect.top + 'px';
+        introClock.style.width = startRect.width + 'px';
+        introClock.style.height = startRect.height + 'px';
+        introClock.style.margin = '0';
+
+        beat1.style.opacity = '0';
+        beat2.style.opacity = '0';
+        skipBtn.style.opacity = '0';
+        overlay.style.transition = 'background 500ms ease';
+        overlay.style.background = 'transparent';
+        overlay.style.pointerEvents = 'none';
+
+        requestAnimationFrame(() => {
+          const targetRect = navClock.getBoundingClientRect();
+          introClock.style.transition =
+            'left 650ms cubic-bezier(0.4,0,0.2,1), top 650ms cubic-bezier(0.4,0,0.2,1), ' +
+            'width 650ms cubic-bezier(0.4,0,0.2,1), height 650ms cubic-bezier(0.4,0,0.2,1)';
+          introClock.style.left = targetRect.left + 'px';
+          introClock.style.top = targetRect.top + 'px';
+          introClock.style.width = targetRect.width + 'px';
+          introClock.style.height = targetRect.height + 'px';
+        });
+
+        setTimeout(finish, 700);
+      }
+
+      skipBtn.addEventListener('click', shrink);
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') shrink();
+      });
+
+      setTimeout(() => {
+        beat1.style.opacity = '0';
+        setTimeout(() => {
+          beat1.style.display = 'none';
+          beat2.style.display = 'block';
+          requestAnimationFrame(() => { beat2.style.opacity = '1'; });
+        }, 300);
+      }, 1500);
+
+      setTimeout(shrink, 3500);
+    })();
   </script>
 
 </body>
