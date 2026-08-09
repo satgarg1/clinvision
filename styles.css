@@ -301,7 +301,7 @@ html.qlinic-intro-seen .brand-clock { visibility: visible; }
   gap: 32px;
   margin-top: 60px;
 }
-.mkt-stat .big { font-size: clamp(36px, 5vw, 56px); font-weight: 700; color: var(--accent); }
+.mkt-stat .big { font-size: clamp(32px, 4.5vw, 52px); font-weight: 700; color: var(--accent); white-space: nowrap; }
 .mkt-stat .label { font-size: 15px; color: var(--grey-500); margin-top: 6px; }
 .mkt-section.dark .mkt-stat .label { color: var(--grey-300); }
 
