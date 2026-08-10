@@ -98,66 +98,31 @@ a { color: inherit; }
   font-weight: 700;
   letter-spacing: -0.02em;
   text-decoration: none;
+  color: var(--black);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.brand-top {
   display: flex;
   align-items: center;
 }
+.brand-tagline {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--grey-500);
+  margin-top: 2px;
+}
 
-/* ---------------- Intro clock (index.html only, plays once per browser
-   via localStorage, then this same icon persists in the nav) ---------------- */
+/* Clock icon next to "Qlinic" in the nav, ticks to the real time */
 .brand-clock {
   display: inline-block;
   width: 22px;
   height: 22px;
   margin-right: 8px;
   vertical-align: middle;
-  visibility: hidden;
 }
-html.qlinic-intro-seen .brand-clock { visibility: visible; }
-
-/* A translucent, lightly frosted layer over the real homepage
-   (already rendered underneath) -- not a solid screen -- so the nav,
-   hero text, and hero card mockup stay dimly visible through it, like
-   a PowerPoint object with transparency. The reveal at the end of the
-   sequence is this same layer fading to fully transparent. */
-.intro-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 32px;
-  padding: 24px;
-  text-align: center;
-}
-.intro-clock { width: 200px; height: 200px; }
-.intro-beat {
-  color: var(--black);
-  font-size: clamp(18px, 3vw, 28px);
-  max-width: 640px;
-  line-height: 1.4;
-  margin: 0;
-  opacity: 1;
-  transition: opacity 300ms ease;
-}
-.intro-skip {
-  position: fixed;
-  bottom: 28px;
-  right: 28px;
-  background: none;
-  border: none;
-  color: var(--grey-500);
-  font-size: 14px;
-  font-family: var(--font);
-  cursor: pointer;
-  padding: 8px 12px;
-  transition: opacity 300ms ease, color 150ms ease;
-}
-.intro-skip:hover { color: var(--black); }
 
 .btn {
   display: inline-block;
@@ -317,6 +282,14 @@ html.qlinic-intro-seen .brand-clock { visibility: visible; }
 /* ---------------- Hero ---------------- */
 
 .mkt-hero { overflow: hidden; }
+.hero-preline {
+  font-size: clamp(15px, 1.6vw, 18px);
+  font-weight: 500;
+  color: var(--grey-500);
+  max-width: 640px;
+  line-height: 1.4;
+  margin: 0 auto 20px;
+}
 .hero-blob {
   position: absolute;
   border-radius: 50%;
