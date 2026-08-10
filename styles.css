@@ -281,7 +281,6 @@ a { color: inherit; }
 
 /* ---------------- Hero ---------------- */
 
-.mkt-hero { overflow: hidden; }
 .hero-preline {
   font-size: clamp(17px, 2vw, 22px);
   font-weight: 500;
@@ -296,6 +295,52 @@ a { color: inherit; }
   filter: blur(50px);
   opacity: 0.4;
   z-index: 0;
+}
+
+/* ---------------- Homepage scroll story ----------------
+   A tall wrapper pins its inner content for a stretch of scroll, while a
+   script cross-fades between stacked "beats" based on how far the user
+   has scrolled through it -- the problem statement holds, fades into the
+   fix, then hands off to the normal page below. */
+.scroll-story {
+  position: relative;
+  height: 220vh;
+}
+.scroll-story-pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.scroll-beat {
+  position: absolute;
+  left: 6vw;
+  right: 6vw;
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  opacity: 0;
+}
+.scroll-beat:first-child { opacity: 1; }
+.beat-problem {
+  font-weight: 700;
+  color: var(--black);
+  font-size: clamp(28px, 4.2vw, 50px);
+}
+.beat-solution {
+  font-weight: 500;
+  color: var(--grey-700);
+  font-size: clamp(20px, 2.6vw, 30px);
+  line-height: 1.4;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-story { height: auto; }
+  .scroll-story-pin { position: static; height: auto; display: block; padding: 60px 0; }
+  .scroll-beat { position: static; opacity: 1 !important; margin: 0 auto 50px; }
 }
 
 /* ---------------- Colored eyebrows, stats, use-case cards, feature icons ---------------- */

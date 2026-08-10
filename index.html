@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=28" />
+<link rel="stylesheet" href="styles.css?v=29" />
 </head>
 <body>
 
@@ -36,28 +36,34 @@
     </div>
   </nav>
 
-  <!-- HERO -->
-  <div class="mkt-fullbleed">
+  <!-- HERO: decorative wash band -->
+  <div class="mkt-fullbleed" style="height:340px;">
     <div class="mkt-wash" aria-hidden="true">
       <div class="hero-blob" style="width:280px;height:280px;background:var(--mkt-teal);top:-120px;left:6%;"></div>
       <div class="hero-blob" style="width:240px;height:240px;background:var(--mkt-blue);top:-100px;left:38%;"></div>
       <div class="hero-blob" style="width:260px;height:260px;background:var(--mkt-coral);top:-110px;left:68%;"></div>
       <div class="hero-blob" style="width:220px;height:220px;background:var(--mkt-purple);top:-130px;right:4%;"></div>
     </div>
-    <section class="mkt-section mkt-hero" style="position:relative;z-index:1;">
-      <p class="hero-preline">Somewhere in India, right now, someone is waiting, and no one's precisely told them for how long.</p>
-      <h1 class="mkt-h1" style="font-size:clamp(32px, 4.5vw, 56px);">Your waiting room is full.<br />Your patients ask the same question all day.<br />Your reception desk gives the same answer all day.<br />One fix for all three.</h1>
-      <p class="mkt-sub">
-        Qlinic keeps your patients from guessing how much longer, your
-        reception desk from explaining it, and lets your doctor say it once,
-        so everyone already knows.
-      </p>
-    </section>
   </div>
 
-  <!-- WHY CLINICS CHOOSE -->
+  <!-- SCROLL STORY: the problem, then the fix, one big statement at a time -->
+  <div class="scroll-story">
+    <div class="scroll-story-pin">
+      <p class="scroll-beat beat-problem">Your waiting room is full.<br />Your patients ask the same question all day.<br />Your reception desk gives the same answer all day.<br />One fix for all three.</p>
+      <p class="scroll-beat beat-solution">Qlinic clears your waiting room by telling patients exactly when to arrive, frees your reception desk from repeating the same answer all day, and lets your doctor update the whole queue with one tap.</p>
+    </div>
+  </div>
+
+  <section class="mkt-section tight">
+    <div class="mkt-cta-row">
+      <a href="contact.html" class="btn btn-accent btn-large">Book a demo</a>
+      <a href="who-its-for.html" class="btn btn-ghost btn-large">Is this for my clinic?</a>
+    </div>
+  </section>
+
+  <!-- WHY CHOOSE QLINIC -->
   <section class="mkt-section dark reveal">
-    <div class="eyebrow">Why clinics choose Qlinic</div>
+    <div class="eyebrow">Why choose Qlinic?</div>
     <h2 class="mkt-h1" style="margin:0 0 24px;">No one has to ask.<br />Everyone already knows.</h2>
     <p class="mkt-sub">
       A doctor running behind, a queue that's moving, a token that's
@@ -148,6 +154,45 @@
       }
       tickAll();
       setInterval(tickAll, 1000);
+    })();
+  </script>
+
+  <script>
+    (function () {
+      const story = document.querySelector('.scroll-story');
+      if (!story || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      const beats = story.querySelectorAll('.scroll-beat');
+
+      // Cross-fades between stacked beats based on how far the page has
+      // scrolled through the pinned wrapper: each beat holds fully visible
+      // for most of its share of the scroll distance, with a short overlap
+      // where the current and next beat fade across each other.
+      function update() {
+        const rect = story.getBoundingClientRect();
+        const total = rect.height - window.innerHeight;
+        let progress = total > 0 ? -rect.top / total : 0;
+        progress = Math.max(0, Math.min(1, progress));
+
+        const n = beats.length;
+        beats.forEach((beat, i) => {
+          const segment = 1 / n;
+          const start = i * segment;
+          const end = start + segment;
+          const fadeZone = segment * 0.3;
+          let opacity = 1;
+          if (i > 0 && progress < start + fadeZone) {
+            opacity = (progress - (start - fadeZone)) / (2 * fadeZone);
+          } else if (i < n - 1 && progress > end - fadeZone) {
+            opacity = 1 - (progress - (end - fadeZone)) / (2 * fadeZone);
+          }
+          beat.style.opacity = Math.max(0, Math.min(1, opacity));
+        });
+      }
+
+      update();
+      window.addEventListener('scroll', update, { passive: true });
+      window.addEventListener('resize', update);
     })();
   </script>
 
