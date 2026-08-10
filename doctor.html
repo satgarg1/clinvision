@@ -66,7 +66,7 @@
           </div>
           <div id="delayInputWrap" style="display:none;margin-top:10px;">
             <div class="inline-form">
-              <div class="field" style="max-width:160px;">
+              <div class="field" style="max-width:230px;">
                 <label id="delayInputLabel">How many minutes behind?</label>
                 <div class="time-picker" id="delayPicker">
                   <button type="button" class="time-picker-trigger" id="delayTrigger">
@@ -290,9 +290,13 @@
             return;
           }
           document.getElementById('delayInputWrap').style.display = 'none';
-          await Qlinic.setDoctorStatus(currentDoctorId(), status, 0, '');
-          render();
-          showToast('Status updated, patients notified');
+          try {
+            await Qlinic.setDoctorStatus(currentDoctorId(), status, 0, '');
+            render();
+            showToast('Status updated, patients notified');
+          } catch (err) {
+            showToast(err.message || 'Could not update status');
+          }
         });
       });
 
@@ -300,10 +304,14 @@
         const mins = document.getElementById('delayMinsInput').value;
         const label = document.getElementById('delayTriggerText').textContent;
         const config = DURATION_CONFIG[pendingStatus];
-        await Qlinic.setDoctorStatus(currentDoctorId(), pendingStatus, mins, config.note(label));
-        document.getElementById('delayInputWrap').style.display = 'none';
-        render();
-        showToast(pendingStatus === 'on_break' ? 'Break broadcast to all waiting patients' : 'Delay broadcast to all waiting patients');
+        try {
+          await Qlinic.setDoctorStatus(currentDoctorId(), pendingStatus, mins, config.note(label));
+          document.getElementById('delayInputWrap').style.display = 'none';
+          render();
+          showToast(pendingStatus === 'on_break' ? 'Break broadcast to all waiting patients' : 'Delay broadcast to all waiting patients');
+        } catch (err) {
+          showToast(err.message || 'Could not broadcast update');
+        }
       });
 
       document.getElementById('callNextBtn').addEventListener('click', async () => {
