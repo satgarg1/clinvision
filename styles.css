@@ -398,8 +398,10 @@ a { color: inherit; }
   font-weight: 600;
   color: var(--accent);
   text-decoration: none;
+  display: inline-block;
+  transition: transform 0.15s ease;
 }
-.teaser-card .teaser-link:hover { text-decoration: underline; }
+.teaser-card .teaser-link:hover { text-decoration: underline; transform: scale(1.08); }
 
 /* ---------------- Shared colorful accents (used across every logged-in page) ----------------
    Same 5-color palette as the landing page, applied consistently: each doctor
@@ -513,6 +515,20 @@ a { color: inherit; }
 }
 .field input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 
+/* Browsers render autofilled/saved-password field values with their own
+   font and a tinted background by default, which clashes with the site's
+   font until the field is edited. Forcing these keeps the font (and
+   background) consistent whether the value was typed or autofilled. */
+.field input:-webkit-autofill,
+.field input:-webkit-autofill:hover,
+.field input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--black);
+  -webkit-box-shadow: 0 0 0px 1000px var(--white) inset;
+  box-shadow: 0 0 0px 1000px var(--white) inset;
+  font-family: var(--font);
+  transition: background-color 9999s ease-in-out 0s;
+}
+
 .login-hint {
   margin-top: 18px;
   font-size: 13px;
@@ -553,8 +569,12 @@ a { color: inherit; }
   text-decoration: none;
   padding: 0 10px;
   margin-bottom: 28px;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transition: transform 0.15s ease;
 }
+.app-sidebar .brand:hover { transform: scale(1.04); }
 
 .app-sidebar nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 
@@ -566,9 +586,9 @@ a { color: inherit; }
   font-size: 14px;
   font-weight: 500;
   border-left: 2px solid transparent;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.12s ease;
 }
-.app-sidebar a.nav-link:hover { background: var(--grey-100); color: var(--black); }
+.app-sidebar a.nav-link:hover { background: var(--grey-100); color: var(--black); transform: translateX(3px); }
 .app-sidebar a.nav-link.active {
   background: var(--grey-100);
   color: var(--accent);
