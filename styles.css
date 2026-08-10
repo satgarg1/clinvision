@@ -764,6 +764,10 @@ table.qtable tr:last-child td { border-bottom: none; }
 .btn-sm.primary:hover { background: var(--accent-dark); }
 .btn-sm.danger { background: transparent; color: var(--danger); }
 .btn-sm.danger:hover { background: var(--danger-bg); }
+.btn-sm.danger-solid { background: var(--danger); color: #ffffff; }
+.btn-sm.danger-solid:hover { background: #a01b18; }
+.btn-sm.accent-outline { background: var(--white); color: var(--accent); border-color: var(--accent); }
+.btn-sm.accent-outline:hover { background: var(--accent); color: #ffffff; }
 
 .inline-form {
   display: flex;
@@ -1124,9 +1128,9 @@ table.qtable tr:last-child td { border-bottom: none; }
   background: var(--white);
   color: var(--grey-700);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
-.mode-btn:hover { border-color: var(--grey-500); }
+.mode-btn:hover { border-color: var(--grey-500); transform: scale(1.03); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
 .mode-btn.active[data-mode="walkin"] { background: var(--grey-900); border-color: var(--grey-900); color: #ffffff; }
 .mode-btn.active[data-mode="appointment"] { background: var(--accent); border-color: var(--accent); color: #ffffff; }
 .mode-btn.active[data-theme-choice="light"] { background: var(--accent); border-color: var(--accent); color: #ffffff; }
