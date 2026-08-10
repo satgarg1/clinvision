@@ -102,6 +102,33 @@ a { color: inherit; }
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  transition: transform 0.15s ease;
+}
+.mkt-nav .brand:hover { transform: scale(1.04); }
+
+/* Nav links grow slightly on hover, and the current page's link gets a
+   permanent underline, so the nav gives feedback instead of sitting flat. */
+.mkt-nav > div > a:not(.btn) {
+  position: relative;
+  display: inline-block;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+.mkt-nav > div > a:not(.btn):hover {
+  transform: scale(1.1);
+  color: var(--accent) !important;
+}
+.mkt-nav-current {
+  color: var(--accent) !important;
+}
+.mkt-nav-current::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px;
 }
 .brand-top {
   display: flex;
@@ -696,6 +723,7 @@ table.qtable tr:last-child td { border-bottom: none; }
   background: var(--grey-100);
   color: var(--grey-700);
   cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .btn-sm:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-sm:hover { background: var(--grey-300); color: var(--black); }
@@ -1100,8 +1128,8 @@ table.qtable tr:last-child td { border-bottom: none; }
   border-color: var(--grey-300);
 }
 
-.btn:hover, .btn-sm:hover { transform: translateY(-1px); }
-.btn:active, .btn-sm:active { transform: translateY(0) scale(0.98); }
+.btn:hover, .btn-sm:hover { transform: translateY(-1px) scale(1.04); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
+.btn:active, .btn-sm:active { transform: translateY(0) scale(0.98); box-shadow: none; }
 
 table.qtable tbody tr { transition: background 0.12s ease; }
 table.qtable tbody tr:hover { background: var(--grey-100); }
