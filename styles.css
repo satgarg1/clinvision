@@ -141,6 +141,15 @@ a { color: inherit; }
   color: var(--grey-500);
   margin-top: 2px;
 }
+/* The sidebar is much narrower than the marketing nav, so the tagline
+   needs its own smaller size to stay on one line instead of wrapping. */
+.app-sidebar .brand-tagline {
+  font-size: 9px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 
 /* Clock icon next to "Qlinic" in the nav, ticks to the real time */
 .brand-clock {
@@ -521,12 +530,16 @@ a { color: inherit; }
    background) consistent whether the value was typed or autofilled. */
 .field input:-webkit-autofill,
 .field input:-webkit-autofill:hover,
-.field input:-webkit-autofill:focus {
-  -webkit-text-fill-color: var(--black);
-  -webkit-box-shadow: 0 0 0px 1000px var(--white) inset;
-  box-shadow: 0 0 0px 1000px var(--white) inset;
-  font-family: var(--font);
-  transition: background-color 9999s ease-in-out 0s;
+.field input:-webkit-autofill:focus,
+.field input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--black) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--white) inset !important;
+  box-shadow: 0 0 0px 1000px var(--white) inset !important;
+  font-family: var(--font) !important;
+  font-size: 15px !important;
+  font-weight: 400 !important;
+  caret-color: var(--black);
+  transition: background-color 9999s ease-in-out 0s !important;
 }
 
 .login-hint {
