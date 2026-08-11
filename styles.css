@@ -433,7 +433,7 @@ a { color: inherit; }
 .value-pink { color: var(--mkt-pink); }
 
 .panel-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.panel-header h2 { margin: 0; }
+.panel .panel-header h2 { margin: 0; }
 
 .board-doc-dot {
   display: inline-block;
