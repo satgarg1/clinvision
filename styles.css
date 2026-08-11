@@ -702,7 +702,6 @@ a { color: inherit; }
   border-radius: var(--radius);
   padding: 20px 22px;
 }
-.stat-card-icon { font-size: 20px; margin-bottom: 8px; opacity: 0.85; }
 .stat-card .value { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
 .stat-card .label { font-size: 13px; color: var(--grey-500); margin-top: 4px; }
 
