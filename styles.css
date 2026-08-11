@@ -702,6 +702,7 @@ a { color: inherit; }
   border-radius: var(--radius);
   padding: 20px 22px;
 }
+.stat-card-icon { font-size: 20px; margin-bottom: 8px; opacity: 0.85; }
 .stat-card .value { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
 .stat-card .label { font-size: 13px; color: var(--grey-500); margin-top: 4px; }
 
@@ -916,9 +917,13 @@ table.qtable tr:last-child td { border-bottom: none; }
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  padding: 16px 0;
+  padding: 16px 12px;
+  margin: 0 -12px;
+  border-radius: 10px;
   border-bottom: 1px solid var(--grey-100);
+  transition: background 0.15s ease;
 }
+.doctor-status-row:hover { background: var(--grey-100); }
 .doctor-status-row:last-child { border-bottom: none; }
 .doctor-status-row .doc-name { font-weight: 700; font-size: 15px; }
 .doctor-status-row .doc-specialty { font-size: 13px; color: var(--grey-500); }

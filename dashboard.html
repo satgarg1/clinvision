@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=34" />
+<link rel="stylesheet" href="styles.css?v=35" />
 </head>
 <body>
   <div class="app-shell">
@@ -50,12 +50,12 @@
       <div class="card-grid" id="statCards"></div>
 
       <div class="panel">
-        <div class="panel-header"><h2>Doctor status</h2></div>
+        <div class="panel-header"><h2>🩺 Doctor status</h2></div>
         <div id="doctorStatusList"></div>
       </div>
 
       <div class="panel">
-        <div class="panel-header"><h2>End of day</h2></div>
+        <div class="panel-header"><h2>🌙 End of day</h2></div>
         <p style="font-size:14px;color:var(--grey-700);margin:0 0 14px;">
           Anyone still marked "booked" (never arrived) today will be closed out as a no-show.
         </p>
@@ -120,15 +120,16 @@
 
         const summary = await Qlinic.getDailySummary();
         const cards = [
-          { label: 'Footfall so far', value: summary.footfallSoFar, accent: 'teal' },
-          { label: 'Waiting now', value: summary.waitingNow, accent: 'coral' },
-          { label: 'Seen (done)', value: summary.doneCount, accent: 'blue' },
-          { label: 'Likely no-shows (flagged)', value: summary.likelyNoShowCount, accent: 'pink' },
-          { label: 'No-shows (closed)', value: summary.noShowCount, accent: 'purple' },
-          { label: 'Booked today', value: summary.totalAppointments, accent: 'teal' },
+          { label: 'Footfall so far', value: summary.footfallSoFar, accent: 'teal', icon: '👥' },
+          { label: 'Waiting now', value: summary.waitingNow, accent: 'coral', icon: '⏳' },
+          { label: 'Seen (done)', value: summary.doneCount, accent: 'blue', icon: '✅' },
+          { label: 'Likely no-shows (flagged)', value: summary.likelyNoShowCount, accent: 'pink', icon: '⚠️' },
+          { label: 'No-shows (closed)', value: summary.noShowCount, accent: 'purple', icon: '🚫' },
+          { label: 'Booked today', value: summary.totalAppointments, accent: 'teal', icon: '📅' },
         ];
         document.getElementById('statCards').innerHTML = cards.map((c) => `
           <div class="stat-card accent-${c.accent}">
+            <div class="stat-card-icon">${c.icon}</div>
             <div class="value value-${c.accent}">${c.value}</div>
             <div class="label">${c.label}</div>
           </div>
