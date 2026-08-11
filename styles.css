@@ -524,6 +524,15 @@ a { color: inherit; }
 }
 .field input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 
+/* Fee fields are typed amounts, not counters, so the browser's default
+   step-by-1 spinner arrows are more clutter than help. */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] { -moz-appearance: textfield; }
+
 /* Browsers render autofilled/saved-password field values with their own
    font and a tinted background by default, which clashes with the site's
    font until the field is edited. Forcing these keeps the font (and
