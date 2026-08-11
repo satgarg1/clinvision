@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=37" />
+<link rel="stylesheet" href="styles.css?v=38" />
 </head>
 <body>
   <div class="app-shell">
@@ -107,15 +107,15 @@
                 <div class="time-picker-panel" id="pTimePanel" style="display:none;"></div>
               </div>
             </div>
-            <div class="field mode-only mode-only-walkin" style="display:none;">
+            <div class="field">
               <label>Reason (optional)</label>
               <input type="text" id="pReason" />
             </div>
+            <div class="field" style="margin-top:24px;">
+              <button type="submit" class="btn-sm primary" id="patientSubmitBtn" style="width:100%;">Add appointment</button>
+            </div>
           </div>
           <div id="slotHint" class="slot-hint"></div>
-          <div class="form-actions" style="justify-content:flex-start;">
-            <button type="submit" class="btn-sm primary" id="patientSubmitBtn">Add appointment</button>
-          </div>
         </form>
       </div>
 
@@ -294,7 +294,6 @@
         });
         document.getElementById('patientPanel').classList.toggle('mode-walkin', mode === 'walkin');
         document.getElementById('patientPanel').classList.toggle('mode-appointment', mode === 'appointment');
-        document.querySelectorAll('.mode-only-walkin').forEach((el) => { el.style.display = mode === 'walkin' ? '' : 'none'; });
         document.querySelectorAll('.mode-only-appointment').forEach((el) => { el.style.display = mode === 'appointment' ? '' : 'none'; });
         document.getElementById('pDate').required = mode === 'appointment';
         document.getElementById('modeHint').textContent = mode === 'walkin'
@@ -578,7 +577,7 @@
           if (avail && avail.isFull && !confirm(`This slot already has ${avail.count} patients booked (max ${avail.capacity}). The next open slot is ${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}. Add anyway at the requested time?`)) {
             return;
           }
-          await Qlinic.addAppointment({ name, phone, gender, address, doctorId, bookedDate: date, bookedTime: time });
+          await Qlinic.addAppointment({ name, phone, gender, address, doctorId, bookedDate: date, bookedTime: time, reason: document.getElementById('pReason').value });
           bookedForToday = date === Qlinic.getTodayDate();
           showToast(bookedForToday ? 'Appointment added' : `Appointment booked for ${Qlinic.formatDateLabel(date)} (${Qlinic.formatTime(Qlinic.parseTime(time))})`);
         }

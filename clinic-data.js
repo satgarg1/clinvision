@@ -358,6 +358,7 @@
       booked_date: info.bookedDate,
       booked_time: info.bookedTime,
       status: 'booked',
+      reason: info.reason || '',
       token_date: info.bookedDate,
     }).select().single();
     if (error) throw error;

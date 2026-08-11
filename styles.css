@@ -854,11 +854,6 @@ table.qtable tr:last-child td { border-bottom: none; }
 .time-picker-option:hover { background: var(--grey-100); }
 .time-picker-option.selected { background: var(--accent); color: #ffffff; font-weight: 600; }
 .time-picker-empty { padding: 16px 12px; text-align: center; color: var(--grey-500); font-size: 13px; }
-.form-actions {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
-}
 
 .panel-note { font-size: 13px; color: var(--grey-500); margin: 0 0 14px; }
 
