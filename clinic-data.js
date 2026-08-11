@@ -369,6 +369,33 @@
     return { id: data.id, message, tokenNumber: data.token_number };
   }
 
+  // Looks up a phone number against past visits in this clinic, so
+  // reception can reuse a returning patient's details instead of
+  // retyping them, and see if they've been missing appointments. Exact
+  // phone match only, no attempt to normalize spacing/formatting.
+  async function getPatientLookupByPhone(phone) {
+    const clinicId = await ensureClinicContext();
+    const cleanPhone = (phone || '').trim();
+    if (!clinicId || !cleanPhone) return null;
+    const { data, error } = await sb
+      .from('patients')
+      .select('name, gender, address, status')
+      .eq('clinic_id', clinicId)
+      .eq('phone', cleanPhone)
+      .order('created_at', { ascending: false })
+      .limit(5);
+    if (error) throw error;
+    if (!data || data.length === 0) return null;
+    const latest = data[0];
+    return {
+      name: latest.name,
+      gender: latest.gender,
+      address: latest.address,
+      visitsChecked: data.length,
+      noShowCount: data.filter((p) => p.status === 'no_show').length,
+    };
+  }
+
   // ---------------- patient notifications ----------------
   // The tech for "text the patient their appointment time," built without
   // a live SMS provider connected. Every booking composes a message and
@@ -723,6 +750,7 @@
     getQueueForDoctor,
     getAllQueues,
     searchBookedPatients,
+    getPatientLookupByPhone,
     markArrived,
     markNoShow,
     addWalkIn,

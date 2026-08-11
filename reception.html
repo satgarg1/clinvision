@@ -115,6 +115,7 @@
               <button type="submit" class="btn-sm primary" id="patientSubmitBtn" style="width:100%;">Add appointment</button>
             </div>
           </div>
+          <div id="patientLookupHint" class="slot-hint" style="display:none;"></div>
           <div id="slotHint" class="slot-hint"></div>
         </form>
       </div>
@@ -145,7 +146,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=16"></script>
+  <script src="clinic-data.js?v=17"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -325,6 +326,41 @@
         return `<div>${primary}</div><div class="sub-line">${secondary}</div>`;
       }
 
+      function csvCell(value) {
+        const s = String(value == null ? '' : value);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }
+
+      // Waiting only makes sense for today's view (that's the only day
+      // with a live queue); Booked covers whichever date is selected.
+      function buildQueueCsv(dateLabel, isTodayView, waiting, booked) {
+        const rows = [['Name', 'Phone', 'Type', 'Time', 'Status', 'Address', 'Reason']];
+        if (isTodayView) {
+          waiting.forEach((p) => rows.push([
+            p.name, p.phone, p.type === 'appointment' ? 'Appointment' : 'Walk-in',
+            Qlinic.formatTimestamp(p.effectiveTime), 'Waiting', p.address || '', p.reason || '',
+          ]));
+        }
+        booked.forEach((p) => rows.push([
+          p.name, p.phone, p.type === 'appointment' ? 'Appointment' : 'Walk-in',
+          Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)),
+          p.likelyNoShow ? 'Likely no-show' : 'Expected', p.address || '', p.reason || '',
+        ]));
+        return rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
+      }
+
+      function downloadCsv(filename, csvText) {
+        const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
       async function updateSlotHint() {
         const hint = document.getElementById('slotHint');
         if (patientMode !== 'appointment') { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
@@ -474,7 +510,7 @@
 
         panelEl.innerHTML = `
           <div class="panel accent-${accentForDoctor(queueDoctorId)}">
-            <div class="panel-header"><span class="board-doc-dot dot-${accentForDoctor(queueDoctorId)}"></span><h2>${doctor.name}, ${doctor.specialty}</h2><span class="date-pill">${dateLabel}</span></div>
+            <div class="panel-header"><span class="board-doc-dot dot-${accentForDoctor(queueDoctorId)}"></span><h2>${doctor.name}, ${doctor.specialty}</h2><span class="date-pill">${dateLabel}</span><button type="button" class="btn-sm" id="exportCsvBtn">Export CSV</button></div>
             ${isTodayView ? `
               ${queue.nowServing ? `<p style="font-size:14px;margin:0 0 14px;"><strong>Now with:</strong> ${queue.nowServing.name}</p>` : '<p style="font-size:14px;color:var(--grey-500);margin:0 0 14px;">No one in consultation right now.</p>'}
 
@@ -536,6 +572,12 @@
           </div>
         `;
 
+        document.getElementById('exportCsvBtn').addEventListener('click', () => {
+          const csv = buildQueueCsv(dateLabel, isTodayView, queue.waiting, queue.booked);
+          const safeDoctor = doctor.name.replace(/[^a-z0-9]+/gi, '-');
+          downloadCsv(`${safeDoctor}-${queueViewDate}.csv`, csv);
+        });
+
         document.getElementById('bookedToggleBtn').addEventListener('click', () => {
           bookedExpanded = !bookedExpanded;
           renderQueues();
@@ -596,6 +638,7 @@
         setPatientMode(patientMode);
         document.getElementById('pDate').value = Qlinic.getTodayDate();
         resetTimePicker();
+        clearPatientLookupHint();
         renderQueues();
       });
 
@@ -604,6 +647,40 @@
         resetTimePicker();
         updateSlotHint();
       });
+
+      // Looking up the phone number on blur (not every keystroke) is a
+      // passive heads-up, not a gate: it never blocks or auto-fills
+      // anything on its own, reception has to click "Use these details"
+      // to apply a match, and the no-show note is informational only.
+      function clearPatientLookupHint() {
+        const hint = document.getElementById('patientLookupHint');
+        hint.style.display = 'none';
+        hint.innerHTML = '';
+      }
+      async function checkPatientLookup() {
+        const phone = document.getElementById('pPhone').value.trim();
+        const hint = document.getElementById('patientLookupHint');
+        if (!phone) { clearPatientLookupHint(); return; }
+        const match = await Qlinic.getPatientLookupByPhone(phone);
+        if (!match) { clearPatientLookupHint(); return; }
+        const visitWord = match.visitsChecked === 1 ? 'visit' : 'visits';
+        let html = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="color:var(--accent);font-weight:600;">Found: ${match.name}, ${match.address || 'no address on file'} &middot; ${match.visitsChecked} ${visitWord} on file</span>
+          <button type="button" class="btn-sm" id="useLookupBtn">Use these details</button>
+        </div>`;
+        if (match.noShowCount >= 2) {
+          html += `<div style="margin-top:8px;color:var(--warning);background:var(--warning-bg);padding:8px 12px;border-radius:8px;">⚠ Missed ${match.noShowCount} of their last ${match.visitsChecked} visits, consider confirming by call.</div>`;
+        }
+        hint.innerHTML = html;
+        hint.style.display = 'block';
+        document.getElementById('useLookupBtn').addEventListener('click', () => {
+          document.getElementById('pName').value = match.name;
+          document.getElementById('pGender').value = match.gender || 'other';
+          document.getElementById('pAddress').value = match.address || '';
+          showToast('Details filled in');
+        });
+      }
+      document.getElementById('pPhone').addEventListener('blur', checkPatientLookup);
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
