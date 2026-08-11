@@ -561,7 +561,7 @@ a { color: inherit; }
 
 /* ---------------- App shell (dashboard / reception / doctor) ---------------- */
 
-.app-shell { display: flex; min-height: 100vh; }
+.app-shell { display: flex; height: 100vh; }
 
 .app-sidebar {
   width: 224px;
@@ -572,6 +572,7 @@ a { color: inherit; }
   padding: 24px 14px;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 
 .app-sidebar .brand {
@@ -609,6 +610,12 @@ a { color: inherit; }
   border-left-color: var(--accent);
 }
 
+.app-sidebar a.nav-link.pinned-bottom {
+  margin-top: auto;
+  border-top: 1px solid var(--grey-300);
+  padding-top: 20px;
+}
+
 .app-sidebar .clinic-name {
   font-size: 12px;
   color: var(--grey-500);
@@ -621,6 +628,7 @@ a { color: inherit; }
   background: var(--grey-100);
   padding: 40px 48px;
   min-width: 0;
+  overflow-y: auto;
 }
 
 .app-topbar {

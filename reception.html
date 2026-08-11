@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=38" />
+<link rel="stylesheet" href="styles.css?v=39" />
 </head>
 <body>
   <div class="app-shell">
@@ -34,8 +34,7 @@
         <a href="reception.html" class="nav-link active">Reception</a>
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="display.html" class="nav-link">Display Screen</a>
-        <a href="settings.html" class="nav-link" id="settingsNavLink">Settings</a>
-        <a href="account-security.html" class="nav-link">Account</a>
+        <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
       </nav>
     </aside>
 
@@ -331,21 +330,21 @@
         return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
       }
 
-      // Waiting only makes sense for today's view (that's the only day
-      // with a live queue); Booked covers whichever date is selected.
-      function buildQueueCsv(dateLabel, isTodayView, waiting, booked) {
+      // Now-serving/waiting are live-queue concepts that only apply to
+      // today; booked/done/no-show are meaningful for any date, so the
+      // export covers the full day, not just what's still in progress.
+      function buildQueueCsv(isTodayView, queue) {
         const rows = [['Name', 'Phone', 'Type', 'Time', 'Status', 'Address', 'Reason']];
-        if (isTodayView) {
-          waiting.forEach((p) => rows.push([
-            p.name, p.phone, p.type === 'appointment' ? 'Appointment' : 'Walk-in',
-            Qlinic.formatTimestamp(p.effectiveTime), 'Waiting', p.address || '', p.reason || '',
-          ]));
+        function pushRow(p, timeStr, status) {
+          rows.push([p.name, p.phone, p.type === 'appointment' ? 'Appointment' : 'Walk-in', timeStr, status, p.address || '', p.reason || '']);
         }
-        booked.forEach((p) => rows.push([
-          p.name, p.phone, p.type === 'appointment' ? 'Appointment' : 'Walk-in',
-          Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)),
-          p.likelyNoShow ? 'Likely no-show' : 'Expected', p.address || '', p.reason || '',
-        ]));
+        if (isTodayView) {
+          if (queue.nowServing) pushRow(queue.nowServing, Qlinic.formatTimestamp(queue.nowServing.arrivedAt), 'In consultation');
+          queue.waiting.forEach((p) => pushRow(p, Qlinic.formatTimestamp(p.effectiveTime), 'Waiting'));
+        }
+        queue.booked.forEach((p) => pushRow(p, Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)), p.likelyNoShow ? 'Likely no-show' : 'Expected'));
+        queue.done.forEach((p) => pushRow(p, Qlinic.formatTimestamp(p.arrivedAt), 'Seen'));
+        queue.noShow.forEach((p) => pushRow(p, p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '', 'No-show'));
         return rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
       }
 
@@ -573,7 +572,7 @@
         `;
 
         document.getElementById('exportCsvBtn').addEventListener('click', () => {
-          const csv = buildQueueCsv(dateLabel, isTodayView, queue.waiting, queue.booked);
+          const csv = buildQueueCsv(isTodayView, queue);
           const safeDoctor = doctor.name.replace(/[^a-z0-9]+/gi, '-');
           downloadCsv(`${safeDoctor}-${queueViewDate}.csv`, csv);
         });
