@@ -61,6 +61,14 @@
             <label>Specify specialty</label>
             <input type="text" id="newDoctorSpecialtyOther" placeholder="e.g. Podiatrist" />
           </div>
+          <div class="field" style="max-width:140px;">
+            <label>Normal fee (&#8377;)</label>
+            <input type="number" id="newDoctorFeeNormal" min="0" step="1" placeholder="500" />
+          </div>
+          <div class="field" style="max-width:140px;">
+            <label>Emergency fee (&#8377;)</label>
+            <input type="number" id="newDoctorFeeEmergency" min="0" step="1" placeholder="800" />
+          </div>
           <button type="submit" class="btn-sm primary">Add doctor</button>
         </form>
       </div>
@@ -81,7 +89,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=17"></script>
+  <script src="clinic-data.js?v=18"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -193,7 +201,7 @@
 
         box.innerHTML = `
           <table class="qtable">
-            <thead><tr><th>Name</th><th>Specialty</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>Specialty</th><th>Normal fee (&#8377;)</th><th>Emergency fee (&#8377;)</th><th>Status</th><th></th></tr></thead>
             <tbody>
               ${pageDoctors.map((d) => {
                 const isKnown = SPECIALTIES.includes(d.specialty);
@@ -204,6 +212,8 @@
                     <select class="doc-edit-specialty" data-id="${d.id}" style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);">${specialtyOptionsHtml(d.specialty)}</select>
                     <input type="text" class="doc-edit-specialty-other" data-id="${d.id}" value="${(!isKnown ? (d.specialty || '') : '').replace(/"/g, '&quot;')}" placeholder="Specify specialty" style="width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);${isKnown ? 'display:none;' : ''}" />
                   </td>
+                  <td><input type="number" min="0" step="1" class="doc-edit-fee-normal" data-id="${d.id}" value="${d.feeNormal || 0}" style="width:90px;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);" /></td>
+                  <td><input type="number" min="0" step="1" class="doc-edit-fee-emergency" data-id="${d.id}" value="${d.feeEmergency || 0}" style="width:90px;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);" /></td>
                   <td>${d.isActive ? '<span class="badge badge-booked">Active</span>' : '<span class="badge badge-no-show">Deactivated</span>'}</td>
                   <td style="white-space:nowrap;">
                     <button class="btn-sm primary" onclick="doSaveDoctor('${d.id}')">Save</button>
@@ -231,7 +241,9 @@
         const specialty = specialtySelect === OTHER_SPECIALTY
           ? document.querySelector(`.doc-edit-specialty-other[data-id="${id}"]`).value
           : specialtySelect;
-        await Qlinic.updateDoctor(id, { name, specialty });
+        const feeNormal = Number(document.querySelector(`.doc-edit-fee-normal[data-id="${id}"]`).value) || 0;
+        const feeEmergency = Number(document.querySelector(`.doc-edit-fee-emergency[data-id="${id}"]`).value) || 0;
+        await Qlinic.updateDoctor(id, { name, specialty, feeNormal, feeEmergency });
         showToast('Doctor updated');
         loadDoctors();
       }
@@ -272,7 +284,9 @@
         const specialty = specialtySelect === OTHER_SPECIALTY
           ? document.getElementById('newDoctorSpecialtyOther').value
           : specialtySelect;
-        await Qlinic.addDoctor({ name, specialty });
+        const feeNormal = Number(document.getElementById('newDoctorFeeNormal').value) || 0;
+        const feeEmergency = Number(document.getElementById('newDoctorFeeEmergency').value) || 0;
+        await Qlinic.addDoctor({ name, specialty, feeNormal, feeEmergency });
         e.target.reset();
         document.getElementById('newDoctorSpecialtyOtherField').style.display = 'none';
         searchTerm = '';

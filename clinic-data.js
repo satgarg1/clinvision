@@ -122,6 +122,8 @@
       statusNote: row.status_note,
       statusUpdatedAt: row.status_updated_at,
       isActive: row.is_active,
+      feeNormal: row.fee_normal,
+      feeEmergency: row.fee_emergency,
     };
   }
 
@@ -215,15 +217,21 @@
     return doctors.find((d) => d.id === doctorId) || null;
   }
 
-  async function addDoctor({ name, specialty }) {
+  async function addDoctor({ name, specialty, feeNormal, feeEmergency }) {
     const clinicId = await ensureClinicContext();
-    const { data, error } = await sb.from('doctors').insert({ clinic_id: clinicId, name, specialty: specialty || '' }).select().single();
+    const { data, error } = await sb.from('doctors').insert({
+      clinic_id: clinicId, name, specialty: specialty || '',
+      fee_normal: feeNormal || 0, fee_emergency: feeEmergency || 0,
+    }).select().single();
     if (error) throw error;
     return normalizeDoctor(data);
   }
 
-  async function updateDoctor(doctorId, { name, specialty }) {
-    const { error } = await sb.from('doctors').update({ name, specialty: specialty || '' }).eq('id', doctorId);
+  async function updateDoctor(doctorId, { name, specialty, feeNormal, feeEmergency }) {
+    const { error } = await sb.from('doctors').update({
+      name, specialty: specialty || '',
+      fee_normal: feeNormal || 0, fee_emergency: feeEmergency || 0,
+    }).eq('id', doctorId);
     if (error) throw error;
   }
 
