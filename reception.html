@@ -78,6 +78,10 @@
               <input type="tel" id="pPhone" required />
             </div>
             <div class="field">
+              <label>Age</label>
+              <input type="number" id="pAge" min="0" max="120" />
+            </div>
+            <div class="field">
               <label>Gender</label>
               <select id="pGender" required>
                 <option value="male">Male</option>
@@ -146,7 +150,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=20"></script>
+  <script src="clinic-data.js?v=21"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -598,6 +602,7 @@
         e.preventDefault();
         const name = document.getElementById('pName').value;
         const phone = document.getElementById('pPhone').value;
+        const age = document.getElementById('pAge').value ? Number(document.getElementById('pAge').value) : null;
         const gender = document.getElementById('pGender').value;
         const address = document.getElementById('pAddress').value;
         const doctorId = document.getElementById('pDoctor').value;
@@ -605,7 +610,7 @@
         let bookedForToday = true;
 
         if (patientMode === 'walkin') {
-          await Qlinic.addWalkIn({ name, phone, gender, address, doctorId, reason: document.getElementById('pReason').value });
+          await Qlinic.addWalkIn({ name, phone, age, gender, address, doctorId, reason: document.getElementById('pReason').value });
           showToast('Walk-in added to the queue');
         } else {
           const date = document.getElementById('pDate').value;
@@ -623,7 +628,7 @@
           if (avail && avail.isFull && !confirm(`This slot already has ${avail.count} patients booked (max ${avail.capacity}). The next open slot is ${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}. Add anyway at the requested time?`)) {
             return;
           }
-          await Qlinic.addAppointment({ name, phone, gender, address, doctorId, bookedDate: date, bookedTime: time, reason: document.getElementById('pReason').value });
+          await Qlinic.addAppointment({ name, phone, age, gender, address, doctorId, bookedDate: date, bookedTime: time, reason: document.getElementById('pReason').value });
           bookedForToday = date === Qlinic.getTodayDate();
           showToast(bookedForToday ? 'Appointment added' : `Appointment booked for ${Qlinic.formatDateLabel(date)} (${Qlinic.formatTime(Qlinic.parseTime(time))})`);
         }
@@ -681,6 +686,7 @@
           document.getElementById('pName').value = match.name;
           document.getElementById('pGender').value = match.gender || 'other';
           document.getElementById('pAddress').value = match.address || '';
+          if (match.age) document.getElementById('pAge').value = match.age;
           showToast('Details filled in');
         });
       }

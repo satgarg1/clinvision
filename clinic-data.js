@@ -141,6 +141,7 @@
       name: row.name,
       phone: row.phone,
       address: row.address,
+      age: row.age,
       gender: row.gender,
       type: row.type,
       doctorId: row.doctor_id,
@@ -410,6 +411,7 @@
       name: info.name,
       phone: info.phone,
       address: info.address || '',
+      age: info.age || null,
       gender: info.gender || 'other',
       type: 'walkin',
       status: 'waiting',
@@ -432,6 +434,7 @@
       name: info.name,
       phone: info.phone,
       address: info.address || '',
+      age: info.age || null,
       gender: info.gender || 'other',
       type: 'appointment',
       booked_date: info.bookedDate,
@@ -458,7 +461,7 @@
     if (!clinicId || !cleanPhone) return null;
     const { data, error } = await sb
       .from('patients')
-      .select('name, gender, address, status')
+      .select('name, gender, address, age, status')
       .eq('clinic_id', clinicId)
       .eq('phone', cleanPhone)
       .order('created_at', { ascending: false })
@@ -470,6 +473,7 @@
       name: latest.name,
       gender: latest.gender,
       address: latest.address,
+      age: latest.age,
       visitsChecked: data.length,
       noShowCount: data.filter((p) => p.status === 'no_show').length,
     };
@@ -477,11 +481,11 @@
 
   // ---------------- billing ----------------
 
-  // Patients here are per-visit rows (see getPatientLookupByPhone above),
-  // not one canonical profile, so there's no single record to pull an
-  // age from. Age is instead captured on the invoice itself and this
-  // reuses whatever was entered on this phone number's most recent
-  // bill, so it only needs typing once rather than every visit.
+  // Patients here are per-visit rows (see getPatientLookupByPhone
+  // above), not one canonical profile, so this takes age from the most
+  // recent booking (Reception's own "age" field), falling back to the
+  // most recent invoice's age for patients billed before that field
+  // existed.
   async function getBillingPatientLookup(phone) {
     const clinicId = await ensureClinicContext();
     const cleanPhone = (phone || '').trim();
@@ -494,7 +498,7 @@
     // and vice versa.
     let patient = null;
     try {
-      const { data, error } = await sb.from('patients').select('name, gender, address')
+      const { data, error } = await sb.from('patients').select('name, gender, address, age')
         .eq('clinic_id', clinicId).eq('phone', cleanPhone)
         .order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (error) throw error;
@@ -515,7 +519,7 @@
       name: (patient && patient.name) || (invoice && invoice.patient_name) || '',
       address: (patient && patient.address) || (invoice && invoice.patient_address) || '',
       gender: (patient && patient.gender) || (invoice && invoice.patient_gender) || '',
-      age: invoice ? invoice.patient_age : null,
+      age: (patient && patient.age) || (invoice && invoice.patient_age) || null,
     };
   }
 
