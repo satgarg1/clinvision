@@ -160,22 +160,25 @@
   // (adjacent pincodes like 247001/Saharanpur/UP and 247667/Roorkee/
   // Uttarakhand share the same 3-digit prefix but are different states),
   // so this calls India Post's own public pincode API instead of
-  // guessing. Free, no key, no auth. Any failure (offline, API down,
-  // unknown pincode) just resolves to '' — the state field stays a
-  // normal, editable input either way, so a miss is a one-click fix,
-  // not a blocker.
-  async function lookupStateForPincode(pincode) {
+  // guessing. Free, no key, no auth. City is the post office's district
+  // (there's no separate "city" concept in India Post's data — District
+  // is the closest single value shared across every post office under
+  // that pincode). Any failure (offline, API down, unknown pincode)
+  // resolves both fields to '' — City/State stay normal editable inputs
+  // either way, so a miss is a one-click fix, not a blocker.
+  async function lookupCityStateForPincode(pincode) {
     const clean = (pincode || '').trim();
-    if (!/^\d{6}$/.test(clean)) return '';
+    if (!/^\d{6}$/.test(clean)) return { city: '', state: '' };
     try {
       const res = await fetch(`https://api.postalpincode.in/pincode/${clean}`);
-      if (!res.ok) return '';
+      if (!res.ok) return { city: '', state: '' };
       const data = await res.json();
       const entry = data && data[0];
-      if (!entry || entry.Status !== 'Success' || !entry.PostOffice || !entry.PostOffice.length) return '';
-      return entry.PostOffice[0].State || '';
+      if (!entry || entry.Status !== 'Success' || !entry.PostOffice || !entry.PostOffice.length) return { city: '', state: '' };
+      const office = entry.PostOffice[0];
+      return { city: office.District || '', state: office.State || '' };
     } catch (e) {
-      return '';
+      return { city: '', state: '' };
     }
   }
 
@@ -879,7 +882,7 @@
     getTodayDate: todayDateStr,
     formatDateLabel,
     isPastRealDateTime,
-    lookupStateForPincode,
+    lookupCityStateForPincode,
 
     getClinic,
     updateClinic,

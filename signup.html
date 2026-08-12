@@ -29,19 +29,19 @@
           <label for="addressLine">Address</label>
           <input type="text" id="addressLine" placeholder="Building, street, area" required />
         </div>
+        <div class="field">
+          <label for="pincode">Pincode</label>
+          <input type="text" id="pincode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required />
+        </div>
         <div style="display:flex;gap:12px;">
           <div class="field" style="flex:1;">
             <label for="city">City</label>
-            <input type="text" id="city" required />
+            <input type="text" id="city" placeholder="Auto-filled from pincode" required />
           </div>
           <div class="field" style="flex:1;">
-            <label for="pincode">Pincode</label>
-            <input type="text" id="pincode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required />
+            <label for="state">State</label>
+            <input type="text" id="state" placeholder="Auto-filled from pincode" />
           </div>
-        </div>
-        <div class="field">
-          <label for="state">State</label>
-          <input type="text" id="state" placeholder="Auto-filled from pincode" />
         </div>
         <div class="field">
           <label for="email">Your email</label>
@@ -62,14 +62,19 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=22"></script>
+  <script src="clinic-data.js?v=23"></script>
   <script>
     document.getElementById('pincode').addEventListener('blur', async function () {
+      const cityInput = document.getElementById('city');
       const stateInput = document.getElementById('state');
-      const original = stateInput.placeholder;
+      const cityPlaceholder = cityInput.placeholder;
+      const statePlaceholder = stateInput.placeholder;
+      cityInput.placeholder = 'Looking up…';
       stateInput.placeholder = 'Looking up…';
-      const state = await Qlinic.lookupStateForPincode(this.value);
-      stateInput.placeholder = original;
+      const { city, state } = await Qlinic.lookupCityStateForPincode(this.value);
+      cityInput.placeholder = cityPlaceholder;
+      stateInput.placeholder = statePlaceholder;
+      if (city) cityInput.value = city;
       if (state) stateInput.value = state;
     });
 
