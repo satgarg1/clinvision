@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=45" />
+<link rel="stylesheet" href="styles.css?v=46" />
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -88,8 +88,26 @@
             </div>
           </div>
           <div id="lookupHint" class="slot-hint"></div>
+          <div class="form-grid" style="margin-top:16px;border-top:1px solid var(--grey-300);padding-top:16px;">
+            <div class="field">
+              <label>Payment mode</label>
+              <select id="bPaymentMode">
+                <option value="cash">Cash</option>
+                <option value="upi">UPI</option>
+                <option value="card">Card</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Amount received</label>
+              <input type="number" id="bAmountReceived" min="0" step="1" />
+            </div>
+            <div class="field">
+              <label>Balance</label>
+              <div style="padding:10px 12px;font-weight:600;" id="bBalance">&#8377;0</div>
+            </div>
+          </div>
           <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--grey-300);margin-top:20px;padding-top:16px;">
-            <div><span class="panel-note" style="margin:0;">Total</span> <span style="font-size:20px;font-weight:700;margin-left:8px;" id="bTotal">&#8377;0</span></div>
+            <div><span class="panel-note" style="margin:0;">Grand total</span> <span style="font-size:20px;font-weight:700;margin-left:8px;" id="bTotal">&#8377;0</span></div>
             <button type="submit" class="btn-sm primary" id="billingSubmitBtn" disabled>Print receipt</button>
           </div>
         </form>
@@ -98,17 +116,53 @@
   </div>
 
   <div id="printReceipt" class="receipt">
-    <div class="receipt-clinic-name" id="rClinicName"></div>
-    <div class="receipt-clinic-address" id="rClinicAddress"></div>
-    <div class="receipt-meta">
-      <span id="rInvoiceNumber"></span><span id="rDateTime"></span>
+    <div class="receipt-header">
+      <div>
+        <div class="receipt-clinic-name" id="rClinicName"></div>
+        <div class="receipt-clinic-address" id="rClinicAddress"></div>
+      </div>
+      <div class="receipt-number-block">
+        <div class="receipt-number-label">Receipt</div>
+        <div class="receipt-number" id="rInvoiceNumber"></div>
+      </div>
     </div>
-    <div class="receipt-row"><span>Patient</span><span id="rPatientName"></span></div>
-    <div class="receipt-row"><span>Phone</span><span id="rPatientPhone"></span></div>
-    <div class="receipt-row" id="rAgeGenderRow" style="display:none;"><span>Age / Gender</span><span id="rAgeGender"></span></div>
-    <div class="receipt-row"><span>Doctor</span><span id="rDoctorName"></span></div>
-    <div class="receipt-line-item"><span id="rFeeLabel"></span><span id="rAmount"></span></div>
-    <div class="receipt-total"><span>Total paid</span><span id="rTotal"></span></div>
+    <div class="receipt-meta-row">
+      <span id="rDateTime"></span>
+      <span id="rBilledBy"></span>
+    </div>
+    <table class="receipt-info-grid">
+      <tr>
+        <td><div class="receipt-label">Patient</div><div class="receipt-value" id="rPatientName"></div></td>
+        <td><div class="receipt-label">Consulting doctor</div><div class="receipt-value" id="rDoctorName"></div></td>
+      </tr>
+      <tr>
+        <td><div class="receipt-label">Age / gender</div><div class="receipt-value" id="rAgeGender"></div></td>
+        <td><div class="receipt-label">Specialty</div><div class="receipt-value" id="rSpecialty"></div></td>
+      </tr>
+      <tr>
+        <td><div class="receipt-label">Phone</div><div class="receipt-value" id="rPatientPhone"></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><div class="receipt-label">Address</div><div class="receipt-value" id="rPatientAddress"></div></td>
+        <td></td>
+      </tr>
+    </table>
+    <table class="receipt-items">
+      <thead><tr><th>Description</th><th>Amount</th></tr></thead>
+      <tbody><tr><td id="rFeeLabel"></td><td id="rAmount"></td></tr></tbody>
+    </table>
+    <div class="receipt-totals-wrap">
+      <div class="receipt-totals">
+        <div class="receipt-totals-row"><span>Amount received</span><span id="rAmountReceived"></span></div>
+        <div class="receipt-totals-row receipt-totals-border"><span>Balance</span><span id="rBalance"></span></div>
+        <div class="receipt-grand-total"><span>Grand total</span><span id="rTotal"></span></div>
+        <div class="receipt-payment-pill-wrap"><span class="receipt-payment-pill" id="rPaymentMode"></span></div>
+      </div>
+    </div>
+    <div class="receipt-signature-wrap">
+      <div class="receipt-signature-line">Stamp &amp; signature</div>
+    </div>
     <div class="receipt-footer">Thank you for visiting <span id="rClinicName2"></span></div>
   </div>
 
@@ -116,7 +170,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=23"></script>
+  <script src="clinic-data.js?v=24"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -144,7 +198,9 @@
       }
 
       let clinic = null;
+      let myProfile = null;
       let allDoctors = [];
+      let currentAmount = 0;
 
       function updateFeeTypeOptions() {
         const doctorId = document.getElementById('bDoctor').value;
@@ -164,14 +220,27 @@
         updateTotal();
       }
 
+      // Amount received defaults to the full fee whenever the fee itself
+      // changes (doctor or fee type), since a consultation is almost
+      // always paid in full; it stays freely editable for the rare
+      // partial-payment case without that edit surviving a fee change
+      // that would make it stale.
       function updateTotal() {
         const doctor = allDoctors.find((d) => d.id === document.getElementById('bDoctor').value);
         const feeType = document.getElementById('bFeeType').value;
-        const amount = doctor && feeType ? (feeType === 'consultation' ? doctor.feeNormal : doctor.feeEmergency) : 0;
-        document.getElementById('bTotal').textContent = `₹${amount || 0}`;
+        currentAmount = doctor && feeType ? (feeType === 'consultation' ? doctor.feeNormal : doctor.feeEmergency) : 0;
+        document.getElementById('bTotal').textContent = `₹${currentAmount || 0}`;
+        document.getElementById('bAmountReceived').value = currentAmount || 0;
+        updateBalance();
         const name = document.getElementById('bName').value.trim();
         document.getElementById('billingSubmitBtn').disabled = !(doctor && feeType && name);
       }
+
+      function updateBalance() {
+        const received = Number(document.getElementById('bAmountReceived').value) || 0;
+        document.getElementById('bBalance').textContent = `₹${currentAmount - received}`;
+      }
+      document.getElementById('bAmountReceived').addEventListener('input', updateBalance);
 
       async function loadDoctors() {
         allDoctors = await Qlinic.getDoctors();
@@ -206,27 +275,40 @@
       document.getElementById('bFeeType').addEventListener('change', updateTotal);
       document.getElementById('bName').addEventListener('input', updateTotal);
 
+      const PAYMENT_MODE_LABELS = { cash: 'Paid via cash', upi: 'Paid via UPI', card: 'Paid via card' };
+
+      // invoice.createdAt comes straight from the database's own
+      // created_at default (set the instant create_invoice() inserts the
+      // row), never a client-side new Date() — so the printed date/time
+      // is always exactly when the receipt was generated, not when the
+      // browser happened to render it.
       function renderReceipt(invoice) {
         const doctor = allDoctors.find((d) => d.id === invoice.doctorId);
         const addressParts = [clinic.address_line, clinic.city, clinic.state && clinic.pincode ? `${clinic.state} ${clinic.pincode}` : clinic.state].filter(Boolean);
         document.getElementById('rClinicName').textContent = clinic.name;
         document.getElementById('rClinicName2').textContent = clinic.name;
         document.getElementById('rClinicAddress').textContent = addressParts.join(', ');
-        document.getElementById('rInvoiceNumber').textContent = `Receipt #${String(invoice.invoiceNumber).padStart(4, '0')}`;
+        document.getElementById('rInvoiceNumber').textContent = `#RC-${String(invoice.invoiceNumber).padStart(4, '0')}`;
         document.getElementById('rDateTime').textContent = Qlinic.formatDateTime(invoice.createdAt);
+        document.getElementById('rBilledBy').textContent = `Billed by: ${(myProfile && myProfile.fullName) || 'Reception'}`;
         document.getElementById('rPatientName').textContent = invoice.patientName;
-        document.getElementById('rPatientPhone').textContent = invoice.patientPhone || '–';
-        const ageGenderRow = document.getElementById('rAgeGenderRow');
-        if (invoice.patientAge || invoice.patientGender) {
-          ageGenderRow.style.display = '';
-          document.getElementById('rAgeGender').textContent = [invoice.patientAge ? `${invoice.patientAge}y` : '', invoice.patientGender].filter(Boolean).join(' / ');
-        } else {
-          ageGenderRow.style.display = 'none';
-        }
+        document.getElementById('rPatientPhone').textContent = invoice.patientPhone || '—';
+        document.getElementById('rPatientAddress').textContent = invoice.patientAddress || '—';
+        const ageGenderParts = [];
+        if (invoice.patientAge) ageGenderParts.push(`${invoice.patientAge} years`);
+        if (invoice.patientGender) ageGenderParts.push(invoice.patientGender.charAt(0).toUpperCase() + invoice.patientGender.slice(1));
+        document.getElementById('rAgeGender').textContent = ageGenderParts.length ? ageGenderParts.join(', ') : '—';
         document.getElementById('rDoctorName').textContent = doctor ? doctor.name : '';
+        document.getElementById('rSpecialty').textContent = doctor ? doctor.specialty : '';
         document.getElementById('rFeeLabel').textContent = invoice.feeType === 'consultation' ? 'Consultation fee' : 'Emergency fee';
         document.getElementById('rAmount').textContent = `₹${invoice.amount}`;
+        document.getElementById('rAmountReceived').textContent = `₹${invoice.amountReceived}`;
+        const balance = invoice.amount - invoice.amountReceived;
+        const balanceEl = document.getElementById('rBalance');
+        balanceEl.textContent = `₹${balance}`;
+        balanceEl.style.color = balance > 0 ? 'var(--danger)' : 'var(--success)';
         document.getElementById('rTotal').textContent = `₹${invoice.amount}`;
+        document.getElementById('rPaymentMode').textContent = PAYMENT_MODE_LABELS[invoice.paymentMode] || invoice.paymentMode;
       }
 
       function resetForm() {
@@ -250,6 +332,8 @@
             patientAddress: document.getElementById('bAddress').value,
             patientAge: document.getElementById('bAge').value ? Number(document.getElementById('bAge').value) : null,
             patientGender: document.getElementById('bGender').value,
+            paymentMode: document.getElementById('bPaymentMode').value,
+            amountReceived: Number(document.getElementById('bAmountReceived').value) || 0,
           });
           renderReceipt(invoice);
           window.print();
@@ -265,6 +349,7 @@
 
       clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      myProfile = await Qlinic.getMyProfile();
       await loadDoctors();
       updateFeeTypeOptions();
     })();

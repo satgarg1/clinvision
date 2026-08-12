@@ -1235,45 +1235,108 @@ table.qtable tbody tr:hover { background: var(--grey-100); }
   transform: translateY(0);
 }
 
-/* ---------------- Billing receipt (print-only) ---------------- */
+/* ---------------- Billing receipt (print-only, sized for A4) ---------------- */
 
 .receipt {
   display: none;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
   color: var(--black);
 }
-.receipt-clinic-name { text-align: center; font-size: 17px; font-weight: 700; }
-.receipt-clinic-address { text-align: center; color: var(--grey-700); margin-bottom: 14px; }
-.receipt-meta {
+
+.receipt-header {
   display: flex;
   justify-content: space-between;
-  color: var(--grey-700);
-  border-top: 1px dashed var(--grey-300);
-  border-bottom: 1px dashed var(--grey-300);
-  padding: 8px 0;
-  margin-bottom: 10px;
+  align-items: flex-start;
+  border-bottom: 3px solid var(--accent);
+  padding-bottom: 20px;
+  margin-bottom: 8px;
 }
-.receipt-row { display: flex; gap: 6px; margin-bottom: 2px; }
-.receipt-row span:first-child { color: var(--grey-700); min-width: 90px; }
-.receipt-line-item {
+.receipt-clinic-name { font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+.receipt-clinic-address { color: var(--grey-700); margin-top: 6px; font-size: 13px; }
+.receipt-number-block { text-align: right; }
+.receipt-number-label { font-size: 12px; color: var(--grey-500); }
+.receipt-number { font-size: 18px; font-weight: 700; color: var(--accent); }
+
+.receipt-meta-row {
   display: flex;
   justify-content: space-between;
-  border-top: 1px solid var(--grey-300);
-  padding-top: 10px;
-  margin-top: 10px;
+  color: var(--grey-500);
+  font-size: 13px;
+  margin-bottom: 32px;
 }
-.receipt-total {
-  display: flex;
-  justify-content: space-between;
+
+.receipt-info-grid { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
+.receipt-info-grid td { width: 50%; padding: 0 20px 18px 0; vertical-align: top; }
+.receipt-info-grid td + td { padding-left: 20px; border-left: 1px solid var(--grey-100); }
+.receipt-label {
+  font-size: 11px;
   font-weight: 700;
-  border-top: 1px solid var(--black);
-  margin-top: 8px;
-  padding-top: 8px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--grey-500);
+  margin-bottom: 4px;
 }
-.receipt-footer { text-align: center; color: var(--grey-500); margin-top: 16px; font-size: 12px; }
+.receipt-value { font-size: 15px; font-weight: 600; }
+
+.receipt-items { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+.receipt-items thead tr { border-bottom: 2px solid var(--black); }
+.receipt-items th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--grey-700);
+  padding-bottom: 12px;
+}
+.receipt-items th:last-child, .receipt-items td:last-child { text-align: right; }
+.receipt-items td { padding: 16px 0; border-bottom: 1px solid var(--grey-300); font-size: 15px; }
+
+.receipt-totals-wrap { display: flex; justify-content: flex-end; margin-top: 20px; margin-bottom: 48px; }
+.receipt-totals { width: 280px; }
+.receipt-totals-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 15px; }
+.receipt-totals-row span:first-child { color: var(--grey-700); }
+.receipt-totals-border { border-bottom: 1px solid var(--grey-300); }
+.receipt-grand-total {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 12px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.receipt-payment-pill-wrap { text-align: right; margin-top: 10px; }
+.receipt-payment-pill {
+  display: inline-block;
+  background: rgba(0, 113, 227, 0.1);
+  color: var(--accent-dark);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 14px;
+  border-radius: 999px;
+}
+
+.receipt-signature-wrap { display: flex; justify-content: flex-end; margin-top: 90px; }
+.receipt-signature-line {
+  width: 220px;
+  text-align: center;
+  border-top: 1px solid var(--grey-500);
+  padding-top: 6px;
+  font-size: 12px;
+  color: var(--grey-700);
+}
+
+.receipt-footer {
+  text-align: center;
+  color: var(--grey-500);
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--grey-100);
+  font-size: 13px;
+}
 
 @media print {
+  @page { size: A4; margin: 15mm; }
   body * { visibility: hidden; }
   #printReceipt, #printReceipt * { visibility: visible; }
   #printReceipt {
@@ -1281,7 +1344,6 @@ table.qtable tbody tr:hover { background: var(--grey-100); }
     position: absolute;
     left: 0;
     top: 0;
-    width: 320px;
-    padding: 16px;
+    width: 100%;
   }
 }

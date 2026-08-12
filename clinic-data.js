@@ -506,7 +506,7 @@
     };
   }
 
-  async function createInvoice({ doctorId, feeType, patientName, patientPhone, patientAddress, patientAge, patientGender }) {
+  async function createInvoice({ doctorId, feeType, patientName, patientPhone, patientAddress, patientAge, patientGender, paymentMode, amountReceived }) {
     const { data, error } = await sb.rpc('create_invoice', {
       p_doctor_id: doctorId,
       p_fee_type: feeType,
@@ -515,6 +515,8 @@
       p_patient_address: patientAddress || '',
       p_patient_age: patientAge || null,
       p_patient_gender: patientGender || '',
+      p_payment_mode: paymentMode || 'cash',
+      p_amount_received: amountReceived == null ? null : Number(amountReceived),
     });
     if (error) throw error;
     return {
@@ -528,6 +530,8 @@
       patientAddress: data.patient_address,
       patientAge: data.patient_age,
       patientGender: data.patient_gender,
+      paymentMode: data.payment_mode,
+      amountReceived: Number(data.amount_received),
       createdAt: data.created_at,
     };
   }
