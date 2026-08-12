@@ -71,6 +71,7 @@
           </div>
           <button type="submit" class="btn-sm primary">Add doctor</button>
         </form>
+        <div id="newDoctorFeeHint" class="slot-hint" style="display:none;"></div>
       </div>
 
       <div class="panel">
@@ -142,6 +143,22 @@
         'Physiotherapist',
       ];
       const OTHER_SPECIALTY = '__other__';
+
+      // Passive heads-up only, same as the no-show note on Reception: it
+      // never blocks Save, it just flags a fee that's worth a second look.
+      const HIGH_FEE_THRESHOLD = 4000;
+      function feeWarningMessage(normal, emergency) {
+        const highNormal = normal > HIGH_FEE_THRESHOLD;
+        const highEmergency = emergency > HIGH_FEE_THRESHOLD;
+        if (!highNormal && !highEmergency) return null;
+        if (highNormal && highEmergency) {
+          return `Both fees are above &#8377;${HIGH_FEE_THRESHOLD}, that's unusually high for a consultation, worth double-checking before saving.`;
+        }
+        return `${highNormal ? 'Normal fee' : 'Emergency fee'} is above &#8377;${HIGH_FEE_THRESHOLD}, that's unusually high for a consultation, worth double-checking before saving.`;
+      }
+      function feeWarningHtml(msg) {
+        return `<div style="color:var(--warning);background:var(--warning-bg);padding:8px 12px;border-radius:8px;">&#9888; ${msg}</div>`;
+      }
 
       function specialtyOptionsHtml(selected) {
         const isKnown = SPECIALTIES.includes(selected);
@@ -222,6 +239,9 @@
                       : `<button class="btn-sm" onclick="doSetDoctorActive('${d.id}', true)">Reactivate</button>`}
                   </td>
                 </tr>
+                <tr class="fee-warn-row" data-id="${d.id}" style="display:none;">
+                  <td colspan="6" style="padding-top:0;"><div class="fee-warn-note"></div></td>
+                </tr>
               `;
               }).join('')}
             </tbody>
@@ -266,6 +286,19 @@
         otherField.style.display = e.target.value === OTHER_SPECIALTY ? 'block' : 'none';
       });
 
+      document.getElementById('doctorList').addEventListener('input', (e) => {
+        if (!e.target.classList.contains('doc-edit-fee-normal') && !e.target.classList.contains('doc-edit-fee-emergency')) return;
+        const id = e.target.getAttribute('data-id');
+        const normal = Number(document.querySelector(`.doc-edit-fee-normal[data-id="${id}"]`).value) || 0;
+        const emergency = Number(document.querySelector(`.doc-edit-fee-emergency[data-id="${id}"]`).value) || 0;
+        const warnRow = document.querySelector(`.fee-warn-row[data-id="${id}"]`);
+        const note = warnRow.querySelector('.fee-warn-note');
+        const msg = feeWarningMessage(normal, emergency);
+        if (!msg) { warnRow.style.display = 'none'; note.innerHTML = ''; return; }
+        note.innerHTML = feeWarningHtml(msg);
+        warnRow.style.display = 'table-row';
+      });
+
       document.getElementById('doctorSearch').addEventListener('input', (e) => {
         searchTerm = e.target.value;
         currentPage = 1;
@@ -276,6 +309,23 @@
       document.getElementById('newDoctorSpecialty').addEventListener('change', (e) => {
         document.getElementById('newDoctorSpecialtyOtherField').style.display = e.target.value === OTHER_SPECIALTY ? 'block' : 'none';
       });
+
+      function clearNewDoctorFeeHint() {
+        const hint = document.getElementById('newDoctorFeeHint');
+        hint.style.display = 'none';
+        hint.innerHTML = '';
+      }
+      function updateNewDoctorFeeHint() {
+        const normal = Number(document.getElementById('newDoctorFeeNormal').value) || 0;
+        const emergency = Number(document.getElementById('newDoctorFeeEmergency').value) || 0;
+        const msg = feeWarningMessage(normal, emergency);
+        if (!msg) { clearNewDoctorFeeHint(); return; }
+        const hint = document.getElementById('newDoctorFeeHint');
+        hint.innerHTML = feeWarningHtml(msg);
+        hint.style.display = 'block';
+      }
+      document.getElementById('newDoctorFeeNormal').addEventListener('input', updateNewDoctorFeeHint);
+      document.getElementById('newDoctorFeeEmergency').addEventListener('input', updateNewDoctorFeeHint);
 
       document.getElementById('addDoctorForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -289,6 +339,7 @@
         await Qlinic.addDoctor({ name, specialty, feeNormal, feeEmergency });
         e.target.reset();
         document.getElementById('newDoctorSpecialtyOtherField').style.display = 'none';
+        clearNewDoctorFeeHint();
         searchTerm = '';
         document.getElementById('doctorSearch').value = '';
         currentPage = 1;
