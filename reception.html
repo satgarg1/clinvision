@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=47" />
+<link rel="stylesheet" href="styles.css?v=48" />
 </head>
 <body>
   <div class="app-shell">
@@ -344,31 +344,33 @@
       // genuinely free visit) without ever requiring it. Adjust rewrites
       // the row in place instead of navigating anywhere, since 200+ of
       // these a day can't each cost a page load.
-      function billingCell(p, invoiceByPatientId) {
+      const PAYMENT_MODE_SHORT_LABELS = { cash: 'Cash', upi: 'UPI', card: 'Card' };
+
+      function billingCell(p, invoiceByPatientId, doctor) {
         const inv = invoiceByPatientId[p.id];
         if (!inv) return '<span class="sub-line">Not yet billed</span>';
         if (editingInvoiceId === inv.id) {
           return `
-            <div style="display:flex;flex-direction:column;gap:4px;min-width:150px;">
-              <select class="adj-fee-type" style="font-size:12px;padding:4px 6px;border:1px solid var(--grey-300);border-radius:6px;font-family:var(--font);">
+            <div class="adj-box">
+              <select class="adj-fee-type" data-fee-normal="${doctor.feeNormal || 0}" data-fee-emergency="${doctor.feeEmergency || 0}" onchange="syncAdjustAmount(this)">
                 <option value="consultation" ${inv.feeType === 'consultation' ? 'selected' : ''}>Consultation</option>
                 <option value="emergency" ${inv.feeType === 'emergency' ? 'selected' : ''}>Emergency</option>
                 <option value="waived" ${inv.feeType === 'waived' ? 'selected' : ''}>No charge</option>
               </select>
-              <select class="adj-payment-mode" style="font-size:12px;padding:4px 6px;border:1px solid var(--grey-300);border-radius:6px;font-family:var(--font);">
+              <select class="adj-payment-mode">
                 <option value="cash" ${inv.paymentMode === 'cash' ? 'selected' : ''}>Cash</option>
                 <option value="upi" ${inv.paymentMode === 'upi' ? 'selected' : ''}>UPI</option>
                 <option value="card" ${inv.paymentMode === 'card' ? 'selected' : ''}>Card</option>
               </select>
-              <input type="number" min="0" step="1" class="adj-amount-received" value="${inv.amountReceived}" style="font-size:12px;padding:4px 6px;border:1px solid var(--grey-300);border-radius:6px;font-family:var(--font);width:100%;" />
-              <div style="display:flex;gap:4px;">
-                <button type="button" class="btn-sm primary" style="padding:3px 8px;font-size:11px;" onclick="saveInvoiceEdit('${inv.id}')">Save</button>
-                <button type="button" class="btn-sm" style="padding:3px 8px;font-size:11px;" onclick="cancelInvoiceEdit()">Cancel</button>
+              <input type="number" min="0" step="1" class="adj-amount-received" value="${inv.amountReceived}" />
+              <div class="adj-actions">
+                <button type="button" class="btn-sm primary" onclick="saveInvoiceEdit('${inv.id}')">Save</button>
+                <button type="button" class="btn-sm" onclick="cancelInvoiceEdit()">Cancel</button>
               </div>
             </div>
           `;
         }
-        const amountLabel = inv.feeType === 'waived' ? 'No charge' : `₹${inv.amount} · ${inv.paymentMode}`;
+        const amountLabel = inv.feeType === 'waived' ? 'No charge' : `₹${inv.amount} · ${PAYMENT_MODE_SHORT_LABELS[inv.paymentMode] || inv.paymentMode}`;
         return `
           <div>${amountLabel}</div>
           <div class="sub-line">
@@ -378,6 +380,23 @@
           </div>
         `;
       }
+
+      // The amount field previewing the new fee the instant fee type
+      // changes isn't just cosmetic: it's what keeps the amount actually
+      // submitted on Save correct. Without this, switching to Emergency
+      // or No charge left the old amount sitting in the field, which then
+      // got saved as amount_received against the new (different) total —
+      // producing a receipt with a balance nobody intended.
+      function syncAdjustAmount(selectEl) {
+        const cell = selectEl.closest('td');
+        const amountInput = cell.querySelector('.adj-amount-received');
+        const feeType = selectEl.value;
+        const amount = feeType === 'waived' ? 0
+          : feeType === 'emergency' ? Number(selectEl.dataset.feeEmergency) || 0
+          : Number(selectEl.dataset.feeNormal) || 0;
+        amountInput.value = amount;
+      }
+      window.syncAdjustAmount = syncAdjustAmount;
 
       function csvCell(value) {
         const s = String(value == null ? '' : value);
@@ -606,7 +625,7 @@
                         <td>${nameCell(p)}</td>
                         <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
                         <td>${queueTimeCell(p)}</td>
-                        ${canBill ? `<td>${billingCell(p, invoiceByPatientId)}</td>` : ''}
+                        ${canBill ? `<td>${billingCell(p, invoiceByPatientId, doctor)}</td>` : ''}
                       </tr>
                     `).join('')}
                   </tbody>

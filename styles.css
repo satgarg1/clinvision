@@ -1135,6 +1135,22 @@ table.qtable tr:last-child td { border-bottom: none; }
   margin-top: 2px;
 }
 
+/* Inline invoice-correction box on Reception's queue row (see
+   billingCell in reception.html). Fixed width keeps the three controls
+   aligned to the same edge instead of each sizing to its own content. */
+.adj-box { display: flex; flex-direction: column; gap: 5px; width: 130px; }
+.adj-box select, .adj-box input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 13px;
+  padding: 5px 8px;
+  border: 1px solid var(--grey-300);
+  border-radius: 6px;
+  font-family: var(--font);
+}
+.adj-actions { display: flex; gap: 4px; margin-top: 2px; }
+.adj-actions .btn-sm { padding: 4px 10px; font-size: 12px; }
+
 /* Add-patient mode toggle: walk-in vs. phoned appointment used to be two
    separate, near-identical forms — easy to fill in the wrong one. Now it's
    one form whose accent color and fields change with the chosen mode, so
