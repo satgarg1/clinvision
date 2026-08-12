@@ -134,16 +134,25 @@
         });
       }
 
-      // Deliberately computed from allInvoices, not the filtered list: the
-      // point of these counts is "what did the whole day look like," so
-      // switching the type filter narrows the table below without making
-      // the summary lie about the other types that happened that day.
+      // Total revenue/Outstanding track both active filters exactly, so a
+      // multi-doctor clinic can pick a doctor (or a visit type) and see
+      // that slice's numbers, not just the whole day's. The three type
+      // counts only follow the doctor filter, not the type filter — if
+      // they respected the type filter too, picking "Emergency" would
+      // zero out the other two counts, defeating the point of a
+      // breakdown. Doctor-scoping them still answers "how does this
+      // doctor's day split by visit type."
       function renderSummary() {
-        const totalCollected = allInvoices.reduce((sum, inv) => sum + inv.amountReceived, 0);
-        const totalOutstanding = allInvoices.reduce((sum, inv) => sum + Math.max(0, inv.amount - inv.amountReceived), 0);
-        const consultationCount = allInvoices.filter((inv) => inv.feeType === 'consultation').length;
-        const emergencyCount = allInvoices.filter((inv) => inv.feeType === 'emergency').length;
-        const followUpCount = allInvoices.filter((inv) => inv.feeType === 'waived').length;
+        const doctorId = document.getElementById('doctorFilter').value;
+        const type = document.getElementById('typeFilter').value;
+        const byDoctor = doctorId ? allInvoices.filter((inv) => inv.doctorId === doctorId) : allInvoices;
+        const inSummary = type ? byDoctor.filter((inv) => inv.feeType === type) : byDoctor;
+
+        const totalCollected = inSummary.reduce((sum, inv) => sum + inv.amountReceived, 0);
+        const totalOutstanding = inSummary.reduce((sum, inv) => sum + Math.max(0, inv.amount - inv.amountReceived), 0);
+        const consultationCount = byDoctor.filter((inv) => inv.feeType === 'consultation').length;
+        const emergencyCount = byDoctor.filter((inv) => inv.feeType === 'emergency').length;
+        const followUpCount = byDoctor.filter((inv) => inv.feeType === 'waived').length;
 
         document.getElementById('summaryCards').innerHTML = `
           <div class="stat-card accent-teal"><div class="value value-teal">₹${totalCollected}</div><div class="label">Total revenue</div></div>
@@ -236,10 +245,12 @@
       });
       document.getElementById('typeFilter').addEventListener('change', () => {
         currentPage = 1;
+        renderSummary();
         renderTable();
       });
       document.getElementById('doctorFilter').addEventListener('change', () => {
         currentPage = 1;
+        renderSummary();
         renderTable();
       });
 
