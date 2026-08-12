@@ -609,9 +609,14 @@ input[type="number"] { -moz-appearance: textfield; }
   font-size: 14px;
   font-weight: 500;
   border-left: 2px solid transparent;
-  transition: background 0.12s ease, color 0.12s ease, transform 0.12s ease;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.12s ease, border-color 0.12s ease;
 }
-.app-sidebar a.nav-link:hover { background: var(--grey-100); color: var(--black); transform: translateX(3px); }
+.app-sidebar a.nav-link:hover {
+  background: var(--grey-100);
+  color: var(--accent);
+  border-left-color: var(--accent);
+  transform: translateX(3px);
+}
 .app-sidebar a.nav-link.active {
   background: var(--grey-100);
   color: var(--accent);
