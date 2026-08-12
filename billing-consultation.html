@@ -47,7 +47,13 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="reprintState" style="display:none;">
+        <div class="panel-header"><h2>Receipt</h2></div>
+        <p class="panel-note" id="reprintMessage"></p>
+        <button type="button" class="btn-sm primary" id="reprintBtn">Print again</button>
+      </div>
+
+      <div class="panel" id="billingFormPanel">
         <div class="panel-header"><h2>Patient</h2></div>
         <form id="billingForm">
           <div class="form-grid">
@@ -170,7 +176,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=24"></script>
+  <script src="clinic-data.js?v=25"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -351,7 +357,29 @@
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
       myProfile = await Qlinic.getMyProfile();
       await loadDoctors();
-      updateFeeTypeOptions();
+
+      // Reception's "Print receipt" link on an already auto-billed
+      // queue row lands here instead of on the form: the bill already
+      // exists (created by the arrival trigger), so this just reprints
+      // it, no re-entry, no risk of accidentally creating a duplicate.
+      const invoiceId = new URLSearchParams(window.location.search).get('invoiceId');
+      if (invoiceId) {
+        const invoice = await Qlinic.getInvoiceById(invoiceId);
+        document.getElementById('billingFormPanel').style.display = 'none';
+        document.getElementById('reprintState').style.display = 'block';
+        if (!invoice) {
+          document.getElementById('reprintMessage').textContent = 'This receipt could not be found.';
+          document.getElementById('reprintBtn').style.display = 'none';
+        } else {
+          document.getElementById('reprintMessage').textContent =
+            `Receipt #RC-${String(invoice.invoiceNumber).padStart(4, '0')} for ${invoice.patientName}`;
+          renderReceipt(invoice);
+          document.getElementById('reprintBtn').addEventListener('click', () => window.print());
+          window.print();
+        }
+      } else {
+        updateFeeTypeOptions();
+      }
     })();
   </script>
   <script>

@@ -506,6 +506,25 @@
     };
   }
 
+  function normalizeInvoice(row) {
+    return {
+      id: row.id,
+      invoiceNumber: row.invoice_number,
+      doctorId: row.doctor_id,
+      patientId: row.patient_id,
+      feeType: row.fee_type,
+      amount: Number(row.amount),
+      patientName: row.patient_name,
+      patientPhone: row.patient_phone,
+      patientAddress: row.patient_address,
+      patientAge: row.patient_age,
+      patientGender: row.patient_gender,
+      paymentMode: row.payment_mode,
+      amountReceived: Number(row.amount_received),
+      createdAt: row.created_at,
+    };
+  }
+
   async function createInvoice({ doctorId, feeType, patientName, patientPhone, patientAddress, patientAge, patientGender, paymentMode, amountReceived }) {
     const { data, error } = await sb.rpc('create_invoice', {
       p_doctor_id: doctorId,
@@ -519,21 +538,48 @@
       p_amount_received: amountReceived == null ? null : Number(amountReceived),
     });
     if (error) throw error;
-    return {
-      id: data.id,
-      invoiceNumber: data.invoice_number,
-      doctorId: data.doctor_id,
-      feeType: data.fee_type,
-      amount: Number(data.amount),
-      patientName: data.patient_name,
-      patientPhone: data.patient_phone,
-      patientAddress: data.patient_address,
-      patientAge: data.patient_age,
-      patientGender: data.patient_gender,
-      paymentMode: data.payment_mode,
-      amountReceived: Number(data.amount_received),
-      createdAt: data.created_at,
-    };
+    return normalizeInvoice(data);
+  }
+
+  // Auto-billed invoices (see migration 016) never come through
+  // createInvoice at all — the database creates them itself the moment
+  // a patient's status becomes "waiting". This is how Reception finds
+  // out which of today's queued patients already got billed, so it
+  // can show the auto-billed status instead of prompting anyone to
+  // re-enter it.
+  async function getTodayInvoices() {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId) return [];
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const { data, error } = await sb.from('invoices').select('*')
+      .eq('clinic_id', clinicId)
+      .gte('created_at', start.toISOString())
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data.map(normalizeInvoice);
+  }
+
+  async function getInvoiceById(invoiceId) {
+    const { data, error } = await sb.from('invoices').select('*').eq('id', invoiceId).maybeSingle();
+    if (error) throw error;
+    return data ? normalizeInvoice(data) : null;
+  }
+
+  // The correction path for an auto-billed invoice: wrong payment
+  // method, an emergency fee, or a genuinely free visit ('waived',
+  // which zeroes the amount). Never required, only used for the
+  // exceptions — see update_invoice_payment() in migration 016 for why
+  // the amount still isn't trusted from the client even here.
+  async function updateInvoicePayment({ invoiceId, feeType, paymentMode, amountReceived }) {
+    const { data, error } = await sb.rpc('update_invoice_payment', {
+      p_invoice_id: invoiceId,
+      p_fee_type: feeType,
+      p_payment_mode: paymentMode,
+      p_amount_received: amountReceived == null ? null : Number(amountReceived),
+    });
+    if (error) throw error;
+    return normalizeInvoice(data);
   }
 
   // ---------------- patient notifications ----------------
@@ -902,6 +948,9 @@
     getPatientLookupByPhone,
     getBillingPatientLookup,
     createInvoice,
+    getTodayInvoices,
+    getInvoiceById,
+    updateInvoicePayment,
     markArrived,
     markNoShow,
     addWalkIn,
