@@ -1297,11 +1297,25 @@ table.qtable tbody tr:hover { background: var(--grey-100); }
 .receipt-totals { width: 280px; }
 .receipt-totals-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 15px; }
 .receipt-totals-row span:first-child { color: var(--grey-700); }
-.receipt-totals-border { border-bottom: 1px solid var(--grey-300); }
 .receipt-grand-total {
   display: flex;
   justify-content: space-between;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--grey-300);
+  font-size: 17px;
+  font-weight: 700;
+}
+/* Deliberately last and bolder than Grand total: the point of this
+   layout is that whoever's reading top-to-bottom lands on what's
+   actually still owed, not on a total that could be mistaken for
+   "fully paid" just because it's the biggest number on the page. */
+.receipt-balance-row {
+  display: flex;
+  justify-content: space-between;
   padding-top: 12px;
+  margin-top: 4px;
+  border-top: 1px solid var(--grey-300);
   font-size: 17px;
   font-weight: 700;
 }
