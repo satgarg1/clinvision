@@ -156,47 +156,27 @@
 
   // ---------------- pincode lookup (for clinic address auto-fill) ----------------
 
-  // India Post PIN codes are structured by zone: first digit = region,
-  // first two digits = a specific circle within it. This maps the
-  // 2-digit prefix to the state that circle mostly covers. It's
-  // best-effort, not an official database — the northeast sharing 79
-  // doesn't split cleanly on 2 digits alone. The state field stays a
-  // normal, editable input either way, so a wrong guess is a one-click
-  // fix, not a blocker.
-  const PIN_PREFIX_STATE = {
-    11: 'Delhi', 12: 'Haryana', 13: 'Haryana',
-    14: 'Punjab', 15: 'Punjab', 16: 'Punjab', 17: 'Himachal Pradesh',
-    18: 'Jammu and Kashmir', 19: 'Jammu and Kashmir',
-    20: 'Uttar Pradesh', 21: 'Uttar Pradesh', 22: 'Uttar Pradesh', 23: 'Uttar Pradesh',
-    24: 'Uttar Pradesh', 25: 'Uttar Pradesh', 26: 'Uttar Pradesh', 27: 'Uttar Pradesh', 28: 'Uttar Pradesh',
-    30: 'Rajasthan', 31: 'Rajasthan', 32: 'Rajasthan', 33: 'Rajasthan', 34: 'Rajasthan',
-    36: 'Gujarat', 37: 'Gujarat', 38: 'Gujarat', 39: 'Gujarat',
-    40: 'Maharashtra', 41: 'Maharashtra', 42: 'Maharashtra', 43: 'Maharashtra', 44: 'Maharashtra',
-    45: 'Madhya Pradesh', 46: 'Madhya Pradesh', 47: 'Madhya Pradesh', 48: 'Madhya Pradesh',
-    49: 'Chhattisgarh',
-    50: 'Telangana', 51: 'Andhra Pradesh', 52: 'Andhra Pradesh', 53: 'Andhra Pradesh',
-    56: 'Karnataka', 57: 'Karnataka', 58: 'Karnataka', 59: 'Karnataka',
-    60: 'Tamil Nadu', 61: 'Tamil Nadu', 62: 'Tamil Nadu', 63: 'Tamil Nadu', 64: 'Tamil Nadu',
-    67: 'Kerala', 68: 'Kerala', 69: 'Kerala',
-    70: 'West Bengal', 71: 'West Bengal', 72: 'West Bengal', 73: 'West Bengal', 74: 'West Bengal',
-    75: 'Odisha', 76: 'Odisha', 77: 'Odisha',
-    78: 'Assam', 79: 'Assam',
-    80: 'Bihar', 81: 'Bihar', 82: 'Bihar', 83: 'Jharkhand', 84: 'Jharkhand', 85: 'Bihar',
-  };
-  // Uttarakhand's circle carves specific 3-digit ranges out of the
-  // Uttar Pradesh 24x/26x block (it split from UP in 2000 but kept
-  // numerically adjacent codes), so a flat 2-digit lookup misclassifies
-  // it either way — Dehradun (248001) needs this to resolve correctly.
-  // Checked before the 2-digit table, which stays right for everything
-  // else in that range (e.g. 260/264-269 are still Uttar Pradesh).
-  const PIN_PREFIX3_STATE = {
-    246: 'Uttarakhand', 247: 'Uttarakhand', 248: 'Uttarakhand', 249: 'Uttarakhand',
-    262: 'Uttarakhand', 263: 'Uttarakhand',
-  };
-  function stateForPincode(pincode) {
+  // A hand-maintained prefix table can't actually resolve this correctly
+  // (adjacent pincodes like 247001/Saharanpur/UP and 247667/Roorkee/
+  // Uttarakhand share the same 3-digit prefix but are different states),
+  // so this calls India Post's own public pincode API instead of
+  // guessing. Free, no key, no auth. Any failure (offline, API down,
+  // unknown pincode) just resolves to '' — the state field stays a
+  // normal, editable input either way, so a miss is a one-click fix,
+  // not a blocker.
+  async function lookupStateForPincode(pincode) {
     const clean = (pincode || '').trim();
     if (!/^\d{6}$/.test(clean)) return '';
-    return PIN_PREFIX3_STATE[clean.slice(0, 3)] || PIN_PREFIX_STATE[clean.slice(0, 2)] || '';
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${clean}`);
+      if (!res.ok) return '';
+      const data = await res.json();
+      const entry = data && data[0];
+      if (!entry || entry.Status !== 'Success' || !entry.PostOffice || !entry.PostOffice.length) return '';
+      return entry.PostOffice[0].State || '';
+    } catch (e) {
+      return '';
+    }
   }
 
   // ---------------- clinic / auth context ----------------
@@ -899,7 +879,7 @@
     getTodayDate: todayDateStr,
     formatDateLabel,
     isPastRealDateTime,
-    stateForPincode,
+    lookupStateForPincode,
 
     getClinic,
     updateClinic,

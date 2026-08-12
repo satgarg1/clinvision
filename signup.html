@@ -62,11 +62,15 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=21"></script>
+  <script src="clinic-data.js?v=22"></script>
   <script>
-    document.getElementById('pincode').addEventListener('blur', function () {
-      const state = Qlinic.stateForPincode(this.value);
-      if (state) document.getElementById('state').value = state;
+    document.getElementById('pincode').addEventListener('blur', async function () {
+      const stateInput = document.getElementById('state');
+      const original = stateInput.placeholder;
+      stateInput.placeholder = 'Looking up…';
+      const state = await Qlinic.lookupStateForPincode(this.value);
+      stateInput.placeholder = original;
+      if (state) stateInput.value = state;
     });
 
     document.getElementById('signupForm').addEventListener('submit', async function (e) {
