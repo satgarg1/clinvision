@@ -158,17 +158,16 @@
   // India Post PIN codes are structured by zone: first digit = region,
   // first two digits = a specific circle within it. This maps the
   // 2-digit prefix to the state that circle mostly covers. It's
-  // best-effort, not an official database — a handful of circles
-  // (Uttarakhand inside UP's old range, the northeast sharing 79) don't
-  // split cleanly on 2 digits alone. The state field stays a normal,
-  // editable input either way, so a wrong guess is a one-click fix, not
-  // a blocker.
+  // best-effort, not an official database — the northeast sharing 79
+  // doesn't split cleanly on 2 digits alone. The state field stays a
+  // normal, editable input either way, so a wrong guess is a one-click
+  // fix, not a blocker.
   const PIN_PREFIX_STATE = {
     11: 'Delhi', 12: 'Haryana', 13: 'Haryana',
     14: 'Punjab', 15: 'Punjab', 16: 'Punjab', 17: 'Himachal Pradesh',
     18: 'Jammu and Kashmir', 19: 'Jammu and Kashmir',
     20: 'Uttar Pradesh', 21: 'Uttar Pradesh', 22: 'Uttar Pradesh', 23: 'Uttar Pradesh',
-    24: 'Uttar Pradesh', 25: 'Uttar Pradesh', 26: 'Uttarakhand', 27: 'Uttar Pradesh', 28: 'Uttar Pradesh',
+    24: 'Uttar Pradesh', 25: 'Uttar Pradesh', 26: 'Uttar Pradesh', 27: 'Uttar Pradesh', 28: 'Uttar Pradesh',
     30: 'Rajasthan', 31: 'Rajasthan', 32: 'Rajasthan', 33: 'Rajasthan', 34: 'Rajasthan',
     36: 'Gujarat', 37: 'Gujarat', 38: 'Gujarat', 39: 'Gujarat',
     40: 'Maharashtra', 41: 'Maharashtra', 42: 'Maharashtra', 43: 'Maharashtra', 44: 'Maharashtra',
@@ -183,10 +182,20 @@
     78: 'Assam', 79: 'Assam',
     80: 'Bihar', 81: 'Bihar', 82: 'Bihar', 83: 'Jharkhand', 84: 'Jharkhand', 85: 'Bihar',
   };
+  // Uttarakhand's circle carves specific 3-digit ranges out of the
+  // Uttar Pradesh 24x/26x block (it split from UP in 2000 but kept
+  // numerically adjacent codes), so a flat 2-digit lookup misclassifies
+  // it either way — Dehradun (248001) needs this to resolve correctly.
+  // Checked before the 2-digit table, which stays right for everything
+  // else in that range (e.g. 260/264-269 are still Uttar Pradesh).
+  const PIN_PREFIX3_STATE = {
+    246: 'Uttarakhand', 247: 'Uttarakhand', 248: 'Uttarakhand', 249: 'Uttarakhand',
+    262: 'Uttarakhand', 263: 'Uttarakhand',
+  };
   function stateForPincode(pincode) {
     const clean = (pincode || '').trim();
     if (!/^\d{6}$/.test(clean)) return '';
-    return PIN_PREFIX_STATE[clean.slice(0, 2)] || '';
+    return PIN_PREFIX3_STATE[clean.slice(0, 3)] || PIN_PREFIX_STATE[clean.slice(0, 2)] || '';
   }
 
   // ---------------- clinic / auth context ----------------
@@ -477,18 +486,30 @@
     const clinicId = await ensureClinicContext();
     const cleanPhone = (phone || '').trim();
     if (!clinicId || !cleanPhone) return null;
-    const [patientResult, invoiceResult] = await Promise.all([
-      sb.from('patients').select('name, gender, address')
+
+    // Patients and invoices are looked up independently: neither should
+    // be able to sink the other. A clinic with no invoices yet (or a
+    // migration that hasn't run) must not break the name/address/gender
+    // autofill that's been working since Reception's own phone lookup,
+    // and vice versa.
+    let patient = null;
+    try {
+      const { data, error } = await sb.from('patients').select('name, gender, address')
         .eq('clinic_id', clinicId).eq('phone', cleanPhone)
-        .order('created_at', { ascending: false }).limit(1).maybeSingle(),
-      sb.from('invoices').select('patient_name, patient_address, patient_age, patient_gender')
+        .order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (error) throw error;
+      patient = data;
+    } catch (e) { /* best-effort */ }
+
+    let invoice = null;
+    try {
+      const { data, error } = await sb.from('invoices').select('patient_name, patient_address, patient_age, patient_gender')
         .eq('clinic_id', clinicId).eq('patient_phone', cleanPhone)
-        .order('created_at', { ascending: false }).limit(1).maybeSingle(),
-    ]);
-    if (patientResult.error) throw patientResult.error;
-    if (invoiceResult.error) throw invoiceResult.error;
-    const patient = patientResult.data;
-    const invoice = invoiceResult.data;
+        .order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (error) throw error;
+      invoice = data;
+    } catch (e) { /* best-effort */ }
+
     if (!patient && !invoice) return null;
     return {
       name: (patient && patient.name) || (invoice && invoice.patient_name) || '',
