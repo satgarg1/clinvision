@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=52" />
+<link rel="stylesheet" href="styles.css?v=53" />
 </head>
 <body>
   <div class="app-shell">
@@ -157,15 +157,21 @@
       function renderPager(total) {
         const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
         if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const end = Math.min(start + PAGE_SIZE, total);
+        const summary = `<span class="pager-summary">Showing ${total === 0 ? 0 : start + 1}-${end} of ${total}</span>`;
         const pager = document.getElementById('revenuePager');
         if (totalPages <= 1) {
-          pager.innerHTML = '';
+          pager.innerHTML = summary;
           return;
         }
         pager.innerHTML = `
-          <button class="btn-sm" id="pagerPrev" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
-          <span class="pager-label">Page ${currentPage} of ${totalPages}</span>
-          <button class="btn-sm" id="pagerNext" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+          ${summary}
+          <div class="pager-controls">
+            <button class="btn-sm" id="pagerPrev" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+            <span class="pager-label">Page ${currentPage} of ${totalPages}</span>
+            <button class="btn-sm" id="pagerNext" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+          </div>
         `;
         document.getElementById('pagerPrev').addEventListener('click', () => { currentPage -= 1; renderTable(); });
         document.getElementById('pagerNext').addEventListener('click', () => { currentPage += 1; renderTable(); });

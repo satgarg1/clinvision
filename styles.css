@@ -984,6 +984,14 @@ table.qtable tr:last-child td { border-bottom: none; }
   padding-top: 14px;
 }
 .pager-label { font-size: 13px; color: var(--grey-500); }
+.pager-summary { font-size: 13px; color: var(--grey-500); }
+
+/* Revenue's pager adds a "Showing X-Y of Z" summary the other .pager
+   users (manage-doctors, reception) don't have, so it alone needs the
+   summary pinned left and controls pinned right instead of the shared
+   centered layout. */
+#revenuePager { justify-content: space-between; }
+#revenuePager .pager-controls { display: flex; align-items: center; gap: 14px; }
 
 .empty-state { color: var(--grey-500); font-size: 14px; padding: 20px 0; text-align: center; }
 
