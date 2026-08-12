@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=49" />
+<link rel="stylesheet" href="styles.css?v=50" />
 </head>
 <body>
   <div class="app-shell">
@@ -52,7 +52,7 @@
         </div>
         <div class="field" style="flex:0;">
           <label>&nbsp;</label>
-          <button type="button" class="btn-sm" id="todayBtn">Today</button>
+          <button type="button" class="btn-sm accent-outline" id="todayBtn">Today</button>
         </div>
         <div class="field" style="min-width:180px;flex:0;margin-left:auto;">
           <label>Type</label>
@@ -117,12 +117,14 @@
       // the summary lie about the other types that happened that day.
       function renderSummary() {
         const totalCollected = allInvoices.reduce((sum, inv) => sum + inv.amountReceived, 0);
+        const totalOutstanding = allInvoices.reduce((sum, inv) => sum + Math.max(0, inv.amount - inv.amountReceived), 0);
         const consultationCount = allInvoices.filter((inv) => inv.feeType === 'consultation').length;
         const emergencyCount = allInvoices.filter((inv) => inv.feeType === 'emergency').length;
         const followUpCount = allInvoices.filter((inv) => inv.feeType === 'waived').length;
 
         document.getElementById('summaryCards').innerHTML = `
           <div class="stat-card accent-teal"><div class="value value-teal">₹${totalCollected}</div><div class="label">Total revenue</div></div>
+          <div class="stat-card accent-danger"><div class="value value-danger">₹${totalOutstanding}</div><div class="label">Outstanding</div></div>
           <div class="stat-card accent-blue"><div class="value value-blue">${consultationCount}</div><div class="label">Consultation</div></div>
           <div class="stat-card accent-coral"><div class="value value-coral">${emergencyCount}</div><div class="label">Emergency</div></div>
           <div class="stat-card accent-purple"><div class="value value-purple">${followUpCount}</div><div class="label">Follow up</div></div>
