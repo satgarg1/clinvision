@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=51" />
+<link rel="stylesheet" href="styles.css?v=52" />
 </head>
 <body>
   <div class="app-shell">
@@ -55,6 +55,12 @@
           <button type="button" class="btn-sm accent-outline" id="todayBtn">Today</button>
         </div>
         <div class="field" style="min-width:180px;flex:0;margin-left:auto;">
+          <label>Doctor</label>
+          <select id="doctorFilter">
+            <option value="">All doctors</option>
+          </select>
+        </div>
+        <div class="field" style="min-width:180px;flex:0;">
           <label>Visit Type</label>
           <select id="typeFilter">
             <option value="">All types</option>
@@ -104,11 +110,28 @@
 
       let allInvoices = [];
       let currentPage = 1;
+      let doctorById = {};
+
+      async function loadDoctorFilterOptions() {
+        // includeInactive so a deactivated doctor's past invoices still
+        // show a real name in the filter and table, not a blank/missing one.
+        const doctors = await Qlinic.getDoctors({ includeInactive: true });
+        doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
+        const select = document.getElementById('doctorFilter');
+        const current = select.value;
+        select.innerHTML = '<option value="">All doctors</option>' +
+          doctors.map((d) => `<option value="${d.id}">${d.name}</option>`).join('');
+        select.value = current;
+      }
 
       function filteredInvoices() {
         const type = document.getElementById('typeFilter').value;
-        if (!type) return allInvoices;
-        return allInvoices.filter((inv) => inv.feeType === type);
+        const doctorId = document.getElementById('doctorFilter').value;
+        return allInvoices.filter((inv) => {
+          if (type && inv.feeType !== type) return false;
+          if (doctorId && inv.doctorId !== doctorId) return false;
+          return true;
+        });
       }
 
       // Deliberately computed from allInvoices, not the filtered list: the
@@ -157,7 +180,7 @@
           return;
         }
         if (filtered.length === 0) {
-          wrap.innerHTML = '<div class="empty-state">No bills match this type.</div>';
+          wrap.innerHTML = '<div class="empty-state">No bills match these filters.</div>';
           document.getElementById('revenuePager').innerHTML = '';
           return;
         }
@@ -168,13 +191,15 @@
 
         wrap.innerHTML = `
           <table class="qtable">
-            <thead><tr><th>Name</th><th>Type</th><th>Payment mode</th><th>Payment collected</th></tr></thead>
+            <thead><tr><th>Name</th><th>Doctor</th><th>Type</th><th>Payment mode</th><th>Payment collected</th></tr></thead>
             <tbody>
               ${pageItems.map((inv) => {
                 const balance = inv.amount - inv.amountReceived;
+                const doctor = doctorById[inv.doctorId];
                 return `
                 <tr>
                   <td>${inv.patientName}</td>
+                  <td>${doctor ? doctor.name : '—'}</td>
                   <td>${FEE_TYPE_LABELS[inv.feeType] || inv.feeType}</td>
                   <td>${PAYMENT_MODE_LABELS[inv.paymentMode] || inv.paymentMode}</td>
                   <td>
@@ -207,10 +232,15 @@
         currentPage = 1;
         renderTable();
       });
+      document.getElementById('doctorFilter').addEventListener('change', () => {
+        currentPage = 1;
+        renderTable();
+      });
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
       document.getElementById('dateFilter').value = Qlinic.getTodayDate();
+      await loadDoctorFilterOptions();
       await loadInvoices();
       Qlinic.onLiveChange(loadInvoices);
     })();
