@@ -116,8 +116,12 @@
     return Date.now() > scheduled.getTime() + graceWindowMins * 60000;
   }
 
+  // token_date is set correctly for both walk-ins and appointments at
+  // booking time (see 007_token_numbers.sql), so it's the one reliable
+  // "which day does this visit belong to" field — unlike bookedDate,
+  // which is always null for walk-ins.
   function belongsToDate(patient, dateStr) {
-    return patient.type === 'walkin' ? dateStr === todayDateStr() : patient.bookedDate === dateStr;
+    return patient.tokenDate === dateStr;
   }
 
   function normalizeDoctor(row) {
@@ -151,6 +155,7 @@
       arrivedAt: row.arrived_at,
       reason: row.reason,
       tokenNumber: row.token_number,
+      tokenDate: row.token_date,
     };
   }
 
@@ -300,16 +305,18 @@
 
   // ---------------- patient queries ----------------
 
+  // Filtering by token_date directly in the query (rather than fetching
+  // broadly and filtering client-side) is what actually scopes this to
+  // one day: token_date is set correctly for both walk-ins and
+  // appointments at booking time, so this correctly includes walk-ins
+  // on past-date views too, not just today's.
   async function fetchPatientsForDoctorAndDate(doctorId, dateStr) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    let query = sb.from('patients').select('*').eq('clinic_id', clinicId).eq('doctor_id', doctorId);
-    if (dateStr === todayDateStr()) {
-      query = query.or(`type.eq.walkin,booked_date.eq.${dateStr}`);
-    } else {
-      query = query.eq('type', 'appointment').eq('booked_date', dateStr);
-    }
-    const { data, error } = await query;
+    const { data, error } = await sb.from('patients').select('*')
+      .eq('clinic_id', clinicId)
+      .eq('doctor_id', doctorId)
+      .eq('token_date', dateStr);
     if (error) throw error;
     return data.map(normalizePatient);
   }
@@ -319,12 +326,11 @@
   // Defaults to today; pass a dateStr to browse a different day.
   async function getQueueForDoctor(doctorId, dateStr) {
     const targetDate = dateStr || todayDateStr();
-    const [doctor, clinic, rows] = await Promise.all([
+    const [doctor, clinic, mine] = await Promise.all([
       getDoctor(doctorId),
       getClinic(),
       fetchPatientsForDoctorAndDate(doctorId, targetDate),
     ]);
-    const mine = rows.filter((p) => belongsToDate(p, targetDate));
 
     const nowServing = mine.find((p) => p.status === 'in_consult') || null;
 
@@ -643,8 +649,7 @@
   async function callNextPatient(doctorId) {
     const doctor = await getDoctor(doctorId);
     const today = todayDateStr();
-    const rows = await fetchPatientsForDoctorAndDate(doctorId, today);
-    const mine = rows.filter((p) => belongsToDate(p, today));
+    const mine = await fetchPatientsForDoctorAndDate(doctorId, today);
     const current = mine.find((p) => p.status === 'in_consult');
     if (current) {
       await sb.from('patients').update({ status: 'done' }).eq('id', current.id);
@@ -719,11 +724,11 @@
     const [clinic, doctors, { data, error }] = await Promise.all([
       getClinic(),
       getDoctors(),
-      sb.from('patients').select('*').eq('clinic_id', clinicId),
+      sb.from('patients').select('*').eq('clinic_id', clinicId).eq('token_date', targetDate),
     ]);
     if (error) throw error;
     const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
-    const todays = data.map(normalizePatient).filter((p) => belongsToDate(p, targetDate));
+    const todays = data.map(normalizePatient);
 
     return {
       totalAppointments: todays.filter((p) => p.type === 'appointment').length,
