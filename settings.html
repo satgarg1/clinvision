@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=43" />
+<link rel="stylesheet" href="styles.css?v=44" />
 </head>
 <body>
   <div class="app-shell">
@@ -34,6 +34,7 @@
         <a href="reception.html" class="nav-link">Reception</a>
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="display.html" class="nav-link">Display Screen</a>
+        <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
         <a href="settings.html" class="nav-link active pinned-bottom">Settings</a>
       </nav>
     </aside>
@@ -50,11 +51,28 @@
             <label>Clinic name</label>
             <input type="text" id="clinicNameInput" required />
           </div>
+          <div class="field" style="min-width:260px;">
+            <label>Address</label>
+            <input type="text" id="addressLineInput" placeholder="Building, street, area" />
+          </div>
+          <div class="field" style="min-width:160px;">
+            <label>City</label>
+            <input type="text" id="cityInput" />
+          </div>
+          <div class="field" style="max-width:140px;">
+            <label>Pincode</label>
+            <input type="text" id="pincodeInput" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" />
+          </div>
+          <div class="field" style="min-width:160px;">
+            <label>State</label>
+            <input type="text" id="stateInput" placeholder="Auto-filled from pincode" />
+          </div>
           <div class="field" style="flex:0;">
             <label>&nbsp;</label>
             <button type="submit" class="btn-sm primary">Save</button>
           </div>
         </form>
+        <p class="panel-note" style="margin-top:10px;margin-bottom:0;">Printed on the header of every billing receipt.</p>
       </div>
 
       <div class="panel">
@@ -158,7 +176,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=18"></script>
+  <script src="clinic-data.js?v=19"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -289,16 +307,31 @@
         if (!clinic) return;
         document.getElementById('clinicName').textContent = clinic.name;
         document.getElementById('clinicNameInput').value = clinic.name;
+        document.getElementById('addressLineInput').value = clinic.address_line || '';
+        document.getElementById('cityInput').value = clinic.city || '';
+        document.getElementById('pincodeInput').value = clinic.pincode || '';
+        document.getElementById('stateInput').value = clinic.state || '';
         graceWindowPicker.setValue(clinic.grace_window_mins);
         slotIntervalPicker.setValue(clinic.slot_interval_mins);
         slotCapacityPicker.setValue(clinic.slot_capacity);
         document.getElementById('displayLanguageInput').value = clinic.display_language;
       }
 
+      document.getElementById('pincodeInput').addEventListener('blur', function () {
+        const state = Qlinic.stateForPincode(this.value);
+        if (state) document.getElementById('stateInput').value = state;
+      });
+
       document.getElementById('clinicForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        await Qlinic.updateClinic({ name: document.getElementById('clinicNameInput').value });
-        showToast('Clinic name updated');
+        await Qlinic.updateClinic({
+          name: document.getElementById('clinicNameInput').value,
+          addressLine: document.getElementById('addressLineInput').value,
+          city: document.getElementById('cityInput').value,
+          pincode: document.getElementById('pincodeInput').value,
+          state: document.getElementById('stateInput').value,
+        });
+        showToast('Clinic profile updated');
         loadClinic();
       });
 

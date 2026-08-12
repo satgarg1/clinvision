@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Consultation billing: Qlinic</title>
+<script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=44" />
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <aside class="app-sidebar">
+      <a href="index.html" class="brand">
+        <span class="brand-top">
+          <span class="brand-clock clock-face" id="navClock">
+            <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;color:var(--black);">
+              <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="5"></circle>
+              <line class="clock-hour" x1="50" y1="50" x2="50" y2="30" stroke="currentColor" stroke-width="6" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <line class="clock-min" x1="50" y1="50" x2="50" y2="18" stroke="currentColor" stroke-width="4" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <line class="clock-sec" x1="50" y1="50" x2="50" y2="14" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <circle cx="50" cy="50" r="3" fill="currentColor"></circle>
+            </svg>
+          </span>
+          Qlinic
+        </span>
+        <span class="brand-tagline">Time is the one asset nobody gets back</span>
+      </a>
+      <div class="clinic-name" id="clinicName">Loading…</div>
+      <nav>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="reception.html" class="nav-link">Reception</a>
+        <a href="doctor.html" class="nav-link">Doctor View</a>
+        <a href="display.html" class="nav-link">Display Screen</a>
+        <a href="billing.html" class="nav-link active" id="billingNavLink">Billing</a>
+        <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
+      </nav>
+    </aside>
+
+    <main class="app-main">
+      <div class="app-topbar">
+        <div>
+          <div class="breadcrumb"><a href="billing.html">Billing</a> <span>/</span> Consultation</div>
+          <h1>Consultation billing</h1>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>Patient</h2></div>
+        <form id="billingForm">
+          <div class="form-grid">
+            <div class="field">
+              <label>Phone</label>
+              <input type="tel" id="bPhone" required />
+            </div>
+            <div class="field">
+              <label>Name</label>
+              <input type="text" id="bName" required />
+            </div>
+            <div class="field">
+              <label>Address</label>
+              <input type="text" id="bAddress" />
+            </div>
+            <div class="field">
+              <label>Age</label>
+              <input type="number" id="bAge" min="0" max="120" />
+            </div>
+            <div class="field">
+              <label>Gender</label>
+              <select id="bGender">
+                <option value="">Not specified</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Doctor</label>
+              <select id="bDoctor" required></select>
+            </div>
+            <div class="field">
+              <label>Fee type</label>
+              <select id="bFeeType" required disabled>
+                <option value="">Select doctor first</option>
+              </select>
+            </div>
+          </div>
+          <div id="lookupHint" class="slot-hint"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--grey-300);margin-top:20px;padding-top:16px;">
+            <div><span class="panel-note" style="margin:0;">Total</span> <span style="font-size:20px;font-weight:700;margin-left:8px;" id="bTotal">&#8377;0</span></div>
+            <button type="submit" class="btn-sm primary" id="billingSubmitBtn" disabled>Print receipt</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <div id="printReceipt" class="receipt">
+    <div class="receipt-clinic-name" id="rClinicName"></div>
+    <div class="receipt-clinic-address" id="rClinicAddress"></div>
+    <div class="receipt-meta">
+      <span id="rInvoiceNumber"></span><span id="rDateTime"></span>
+    </div>
+    <div class="receipt-row"><span>Patient</span><span id="rPatientName"></span></div>
+    <div class="receipt-row"><span>Phone</span><span id="rPatientPhone"></span></div>
+    <div class="receipt-row" id="rAgeGenderRow" style="display:none;"><span>Age / Gender</span><span id="rAgeGender"></span></div>
+    <div class="receipt-row"><span>Doctor</span><span id="rDoctorName"></span></div>
+    <div class="receipt-line-item"><span id="rFeeLabel"></span><span id="rAmount"></span></div>
+    <div class="receipt-total"><span>Total paid</span><span id="rTotal"></span></div>
+    <div class="receipt-footer">Thank you for visiting <span id="rClinicName2"></span></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=19"></script>
+  <script>
+    (async function () {
+      await Qlinic.requireLogin('login.html');
+
+      document.querySelector('a.brand').addEventListener('click', (e) => {
+        e.preventDefault();
+        if (confirm("Going to the homepage will end your session here, you'll need to log in again to get back in. Continue?")) {
+          window.location.href = 'index.html';
+        }
+      });
+
+      if (!(await Qlinic.canAccessBilling())) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      if (!(await Qlinic.isAdmin())) {
+        document.getElementById('settingsNavLink').style.display = 'none';
+      }
+
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      let clinic = null;
+      let allDoctors = [];
+
+      function updateFeeTypeOptions() {
+        const doctorId = document.getElementById('bDoctor').value;
+        const doctor = allDoctors.find((d) => d.id === doctorId);
+        const feeSelect = document.getElementById('bFeeType');
+        if (!doctor) {
+          feeSelect.innerHTML = '<option value="">Select doctor first</option>';
+          feeSelect.disabled = true;
+        } else {
+          feeSelect.innerHTML = `
+            <option value="">Select fee type</option>
+            <option value="consultation">Consultation &middot; &#8377;${doctor.feeNormal || 0}</option>
+            <option value="emergency">Emergency &middot; &#8377;${doctor.feeEmergency || 0}</option>
+          `;
+          feeSelect.disabled = false;
+        }
+        updateTotal();
+      }
+
+      function updateTotal() {
+        const doctor = allDoctors.find((d) => d.id === document.getElementById('bDoctor').value);
+        const feeType = document.getElementById('bFeeType').value;
+        const amount = doctor && feeType ? (feeType === 'consultation' ? doctor.feeNormal : doctor.feeEmergency) : 0;
+        document.getElementById('bTotal').textContent = `₹${amount || 0}`;
+        const name = document.getElementById('bName').value.trim();
+        document.getElementById('billingSubmitBtn').disabled = !(doctor && feeType && name);
+      }
+
+      async function loadDoctors() {
+        allDoctors = await Qlinic.getDoctors();
+        document.getElementById('bDoctor').innerHTML = '<option value="">Select doctor</option>' +
+          allDoctors.map((d) => `<option value="${d.id}">${d.name}, ${d.specialty}</option>`).join('');
+      }
+
+      // Direct autofill, not a suggestion card: the receptionist already
+      // typed the phone to look the patient up, so there's no extra
+      // confirmation step, just editable fields ready to bill from.
+      async function checkPhoneLookup() {
+        const phone = document.getElementById('bPhone').value.trim();
+        const hint = document.getElementById('lookupHint');
+        if (!phone) { hint.textContent = ''; hint.className = 'slot-hint'; return; }
+        const match = await Qlinic.getBillingPatientLookup(phone);
+        if (!match) {
+          hint.textContent = 'No previous visit found for this number, fill in details manually.';
+          hint.className = 'slot-hint';
+          return;
+        }
+        if (match.name) document.getElementById('bName').value = match.name;
+        if (match.address) document.getElementById('bAddress').value = match.address;
+        if (match.age) document.getElementById('bAge').value = match.age;
+        if (match.gender) document.getElementById('bGender').value = match.gender;
+        hint.textContent = `Found ${match.name}, details filled in, edit anything that's changed.`;
+        hint.className = 'slot-hint ok';
+        updateTotal();
+      }
+      document.getElementById('bPhone').addEventListener('blur', checkPhoneLookup);
+
+      document.getElementById('bDoctor').addEventListener('change', updateFeeTypeOptions);
+      document.getElementById('bFeeType').addEventListener('change', updateTotal);
+      document.getElementById('bName').addEventListener('input', updateTotal);
+
+      function renderReceipt(invoice) {
+        const doctor = allDoctors.find((d) => d.id === invoice.doctorId);
+        const addressParts = [clinic.address_line, clinic.city, clinic.state && clinic.pincode ? `${clinic.state} ${clinic.pincode}` : clinic.state].filter(Boolean);
+        document.getElementById('rClinicName').textContent = clinic.name;
+        document.getElementById('rClinicName2').textContent = clinic.name;
+        document.getElementById('rClinicAddress').textContent = addressParts.join(', ');
+        document.getElementById('rInvoiceNumber').textContent = `Receipt #${String(invoice.invoiceNumber).padStart(4, '0')}`;
+        document.getElementById('rDateTime').textContent = Qlinic.formatDateTime(invoice.createdAt);
+        document.getElementById('rPatientName').textContent = invoice.patientName;
+        document.getElementById('rPatientPhone').textContent = invoice.patientPhone || '–';
+        const ageGenderRow = document.getElementById('rAgeGenderRow');
+        if (invoice.patientAge || invoice.patientGender) {
+          ageGenderRow.style.display = '';
+          document.getElementById('rAgeGender').textContent = [invoice.patientAge ? `${invoice.patientAge}y` : '', invoice.patientGender].filter(Boolean).join(' / ');
+        } else {
+          ageGenderRow.style.display = 'none';
+        }
+        document.getElementById('rDoctorName').textContent = doctor ? doctor.name : '';
+        document.getElementById('rFeeLabel').textContent = invoice.feeType === 'consultation' ? 'Consultation fee' : 'Emergency fee';
+        document.getElementById('rAmount').textContent = `₹${invoice.amount}`;
+        document.getElementById('rTotal').textContent = `₹${invoice.amount}`;
+      }
+
+      function resetForm() {
+        document.getElementById('billingForm').reset();
+        document.getElementById('lookupHint').textContent = '';
+        document.getElementById('lookupHint').className = 'slot-hint';
+        updateFeeTypeOptions();
+      }
+
+      document.getElementById('billingForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('billingSubmitBtn');
+        btn.disabled = true;
+        btn.textContent = 'Printing…';
+        try {
+          const invoice = await Qlinic.createInvoice({
+            doctorId: document.getElementById('bDoctor').value,
+            feeType: document.getElementById('bFeeType').value,
+            patientName: document.getElementById('bName').value,
+            patientPhone: document.getElementById('bPhone').value,
+            patientAddress: document.getElementById('bAddress').value,
+            patientAge: document.getElementById('bAge').value ? Number(document.getElementById('bAge').value) : null,
+            patientGender: document.getElementById('bGender').value,
+          });
+          renderReceipt(invoice);
+          window.print();
+          showToast(`Receipt #${invoice.invoiceNumber} printed`);
+          resetForm();
+        } catch (err) {
+          showToast(err.message || 'Could not create the bill.');
+        } finally {
+          btn.textContent = 'Print receipt';
+          updateTotal();
+        }
+      });
+
+      clinic = await Qlinic.getClinic();
+      document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      await loadDoctors();
+      updateFeeTypeOptions();
+    })();
+  </script>
+  <script>
+    (function () {
+      function applyTime(root) {
+        const now = new Date();
+        const s = now.getSeconds();
+        const m = now.getMinutes();
+        const h = now.getHours() % 12;
+        const sec = root.querySelector(".clock-sec");
+        const min = root.querySelector(".clock-min");
+        const hour = root.querySelector(".clock-hour");
+        if (sec) sec.style.transform = `rotate(${s * 6}deg)`;
+        if (min) min.style.transform = `rotate(${m * 6 + s * 0.1}deg)`;
+        if (hour) hour.style.transform = `rotate(${h * 30 + m * 0.5}deg)`;
+      }
+      function tickAll() {
+        document.querySelectorAll(".clock-face").forEach(applyTime);
+      }
+      tickAll();
+      setInterval(tickAll, 1000);
+    })();
+  </script>
+
+</body>
+</html>

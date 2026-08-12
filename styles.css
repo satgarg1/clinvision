@@ -1226,3 +1226,54 @@ table.qtable tbody tr:hover { background: var(--grey-100); }
   opacity: 1;
   transform: translateY(0);
 }
+
+/* ---------------- Billing receipt (print-only) ---------------- */
+
+.receipt {
+  display: none;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--black);
+}
+.receipt-clinic-name { text-align: center; font-size: 17px; font-weight: 700; }
+.receipt-clinic-address { text-align: center; color: var(--grey-700); margin-bottom: 14px; }
+.receipt-meta {
+  display: flex;
+  justify-content: space-between;
+  color: var(--grey-700);
+  border-top: 1px dashed var(--grey-300);
+  border-bottom: 1px dashed var(--grey-300);
+  padding: 8px 0;
+  margin-bottom: 10px;
+}
+.receipt-row { display: flex; gap: 6px; margin-bottom: 2px; }
+.receipt-row span:first-child { color: var(--grey-700); min-width: 90px; }
+.receipt-line-item {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--grey-300);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+.receipt-total {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  border-top: 1px solid var(--black);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.receipt-footer { text-align: center; color: var(--grey-500); margin-top: 16px; font-size: 12px; }
+
+@media print {
+  body * { visibility: hidden; }
+  #printReceipt, #printReceipt * { visibility: visible; }
+  #printReceipt {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 320px;
+    padding: 16px;
+  }
+}

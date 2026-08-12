@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=43" />
+<link rel="stylesheet" href="styles.css?v=44" />
 </head>
 <body>
   <div class="login-wrap">
@@ -24,6 +24,24 @@
         <div class="field">
           <label for="clinicName">Clinic name</label>
           <input type="text" id="clinicName" placeholder="e.g., Rao Family Clinic" required />
+        </div>
+        <div class="field">
+          <label for="addressLine">Address</label>
+          <input type="text" id="addressLine" placeholder="Building, street, area" required />
+        </div>
+        <div style="display:flex;gap:12px;">
+          <div class="field" style="flex:1;">
+            <label for="city">City</label>
+            <input type="text" id="city" required />
+          </div>
+          <div class="field" style="flex:1;">
+            <label for="pincode">Pincode</label>
+            <input type="text" id="pincode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required />
+          </div>
+        </div>
+        <div class="field">
+          <label for="state">State</label>
+          <input type="text" id="state" placeholder="Auto-filled from pincode" />
         </div>
         <div class="field">
           <label for="email">Your email</label>
@@ -44,8 +62,13 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=18"></script>
+  <script src="clinic-data.js?v=19"></script>
   <script>
+    document.getElementById('pincode').addEventListener('blur', function () {
+      const state = Qlinic.stateForPincode(this.value);
+      if (state) document.getElementById('state').value = state;
+    });
+
     document.getElementById('signupForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       const btn = document.getElementById('signupBtn');
@@ -57,7 +80,13 @@
         const clinicName = document.getElementById('clinicName').value;
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-        const result = await Qlinic.signUp(email, password, clinicName);
+        const clinicAddress = {
+          addressLine: document.getElementById('addressLine').value,
+          city: document.getElementById('city').value,
+          pincode: document.getElementById('pincode').value,
+          state: document.getElementById('state').value,
+        };
+        const result = await Qlinic.signUp(email, password, clinicName, clinicAddress);
 
         if (result.session) {
           // Email confirmation is off for this project: clinic is set up

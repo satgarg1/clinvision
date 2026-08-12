@@ -51,6 +51,14 @@
     return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   }
 
+  // Date + time together, for records like an invoice where "when" matters
+  // as much as "what time" (formatTimestamp above only shows the time).
+  function formatDateTime(value) {
+    if (!value) return '·';
+    const date = value instanceof Date ? value : new Date(value);
+    return date.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+
   function todayDateStr() {
     const d = new Date();
     const y = d.getFullYear();
@@ -145,6 +153,42 @@
     };
   }
 
+  // ---------------- pincode lookup (for clinic address auto-fill) ----------------
+
+  // India Post PIN codes are structured by zone: first digit = region,
+  // first two digits = a specific circle within it. This maps the
+  // 2-digit prefix to the state that circle mostly covers. It's
+  // best-effort, not an official database — a handful of circles
+  // (Uttarakhand inside UP's old range, the northeast sharing 79) don't
+  // split cleanly on 2 digits alone. The state field stays a normal,
+  // editable input either way, so a wrong guess is a one-click fix, not
+  // a blocker.
+  const PIN_PREFIX_STATE = {
+    11: 'Delhi', 12: 'Haryana', 13: 'Haryana',
+    14: 'Punjab', 15: 'Punjab', 16: 'Punjab', 17: 'Himachal Pradesh',
+    18: 'Jammu and Kashmir', 19: 'Jammu and Kashmir',
+    20: 'Uttar Pradesh', 21: 'Uttar Pradesh', 22: 'Uttar Pradesh', 23: 'Uttar Pradesh',
+    24: 'Uttar Pradesh', 25: 'Uttar Pradesh', 26: 'Uttarakhand', 27: 'Uttar Pradesh', 28: 'Uttar Pradesh',
+    30: 'Rajasthan', 31: 'Rajasthan', 32: 'Rajasthan', 33: 'Rajasthan', 34: 'Rajasthan',
+    36: 'Gujarat', 37: 'Gujarat', 38: 'Gujarat', 39: 'Gujarat',
+    40: 'Maharashtra', 41: 'Maharashtra', 42: 'Maharashtra', 43: 'Maharashtra', 44: 'Maharashtra',
+    45: 'Madhya Pradesh', 46: 'Madhya Pradesh', 47: 'Madhya Pradesh', 48: 'Madhya Pradesh',
+    49: 'Chhattisgarh',
+    50: 'Telangana', 51: 'Andhra Pradesh', 52: 'Andhra Pradesh', 53: 'Andhra Pradesh',
+    56: 'Karnataka', 57: 'Karnataka', 58: 'Karnataka', 59: 'Karnataka',
+    60: 'Tamil Nadu', 61: 'Tamil Nadu', 62: 'Tamil Nadu', 63: 'Tamil Nadu', 64: 'Tamil Nadu',
+    67: 'Kerala', 68: 'Kerala', 69: 'Kerala',
+    70: 'West Bengal', 71: 'West Bengal', 72: 'West Bengal', 73: 'West Bengal', 74: 'West Bengal',
+    75: 'Odisha', 76: 'Odisha', 77: 'Odisha',
+    78: 'Assam', 79: 'Assam',
+    80: 'Bihar', 81: 'Bihar', 82: 'Bihar', 83: 'Jharkhand', 84: 'Jharkhand', 85: 'Bihar',
+  };
+  function stateForPincode(pincode) {
+    const clean = (pincode || '').trim();
+    if (!/^\d{6}$/.test(clean)) return '';
+    return PIN_PREFIX_STATE[clean.slice(0, 2)] || '';
+  }
+
   // ---------------- clinic / auth context ----------------
 
   async function ensureClinicContext() {
@@ -170,6 +214,20 @@
       const { data: clinicId, error: rpcError } = await sb.rpc('register_clinic', { clinic_name: pendingName });
       if (rpcError) throw rpcError;
       currentClinicId = clinicId;
+      // The address was collected at signup but the clinic row (and this
+      // user's admin profile, which "update own clinic" RLS checks) only
+      // exists from this point on, so it's applied here rather than at
+      // signUp() time — covers both the immediate-session path and the
+      // email-confirmation path, where this runs on first login instead.
+      const pendingAddress = session.user.user_metadata && session.user.user_metadata.pending_clinic_address;
+      if (pendingAddress) {
+        await updateClinic({
+          addressLine: pendingAddress.addressLine,
+          city: pendingAddress.city,
+          pincode: pendingAddress.pincode,
+          state: pendingAddress.state,
+        });
+      }
     }
   }
 
@@ -193,6 +251,10 @@
     if (fields.slotIntervalMins !== undefined) payload.slot_interval_mins = Number(fields.slotIntervalMins);
     if (fields.slotCapacity !== undefined) payload.slot_capacity = Number(fields.slotCapacity);
     if (fields.displayLanguage !== undefined) payload.display_language = fields.displayLanguage;
+    if (fields.addressLine !== undefined) payload.address_line = fields.addressLine;
+    if (fields.city !== undefined) payload.city = fields.city;
+    if (fields.pincode !== undefined) payload.pincode = fields.pincode;
+    if (fields.state !== undefined) payload.state = fields.state;
     const { error } = await sb.from('clinics').update(payload).eq('id', clinicId);
     if (error) throw error;
     currentClinic = null; // force a fresh read next time
@@ -404,6 +466,64 @@
     };
   }
 
+  // ---------------- billing ----------------
+
+  // Patients here are per-visit rows (see getPatientLookupByPhone above),
+  // not one canonical profile, so there's no single record to pull an
+  // age from. Age is instead captured on the invoice itself and this
+  // reuses whatever was entered on this phone number's most recent
+  // bill, so it only needs typing once rather than every visit.
+  async function getBillingPatientLookup(phone) {
+    const clinicId = await ensureClinicContext();
+    const cleanPhone = (phone || '').trim();
+    if (!clinicId || !cleanPhone) return null;
+    const [patientResult, invoiceResult] = await Promise.all([
+      sb.from('patients').select('name, gender, address')
+        .eq('clinic_id', clinicId).eq('phone', cleanPhone)
+        .order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      sb.from('invoices').select('patient_name, patient_address, patient_age, patient_gender')
+        .eq('clinic_id', clinicId).eq('patient_phone', cleanPhone)
+        .order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    if (patientResult.error) throw patientResult.error;
+    if (invoiceResult.error) throw invoiceResult.error;
+    const patient = patientResult.data;
+    const invoice = invoiceResult.data;
+    if (!patient && !invoice) return null;
+    return {
+      name: (patient && patient.name) || (invoice && invoice.patient_name) || '',
+      address: (patient && patient.address) || (invoice && invoice.patient_address) || '',
+      gender: (patient && patient.gender) || (invoice && invoice.patient_gender) || '',
+      age: invoice ? invoice.patient_age : null,
+    };
+  }
+
+  async function createInvoice({ doctorId, feeType, patientName, patientPhone, patientAddress, patientAge, patientGender }) {
+    const { data, error } = await sb.rpc('create_invoice', {
+      p_doctor_id: doctorId,
+      p_fee_type: feeType,
+      p_patient_name: patientName,
+      p_patient_phone: patientPhone || '',
+      p_patient_address: patientAddress || '',
+      p_patient_age: patientAge || null,
+      p_patient_gender: patientGender || '',
+    });
+    if (error) throw error;
+    return {
+      id: data.id,
+      invoiceNumber: data.invoice_number,
+      doctorId: data.doctor_id,
+      feeType: data.fee_type,
+      amount: Number(data.amount),
+      patientName: data.patient_name,
+      patientPhone: data.patient_phone,
+      patientAddress: data.patient_address,
+      patientAge: data.patient_age,
+      patientGender: data.patient_gender,
+      createdAt: data.created_at,
+    };
+  }
+
   // ---------------- patient notifications ----------------
   // The tech for "text the patient their appointment time," built without
   // a live SMS provider connected. Every booking composes a message and
@@ -573,11 +693,11 @@
 
   // ---------------- auth ----------------
 
-  async function signUp(email, password, clinicName) {
+  async function signUp(email, password, clinicName, clinicAddress) {
     const { data, error } = await sb.auth.signUp({
       email,
       password,
-      options: { data: { pending_clinic_name: clinicName } },
+      options: { data: { pending_clinic_name: clinicName, pending_clinic_address: clinicAddress || null } },
     });
     if (error) throw error;
     if (data.session) {
@@ -670,6 +790,13 @@
     return !!profile && profile.role === 'admin' && profile.isActive;
   }
 
+  // Billing is admin/reception only, never doctor — matches the RLS on
+  // public.invoices, which has no select policy for any other role.
+  async function canAccessBilling() {
+    const profile = await getMyProfile();
+    return !!profile && profile.isActive && (profile.role === 'admin' || profile.role === 'reception');
+  }
+
   async function getTeam() {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
@@ -743,9 +870,11 @@
     parseTime,
     formatTime,
     formatTimestamp,
+    formatDateTime,
     getTodayDate: todayDateStr,
     formatDateLabel,
     isPastRealDateTime,
+    stateForPincode,
 
     getClinic,
     updateClinic,
@@ -759,6 +888,8 @@
     getAllQueues,
     searchBookedPatients,
     getPatientLookupByPhone,
+    getBillingPatientLookup,
+    createInvoice,
     markArrived,
     markNoShow,
     addWalkIn,
@@ -784,6 +915,7 @@
 
     getMyProfile,
     isAdmin,
+    canAccessBilling,
     getTeam,
     createStaffAccount,
     setStaffActive,
