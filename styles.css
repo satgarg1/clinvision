@@ -633,7 +633,6 @@ input[type="number"] { -moz-appearance: textfield; }
 .app-sidebar a.nav-link.pinned-bottom {
   margin-top: auto;
   border-top: 1px solid var(--grey-300);
-  padding-top: 20px;
 }
 
 .app-sidebar .clinic-name {
