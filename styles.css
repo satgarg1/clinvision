@@ -820,6 +820,15 @@ table.qtable tr:last-child td { border-bottom: none; }
   font-family: var(--font);
 }
 
+/* Revenue page's date/type filters are the primary controls on that page
+   (not a secondary filter bar like elsewhere inline-form is used), so they
+   get a larger treatment than the standard inline-form sizing above. */
+#dateFilter, #typeFilter {
+  padding: 13px 14px;
+  font-size: 17px;
+  font-weight: 500;
+}
+
 /* Add-patient form: a grid (not flex-wrap) so a field that grows taller than
    its neighbors — e.g. the slot-availability hint — can never shove the other
    fields out of alignment. The hint and submit button live below the grid

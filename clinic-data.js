@@ -566,7 +566,7 @@
       .eq('clinic_id', clinicId)
       .gte('created_at', start.toISOString())
       .lte('created_at', end.toISOString())
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: true });
     if (error) throw error;
     return data.map(normalizeInvoice);
   }
