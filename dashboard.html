@@ -35,6 +35,7 @@
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="display.html" class="nav-link">Display Screen</a>
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
+        <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
         <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
       </nav>
     </aside>
@@ -48,12 +49,6 @@
       </div>
 
       <div class="card-grid" id="statCards"></div>
-
-      <div class="panel" id="revenuePanel" style="display:none;">
-        <div class="panel-header"><h2>Today's revenue</h2></div>
-        <div class="card-grid" id="revenueCards" style="margin-bottom:12px;"></div>
-        <p class="panel-note" id="revenueBreakdown" style="margin:0;"></p>
-      </div>
 
       <div class="panel">
         <div class="panel-header"><h2>Doctor status</h2></div>
@@ -74,7 +69,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=26"></script>
+  <script src="clinic-data.js?v=27"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -93,11 +88,9 @@
         document.getElementById('settingsNavLink').style.display = 'none';
       }
 
-      const canBill = await Qlinic.canAccessBilling();
-      if (!canBill) {
+      if (!(await Qlinic.canAccessBilling())) {
         document.getElementById('billingNavLink').style.display = 'none';
-      } else {
-        document.getElementById('revenuePanel').style.display = '';
+        document.getElementById('revenueNavLink').style.display = 'none';
       }
 
       function showToast(msg) {
@@ -125,37 +118,11 @@
         return ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
       }
 
-      // Not per-patient (that's already visible row by row on Reception's
-      // queue) — this is the aggregate an owner actually checks: how much
-      // came in today, how much of that's still outstanding, and through
-      // which payment methods. Waived (no-charge) visits contribute ₹0 to
-      // billed, so they don't skew the total.
-      async function renderRevenue() {
-        if (!canBill) return;
-        const invoices = await Qlinic.getTodayInvoices();
-        const totalBilled = invoices.reduce((sum, inv) => sum + inv.amount, 0);
-        const totalCollected = invoices.reduce((sum, inv) => sum + inv.amountReceived, 0);
-        const outstanding = totalBilled - totalCollected;
-        const byMode = { cash: 0, upi: 0, card: 0 };
-        invoices.forEach((inv) => { byMode[inv.paymentMode] = (byMode[inv.paymentMode] || 0) + inv.amountReceived; });
-        const waivedCount = invoices.filter((inv) => inv.feeType === 'waived').length;
-
-        document.getElementById('revenueCards').innerHTML = `
-          <div class="stat-card accent-teal"><div class="value value-teal">₹${totalBilled}</div><div class="label">Billed today</div></div>
-          <div class="stat-card accent-blue"><div class="value value-blue">₹${totalCollected}</div><div class="label">Collected</div></div>
-          <div class="stat-card accent-${outstanding > 0 ? 'coral' : 'teal'}"><div class="value value-${outstanding > 0 ? 'coral' : 'teal'}">₹${outstanding}</div><div class="label">Outstanding</div></div>
-        `;
-        document.getElementById('revenueBreakdown').textContent =
-          `Cash ₹${byMode.cash} · UPI ₹${byMode.upi} · Card ₹${byMode.card}` +
-          (waivedCount ? ` · ${waivedCount} no-charge visit${waivedCount === 1 ? '' : 's'}` : '');
-      }
-
       async function render() {
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
 
         const clinic = await Qlinic.getClinic();
         document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
-        await renderRevenue();
 
         const summary = await Qlinic.getDailySummary();
         const cards = [

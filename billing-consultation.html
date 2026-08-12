@@ -35,6 +35,7 @@
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="display.html" class="nav-link">Display Screen</a>
         <a href="billing.html" class="nav-link active" id="billingNavLink">Billing</a>
+        <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
         <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
       </nav>
     </aside>
@@ -176,7 +177,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=26"></script>
+  <script src="clinic-data.js?v=27"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -282,6 +283,7 @@
       document.getElementById('bName').addEventListener('input', updateTotal);
 
       const PAYMENT_MODE_LABELS = { cash: 'Paid via cash', upi: 'Paid via UPI', card: 'Paid via card' };
+      const FEE_TYPE_LABELS = { consultation: 'Consultation fee', emergency: 'Emergency fee', waived: 'Follow up' };
 
       // invoice.createdAt comes straight from the database's own
       // created_at default (set the instant create_invoice() inserts the
@@ -306,7 +308,7 @@
         document.getElementById('rAgeGender').textContent = ageGenderParts.length ? ageGenderParts.join(', ') : '—';
         document.getElementById('rDoctorName').textContent = doctor ? doctor.name : '';
         document.getElementById('rSpecialty').textContent = doctor ? doctor.specialty : '';
-        document.getElementById('rFeeLabel').textContent = invoice.feeType === 'consultation' ? 'Consultation fee' : 'Emergency fee';
+        document.getElementById('rFeeLabel').textContent = FEE_TYPE_LABELS[invoice.feeType] || invoice.feeType;
         document.getElementById('rAmount').textContent = `₹${invoice.amount}`;
         document.getElementById('rAmountReceived').textContent = `₹${invoice.amountReceived}`;
         const balance = invoice.amount - invoice.amountReceived;

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Revenue: Qlinic</title>
+<script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=48" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <a href="index.html" class="brand">
+        <span class="brand-top">
+          <span class="brand-clock clock-face" id="navClock">
+            <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;color:var(--black);">
+              <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="5"></circle>
+              <line class="clock-hour" x1="50" y1="50" x2="50" y2="30" stroke="currentColor" stroke-width="6" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <line class="clock-min" x1="50" y1="50" x2="50" y2="18" stroke="currentColor" stroke-width="4" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <line class="clock-sec" x1="50" y1="50" x2="50" y2="14" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <circle cx="50" cy="50" r="3" fill="currentColor"></circle>
+            </svg>
+          </span>
+          Qlinic
+        </span>
+        <span class="brand-tagline">Time is the one asset nobody gets back</span>
+      </a>
+      <div class="clinic-name" id="clinicName">Loading…</div>
+      <nav>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="reception.html" class="nav-link">Reception</a>
+        <a href="doctor.html" class="nav-link">Doctor View</a>
+        <a href="display.html" class="nav-link">Display Screen</a>
+        <a href="billing.html" class="nav-link">Billing</a>
+        <a href="revenue.html" class="nav-link active" id="revenueNavLink">Revenue</a>
+        <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
+      </nav>
+    </aside>
+
+    <main class="app-main">
+      <div class="app-topbar">
+        <h1>Revenue</h1>
+      </div>
+
+      <div class="inline-form" style="margin-bottom:20px;">
+        <div class="field" style="min-width:180px;flex:0;">
+          <label>Date</label>
+          <input type="date" id="dateFilter" />
+        </div>
+        <div class="field" style="flex:0;">
+          <label>&nbsp;</label>
+          <button type="button" class="btn-sm" id="todayBtn">Today</button>
+        </div>
+        <div class="field" style="min-width:180px;flex:0;margin-left:auto;">
+          <label>Type</label>
+          <select id="typeFilter">
+            <option value="">All types</option>
+            <option value="consultation">Consultation</option>
+            <option value="emergency">Emergency</option>
+            <option value="waived">Follow up</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card-grid" id="summaryCards" style="margin-bottom:20px;"></div>
+
+      <div class="panel">
+        <div id="revenueTableWrap"></div>
+        <div class="pager" id="revenuePager"></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=27"></script>
+  <script>
+    (async function () {
+      await Qlinic.requireLogin('login.html');
+
+      document.querySelector('a.brand').addEventListener('click', (e) => {
+        e.preventDefault();
+        if (confirm("Going to the homepage will end your session here, you'll need to log in again to get back in. Continue?")) {
+          window.location.href = 'index.html';
+        }
+      });
+
+      if (!(await Qlinic.canAccessBilling())) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      if (!(await Qlinic.isAdmin())) {
+        document.getElementById('settingsNavLink').style.display = 'none';
+      }
+
+      const PAGE_SIZE = 25;
+      const FEE_TYPE_LABELS = { consultation: 'Consultation', emergency: 'Emergency', waived: 'Follow up' };
+      const PAYMENT_MODE_LABELS = { cash: 'Cash', upi: 'UPI', card: 'Card' };
+
+      let allInvoices = [];
+      let currentPage = 1;
+
+      function filteredInvoices() {
+        const type = document.getElementById('typeFilter').value;
+        if (!type) return allInvoices;
+        return allInvoices.filter((inv) => inv.feeType === type);
+      }
+
+      // Deliberately computed from allInvoices, not the filtered list: the
+      // point of these counts is "what did the whole day look like," so
+      // switching the type filter narrows the table below without making
+      // the summary lie about the other types that happened that day.
+      function renderSummary() {
+        const totalCollected = allInvoices.reduce((sum, inv) => sum + inv.amountReceived, 0);
+        const consultationCount = allInvoices.filter((inv) => inv.feeType === 'consultation').length;
+        const emergencyCount = allInvoices.filter((inv) => inv.feeType === 'emergency').length;
+        const followUpCount = allInvoices.filter((inv) => inv.feeType === 'waived').length;
+
+        document.getElementById('summaryCards').innerHTML = `
+          <div class="stat-card accent-teal"><div class="value value-teal">₹${totalCollected}</div><div class="label">Total revenue</div></div>
+          <div class="stat-card accent-blue"><div class="value value-blue">${consultationCount}</div><div class="label">Consultation</div></div>
+          <div class="stat-card accent-coral"><div class="value value-coral">${emergencyCount}</div><div class="label">Emergency</div></div>
+          <div class="stat-card accent-purple"><div class="value value-purple">${followUpCount}</div><div class="label">Follow up</div></div>
+        `;
+      }
+
+      function renderPager(total) {
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        if (currentPage > totalPages) currentPage = totalPages;
+        const pager = document.getElementById('revenuePager');
+        if (totalPages <= 1) {
+          pager.innerHTML = '';
+          return;
+        }
+        pager.innerHTML = `
+          <button class="btn-sm" id="pagerPrev" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+          <span class="pager-label">Page ${currentPage} of ${totalPages}</span>
+          <button class="btn-sm" id="pagerNext" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+        `;
+        document.getElementById('pagerPrev').addEventListener('click', () => { currentPage -= 1; renderTable(); });
+        document.getElementById('pagerNext').addEventListener('click', () => { currentPage += 1; renderTable(); });
+      }
+
+      function renderTable() {
+        const filtered = filteredInvoices();
+        const wrap = document.getElementById('revenueTableWrap');
+        if (allInvoices.length === 0) {
+          wrap.innerHTML = '<div class="empty-state">No bills for this date.</div>';
+          document.getElementById('revenuePager').innerHTML = '';
+          return;
+        }
+        if (filtered.length === 0) {
+          wrap.innerHTML = '<div class="empty-state">No bills match this type.</div>';
+          document.getElementById('revenuePager').innerHTML = '';
+          return;
+        }
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+        if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageItems = filtered.slice(start, start + PAGE_SIZE);
+
+        wrap.innerHTML = `
+          <table class="qtable">
+            <thead><tr><th>Name</th><th>Type</th><th>Payment mode</th><th>Payment collected</th></tr></thead>
+            <tbody>
+              ${pageItems.map((inv) => {
+                const balance = inv.amount - inv.amountReceived;
+                return `
+                <tr>
+                  <td>${inv.patientName}</td>
+                  <td>${FEE_TYPE_LABELS[inv.feeType] || inv.feeType}</td>
+                  <td>${PAYMENT_MODE_LABELS[inv.paymentMode] || inv.paymentMode}</td>
+                  <td>
+                    <div>₹${inv.amountReceived}</div>
+                    ${balance > 0 ? `<div class="sub-line" style="color:var(--danger);">Balance: ₹${balance}</div>` : ''}
+                  </td>
+                </tr>
+              `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+        renderPager(filtered.length);
+      }
+
+      async function loadInvoices() {
+        const dateStr = document.getElementById('dateFilter').value;
+        allInvoices = await Qlinic.getInvoicesForDate(dateStr);
+        currentPage = 1;
+        renderSummary();
+        renderTable();
+      }
+
+      document.getElementById('dateFilter').addEventListener('change', loadInvoices);
+      document.getElementById('todayBtn').addEventListener('click', () => {
+        document.getElementById('dateFilter').value = Qlinic.getTodayDate();
+        loadInvoices();
+      });
+      document.getElementById('typeFilter').addEventListener('change', () => {
+        currentPage = 1;
+        renderTable();
+      });
+
+      const clinic = await Qlinic.getClinic();
+      document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      document.getElementById('dateFilter').value = Qlinic.getTodayDate();
+      await loadInvoices();
+      Qlinic.onLiveChange(loadInvoices);
+    })();
+  </script>
+  <script>
+    (function () {
+      function applyTime(root) {
+        const now = new Date();
+        const s = now.getSeconds();
+        const m = now.getMinutes();
+        const h = now.getHours() % 12;
+        const sec = root.querySelector(".clock-sec");
+        const min = root.querySelector(".clock-min");
+        const hour = root.querySelector(".clock-hour");
+        if (sec) sec.style.transform = `rotate(${s * 6}deg)`;
+        if (min) min.style.transform = `rotate(${m * 6 + s * 0.1}deg)`;
+        if (hour) hour.style.transform = `rotate(${h * 30 + m * 0.5}deg)`;
+      }
+      function tickAll() {
+        document.querySelectorAll(".clock-face").forEach(applyTime);
+      }
+      tickAll();
+      setInterval(tickAll, 1000);
+    })();
+  </script>
+
+</body>
+</html>

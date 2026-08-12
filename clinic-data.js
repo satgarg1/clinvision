@@ -553,17 +553,26 @@
   // out which of today's queued patients already got billed, so it
   // can show the auto-billed status instead of prompting anyone to
   // re-enter it.
-  async function getTodayInvoices() {
+  // dateStr is a plain "YYYY-MM-DD" in the clinic's local time (same
+  // convention as todayDateStr()); the two Date objects below just turn
+  // that into the actual local-time boundaries for the created_at range.
+  async function getInvoicesForDate(dateStr) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const start = new Date(y, m - 1, d, 0, 0, 0, 0);
+    const end = new Date(y, m - 1, d, 23, 59, 59, 999);
     const { data, error } = await sb.from('invoices').select('*')
       .eq('clinic_id', clinicId)
       .gte('created_at', start.toISOString())
+      .lte('created_at', end.toISOString())
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data.map(normalizeInvoice);
+  }
+
+  async function getTodayInvoices() {
+    return getInvoicesForDate(todayDateStr());
   }
 
   async function getInvoiceById(invoiceId) {
@@ -954,6 +963,7 @@
     getBillingPatientLookup,
     createInvoice,
     getTodayInvoices,
+    getInvoicesForDate,
     getInvoiceById,
     updateInvoicePayment,
     markArrived,
