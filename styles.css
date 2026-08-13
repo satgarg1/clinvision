@@ -1142,7 +1142,7 @@ table.qtable tr:last-child td { border-bottom: none; }
 
 .board-cols {
   display: grid;
-  grid-template-columns: 56px 2fr 1fr 1fr 1fr;
+  grid-template-columns: 56px 2fr 1fr 1fr;
   gap: 12px;
   padding: 0 4px 10px;
   font-size: 12px;
