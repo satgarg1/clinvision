@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=53" />
+<link rel="stylesheet" href="styles.css?v=54" />
 </head>
 <body>
   <div class="app-shell">
@@ -151,7 +151,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=28"></script>
+  <script src="clinic-data.js?v=29"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -468,6 +468,11 @@
         const box = document.getElementById('searchResults');
         if (!q.trim()) { box.innerHTML = ''; return; }
         const results = await Qlinic.searchBookedPatients(q);
+        // The box fires on every keystroke with no debounce, so a slower
+        // response for an earlier character can resolve after a later
+        // (or empty) one already rendered. Discard it if the input has
+        // since moved on, otherwise it stomps the newer/cleared state.
+        if (document.getElementById('searchBox').value !== q) return;
         if (results.length === 0) {
           box.innerHTML = '<div class="empty-state">No booked patient matches "' + q + '". Add them as a walk-in instead.</div>';
           return;

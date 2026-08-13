@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=53" />
+<link rel="stylesheet" href="styles.css?v=54" />
 </head>
 <body class="display-body">
 
@@ -35,7 +35,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=28"></script>
+  <script src="clinic-data.js?v=29"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -70,6 +70,7 @@
           runningLate: 'Running late',
           onBreak: 'On a break',
           emergency: 'Emergency',
+          dayClosed: 'Day closed',
           appointment: 'Appointment',
           walkin: 'Walk-in',
           empty: 'No one waiting right now. The waiting room is clear.',
@@ -87,6 +88,7 @@
           runningLate: 'देरी से',
           onBreak: 'ब्रेक पर',
           emergency: 'आपातकाल',
+          dayClosed: 'दिन समाप्त',
           appointment: 'अपॉइंटमेंट',
           walkin: 'वॉक-इन',
           empty: 'अभी कोई प्रतीक्षा में नहीं है। प्रतीक्षालय खाली है।',
@@ -243,9 +245,11 @@
                 <div class="strip-doc">${localizeName(doctor.name)}</div>
                 <div class="strip-spec">${localizeSpecialty(doctor.specialty)}</div>
               </div>
-              ${doctor.status === 'on_time'
-                ? `<span class="strip-pill strip-pill-ok">${T.onTime}</span>`
-                : `<span class="strip-pill strip-pill-warn">${statusLabel(doctor.status)}${doctor.delayMins ? ' · +' + doctor.delayMins + 'm' : ''}</span>`}
+              ${doctor.dayClosedAt
+                ? `<span class="strip-pill strip-pill-warn">${T.dayClosed}</span>`
+                : doctor.status === 'on_time'
+                  ? `<span class="strip-pill strip-pill-ok">${T.onTime}</span>`
+                  : `<span class="strip-pill strip-pill-warn">${statusLabel(doctor.status)}${doctor.delayMins ? ' · +' + doctor.delayMins + 'm' : ''}</span>`}
             </div>
             <div class="strip-serving">
               <span class="tiny-label">${T.nowServing}</span>
@@ -319,12 +323,22 @@
         renderDots(totalPages);
       }
 
+      const DAY_CLOSED_FADE_MS = 10 * 60 * 1000;
+
       async function refreshData() {
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
         const clinic = await Qlinic.getClinic();
         T = STRINGS[clinic && clinic.display_language] || STRINGS.en;
         applyStaticStrings();
-        const all = await Qlinic.getAllQueues();
+        const allQueues = await Qlinic.getAllQueues();
+        // A doctor who's closed their day keeps showing (with the "Day
+        // closed" pill) for a 10-minute grace window, then drops off the
+        // board entirely — checked here on every refresh rather than a
+        // server job, since this loop already runs every REFRESH_MS.
+        const all = allQueues.filter(({ doctor }) => {
+          if (!doctor.dayClosedAt) return true;
+          return Date.now() - new Date(doctor.dayClosedAt).getTime() < DAY_CLOSED_FADE_MS;
+        });
         renderDoctorStrip(all);
         combined = computeCombinedWaiting(all);
         renderPage();

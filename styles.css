@@ -862,7 +862,7 @@ table.qtable tr:last-child td { border-bottom: none; }
    as .btn-sm's default fill, so it was invisible except for its text.
    accent-outline gives it a real border; this just matches its size to
    the taller date/type fields beside it. */
-#todayBtn {
+#todayBtn, #closeDayBtn, #reopenDayBtn {
   padding: 13px 20px;
   font-size: 15px;
 }

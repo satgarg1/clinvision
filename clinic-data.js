@@ -136,6 +136,7 @@
       isActive: row.is_active,
       feeNormal: row.fee_normal,
       feeEmergency: row.fee_emergency,
+      dayClosedAt: row.day_closed_at,
     };
   }
 
@@ -751,7 +752,9 @@
   }
 
   // Only closes out TODAY's unarrived bookings; a future appointment
-  // hasn't been missed yet.
+  // hasn't been missed yet. Also stamps last_closed_date so the End of
+  // day panel can show a closed state and grey the button out instead
+  // of letting it be clicked again as a no-op.
   async function closeDayNoShows() {
     const clinicId = await ensureClinicContext();
     const { error } = await sb
@@ -760,6 +763,46 @@
       .eq('clinic_id', clinicId)
       .eq('status', 'booked')
       .eq('booked_date', todayDateStr());
+    if (error) throw error;
+    const { error: clinicError } = await sb
+      .from('clinics')
+      .update({ last_closed_date: todayDateStr() })
+      .eq('id', clinicId);
+    if (clinicError) throw clinicError;
+    currentClinic = null;
+  }
+
+  // Only clears the closed flag so the day can keep being worked; it
+  // deliberately does not revert the no-shows closeDayNoShows() created,
+  // since there's no reliable way to tell those apart from a no-show
+  // marked manually earlier in the day.
+  async function reopenDay() {
+    const clinicId = await ensureClinicContext();
+    const { error } = await sb
+      .from('clinics')
+      .update({ last_closed_date: null })
+      .eq('id', clinicId);
+    if (error) throw error;
+    currentClinic = null;
+  }
+
+  // A doctor signaling "I'm done for today," separate from the
+  // on_time/running_late/on_break/emergency status the "Your status"
+  // panel owns. The display screen fades a doctor out 10 minutes after
+  // this timestamp.
+  async function closeDoctorDay(doctorId) {
+    const { error } = await sb
+      .from('doctors')
+      .update({ day_closed_at: new Date().toISOString() })
+      .eq('id', doctorId);
+    if (error) throw error;
+  }
+
+  async function reopenDoctorDay(doctorId) {
+    const { error } = await sb
+      .from('doctors')
+      .update({ day_closed_at: null })
+      .eq('id', doctorId);
     if (error) throw error;
   }
 
@@ -975,6 +1018,9 @@
     getSlotAvailability,
     getDailySummary,
     closeDayNoShows,
+    reopenDay,
+    closeDoctorDay,
+    reopenDoctorDay,
     isLikelyNoShow,
     getQueueStatus,
 

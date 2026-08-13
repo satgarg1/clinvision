@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=53" />
+<link rel="stylesheet" href="styles.css?v=54" />
 </head>
 <body>
   <div class="app-shell">
@@ -96,6 +96,11 @@
           <div class="panel-header"><h2 id="waitingHeading">Waiting</h2></div>
           <div id="waitingList"></div>
         </div>
+
+        <div class="panel" id="endOfDayPanel">
+          <div class="panel-header"><h2>End of day</h2></div>
+          <div id="endOfDayBody"></div>
+        </div>
       </div>
 
       <div class="panel" id="noDoctorsPanel" style="display:none;">
@@ -108,7 +113,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=28"></script>
+  <script src="clinic-data.js?v=29"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -162,7 +167,7 @@
       function applyDoctorAccent(doctorId) {
         const idx = doctors.findIndex((d) => d.id === doctorId);
         const accent = ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
-        ['statusPanel', 'nowServingPanel', 'waitingPanel'].forEach((id) => {
+        ['statusPanel', 'nowServingPanel', 'waitingPanel', 'endOfDayPanel'].forEach((id) => {
           const el = document.getElementById(id);
           Array.from(el.classList).forEach((c) => { if (c.startsWith('accent-')) el.classList.remove(c); });
           el.classList.add('accent-' + accent);
@@ -227,6 +232,35 @@
             </tbody>
           </table>
         `;
+
+        document.getElementById('endOfDayBody').innerHTML = doc.dayClosedAt
+          ? `
+            <span class="badge badge-no-show" style="margin-bottom:12px;display:inline-block;">Day closed &middot; ${Qlinic.formatTimestamp(doc.dayClosedAt)}</span>
+            <p class="panel-note">Reception and the display screen have been notified. You'll drop off the display screen 10 minutes after closing.</p>
+            <button class="btn-sm accent-outline" id="reopenDoctorDayBtn">I'm back</button>
+          `
+          : `
+            <p class="panel-note">Let reception and the waiting screen know you're done for today. You'll disappear from the display screen 10 minutes after closing.</p>
+            <button class="btn-sm accent-outline" id="closeDoctorDayBtn" style="border-color:var(--danger);color:var(--danger);">Close my day</button>
+          `;
+        const closeBtn = document.getElementById('closeDoctorDayBtn');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', async () => {
+            if (confirm("Close your day? Reception and the waiting screen will be notified, and you'll drop off the display screen in 10 minutes.")) {
+              await Qlinic.closeDoctorDay(currentDoctorId());
+              render();
+              showToast('Day closed, reception notified');
+            }
+          });
+        }
+        const reopenBtn = document.getElementById('reopenDoctorDayBtn');
+        if (reopenBtn) {
+          reopenBtn.addEventListener('click', async () => {
+            await Qlinic.reopenDoctorDay(currentDoctorId());
+            render();
+            showToast('Back for the day');
+          });
+        }
       }
 
       // Both "Running late" and "On a break" ask for a duration before
