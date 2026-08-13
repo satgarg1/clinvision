@@ -904,6 +904,17 @@ table.qtable tr:last-child td { border-bottom: none; }
   font-family: var(--font);
 }
 
+/* The consultation billing form otherwise looked pale/unfinished next
+   to the rest of the app; kept the same flat field-by-field layout
+   (no grouped sections — that's extra visual structure for reception
+   to parse, not extra clicking, but still unwanted here) and just gave
+   its fields a real border color instead of the barely-there default. */
+#billingFormPanel .form-grid .field input,
+#billingFormPanel .form-grid .field select {
+  border-color: var(--accent);
+  border-width: 1.5px;
+}
+
 /* Custom time picker — a native <input type="time"> renders a different,
    unstylable scrolling wheel per browser/OS, and a plain <select> can't
    filter out past times or control where the list opens. This gives full
@@ -1038,15 +1049,22 @@ table.qtable tr:last-child td { border-bottom: none; }
 .doctor-status-row .doc-specialty { font-size: 13px; color: var(--grey-500); }
 
 .status-pill {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  padding: 5px 12px;
+  padding: 6px 14px;
   border-radius: 999px;
 }
 .status-on_time { background: var(--success-bg); color: var(--success); }
 .status-running_late { background: var(--warning-bg); color: var(--warning); }
 .status-on_break { background: #ece9fc; color: #5b3ec9; }
 .status-emergency { background: var(--danger-bg); color: var(--danger); }
+
+/* A doctor who isn't on time gets the whole row tinted + a left border
+   in the same color as their pill, not just the small pill itself —
+   findable at a glance scanning down the list, not only on close read. */
+.doctor-status-row.row-status-running_late { background: var(--warning-bg); border-left: 4px solid var(--warning); padding-left: 8px; }
+.doctor-status-row.row-status-on_break { background: #ece9fc; border-left: 4px solid #5b3ec9; padding-left: 8px; }
+.doctor-status-row.row-status-emergency { background: var(--danger-bg); border-left: 4px solid var(--danger); padding-left: 8px; }
 
 .toast {
   position: fixed;
@@ -1115,17 +1133,18 @@ table.qtable tr:last-child td { border-bottom: none; }
 .strip-doc { font-size: 19px; font-weight: 700; }
 .strip-spec { font-size: 13px; color: var(--grey-500); margin-top: 2px; }
 .strip-pill {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  padding: 5px 10px;
+  padding: 7px 14px;
   border-radius: 999px;
   white-space: nowrap;
 }
 .strip-pill-ok { background: rgba(52, 199, 89, 0.16); color: #34c759; }
 .strip-pill-warn { background: rgba(255, 159, 10, 0.18); color: #ff9f0a; }
 .strip-fade-note { font-size: 11px; color: var(--grey-500); margin-top: 6px; }
+.strip-status-detail { font-size: 14px; font-weight: 600; color: #ff9f0a; margin-top: 6px; }
 .strip-serving { margin-top: 16px; padding-top: 14px; border-top: 1px solid #3a3a3c; }
 .strip-serving .tiny-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--grey-500); margin-bottom: 4px; }
 .strip-serving-name { font-size: 20px; font-weight: 700; }

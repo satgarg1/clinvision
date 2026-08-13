@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=58" />
+<link rel="stylesheet" href="styles.css?v=59" />
 </head>
 <body class="display-body">
 
@@ -61,7 +61,7 @@
         en: {
           tagline: 'live queue',
           waitingNow: 'Waiting now',
-          colPos: '#',
+          colPos: 'Token',
           colPatient: 'Patient',
           colDoctor: 'Doctor',
           colType: 'Type',
@@ -72,6 +72,9 @@
           emergency: 'Emergency',
           dayClosed: 'Day closed',
           fadingIn: (m) => `Fading in ${m} min`,
+          runningLateDetail: (m) => `Running late by ${m} minutes`,
+          onBreakDetail: (m) => `On a break for ${m} minutes`,
+          emergencyDetail: 'Attending an emergency, please bear with us',
           appointment: 'Appointment',
           walkin: 'Walk-in',
           empty: 'No one waiting right now. The waiting room is clear.',
@@ -80,7 +83,7 @@
         hi: {
           tagline: 'लाइव कतार',
           waitingNow: 'अभी प्रतीक्षा में',
-          colPos: '#',
+          colPos: 'टोकन',
           colPatient: 'मरीज़',
           colDoctor: 'डॉक्टर',
           colType: 'प्रकार',
@@ -91,6 +94,9 @@
           emergency: 'आपातकाल',
           dayClosed: 'दिन समाप्त',
           fadingIn: (m) => `${m} मिनट में हट जाएगा`,
+          runningLateDetail: (m) => `${m} मिनट देरी से`,
+          onBreakDetail: (m) => `${m} मिनट के लिए ब्रेक पर`,
+          emergencyDetail: 'आपातकाल में व्यस्त, कृपया प्रतीक्षा करें',
           appointment: 'अपॉइंटमेंट',
           walkin: 'वॉक-इन',
           empty: 'अभी कोई प्रतीक्षा में नहीं है। प्रतीक्षालय खाली है।',
@@ -239,20 +245,34 @@
         }[status] || status;
       }
 
+      // Spells the delay out in full words on its own line, rather than
+      // burying "+20m" inside the pill: patients should be able to read
+      // it at a glance from across the waiting room, not squint at an
+      // abbreviation.
+      function statusDetailLine(doctor) {
+        if (doctor.status === 'running_late') return T.runningLateDetail(doctor.delayMins || 0);
+        if (doctor.status === 'on_break') return T.onBreakDetail(doctor.delayMins || 0);
+        if (doctor.status === 'emergency') return T.emergencyDetail;
+        return '';
+      }
+
       function renderDoctorStrip(all) {
-        document.getElementById('doctorStrip').innerHTML = all.map(({ doctor, queue }, index) => `
+        document.getElementById('doctorStrip').innerHTML = all.map(({ doctor, queue }, index) => {
+          const detail = doctor.dayClosedAt ? '' : statusDetailLine(doctor);
+          return `
           <div class="strip-card accent-${ACCENT_COLORS[index % ACCENT_COLORS.length]}">
             <div class="strip-top">
               <div>
                 <div class="strip-doc">${localizeName(doctor.name)}</div>
                 <div class="strip-spec">${localizeSpecialty(doctor.specialty)}</div>
+                ${detail ? `<div class="strip-status-detail">${detail}</div>` : ''}
               </div>
               <div style="text-align:right;">
                 ${doctor.dayClosedAt
                   ? `<span class="strip-pill strip-pill-warn">${T.dayClosed}</span>`
                   : doctor.status === 'on_time'
                     ? `<span class="strip-pill strip-pill-ok">${T.onTime}</span>`
-                    : `<span class="strip-pill strip-pill-warn">${statusLabel(doctor.status)}${doctor.delayMins ? ' · +' + doctor.delayMins + 'm' : ''}</span>`}
+                    : `<span class="strip-pill strip-pill-warn">${statusLabel(doctor.status)}</span>`}
                 ${doctor.dayClosedAt
                   ? `<div class="strip-fade-note">${T.fadingIn(Math.max(0, Math.ceil((DAY_CLOSED_FADE_MS - (Date.now() - new Date(doctor.dayClosedAt).getTime())) / 60000)))}</div>`
                   : ''}
@@ -263,7 +283,8 @@
               <span class="strip-serving-name">${queue.nowServing ? localizeName(queue.nowServing.name) : '·'}</span>
             </div>
           </div>
-        `).join('');
+        `;
+        }).join('');
       }
 
       // One combined, clinic-wide board sorted by scheduled/effective time:
@@ -282,6 +303,7 @@
               doctorAccent,
               position: p.position,
               effectiveTime: p.effectiveTime,
+              tokenNumber: p.tokenNumber,
             });
           });
         });
@@ -295,7 +317,7 @@
         }
         return pageItems.map((p, i) => `
           <div class="board-row">
-            <span class="board-pos">${startIdx + i + 1}</span>
+            <span class="board-pos">${p.tokenNumber != null ? '#' + p.tokenNumber : '·'}</span>
             <span class="board-name">${localizeName(p.name)}${p.address ? `<span class="board-sub">${localizeName(p.address)}</span>` : ''}</span>
             <span class="board-doc"><span class="board-doc-dot dot-${p.doctorAccent}"></span>${localizeName(p.doctorName)}</span>
             <span class="board-type">${p.type === 'appointment' ? T.appointment : T.walkin}</span>

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=58" />
+<link rel="stylesheet" href="styles.css?v=59" />
 </head>
 <body>
   <div class="app-shell">
@@ -143,7 +143,7 @@
         document.getElementById('doctorStatusList').innerHTML = doctors.map((d, i) => {
           const q = queues[i];
           return `
-            <div class="doctor-status-row">
+            <div class="doctor-status-row ${d.status !== 'on_time' ? 'row-status-' + d.status : ''}">
               <div style="display:flex;align-items:center;gap:10px;">
                 <span class="board-doc-dot dot-${accentForDoctor(d.id, doctors)}"></span>
                 <div>
