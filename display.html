@@ -280,7 +280,7 @@
             </div>
             <div class="strip-serving">
               <span class="tiny-label">${T.nowServing}</span>
-              <span class="strip-serving-name">${queue.nowServing ? localizeName(queue.nowServing.name) : '·'}</span>
+              <span class="strip-serving-name">${queue.nowServing ? (queue.nowServing.tokenNumber != null ? '#' + queue.nowServing.tokenNumber + ' ' : '') + localizeName(queue.nowServing.name) : '·'}</span>
             </div>
           </div>
         `;
