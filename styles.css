@@ -1075,13 +1075,13 @@ table.qtable tr:last-child td { border-bottom: none; }
   gap: 16px;
   flex-wrap: wrap;
   padding: 16px 12px;
-  margin: 0 -12px;
+  margin: 0 -12px 8px;
   border-radius: 10px;
   border-bottom: 1px solid var(--grey-100);
   transition: background 0.15s ease;
 }
 .doctor-status-row:hover { background: var(--grey-100); }
-.doctor-status-row:last-child { border-bottom: none; }
+.doctor-status-row:last-child { border-bottom: none; margin-bottom: 0; }
 .doctor-status-row .doc-name { font-weight: 700; font-size: 15px; }
 .doctor-status-row .doc-specialty { font-size: 13px; color: var(--grey-500); }
 
@@ -1206,7 +1206,7 @@ table.qtable tr:last-child td { border-bottom: none; }
 
 .board-cols {
   display: grid;
-  grid-template-columns: 56px 1.4fr 1fr 1fr;
+  grid-template-columns: 56px 340px 220px 180px 1fr;
   gap: 12px;
   padding: 0 4px 10px;
   font-size: 12px;
@@ -1224,7 +1224,7 @@ table.qtable tr:last-child td { border-bottom: none; }
 
 .board-row {
   display: grid;
-  grid-template-columns: 56px 1.4fr 1fr 1fr;
+  grid-template-columns: 56px 340px 220px 180px 1fr;
   gap: 12px;
   align-items: center;
   padding: 14px 4px;
