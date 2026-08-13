@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Billing: Qlinic</title>
+<title>End of day: Qlinic</title>
 <script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,30 +34,23 @@
         <a href="reception.html" class="nav-link">Reception</a>
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="display.html" class="nav-link">Display Screen</a>
-        <a href="billing.html" class="nav-link active" id="billingNavLink">Billing</a>
-        <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
-        <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
+        <a href="billing.html" class="nav-link">Billing</a>
+        <a href="revenue.html" class="nav-link">Revenue</a>
+        <a href="end-of-day.html" class="nav-link active" id="endOfDayNavLink">End of day</a>
         <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
       </nav>
     </aside>
 
     <main class="app-main">
       <div class="app-topbar">
-        <h1>Billing</h1>
+        <h1>End of day</h1>
       </div>
 
-      <div class="card-grid">
-        <a href="billing-consultation.html" class="panel billing-option-card" style="text-decoration:none;color:inherit;display:block;">
-          <div class="panel-header"><h2>Consultation billing</h2></div>
-          <p class="panel-note">Bill a patient for a doctor visit, consultation or emergency fee, and print a receipt.</p>
-        </a>
-        <div class="panel" style="opacity:0.55;">
-          <div class="panel-header"><h2>Pharmacy billing</h2></div>
-          <p class="panel-note">Bill a patient for dispensed medicines. Coming soon.</p>
-        </div>
-      </div>
+      <div class="panel" id="endOfDayPanel"></div>
     </main>
   </div>
+
+  <div class="toast" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
@@ -66,9 +59,6 @@
     (async function () {
       await Qlinic.requireLogin('login.html');
 
-      // The sidebar logo links to the marketing site, which has no way
-      // back into the app without logging in again, worth a heads-up
-      // before someone loses their place by accident.
       document.querySelector('a.brand').addEventListener('click', (e) => {
         e.preventDefault();
         if (confirm("Going to the homepage will end your session here, you'll need to log in again to get back in. Continue?")) {
@@ -84,8 +74,58 @@
         document.getElementById('settingsNavLink').style.display = 'none';
       }
 
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      // Its own page, off the sidebar below Revenue, rather than a panel on
+      // Dashboard (glanced at constantly) or bolted onto Revenue (visited
+      // for a different reason): admin/reception have to come here
+      // deliberately, so this can't be clicked by accident. Reopening only
+      // clears the closed flag, it doesn't try to undo the no-shows
+      // closing just created, since there's no reliable way to tell those
+      // apart from a no-show marked manually earlier in the day.
+      async function renderEndOfDay() {
+        const clinic = await Qlinic.getClinic();
+        const closedToday = clinic && clinic.last_closed_date === Qlinic.getTodayDate();
+        const panel = document.getElementById('endOfDayPanel');
+        if (closedToday) {
+          panel.innerHTML = `
+            <div class="panel-header"><h2>End of day</h2></div>
+            <span class="badge badge-no-show" style="margin-bottom:12px;display:inline-block;">Day closed</span>
+            <p class="panel-note">Today's no-shows have been finalized. Reopening just unlocks the button below, it won't undo them.</p>
+            <button class="btn-sm accent-outline" id="reopenDayBtn">Reopen the day</button>
+          `;
+          document.getElementById('reopenDayBtn').addEventListener('click', async () => {
+            if (confirm("Reopen the day? This only unlocks the close button again, it won't undo any no-shows already finalized.")) {
+              await Qlinic.reopenDay();
+              showToast('Day reopened');
+              renderEndOfDay();
+            }
+          });
+        } else {
+          panel.innerHTML = `
+            <div class="panel-header"><h2>End of day</h2></div>
+            <p class="panel-note">Anyone still marked "booked" (never arrived) today will be closed out as a no-show.</p>
+            <button class="btn-sm primary" id="closeDayBtn">Close the day &amp; finalize no-shows</button>
+          `;
+          document.getElementById('closeDayBtn').addEventListener('click', async () => {
+            if (confirm('Close the day? Everyone still "booked" and not arrived today will be marked as no-show.')) {
+              await Qlinic.closeDayNoShows();
+              showToast('Day closed, no-shows finalized');
+              renderEndOfDay();
+            }
+          });
+        }
+      }
+
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      await renderEndOfDay();
+      Qlinic.onLiveChange(renderEndOfDay);
     })();
   </script>
   <script>

@@ -1100,6 +1100,7 @@ table.qtable tr:last-child td { border-bottom: none; }
 }
 .strip-pill-ok { background: rgba(52, 199, 89, 0.16); color: #34c759; }
 .strip-pill-warn { background: rgba(255, 159, 10, 0.18); color: #ff9f0a; }
+.strip-fade-note { font-size: 11px; color: var(--grey-500); margin-top: 6px; }
 .strip-serving { margin-top: 16px; padding-top: 14px; border-top: 1px solid #3a3a3c; }
 .strip-serving .tiny-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--grey-500); margin-bottom: 4px; }
 .strip-serving-name { font-size: 20px; font-weight: 700; }

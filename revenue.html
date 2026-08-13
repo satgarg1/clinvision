@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=54" />
+<link rel="stylesheet" href="styles.css?v=55" />
 </head>
 <body>
   <div class="app-shell">
@@ -36,6 +36,7 @@
         <a href="display.html" class="nav-link">Display Screen</a>
         <a href="billing.html" class="nav-link">Billing</a>
         <a href="revenue.html" class="nav-link active" id="revenueNavLink">Revenue</a>
+        <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
         <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
       </nav>
     </aside>
@@ -77,8 +78,6 @@
         <div id="revenueTableWrap"></div>
         <div class="pager" id="revenuePager"></div>
       </div>
-
-      <div class="panel" id="endOfDayPanel"></div>
     </main>
   </div>
 
@@ -119,45 +118,6 @@
         t.textContent = msg;
         t.classList.add('show');
         setTimeout(() => t.classList.remove('show'), 2200);
-      }
-
-      // Lives here rather than on the Dashboard so it's not something
-      // admin/reception can click by accident while glancing at live queue
-      // status; Revenue is somewhere they come to deliberately, often right
-      // before closing out. Reopening only clears the closed flag, it
-      // doesn't try to undo the no-shows closing just created.
-      async function renderEndOfDay() {
-        const clinic = await Qlinic.getClinic();
-        const closedToday = clinic && clinic.last_closed_date === Qlinic.getTodayDate();
-        const panel = document.getElementById('endOfDayPanel');
-        if (closedToday) {
-          panel.innerHTML = `
-            <div class="panel-header"><h2>End of day</h2></div>
-            <span class="badge badge-no-show" style="margin-bottom:12px;display:inline-block;">Day closed</span>
-            <p class="panel-note">Today's no-shows have been finalized. Reopening just unlocks the button below, it won't undo them.</p>
-            <button class="btn-sm accent-outline" id="reopenDayBtn">Reopen the day</button>
-          `;
-          document.getElementById('reopenDayBtn').addEventListener('click', async () => {
-            if (confirm("Reopen the day? This only unlocks the close button again, it won't undo any no-shows already finalized.")) {
-              await Qlinic.reopenDay();
-              showToast('Day reopened');
-              renderEndOfDay();
-            }
-          });
-        } else {
-          panel.innerHTML = `
-            <div class="panel-header"><h2>End of day</h2></div>
-            <p class="panel-note">Anyone still marked "booked" (never arrived) today will be closed out as a no-show.</p>
-            <button class="btn-sm primary" id="closeDayBtn">Close the day &amp; finalize no-shows</button>
-          `;
-          document.getElementById('closeDayBtn').addEventListener('click', async () => {
-            if (confirm('Close the day? Everyone still "booked" and not arrived today will be marked as no-show.')) {
-              await Qlinic.closeDayNoShows();
-              showToast('Day closed, no-shows finalized');
-              renderEndOfDay();
-            }
-          });
-        }
       }
 
       async function loadDoctorFilterOptions() {
@@ -307,7 +267,6 @@
       document.getElementById('dateFilter').value = Qlinic.getTodayDate();
       await loadDoctorFilterOptions();
       await loadInvoices();
-      await renderEndOfDay();
       Qlinic.onLiveChange(loadInvoices);
     })();
   </script>

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=54" />
+<link rel="stylesheet" href="styles.css?v=55" />
 </head>
 <body>
   <div class="app-shell">
@@ -36,6 +36,7 @@
         <a href="display.html" class="nav-link">Display Screen</a>
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
+        <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
         <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
       </nav>
     </aside>
@@ -174,6 +175,7 @@
       if (!canBill) {
         document.getElementById('billingNavLink').style.display = 'none';
         document.getElementById('revenueNavLink').style.display = 'none';
+        document.getElementById('endOfDayNavLink').style.display = 'none';
       }
 
       const BOOKED_PAGE_SIZE = 8;
