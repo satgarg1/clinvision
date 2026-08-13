@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=55" />
+<link rel="stylesheet" href="styles.css?v=56" />
 </head>
 <body>
   <div class="app-shell">
@@ -45,6 +45,8 @@
       <div class="app-topbar">
         <h1>Revenue</h1>
       </div>
+
+      <input type="text" id="patientSearch" placeholder="Search by patient name..." />
 
       <div class="inline-form" style="margin-bottom:20px;">
         <div class="field" style="min-width:180px;flex:0;">
@@ -112,6 +114,7 @@
       let allInvoices = [];
       let currentPage = 1;
       let doctorById = {};
+      let editingInvoiceId = null;
 
       function showToast(msg) {
         const t = document.getElementById('toast');
@@ -132,12 +135,18 @@
         select.value = current;
       }
 
+      function searchTerm() {
+        return document.getElementById('patientSearch').value.trim().toLowerCase();
+      }
+
       function filteredInvoices() {
         const type = document.getElementById('typeFilter').value;
         const doctorId = document.getElementById('doctorFilter').value;
+        const search = searchTerm();
         return allInvoices.filter((inv) => {
           if (type && inv.feeType !== type) return false;
           if (doctorId && inv.doctorId !== doctorId) return false;
+          if (search && !inv.patientName.toLowerCase().includes(search)) return false;
           return true;
         });
       }
@@ -153,7 +162,10 @@
       function renderSummary() {
         const doctorId = document.getElementById('doctorFilter').value;
         const type = document.getElementById('typeFilter').value;
-        const byDoctor = doctorId ? allInvoices.filter((inv) => inv.doctorId === doctorId) : allInvoices;
+        const search = searchTerm();
+        const byDoctor = allInvoices
+          .filter((inv) => !doctorId || inv.doctorId === doctorId)
+          .filter((inv) => !search || inv.patientName.toLowerCase().includes(search));
         const inSummary = type ? byDoctor.filter((inv) => inv.feeType === type) : byDoctor;
 
         const totalCollected = inSummary.reduce((sum, inv) => sum + inv.amountReceived, 0);
@@ -214,21 +226,22 @@
 
         wrap.innerHTML = `
           <table class="qtable">
-            <thead><tr><th>Name</th><th>Doctor</th><th>Type</th><th>Payment mode</th><th>Payment collected</th></tr></thead>
+            <thead><tr><th>Patient</th><th>Doctor</th><th>Type</th><th>Payment mode</th><th>Payment collected</th></tr></thead>
             <tbody>
               ${pageItems.map((inv) => {
                 const balance = inv.amount - inv.amountReceived;
                 const doctor = doctorById[inv.doctorId];
+                const subInfo = [inv.patientAge ? `${inv.patientAge} yrs` : '', inv.patientAddress || ''].filter(Boolean).join(' · ');
                 return `
                 <tr>
-                  <td>${inv.patientName}</td>
+                  <td>
+                    <div>${inv.patientName}</div>
+                    ${subInfo ? `<div class="sub-line">${subInfo}</div>` : ''}
+                  </td>
                   <td>${doctor ? doctor.name : '—'}</td>
                   <td>${FEE_TYPE_LABELS[inv.feeType] || inv.feeType}</td>
                   <td>${PAYMENT_MODE_LABELS[inv.paymentMode] || inv.paymentMode}</td>
-                  <td>
-                    <div>₹${inv.amountReceived}</div>
-                    ${balance > 0 ? `<div class="sub-line" style="color:var(--danger);">Balance: ₹${balance}</div>` : ''}
-                  </td>
+                  <td>${billingCell(inv, doctor)}</td>
                 </tr>
               `;
               }).join('')}
@@ -237,6 +250,76 @@
         `;
         renderPager(filtered.length);
       }
+
+      // Same fields, save flow, and field classes as Reception's Adjust
+      // editor (fee type recomputes amount server-side, payment mode,
+      // amount received) — just without the Print link, since this page
+      // is for correcting a figure, not reprinting a receipt.
+      function billingCell(inv, doctor) {
+        const balance = inv.amount - inv.amountReceived;
+        if (editingInvoiceId === inv.id) {
+          return `
+            <div class="adj-box">
+              <select class="adj-fee-type" data-fee-normal="${(doctor && doctor.feeNormal) || 0}" data-fee-emergency="${(doctor && doctor.feeEmergency) || 0}" onchange="syncAdjustAmount(this)">
+                <option value="consultation" ${inv.feeType === 'consultation' ? 'selected' : ''}>Consultation</option>
+                <option value="emergency" ${inv.feeType === 'emergency' ? 'selected' : ''}>Emergency</option>
+                <option value="waived" ${inv.feeType === 'waived' ? 'selected' : ''}>Follow up</option>
+              </select>
+              <select class="adj-payment-mode">
+                <option value="cash" ${inv.paymentMode === 'cash' ? 'selected' : ''}>Cash</option>
+                <option value="upi" ${inv.paymentMode === 'upi' ? 'selected' : ''}>UPI</option>
+                <option value="card" ${inv.paymentMode === 'card' ? 'selected' : ''}>Card</option>
+              </select>
+              <input type="number" min="0" step="1" class="adj-amount-received" value="${inv.amountReceived}" />
+              <div class="adj-actions">
+                <button type="button" class="btn-sm primary" onclick="saveInvoiceEdit('${inv.id}')">Save</button>
+                <button type="button" class="btn-sm" onclick="cancelInvoiceEdit()">Cancel</button>
+              </div>
+            </div>
+          `;
+        }
+        return `
+          <div>₹${inv.amountReceived} &middot; <a href="#" onclick="startEditInvoice('${inv.id}'); return false;" style="color:var(--accent);text-decoration:none;">Adjust</a></div>
+          ${balance > 0 ? `<div class="sub-line" style="color:var(--danger);">Balance: ₹${balance}</div>` : ''}
+        `;
+      }
+
+      function startEditInvoice(invoiceId) {
+        editingInvoiceId = invoiceId;
+        renderTable();
+      }
+      function cancelInvoiceEdit() {
+        editingInvoiceId = null;
+        renderTable();
+      }
+      async function saveInvoiceEdit(invoiceId) {
+        const row = document.querySelector(`[onclick*="saveInvoiceEdit('${invoiceId}')"]`).closest('td');
+        const feeType = row.querySelector('.adj-fee-type').value;
+        const paymentMode = row.querySelector('.adj-payment-mode').value;
+        const amountReceived = row.querySelector('.adj-amount-received').value;
+        await Qlinic.updateInvoicePayment({ invoiceId, feeType, paymentMode, amountReceived });
+        editingInvoiceId = null;
+        showToast('Billing updated');
+        await loadInvoices();
+      }
+      window.startEditInvoice = startEditInvoice;
+      window.cancelInvoiceEdit = cancelInvoiceEdit;
+      window.saveInvoiceEdit = saveInvoiceEdit;
+
+      // Mirrors Reception's syncAdjustAmount: keeps the amount field
+      // showing the fee that would actually be saved the instant fee
+      // type changes, so Save never submits a stale amount against a
+      // different fee type.
+      function syncAdjustAmount(selectEl) {
+        const cell = selectEl.closest('td');
+        const amountInput = cell.querySelector('.adj-amount-received');
+        const feeType = selectEl.value;
+        const amount = feeType === 'waived' ? 0
+          : feeType === 'emergency' ? Number(selectEl.dataset.feeEmergency) || 0
+          : Number(selectEl.dataset.feeNormal) || 0;
+        amountInput.value = amount;
+      }
+      window.syncAdjustAmount = syncAdjustAmount;
 
       async function loadInvoices() {
         const dateStr = document.getElementById('dateFilter').value;
@@ -257,6 +340,11 @@
         renderTable();
       });
       document.getElementById('doctorFilter').addEventListener('change', () => {
+        currentPage = 1;
+        renderSummary();
+        renderTable();
+      });
+      document.getElementById('patientSearch').addEventListener('input', () => {
         currentPage = 1;
         renderSummary();
         renderTable();

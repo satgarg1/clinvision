@@ -858,6 +858,23 @@ table.qtable tr:last-child td { border-bottom: none; }
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
+#patientSearch {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 16px;
+  font-size: 17px;
+  font-weight: 500;
+  font-family: var(--font);
+  border: 1px solid var(--grey-300);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: var(--white);
+  color: var(--black);
+  margin-bottom: 20px;
+}
+#patientSearch:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+
 /* The Today button sits directly on the page's grey-100 background, same
    as .btn-sm's default fill, so it was invisible except for its text.
    accent-outline gives it a real border; this just matches its size to
