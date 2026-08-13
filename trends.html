@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=65" />
+<link rel="stylesheet" href="styles.css?v=66" />
 </head>
 <body>
   <div class="app-shell">
@@ -54,8 +54,9 @@
       </div>
 
       <div class="panel">
-        <div class="panel-header"><h2>Revenue by week</h2></div>
+        <div class="panel-header"><h2 id="revenueOverTimeHeading">Revenue over time</h2></div>
         <div id="revenueByWeek"></div>
+        <p class="panel-note" style="margin-top:12px;margin-bottom:0;">Click a bar to see who was billed then.</p>
       </div>
 
       <div style="display:flex;gap:20px;flex-wrap:wrap;">
@@ -67,6 +68,11 @@
           <div class="panel-header"><h2 id="visitsPerDoctorHeading">Visits per doctor</h2></div>
           <div id="visitsPerDoctor"></div>
         </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2 id="revenueByDoctorHeading">Revenue by doctor</h2></div>
+        <div id="revenueByDoctor"></div>
       </div>
     </main>
   </div>
@@ -97,10 +103,16 @@
 
       const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const PRESET_LABELS = { month: 'This month', '3months': 'Last 3 months', fy: 'This financial year' };
-      const MAX_WEEK_BARS = 8;
 
       function pad2(n) { return String(n).padStart(2, '0'); }
       function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
+      function todayStr() { return toDateStr(new Date()); }
+
+      // "This month" is only ~4-5 weeks, so weekly bars stay readable.
+      // "Last 3 months" and "This financial year" (up to 52 weeks) get
+      // bucketed by calendar month instead, or the chart turns into an
+      // unreadable strip of dozens of thin bars.
+      function bucketGranularity(preset) { return preset === 'month' ? 'week' : 'month'; }
 
       // Indian financial year: April 1 - March 31. If we're in Jan-Mar,
       // the current FY started in April of the PREVIOUS calendar year.
@@ -130,6 +142,28 @@
         return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       }
 
+      // First-of-the-month bucket key for a given Date.
+      function monthStartStr(d) { return toDateStr(new Date(d.getFullYear(), d.getMonth(), 1)); }
+      function monthLabel(dateStr) {
+        const [y, m] = dateStr.split('-').map(Number);
+        return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+      }
+
+      // Turns a bucket key into the actual start/end dates a drill-down
+      // link should query — capped at today, since a bucket for the
+      // current (still in progress) week/month shouldn't claim to cover
+      // days that haven't happened yet.
+      function weekRangeFromMonday(mondayStr) {
+        const [y, m, d] = mondayStr.split('-').map(Number);
+        const sunday = toDateStr(new Date(y, m - 1, d + 6));
+        return { start: mondayStr, end: sunday > todayStr() ? todayStr() : sunday };
+      }
+      function monthRangeFromFirst(firstStr) {
+        const [y, m] = firstStr.split('-').map(Number);
+        const lastDay = toDateStr(new Date(y, m, 0)); // day 0 of month m (1-indexed) = last day of that month
+        return { start: firstStr, end: lastDay > todayStr() ? todayStr() : lastDay };
+      }
+
       function showToast(msg) {
         const t = document.getElementById('toast');
         t.textContent = msg;
@@ -137,34 +171,40 @@
         setTimeout(() => t.classList.remove('show'), 2200);
       }
 
-      // Buckets every invoice in range into its Monday-of-week, sums
-      // amountReceived per bucket, then keeps only the most recent
-      // MAX_WEEK_BARS buckets — a "This financial year" range can span
-      // 50+ weeks, and a bar per week past a handful just isn't readable.
-      function renderRevenueByWeek(invoices) {
+      // Buckets every invoice in range by week or month (see
+      // bucketGranularity) and sums amountReceived per bucket. Each bar
+      // links straight into Revenue, pre-filtered to that bucket's exact
+      // date range, so "who was billed in this week/month" is one click
+      // away instead of a separate lookup.
+      function renderRevenueOverTime(invoices, preset) {
         const el = document.getElementById('revenueByWeek');
+        const granularity = bucketGranularity(preset);
+        document.getElementById('revenueOverTimeHeading').textContent =
+          granularity === 'week' ? 'Revenue by week' : 'Revenue by month';
         if (invoices.length === 0) {
           el.innerHTML = '<div class="empty-state">No billed invoices in this period.</div>';
           return;
         }
-        const byWeek = {};
+        const byBucket = {};
         invoices.forEach((inv) => {
-          const wk = weekStartStr(new Date(inv.createdAt));
-          byWeek[wk] = (byWeek[wk] || 0) + inv.amountReceived;
+          const key = granularity === 'week' ? weekStartStr(new Date(inv.createdAt)) : monthStartStr(new Date(inv.createdAt));
+          byBucket[key] = (byBucket[key] || 0) + inv.amountReceived;
         });
-        const weeks = Object.keys(byWeek).sort().slice(-MAX_WEEK_BARS);
-        const maxVal = Math.max(...weeks.map((w) => byWeek[w]), 1);
+        const buckets = Object.keys(byBucket).sort();
+        const maxVal = Math.max(...buckets.map((b) => byBucket[b]), 1);
         el.innerHTML = `
           <div class="trend-bars">
-            ${weeks.map((wk) => {
-              const val = byWeek[wk];
+            ${buckets.map((key) => {
+              const val = byBucket[key];
               const heightPct = Math.round((val / maxVal) * 100);
+              const range = granularity === 'week' ? weekRangeFromMonday(key) : monthRangeFromFirst(key);
+              const label = granularity === 'week' ? shortDateLabel(key) : monthLabel(key);
               return `
-                <div class="trend-bar-col">
+                <a class="trend-bar-col trend-bar-link" href="revenue.html?start=${range.start}&end=${range.end}">
                   <div class="trend-bar-value">₹${val.toLocaleString('en-IN')}</div>
                   <div class="trend-bar-track"><div class="trend-bar-fill" style="height:${heightPct}%;"></div></div>
-                  <div class="trend-bar-label">${shortDateLabel(wk)}</div>
-                </div>
+                  <div class="trend-bar-label">${label}</div>
+                </a>
               `;
             }).join('')}
           </div>
@@ -234,20 +274,43 @@
         `).join('');
       }
 
+      function renderRevenueByDoctor(invoices, doctorById) {
+        const el = document.getElementById('revenueByDoctor');
+        if (invoices.length === 0) {
+          el.innerHTML = '<div class="empty-state">No billed invoices in this period.</div>';
+          return;
+        }
+        const sums = {};
+        invoices.forEach((inv) => { sums[inv.doctorId] = (sums[inv.doctorId] || 0) + inv.amountReceived; });
+        const rows = Object.entries(sums)
+          .map(([doctorId, total]) => ({ name: (doctorById[doctorId] && doctorById[doctorId].name) || 'Unknown', total }))
+          .sort((a, b) => b.total - a.total);
+        const maxVal = Math.max(...rows.map((r) => r.total), 1);
+        el.innerHTML = rows.map((r) => `
+          <div class="trend-doctor-row">
+            <span class="trend-doctor-name">${r.name}</span>
+            <div class="trend-doctor-track"><div class="trend-doctor-fill" style="width:${Math.round((r.total / maxVal) * 100)}%;"></div></div>
+            <span class="trend-doctor-count">₹${r.total.toLocaleString('en-IN')}</span>
+          </div>
+        `).join('');
+      }
+
       let currentPreset = 'month';
 
       async function loadAndRender() {
         const range = rangeForPreset(currentPreset);
         document.getElementById('visitsPerDoctorHeading').textContent = `Visits per doctor (${PRESET_LABELS[currentPreset]})`;
+        document.getElementById('revenueByDoctorHeading').textContent = `Revenue by doctor (${PRESET_LABELS[currentPreset]})`;
         const [invoices, patients, doctors] = await Promise.all([
           Qlinic.getInvoicesForDateRange(range.start, range.end),
           Qlinic.getPatientsInRange(range.start, range.end),
           Qlinic.getDoctors({ includeInactive: true }),
         ]);
         const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
-        renderRevenueByWeek(invoices);
+        renderRevenueOverTime(invoices, currentPreset);
         renderNoShowByWeekday(patients);
         renderVisitsPerDoctor(patients, doctorById);
+        renderRevenueByDoctor(invoices, doctorById);
       }
 
       document.getElementById('periodPills').addEventListener('click', (e) => {

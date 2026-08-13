@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=65" />
+<link rel="stylesheet" href="styles.css?v=66" />
 </head>
 <body>
   <div class="app-shell">
@@ -49,12 +49,16 @@
 
       <input type="text" id="patientSearch" placeholder="Search by patient name..." />
 
+      <p class="panel-note" id="rangeIndicator" style="display:none;">
+        Showing <strong id="rangeIndicatorText"></strong> &middot; <a href="revenue.html" style="color:var(--accent);">Back to single day</a>
+      </p>
+
       <div class="inline-form" style="margin-bottom:20px;">
-        <div class="field" style="min-width:180px;flex:0;">
+        <div class="field" style="min-width:180px;flex:0;" id="dateFieldWrap">
           <label>Date</label>
           <input type="date" id="dateFilter" />
         </div>
-        <div class="field" style="flex:0;">
+        <div class="field" style="flex:0;" id="todayFieldWrap">
           <label>&nbsp;</label>
           <button type="button" class="btn-sm accent-outline" id="todayBtn">Today</button>
         </div>
@@ -116,6 +120,14 @@
       let currentPage = 1;
       let doctorById = {};
       let editingInvoiceId = null;
+
+      // Clicking a bar on Trends links here with ?start=&end= instead of a
+      // single day — same page, same filters/search/Adjust, just backed by
+      // getInvoicesForDateRange instead of getInvoicesForDate.
+      const urlParams = new URLSearchParams(window.location.search);
+      const rangeStart = urlParams.get('start');
+      const rangeEnd = urlParams.get('end');
+      const isRangeMode = !!(rangeStart && rangeEnd);
 
       function showToast(msg) {
         const t = document.getElementById('toast');
@@ -211,7 +223,7 @@
         const filtered = filteredInvoices();
         const wrap = document.getElementById('revenueTableWrap');
         if (allInvoices.length === 0) {
-          wrap.innerHTML = '<div class="empty-state">No bills for this date.</div>';
+          wrap.innerHTML = `<div class="empty-state">No bills for this ${isRangeMode ? 'period' : 'date'}.</div>`;
           document.getElementById('revenuePager').innerHTML = '';
           return;
         }
@@ -323,8 +335,9 @@
       window.syncAdjustAmount = syncAdjustAmount;
 
       async function loadInvoices() {
-        const dateStr = document.getElementById('dateFilter').value;
-        allInvoices = await Qlinic.getInvoicesForDate(dateStr);
+        allInvoices = isRangeMode
+          ? await Qlinic.getInvoicesForDateRange(rangeStart, rangeEnd)
+          : await Qlinic.getInvoicesForDate(document.getElementById('dateFilter').value);
         currentPage = 1;
         renderSummary();
         renderTable();
@@ -351,9 +364,17 @@
         renderTable();
       });
 
+      if (isRangeMode) {
+        document.getElementById('rangeIndicator').style.display = 'block';
+        document.getElementById('rangeIndicatorText').textContent = `${rangeStart} to ${rangeEnd}`;
+        document.getElementById('dateFieldWrap').style.display = 'none';
+        document.getElementById('todayFieldWrap').style.display = 'none';
+      } else {
+        document.getElementById('dateFilter').value = Qlinic.getTodayDate();
+      }
+
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
-      document.getElementById('dateFilter').value = Qlinic.getTodayDate();
       await loadDoctorFilterOptions();
       await loadInvoices();
       Qlinic.onLiveChange(loadInvoices);

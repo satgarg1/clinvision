@@ -1095,12 +1095,19 @@ table.qtable tr:last-child td { border-bottom: none; }
 .trend-bar-fill-warn { background: var(--danger); }
 .trend-bar-label { font-size: 11px; color: var(--grey-500); }
 
+/* Bars that drill into Revenue: plain <a> styling reset (inherit color,
+   no underline) plus a hover tint so it reads as clickable rather than
+   just decorative. */
+.trend-bar-link { text-decoration: none; color: inherit; cursor: pointer; border-radius: 8px; transition: background 0.15s ease; }
+.trend-bar-link:hover { background: var(--grey-100); }
+.trend-bar-link:hover .trend-bar-fill { background: var(--accent-dark); }
+
 .trend-doctor-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .trend-doctor-row:last-child { margin-bottom: 0; }
 .trend-doctor-name { width: 130px; font-size: 13px; color: var(--grey-700); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .trend-doctor-track { flex: 1; background: var(--grey-100); border-radius: 6px; height: 14px; overflow: hidden; }
 .trend-doctor-fill { height: 100%; background: var(--accent); border-radius: 6px; }
-.trend-doctor-count { font-size: 13px; color: var(--grey-700); width: 32px; text-align: right; flex-shrink: 0; }
+.trend-doctor-count { font-size: 13px; color: var(--grey-700); width: auto; min-width: 32px; text-align: right; flex-shrink: 0; }
 
 .doctor-status-row {
   display: flex;
