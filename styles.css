@@ -968,8 +968,16 @@ table.qtable tr:last-child td { border-bottom: none; }
   border-radius: 8px;
   border: 1px solid var(--grey-300);
   font-size: 14px;
-  min-width: 320px;
+  min-width: 240px;
   font-family: var(--font);
+}
+
+/* Matches the Date/Doctor fields it sits beside in the same row; the
+   default .btn-sm padding is shorter, so unadorned it looked visibly
+   squatter than its neighbors. */
+#queueTodayBtn {
+  padding: 10px 14px;
+  font-size: 14px;
 }
 
 .booked-section { margin-top: 22px; }

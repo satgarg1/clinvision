@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=57" />
+<link rel="stylesheet" href="styles.css?v=58" />
 </head>
 <body>
   <div class="app-shell">
@@ -33,10 +33,10 @@
         <a href="dashboard.html" class="nav-link">Dashboard</a>
         <a href="reception.html" class="nav-link">Reception</a>
         <a href="doctor.html" class="nav-link">Doctor View</a>
-        <a href="display.html" class="nav-link">Display Screen</a>
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
         <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
+        <a href="display.html" class="nav-link">Display Screen</a>
         <a href="settings.html" class="nav-link active pinned-bottom">Settings</a>
       </nav>
     </aside>
@@ -67,7 +67,9 @@
           </div>
           <div class="field" style="min-width:160px;">
             <label>State</label>
-            <input type="text" id="stateInput" placeholder="Auto-filled from pincode" />
+            <select id="stateInput">
+              <option value="">Auto-filled from pincode</option>
+            </select>
           </div>
           <div class="field" style="flex:0;">
             <label>&nbsp;</label>
@@ -177,7 +179,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=29"></script>
+  <script src="clinic-data.js?v=30"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -303,6 +305,25 @@
         fallbackLabel: (v) => `${v}`,
       });
 
+      document.getElementById('stateInput').innerHTML = '<option value="">Select state</option>' +
+        Qlinic.INDIA_STATES_AND_UTS.map((s) => `<option value="${s}">${s}</option>`).join('');
+
+      // Handles both the pincode API's occasionally-abbreviated state
+      // names and any pre-existing free-text value saved before this was
+      // a dropdown: if it doesn't exactly match an option, add it as a
+      // one-off rather than silently blanking a real saved value.
+      function setStateValue(selectEl, state) {
+        if (!state) return;
+        const hasMatch = Array.from(selectEl.options).some((o) => o.value === state);
+        if (!hasMatch) {
+          const opt = document.createElement('option');
+          opt.value = state;
+          opt.textContent = state;
+          selectEl.appendChild(opt);
+        }
+        selectEl.value = state;
+      }
+
       async function loadClinic() {
         const clinic = await Qlinic.getClinic();
         if (!clinic) return;
@@ -311,25 +332,35 @@
         document.getElementById('addressLineInput').value = clinic.address_line || '';
         document.getElementById('cityInput').value = clinic.city || '';
         document.getElementById('pincodeInput').value = clinic.pincode || '';
-        document.getElementById('stateInput').value = clinic.state || '';
+        setStateValue(document.getElementById('stateInput'), clinic.state || '');
         graceWindowPicker.setValue(clinic.grace_window_mins);
         slotIntervalPicker.setValue(clinic.slot_interval_mins);
         slotCapacityPicker.setValue(clinic.slot_capacity);
         document.getElementById('displayLanguageInput').value = clinic.display_language;
       }
 
-      document.getElementById('pincodeInput').addEventListener('blur', async function () {
+      // Starts the lookup the moment the 6th digit is typed, not only once
+      // the field is blurred, so the network round-trip is already in
+      // flight (or done) by the time attention moves to City/State.
+      let lastLookedUpPincode = '';
+      async function runPincodeLookup(value) {
+        const clean = (value || '').trim();
+        if (clean.length !== 6 || clean === lastLookedUpPincode) return;
+        lastLookedUpPincode = clean;
         const cityInput = document.getElementById('cityInput');
         const stateInput = document.getElementById('stateInput');
         const cityPlaceholder = cityInput.placeholder;
-        const statePlaceholder = stateInput.placeholder;
         cityInput.placeholder = 'Looking up…';
-        stateInput.placeholder = 'Looking up…';
-        const { city, state } = await Qlinic.lookupCityStateForPincode(this.value);
+        const { city, state } = await Qlinic.lookupCityStateForPincode(clean);
         cityInput.placeholder = cityPlaceholder;
-        stateInput.placeholder = statePlaceholder;
         if (city) cityInput.value = city;
-        if (state) stateInput.value = state;
+        setStateValue(stateInput, state);
+      }
+      document.getElementById('pincodeInput').addEventListener('input', function () {
+        runPincodeLookup(this.value);
+      });
+      document.getElementById('pincodeInput').addEventListener('blur', function () {
+        runPincodeLookup(this.value);
       });
 
       document.getElementById('clinicForm').addEventListener('submit', async (e) => {

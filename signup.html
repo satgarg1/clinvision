@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=57" />
+<link rel="stylesheet" href="styles.css?v=58" />
 </head>
 <body>
   <div class="login-wrap">
@@ -40,7 +40,9 @@
           </div>
           <div class="field" style="flex:1;">
             <label for="state">State</label>
-            <input type="text" id="state" placeholder="Auto-filled from pincode" />
+            <select id="state">
+              <option value="">Auto-filled from pincode</option>
+            </select>
           </div>
         </div>
         <div class="field">
@@ -62,20 +64,53 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=29"></script>
+  <script src="clinic-data.js?v=30"></script>
   <script>
-    document.getElementById('pincode').addEventListener('blur', async function () {
+    document.getElementById('state').innerHTML = '<option value="">Select state</option>' +
+      Qlinic.INDIA_STATES_AND_UTS.map((s) => `<option value="${s}">${s}</option>`).join('');
+
+    // The pincode API's state names don't always exactly match the
+    // dropdown's official names (e.g. abbreviated forms); rather than
+    // silently dropping a match-less value, add it as a one-off option so
+    // nothing the API found is ever lost, and it's still a one-click fix
+    // via the dropdown if it doesn't look right.
+    function setStateValue(selectEl, state) {
+      if (!state) return;
+      const hasMatch = Array.from(selectEl.options).some((o) => o.value === state);
+      if (!hasMatch) {
+        const opt = document.createElement('option');
+        opt.value = state;
+        opt.textContent = state;
+        selectEl.appendChild(opt);
+      }
+      selectEl.value = state;
+    }
+
+    // Starts the lookup the moment the 6th digit is typed, not only once
+    // the field is blurred: that means the network round-trip is already
+    // in flight (or done) by the time the user's attention has moved to
+    // City/State, instead of only starting after they've already clicked
+    // away and are staring at an empty field. lastLookedUp skips a
+    // redundant repeat call for the exact same value.
+    let lastLookedUp = '';
+    async function runPincodeLookup(value) {
+      const clean = (value || '').trim();
+      if (clean.length !== 6 || clean === lastLookedUp) return;
+      lastLookedUp = clean;
       const cityInput = document.getElementById('city');
       const stateInput = document.getElementById('state');
       const cityPlaceholder = cityInput.placeholder;
-      const statePlaceholder = stateInput.placeholder;
       cityInput.placeholder = 'Looking up…';
-      stateInput.placeholder = 'Looking up…';
-      const { city, state } = await Qlinic.lookupCityStateForPincode(this.value);
+      const { city, state } = await Qlinic.lookupCityStateForPincode(clean);
       cityInput.placeholder = cityPlaceholder;
-      stateInput.placeholder = statePlaceholder;
       if (city) cityInput.value = city;
-      if (state) stateInput.value = state;
+      setStateValue(stateInput, state);
+    }
+    document.getElementById('pincode').addEventListener('input', function () {
+      runPincodeLookup(this.value);
+    });
+    document.getElementById('pincode').addEventListener('blur', function () {
+      runPincodeLookup(this.value);
     });
 
     document.getElementById('signupForm').addEventListener('submit', async function (e) {

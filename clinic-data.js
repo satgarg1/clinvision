@@ -160,6 +160,19 @@
     };
   }
 
+  // All 28 states + 8 union territories, for a dropdown rather than free
+  // text — auto-fill from the pincode API still writes into this same
+  // field (see lookupCityStateForPincode below); the dropdown is what
+  // lets someone fix it with a couple clicks if the API guesses wrong.
+  const INDIA_STATES_AND_UTS = [
+    'Andaman and Nicobar Islands', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar',
+    'Chandigarh', 'Chhattisgarh', 'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Goa',
+    'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jammu and Kashmir', 'Jharkhand', 'Karnataka',
+    'Kerala', 'Ladakh', 'Lakshadweep', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya',
+    'Mizoram', 'Nagaland', 'Odisha', 'Puducherry', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
+    'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+  ];
+
   // ---------------- pincode lookup (for clinic address auto-fill) ----------------
 
   // A hand-maintained prefix table can't actually resolve this correctly
@@ -990,6 +1003,7 @@
     formatDateLabel,
     isPastRealDateTime,
     lookupCityStateForPincode,
+    INDIA_STATES_AND_UTS,
 
     getClinic,
     updateClinic,
