@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Trends: Qlinic</title>
+<script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=65" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <a href="index.html" class="brand">
+        <span class="brand-top">
+          <span class="brand-clock clock-face" id="navClock">
+            <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;color:var(--black);">
+              <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="5"></circle>
+              <line class="clock-hour" x1="50" y1="50" x2="50" y2="30" stroke="currentColor" stroke-width="6" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <line class="clock-min" x1="50" y1="50" x2="50" y2="18" stroke="currentColor" stroke-width="4" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <line class="clock-sec" x1="50" y1="50" x2="50" y2="14" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <circle cx="50" cy="50" r="3" fill="currentColor"></circle>
+            </svg>
+          </span>
+          Qlinic
+        </span>
+        <span class="brand-tagline">Time is the one asset nobody gets back</span>
+      </a>
+      <div class="clinic-name" id="clinicName">Loading…</div>
+      <nav>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="reception.html" class="nav-link">Reception</a>
+        <a href="doctor.html" class="nav-link">Doctor View</a>
+        <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
+        <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
+        <a href="trends.html" class="nav-link active" id="trendsNavLink">Trends</a>
+        <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
+        <a href="display.html" class="nav-link">Display Screen</a>
+        <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
+      </nav>
+    </aside>
+
+    <main class="app-main">
+      <div class="app-topbar">
+        <h1>Trends</h1>
+      </div>
+
+      <div class="period-pills" id="periodPills">
+        <button type="button" class="period-pill" data-preset="month">This month</button>
+        <button type="button" class="period-pill" data-preset="3months">Last 3 months</button>
+        <button type="button" class="period-pill" data-preset="fy">This financial year</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>Revenue by week</h2></div>
+        <div id="revenueByWeek"></div>
+      </div>
+
+      <div style="display:flex;gap:20px;flex-wrap:wrap;">
+        <div class="panel" style="flex:1;min-width:320px;">
+          <div class="panel-header"><h2>No-show rate by day of week</h2></div>
+          <div id="noShowByWeekday"></div>
+        </div>
+        <div class="panel" style="flex:1;min-width:320px;">
+          <div class="panel-header"><h2 id="visitsPerDoctorHeading">Visits per doctor</h2></div>
+          <div id="visitsPerDoctor"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=31"></script>
+  <script>
+    (async function () {
+      await Qlinic.requireLogin('login.html');
+
+      document.querySelector('a.brand').addEventListener('click', (e) => {
+        e.preventDefault();
+        if (confirm("Going to the homepage will end your session here, you'll need to log in again to get back in. Continue?")) {
+          window.location.href = 'index.html';
+        }
+      });
+
+      if (!(await Qlinic.canAccessBilling())) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      if (!(await Qlinic.isAdmin())) {
+        document.getElementById('settingsNavLink').style.display = 'none';
+      }
+
+      const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const PRESET_LABELS = { month: 'This month', '3months': 'Last 3 months', fy: 'This financial year' };
+      const MAX_WEEK_BARS = 8;
+
+      function pad2(n) { return String(n).padStart(2, '0'); }
+      function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
+
+      // Indian financial year: April 1 - March 31. If we're in Jan-Mar,
+      // the current FY started in April of the PREVIOUS calendar year.
+      function rangeForPreset(preset) {
+        const today = new Date();
+        const end = toDateStr(today);
+        if (preset === 'month') {
+          return { start: toDateStr(new Date(today.getFullYear(), today.getMonth(), 1)), end };
+        }
+        if (preset === '3months') {
+          return { start: toDateStr(new Date(today.getFullYear(), today.getMonth() - 3, today.getDate())), end };
+        }
+        const fyStartYear = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+        return { start: toDateStr(new Date(fyStartYear, 3, 1)), end };
+      }
+
+      // Monday-of-the-week bucket key for a given Date.
+      function weekStartStr(d) {
+        const day = d.getDay(); // 0 = Sun .. 6 = Sat
+        const diffToMonday = day === 0 ? 6 : day - 1;
+        const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - diffToMonday);
+        return toDateStr(monday);
+      }
+
+      function shortDateLabel(dateStr) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      }
+
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      // Buckets every invoice in range into its Monday-of-week, sums
+      // amountReceived per bucket, then keeps only the most recent
+      // MAX_WEEK_BARS buckets — a "This financial year" range can span
+      // 50+ weeks, and a bar per week past a handful just isn't readable.
+      function renderRevenueByWeek(invoices) {
+        const el = document.getElementById('revenueByWeek');
+        if (invoices.length === 0) {
+          el.innerHTML = '<div class="empty-state">No billed invoices in this period.</div>';
+          return;
+        }
+        const byWeek = {};
+        invoices.forEach((inv) => {
+          const wk = weekStartStr(new Date(inv.createdAt));
+          byWeek[wk] = (byWeek[wk] || 0) + inv.amountReceived;
+        });
+        const weeks = Object.keys(byWeek).sort().slice(-MAX_WEEK_BARS);
+        const maxVal = Math.max(...weeks.map((w) => byWeek[w]), 1);
+        el.innerHTML = `
+          <div class="trend-bars">
+            ${weeks.map((wk) => {
+              const val = byWeek[wk];
+              const heightPct = Math.round((val / maxVal) * 100);
+              return `
+                <div class="trend-bar-col">
+                  <div class="trend-bar-value">₹${val.toLocaleString('en-IN')}</div>
+                  <div class="trend-bar-track"><div class="trend-bar-fill" style="height:${heightPct}%;"></div></div>
+                  <div class="trend-bar-label">${shortDateLabel(wk)}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+
+      // Only counts patients whose visit outcome is actually known
+      // (done or no_show) — someone still booked/waiting hasn't resolved
+      // yet, so including them would understate the no-show rate.
+      function renderNoShowByWeekday(patients) {
+        const el = document.getElementById('noShowByWeekday');
+        const resolved = patients.filter((p) => p.status === 'done' || p.status === 'no_show');
+        if (resolved.length === 0) {
+          el.innerHTML = '<div class="empty-state">No resolved visits in this period.</div>';
+          return;
+        }
+        const totals = new Array(7).fill(0);
+        const noShows = new Array(7).fill(0);
+        resolved.forEach((p) => {
+          const [y, m, d] = p.tokenDate.split('-').map(Number);
+          const jsDay = new Date(y, m - 1, d).getDay(); // 0=Sun..6=Sat
+          const idx = jsDay === 0 ? 6 : jsDay - 1; // Mon=0..Sun=6
+          totals[idx]++;
+          if (p.status === 'no_show') noShows[idx]++;
+        });
+        const rates = totals.map((t, i) => (t === 0 ? 0 : (noShows[i] / t) * 100));
+        const maxRate = Math.max(...rates, 1);
+        const worstIdx = rates.indexOf(Math.max(...rates));
+        el.innerHTML = `
+          <div class="trend-bars trend-bars-compact">
+            ${WEEKDAY_LABELS.map((label, i) => {
+              const heightPct = Math.round((rates[i] / maxRate) * 100);
+              return `
+                <div class="trend-bar-col">
+                  <div class="trend-bar-track trend-bar-track-sm"><div class="trend-bar-fill ${i === worstIdx && rates[i] > 0 ? 'trend-bar-fill-warn' : ''}" style="height:${heightPct}%;"></div></div>
+                  <div class="trend-bar-label">${label}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+          ${totals[worstIdx] > 0 ? `<p class="panel-note" style="margin-top:12px;margin-bottom:0;">${WEEKDAY_LABELS[worstIdx]} has the highest no-show rate at ${Math.round(rates[worstIdx])}% (${noShows[worstIdx]} of ${totals[worstIdx]}).</p>` : ''}
+        `;
+      }
+
+      // Matches getDailySummary's footfall definition exactly: waiting/
+      // in_consult/done are actual visits, booked (hasn't arrived yet)
+      // and no_show (booked but never arrived) are both excluded.
+      function renderVisitsPerDoctor(patients, doctorById) {
+        const el = document.getElementById('visitsPerDoctor');
+        const visited = patients.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status));
+        if (visited.length === 0) {
+          el.innerHTML = '<div class="empty-state">No visits in this period.</div>';
+          return;
+        }
+        const counts = {};
+        visited.forEach((p) => { counts[p.doctorId] = (counts[p.doctorId] || 0) + 1; });
+        const rows = Object.entries(counts)
+          .map(([doctorId, count]) => ({ name: (doctorById[doctorId] && doctorById[doctorId].name) || 'Unknown', count }))
+          .sort((a, b) => b.count - a.count);
+        const maxCount = Math.max(...rows.map((r) => r.count), 1);
+        el.innerHTML = rows.map((r) => `
+          <div class="trend-doctor-row">
+            <span class="trend-doctor-name">${r.name}</span>
+            <div class="trend-doctor-track"><div class="trend-doctor-fill" style="width:${Math.round((r.count / maxCount) * 100)}%;"></div></div>
+            <span class="trend-doctor-count">${r.count}</span>
+          </div>
+        `).join('');
+      }
+
+      let currentPreset = 'month';
+
+      async function loadAndRender() {
+        const range = rangeForPreset(currentPreset);
+        document.getElementById('visitsPerDoctorHeading').textContent = `Visits per doctor (${PRESET_LABELS[currentPreset]})`;
+        const [invoices, patients, doctors] = await Promise.all([
+          Qlinic.getInvoicesForDateRange(range.start, range.end),
+          Qlinic.getPatientsInRange(range.start, range.end),
+          Qlinic.getDoctors({ includeInactive: true }),
+        ]);
+        const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
+        renderRevenueByWeek(invoices);
+        renderNoShowByWeekday(patients);
+        renderVisitsPerDoctor(patients, doctorById);
+      }
+
+      document.getElementById('periodPills').addEventListener('click', (e) => {
+        const btn = e.target.closest('.period-pill');
+        if (!btn) return;
+        currentPreset = btn.dataset.preset;
+        document.querySelectorAll('.period-pill').forEach((p) => p.classList.toggle('active', p === btn));
+        loadAndRender();
+      });
+
+      const clinic = await Qlinic.getClinic();
+      document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      document.querySelector('.period-pill[data-preset="month"]').classList.add('active');
+      await loadAndRender();
+      Qlinic.onLiveChange(loadAndRender);
+    })();
+  </script>
+  <script>
+    (function () {
+      function applyTime(root) {
+        const now = new Date();
+        const s = now.getSeconds();
+        const m = now.getMinutes();
+        const h = now.getHours() % 12;
+        const sec = root.querySelector(".clock-sec");
+        const min = root.querySelector(".clock-min");
+        const hour = root.querySelector(".clock-hour");
+        if (sec) sec.style.transform = `rotate(${s * 6}deg)`;
+        if (min) min.style.transform = `rotate(${m * 6 + s * 0.1}deg)`;
+        if (hour) hour.style.transform = `rotate(${h * 30 + m * 0.5}deg)`;
+      }
+      function tickAll() {
+        document.querySelectorAll(".clock-face").forEach(applyTime);
+      }
+      tickAll();
+      setInterval(tickAll, 1000);
+    })();
+  </script>
+
+</body>
+</html>

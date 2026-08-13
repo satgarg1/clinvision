@@ -1068,6 +1068,40 @@ table.qtable tr:last-child td { border-bottom: none; }
 
 .empty-state { color: var(--grey-500); font-size: 14px; padding: 20px 0; text-align: center; }
 
+/* ---------------- Trends page ---------------- */
+
+.period-pills { display: flex; gap: 10px; margin-bottom: 20px; }
+.period-pill {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--grey-300);
+  background: var(--white);
+  color: var(--grey-700);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.period-pill:hover { border-color: var(--accent); }
+.period-pill.active { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+
+.trend-bars { display: flex; align-items: stretch; gap: 14px; height: 180px; padding: 10px 4px 0; }
+.trend-bars-compact { height: 120px; gap: 8px; }
+.trend-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.trend-bar-value { font-size: 12px; font-weight: 600; color: var(--grey-700); }
+.trend-bar-track { width: 100%; flex: 1; display: flex; align-items: flex-end; }
+.trend-bar-fill { width: 100%; background: var(--accent); border-radius: 6px 6px 0 0; min-height: 2px; transition: height 0.3s ease; }
+.trend-bar-fill-warn { background: var(--danger); }
+.trend-bar-label { font-size: 11px; color: var(--grey-500); }
+
+.trend-doctor-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.trend-doctor-row:last-child { margin-bottom: 0; }
+.trend-doctor-name { width: 130px; font-size: 13px; color: var(--grey-700); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trend-doctor-track { flex: 1; background: var(--grey-100); border-radius: 6px; height: 14px; overflow: hidden; }
+.trend-doctor-fill { height: 100%; background: var(--accent); border-radius: 6px; }
+.trend-doctor-count { font-size: 13px; color: var(--grey-700); width: 32px; text-align: right; flex-shrink: 0; }
+
 .doctor-status-row {
   display: flex;
   align-items: center;

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=64" />
+<link rel="stylesheet" href="styles.css?v=65" />
 </head>
 <body>
   <div class="app-shell">
@@ -35,6 +35,7 @@
         <a href="doctor.html" class="nav-link active">Doctor View</a>
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
+        <a href="trends.html" class="nav-link" id="trendsNavLink">Trends</a>
         <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
         <a href="display.html" class="nav-link">Display Screen</a>
         <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
@@ -114,7 +115,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=30"></script>
+  <script src="clinic-data.js?v=31"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -136,6 +137,7 @@
       if (!(await Qlinic.canAccessBilling())) {
         document.getElementById('billingNavLink').style.display = 'none';
         document.getElementById('revenueNavLink').style.display = 'none';
+        document.getElementById('trendsNavLink').style.display = 'none';
         document.getElementById('endOfDayNavLink').style.display = 'none';
       }
 

@@ -589,6 +589,38 @@
     return getInvoicesForDate(todayDateStr());
   }
 
+  // Same local-time-boundary approach as getInvoicesForDate, just spanning
+  // startDateStr through endDateStr inclusive instead of a single day.
+  async function getInvoicesForDateRange(startDateStr, endDateStr) {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId) return [];
+    const [sy, sm, sd] = startDateStr.split('-').map(Number);
+    const [ey, em, ed] = endDateStr.split('-').map(Number);
+    const start = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
+    const end = new Date(ey, em - 1, ed, 23, 59, 59, 999);
+    const { data, error } = await sb.from('invoices').select('*')
+      .eq('clinic_id', clinicId)
+      .gte('created_at', start.toISOString())
+      .lte('created_at', end.toISOString())
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return data.map(normalizeInvoice);
+  }
+
+  // token_date is a plain date column (not a timestamp), so a range filter
+  // here doesn't need the local-time-boundary conversion getInvoicesForDate
+  // needs for created_at.
+  async function getPatientsInRange(startDateStr, endDateStr) {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId) return [];
+    const { data, error } = await sb.from('patients').select('*')
+      .eq('clinic_id', clinicId)
+      .gte('token_date', startDateStr)
+      .lte('token_date', endDateStr);
+    if (error) throw error;
+    return data.map(normalizePatient);
+  }
+
   async function getInvoiceById(invoiceId) {
     const { data, error } = await sb.from('invoices').select('*').eq('id', invoiceId).maybeSingle();
     if (error) throw error;
@@ -1021,6 +1053,8 @@
     createInvoice,
     getTodayInvoices,
     getInvoicesForDate,
+    getInvoicesForDateRange,
+    getPatientsInRange,
     getInvoiceById,
     updateInvoicePayment,
     markArrived,
