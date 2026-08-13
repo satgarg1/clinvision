@@ -1206,7 +1206,7 @@ table.qtable tr:last-child td { border-bottom: none; }
 
 .board-cols {
   display: grid;
-  grid-template-columns: 56px 340px 220px 180px 1fr;
+  grid-template-columns: 56px 1fr 1fr 1fr;
   gap: 12px;
   padding: 0 4px 10px;
   font-size: 12px;
@@ -1224,7 +1224,7 @@ table.qtable tr:last-child td { border-bottom: none; }
 
 .board-row {
   display: grid;
-  grid-template-columns: 56px 340px 220px 180px 1fr;
+  grid-template-columns: 56px 1fr 1fr 1fr;
   gap: 12px;
   align-items: center;
   padding: 14px 4px;
