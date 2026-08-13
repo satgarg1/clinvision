@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=59" />
+<link rel="stylesheet" href="styles.css?v=60" />
 </head>
 <body>
   <div class="login-wrap">
@@ -34,11 +34,11 @@
           <input type="text" id="pincode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required />
         </div>
         <div style="display:flex;gap:12px;">
-          <div class="field" style="flex:1;">
+          <div class="field" style="flex:1;min-width:0;">
             <label for="city">City</label>
             <input type="text" id="city" placeholder="Auto-filled from pincode" required />
           </div>
-          <div class="field" style="flex:1;">
+          <div class="field" style="flex:1;min-width:0;">
             <label for="state">State</label>
             <select id="state">
               <option value="">Auto-filled from pincode</option>

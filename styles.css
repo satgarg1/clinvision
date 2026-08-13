@@ -516,15 +516,37 @@ a { color: inherit; }
   background: var(--white);
   color: var(--black);
 }
-.field input {
+.field input, .field select {
   width: 100%;
+  box-sizing: border-box;
   padding: 12px 14px;
   font-size: 15px;
   border: 1px solid var(--grey-300);
   border-radius: 10px;
   font-family: var(--font);
 }
-.field input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+.field input:focus, .field select:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+
+/* A bare .field select (not inside .inline-form/.form-grid, which
+   already style their own selects) previously fell through to only
+   background/color above and rendered with the browser's default select
+   chrome — no padding, tiny font, thin border — visibly out of place
+   next to the text inputs beside it. Custom chevron matches the one
+   already used on Revenue's filters. */
+.field select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234a4a4c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 13px;
+}
+:root[data-theme="dark"] .field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
 
 /* Fee fields are typed amounts, not counters, so the browser's default
    step-by-1 spinner arrows are more clutter than help. */
@@ -811,6 +833,21 @@ table.qtable tr:last-child td { border-bottom: none; }
   gap: 10px;
   flex-wrap: wrap;
   align-items: flex-end;
+}
+
+/* Queue rules and Display screen rows read as cramped/undersized next
+   to the rest of the app's controls (10px gap, small buttons and
+   time-pickers): bigger boxes, a wider gap, and the Save button matched
+   to the same height as the field beside it rather than the shorter
+   default .btn-sm. */
+#rulesForm, #displayLanguageForm { gap: 16px; }
+#rulesForm .time-picker-trigger, #displayLanguageForm select {
+  padding: 12px 14px;
+  font-size: 15px;
+}
+#rulesForm .btn-sm, #displayLanguageForm .btn-sm {
+  padding: 12px 18px;
+  font-size: 15px;
 }
 .inline-form .field { margin-bottom: 0; min-width: 160px; flex: 1; }
 .inline-form .field input, .inline-form .field select {
@@ -1169,7 +1206,7 @@ table.qtable tr:last-child td { border-bottom: none; }
 
 .board-cols {
   display: grid;
-  grid-template-columns: 56px 2fr 1fr 1fr;
+  grid-template-columns: 56px 1.4fr 1fr 1fr;
   gap: 12px;
   padding: 0 4px 10px;
   font-size: 12px;
@@ -1187,7 +1224,7 @@ table.qtable tr:last-child td { border-bottom: none; }
 
 .board-row {
   display: grid;
-  grid-template-columns: 56px 2fr 1fr 1fr;
+  grid-template-columns: 56px 1.4fr 1fr 1fr;
   gap: 12px;
   align-items: center;
   padding: 14px 4px;
