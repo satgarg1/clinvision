@@ -1232,11 +1232,21 @@ table.qtable tr:last-child td { border-bottom: none; }
   font-variant-numeric: tabular-nums;
 }
 .board-row:last-child { border-bottom: none; }
-.board-pos { font-size: 20px; font-weight: 700; color: var(--grey-500); }
+/* Equal-width columns alone don't make the row look evenly spaced: name/
+   doctor/type are all left-aligned single values of very different
+   typical lengths ("Shiv" vs "Satyam Garg" vs "Appointment"), so
+   whatever's short leaves all its slack trailing on the right, reading
+   as a lopsided gap no matter how the column widths are tuned. Centering
+   these three splits that slack evenly on both sides instead, so the
+   row reads as balanced regardless of content length. Patient stays
+   left-aligned since it's two lines (name + address) of differing
+   length, which centering would make harder to scan, not easier. */
+.board-pos { font-size: 20px; font-weight: 700; color: var(--grey-500); text-align: center; }
 .board-name { font-size: 22px; font-weight: 600; display: flex; flex-direction: column; }
 .board-sub { font-size: 13px; font-weight: 400; color: var(--grey-500); margin-top: 2px; }
-.board-doc { font-size: 15px; color: var(--grey-300); }
-.board-type { font-size: 14px; color: var(--grey-500); }
+.board-doc { font-size: 15px; color: var(--grey-300); text-align: center; }
+.board-type { font-size: 14px; color: var(--grey-500); text-align: center; }
+#colPos, #colDoctor, #colType { text-align: center; }
 .board-empty { padding: 60px 0; text-align: center; color: var(--grey-500); font-size: 18px; }
 
 @media (max-width: 720px) {
