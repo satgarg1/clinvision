@@ -483,6 +483,58 @@
     };
   }
 
+  // A clinic-wide, deduplicated-by-phone directory of everyone who has
+  // actually been seen at least once (same waiting/in_consult/done
+  // footfall definition used everywhere else in the app) — built for
+  // admin reference (record-keeping, reporting), not day-to-day queue
+  // work, so unlike the rest of the app it isn't scoped to any date
+  // range: it fetches the clinic's entire patient history at once.
+  //
+  // Phone number is the only practical dedup key available (no email or
+  // ID is collected): a shared family phone will merge into one row,
+  // and a different number on a later visit will show up as a separate
+  // one. A phone whose only rows are 'booked'/'no_show' (never actually
+  // arrived) is left out entirely — that's a booking attempt, not
+  // patient history.
+  async function getPatientDirectory() {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId) return [];
+    const { data, error } = await sb
+      .from('patients')
+      .select('name, phone, age, gender, address, doctor_id, token_date, status, created_at')
+      .eq('clinic_id', clinicId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    const byPhone = {};
+    (data || []).forEach((row) => {
+      const phone = (row.phone || '').trim();
+      if (!phone) return;
+      (byPhone[phone] = byPhone[phone] || []).push(row);
+    });
+
+    const directory = [];
+    Object.entries(byPhone).forEach(([phone, rows]) => {
+      const visited = rows.filter((r) => ['waiting', 'in_consult', 'done'].includes(r.status));
+      if (visited.length === 0) return;
+      const latest = rows[0]; // rows inherit the query's created_at-desc order within each group
+      const visitDates = visited.map((r) => r.token_date).sort();
+      directory.push({
+        phone,
+        name: latest.name,
+        age: latest.age,
+        gender: latest.gender,
+        address: latest.address,
+        totalVisits: visited.length,
+        firstVisitDate: visitDates[0],
+        lastVisitDate: visitDates[visitDates.length - 1],
+        doctorIds: Array.from(new Set(visited.map((r) => r.doctor_id))),
+      });
+    });
+
+    return directory;
+  }
+
   // Follow-up fee waiver check: does this patient's most recent
   // COMPLETED visit with this exact doctor fall within the clinic's
   // configured follow-up window (Settings -> Queue rules)? Anchored to
@@ -1095,6 +1147,7 @@
     getAllQueues,
     searchBookedPatients,
     getPatientLookupByPhone,
+    getPatientDirectory,
     checkFollowUpEligibility,
     getBillingPatientLookup,
     createInvoice,

@@ -138,6 +138,14 @@
       </div>
 
       <div class="panel">
+        <div class="panel-header"><h2>Patient Directory</h2></div>
+        <p class="panel-note">
+          A record-keeping reference, not a day-to-day tool: every patient who's actually been seen, one row per phone number, for reporting and admin use.
+        </p>
+        <a href="patient-directory.html" class="btn-sm" style="display:inline-block;text-decoration:none;">Open directory</a>
+      </div>
+
+      <div class="panel">
         <div class="panel-header"><h2>Team</h2></div>
         <p class="panel-note" id="teamSummaryNote">Loading…</p>
         <a href="team.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage team</a>
@@ -185,7 +193,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=32"></script>
+  <script src="clinic-data.js?v=33"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
