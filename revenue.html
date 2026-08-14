@@ -54,36 +54,29 @@
         <button type="button" class="period-pill" data-mode="range">Range</button>
       </div>
 
-      <div class="inline-form" style="margin-bottom:20px;" id="singleDayFilters">
-        <div class="field" style="min-width:180px;flex:0;">
-          <label>Date</label>
-          <input type="date" id="dateFilter" />
+      <div class="inline-form" style="margin-bottom:12px;" id="filtersRow">
+        <div class="inline-form" style="flex:0 0 auto;" id="singleDayFilters">
+          <div class="field" style="min-width:180px;flex:0;">
+            <label>Date</label>
+            <input type="date" id="dateFilter" />
+          </div>
+          <div class="field" style="flex:0;">
+            <label>&nbsp;</label>
+            <button type="button" class="btn-sm accent-outline" id="todayBtn">Today</button>
+          </div>
         </div>
-        <div class="field" style="flex:0;">
-          <label>&nbsp;</label>
-          <button type="button" class="btn-sm accent-outline" id="todayBtn">Today</button>
-        </div>
-      </div>
 
-      <div style="display:none;margin-bottom:20px;" id="rangeFilters">
-        <div class="inline-form" style="margin-bottom:12px;">
-          <div class="field" style="max-width:170px;">
+        <div class="inline-form" style="display:none;flex:0 0 auto;" id="rangeFilters">
+          <div class="field" style="max-width:170px;flex:0;">
             <label>From</label>
             <input type="date" id="rangeStartInput" />
           </div>
-          <div class="field" style="max-width:170px;">
+          <div class="field" style="max-width:170px;flex:0;">
             <label>To</label>
             <input type="date" id="rangeEndInput" />
           </div>
         </div>
-        <div class="period-pills" id="rangePresets">
-          <button type="button" class="period-pill" data-preset="lastweek">Last week</button>
-          <button type="button" class="period-pill" data-preset="lastmonth">Last month</button>
-          <button type="button" class="period-pill" data-preset="lastfy">Last financial year</button>
-        </div>
-      </div>
 
-      <div class="inline-form" style="margin-bottom:20px;">
         <div class="field" style="min-width:180px;flex:0;">
           <label>Doctor</label>
           <select id="doctorFilter">
@@ -99,6 +92,12 @@
             <option value="waived">Follow up</option>
           </select>
         </div>
+      </div>
+
+      <div class="period-pills" id="rangePresets" style="display:none;margin-bottom:20px;">
+        <button type="button" class="period-pill" data-preset="lastweek">Last week</button>
+        <button type="button" class="period-pill" data-preset="lastmonth">Last month</button>
+        <button type="button" class="period-pill" data-preset="lastfy">Last financial year</button>
       </div>
 
       <div class="card-grid" id="summaryCards" style="margin-bottom:20px;"></div>
@@ -422,7 +421,8 @@
         viewMode = btn.dataset.mode;
         document.querySelectorAll('#viewModeToggle .period-pill').forEach((p) => p.classList.toggle('active', p === btn));
         document.getElementById('singleDayFilters').style.display = viewMode === 'single' ? 'flex' : 'none';
-        document.getElementById('rangeFilters').style.display = viewMode === 'range' ? 'block' : 'none';
+        document.getElementById('rangeFilters').style.display = viewMode === 'range' ? 'flex' : 'none';
+        document.getElementById('rangePresets').style.display = viewMode === 'range' ? 'flex' : 'none';
         loadInvoices();
       });
       document.getElementById('typeFilter').addEventListener('change', () => {
@@ -446,7 +446,8 @@
         viewMode = 'range';
         document.querySelectorAll('#viewModeToggle .period-pill').forEach((p) => p.classList.toggle('active', p.dataset.mode === 'range'));
         document.getElementById('singleDayFilters').style.display = 'none';
-        document.getElementById('rangeFilters').style.display = 'block';
+        document.getElementById('rangeFilters').style.display = 'flex';
+        document.getElementById('rangePresets').style.display = 'flex';
         document.getElementById('rangeStartInput').value = linkedStart;
         document.getElementById('rangeEndInput').value = linkedEnd;
       } else {
