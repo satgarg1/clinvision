@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=73" />
+<link rel="stylesheet" href="styles.css?v=74" />
 </head>
 <body>
   <div class="app-shell">
@@ -50,13 +50,26 @@
         </div>
       </div>
 
-      <p class="panel-note">
-        One row per patient (matched by phone number, the only ID collected at booking), for record-keeping and reporting — not a day-to-day tool. Only includes people who've actually been seen at least once; a phone number that only ever booked or no-showed isn't listed.
-      </p>
+      <input type="text" id="directorySearch" placeholder="Search by name, phone, or address..." />
+
+      <div class="period-pills" id="periodFilter">
+        <button type="button" class="period-pill active" data-preset="all">All time</button>
+        <button type="button" class="period-pill" data-preset="lastweek">Last week</button>
+        <button type="button" class="period-pill" data-preset="lastmonth">Last month</button>
+        <button type="button" class="period-pill" data-preset="lastfy">Last financial year</button>
+      </div>
+
+      <div class="inline-form" style="margin-bottom:14px;">
+        <div class="field" style="min-width:220px;flex:0;">
+          <label>Doctor seen</label>
+          <select id="directoryDoctorFilter">
+            <option value="">All doctors</option>
+          </select>
+        </div>
+      </div>
 
       <div class="panel">
         <div class="panel-header"><h2 id="directorySummary">Loading…</h2><button type="button" class="btn-sm" id="exportCsvBtn">Export CSV</button></div>
-        <input type="text" id="directorySearch" placeholder="Search by name, phone, or address..." style="margin-bottom:16px;" />
         <div id="directoryTableWrap"></div>
         <div class="pager" id="directoryPager"></div>
       </div>
@@ -84,10 +97,49 @@
         return;
       }
 
-      const PAGE_SIZE = 25;
+      const PAGE_SIZE = 100;
       let allEntries = [];
       let doctorById = {};
       let currentPage = 1;
+      let periodPreset = 'all';
+      let doctorFilterId = '';
+
+      function pad2(n) { return String(n).padStart(2, '0'); }
+      function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
+
+      // Same "complete prior period" presets and math as Revenue's range
+      // picker — filters by last-visit date, so "Last month" here means
+      // "patients last seen last month," not everyone ever seen.
+      function computeLastWeekRange() {
+        const today = new Date();
+        const day = today.getDay();
+        const diffToMonday = day === 0 ? 6 : day - 1;
+        const thisMonday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - diffToMonday);
+        const lastMonday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - 7);
+        const lastSunday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - 1);
+        return { start: toDateStr(lastMonday), end: toDateStr(lastSunday) };
+      }
+      function computeLastMonthRange() {
+        const today = new Date();
+        const firstOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastOfLastMonth = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth(), 0);
+        const firstOfLastMonth = new Date(lastOfLastMonth.getFullYear(), lastOfLastMonth.getMonth(), 1);
+        return { start: toDateStr(firstOfLastMonth), end: toDateStr(lastOfLastMonth) };
+      }
+      function computeLastFYRange() {
+        const today = new Date();
+        const currentFYStartYear = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+        const lastFYStartYear = currentFYStartYear - 1;
+        const start = new Date(lastFYStartYear, 3, 1);
+        const end = new Date(lastFYStartYear + 1, 2, 31);
+        return { start: toDateStr(start), end: toDateStr(end) };
+      }
+      function periodRange(preset) {
+        if (preset === 'lastweek') return computeLastWeekRange();
+        if (preset === 'lastmonth') return computeLastMonthRange();
+        if (preset === 'lastfy') return computeLastFYRange();
+        return null;
+      }
 
       function showToast(msg) {
         const t = document.getElementById('toast');
@@ -122,12 +174,17 @@
 
       function filteredEntries() {
         const term = searchTerm();
-        if (!term) return allEntries;
-        return allEntries.filter((e) =>
-          e.name.toLowerCase().includes(term) ||
-          e.phone.toLowerCase().includes(term) ||
-          (e.address || '').toLowerCase().includes(term)
-        );
+        const range = periodRange(periodPreset);
+        return allEntries.filter((e) => {
+          if (term && !(
+            e.name.toLowerCase().includes(term) ||
+            e.phone.toLowerCase().includes(term) ||
+            (e.address || '').toLowerCase().includes(term)
+          )) return false;
+          if (range && !(e.lastVisitDate >= range.start && e.lastVisitDate <= range.end)) return false;
+          if (doctorFilterId && !e.doctorIds.includes(doctorFilterId)) return false;
+          return true;
+        });
       }
 
       function renderPager(total) {
@@ -164,7 +221,7 @@
           return;
         }
         if (filtered.length === 0) {
-          wrap.innerHTML = '<div class="empty-state">No patients match this search.</div>';
+          wrap.innerHTML = '<div class="empty-state">No patients match these filters.</div>';
           document.getElementById('directoryPager').innerHTML = '';
           return;
         }
@@ -202,6 +259,21 @@
         renderTable();
       });
 
+      document.getElementById('periodFilter').addEventListener('click', (e) => {
+        const btn = e.target.closest('.period-pill');
+        if (!btn) return;
+        periodPreset = btn.dataset.preset;
+        document.querySelectorAll('#periodFilter .period-pill').forEach((p) => p.classList.toggle('active', p === btn));
+        currentPage = 1;
+        renderTable();
+      });
+
+      document.getElementById('directoryDoctorFilter').addEventListener('change', (e) => {
+        doctorFilterId = e.target.value;
+        currentPage = 1;
+        renderTable();
+      });
+
       document.getElementById('exportCsvBtn').addEventListener('click', () => {
         const rows = [['Name', 'Phone', 'Age', 'Gender', 'Address', 'Total visits', 'First visit', 'Last visit', 'Doctors seen']];
         filteredEntries().forEach((e) => {
@@ -216,6 +288,8 @@
 
       const doctors = await Qlinic.getDoctors({ includeInactive: true });
       doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
+      document.getElementById('directoryDoctorFilter').innerHTML = '<option value="">All doctors</option>' +
+        doctors.map((d) => `<option value="${d.id}">${d.name}</option>`).join('');
       allEntries = await Qlinic.getPatientDirectory();
       // Most recently active patients first — the ones most likely to be
       // relevant to whatever admin is looking this page up for.
