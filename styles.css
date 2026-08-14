@@ -827,6 +827,11 @@ table.qtable tr:last-child td { border-bottom: none; }
 .btn-sm.danger-solid:hover { background: #a01b18; }
 .btn-sm.accent-outline { background: var(--white); color: var(--accent); border-color: var(--accent); }
 .btn-sm.accent-outline:hover { background: var(--accent); color: #ffffff; }
+/* Same shape as accent-outline, green instead of blue — matches the
+   on_time status pill's color, since this is the button that sets that
+   exact status. */
+.btn-sm.success-outline { background: var(--white); color: var(--success); border-color: var(--success); }
+.btn-sm.success-outline:hover { background: var(--success); color: #ffffff; }
 
 .inline-form {
   display: flex;
