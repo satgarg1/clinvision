@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=72" />
+<link rel="stylesheet" href="styles.css?v=73" />
 </head>
 <body>
   <div class="app-shell">
@@ -115,6 +115,10 @@
               <div class="time-picker-panel" id="slotCapacityPanel" style="display:none;"></div>
             </div>
           </div>
+          <div class="field" style="max-width:160px;">
+            <label>Follow-up window</label>
+            <input type="number" id="followUpBufferInput" min="0" max="90" step="1" placeholder="0" />
+          </div>
           <div class="field" style="flex:0;">
             <label>&nbsp;</label>
             <button type="submit" class="btn-sm primary">Save</button>
@@ -123,6 +127,7 @@
         <p class="panel-note" style="margin-top:10px;margin-bottom:0;">
           Grace window: how many minutes past a booked time before a no-show patient gets flagged as "likely no-show."
           Slot length &amp; capacity: how bookings get bucketed for the overbooking warning in Reception.
+          Follow-up window: if a patient returns to the <em>same doctor</em> within this many days of their last completed visit, Reception gets a heads-up that no consultation fee is needed. Set to 0 to turn this off.
         </p>
       </div>
 
@@ -180,7 +185,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=31"></script>
+  <script src="clinic-data.js?v=32"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -337,6 +342,7 @@
         graceWindowPicker.setValue(clinic.grace_window_mins);
         slotIntervalPicker.setValue(clinic.slot_interval_mins);
         slotCapacityPicker.setValue(clinic.slot_capacity);
+        document.getElementById('followUpBufferInput').value = clinic.follow_up_buffer_days || 0;
         document.getElementById('displayLanguageInput').value = clinic.display_language;
       }
 
@@ -383,6 +389,7 @@
           graceWindowMins: document.getElementById('graceWindowInput').value,
           slotIntervalMins: document.getElementById('slotIntervalInput').value,
           slotCapacity: document.getElementById('slotCapacityInput').value,
+          followUpBufferDays: document.getElementById('followUpBufferInput').value || 0,
         });
         showToast('Queue rules updated');
       });

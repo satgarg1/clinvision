@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=72" />
+<link rel="stylesheet" href="styles.css?v=73" />
 </head>
 <body>
   <div class="app-shell">
@@ -123,6 +123,7 @@
             </div>
           </div>
           <div id="patientLookupHint" class="slot-hint" style="display:none;"></div>
+          <div id="followUpHint" class="slot-hint" style="display:none;"></div>
           <div id="slotHint" class="slot-hint"></div>
         </form>
       </div>
@@ -153,7 +154,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=31"></script>
+  <script src="clinic-data.js?v=32"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -319,6 +320,7 @@
           : 'Booking a call-in appointment ahead of time: pick when they should arrive.';
         document.getElementById('patientSubmitBtn').textContent = mode === 'walkin' ? 'Add walk-in & queue now' : 'Add appointment';
         updateSlotHint();
+        checkFollowUpHint();
       }
 
       document.querySelectorAll('.mode-btn').forEach((btn) => {
@@ -752,6 +754,7 @@
         document.getElementById('pDate').value = Qlinic.getTodayDate();
         resetTimePicker();
         clearPatientLookupHint();
+        clearFollowUpHint();
         renderQueues();
       });
 
@@ -795,6 +798,40 @@
         });
       }
       document.getElementById('pPhone').addEventListener('blur', checkPatientLookup);
+
+      // Advisory only, same spirit as the no-show note above: tells
+      // reception whether to expect payment, never blocks or auto-fills
+      // anything. Needs phone + doctor + the actual visit date (today for
+      // a walk-in, the picked date for an appointment) all present before
+      // there's anything to check, so it re-runs on any of those changing.
+      function clearFollowUpHint() {
+        const hint = document.getElementById('followUpHint');
+        hint.style.display = 'none';
+        hint.innerHTML = '';
+      }
+      async function checkFollowUpHint() {
+        const hint = document.getElementById('followUpHint');
+        const phone = document.getElementById('pPhone').value.trim();
+        const doctorId = document.getElementById('pDoctor').value;
+        const visitDate = patientMode === 'walkin' ? Qlinic.getTodayDate() : document.getElementById('pDate').value;
+        if (!phone || !doctorId || !visitDate) { clearFollowUpHint(); return; }
+        const result = await Qlinic.checkFollowUpEligibility({ doctorId, phone, visitDate });
+        if (!result) { clearFollowUpHint(); return; }
+        const doctor = doctorsCache.find((d) => d.id === doctorId);
+        const doctorName = doctor ? doctor.name : 'this doctor';
+        const lastVisitLabel = Qlinic.formatDateLabel(result.lastVisitDate);
+        if (result.eligible) {
+          hint.className = 'slot-hint ok';
+          hint.innerHTML = `✓ Follow-up visit — no consultation fee needed (last seen by ${doctorName} on ${lastVisitLabel}, within the ${result.bufferDays}-day window).`;
+        } else {
+          hint.className = 'slot-hint warn';
+          hint.innerHTML = `⚠ Outside the follow-up window (last seen by ${doctorName} on ${lastVisitLabel}) — consultation fee applies.`;
+        }
+        hint.style.display = 'block';
+      }
+      document.getElementById('pPhone').addEventListener('blur', checkFollowUpHint);
+      document.getElementById('pDoctor').addEventListener('change', checkFollowUpHint);
+      document.getElementById('pDate').addEventListener('change', checkFollowUpHint);
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';

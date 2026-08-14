@@ -262,6 +262,7 @@
     if (fields.graceWindowMins !== undefined) payload.grace_window_mins = Number(fields.graceWindowMins);
     if (fields.slotIntervalMins !== undefined) payload.slot_interval_mins = Number(fields.slotIntervalMins);
     if (fields.slotCapacity !== undefined) payload.slot_capacity = Number(fields.slotCapacity);
+    if (fields.followUpBufferDays !== undefined) payload.follow_up_buffer_days = Number(fields.followUpBufferDays);
     if (fields.displayLanguage !== undefined) payload.display_language = fields.displayLanguage;
     if (fields.addressLine !== undefined) payload.address_line = fields.addressLine;
     if (fields.city !== undefined) payload.city = fields.city;
@@ -479,6 +480,51 @@
       age: latest.age,
       visitsChecked: data.length,
       noShowCount: data.filter((p) => p.status === 'no_show').length,
+    };
+  }
+
+  // Follow-up fee waiver check: does this patient's most recent
+  // COMPLETED visit with this exact doctor fall within the clinic's
+  // configured follow-up window (Settings -> Queue rules)? Anchored to
+  // the last 'done' visit specifically, not any booking attempt — a
+  // no-show doesn't extend or preserve the free-visit window, since as
+  // far as eligibility is concerned they never actually came in.
+  //
+  // Returns null when there's nothing worth telling reception: the
+  // feature is off (bufferDays 0), or this patient has no prior
+  // completed visit with this doctor at all (first-time patient, the
+  // normal fee applies with nothing special to flag).
+  async function checkFollowUpEligibility({ doctorId, phone, visitDate }) {
+    const clinicId = await ensureClinicContext();
+    const cleanPhone = (phone || '').trim();
+    if (!clinicId || !cleanPhone || !doctorId || !visitDate) return null;
+
+    const clinic = await getClinic();
+    const bufferDays = clinic ? Number(clinic.follow_up_buffer_days) || 0 : 0;
+    if (bufferDays <= 0) return null;
+
+    const { data, error } = await sb
+      .from('patients')
+      .select('token_date')
+      .eq('clinic_id', clinicId)
+      .eq('doctor_id', doctorId)
+      .eq('phone', cleanPhone)
+      .eq('status', 'done')
+      .order('token_date', { ascending: false })
+      .limit(1);
+    if (error) throw error;
+    if (!data || data.length === 0) return null;
+
+    const lastVisitDate = data[0].token_date;
+    const [ly, lm, ld] = lastVisitDate.split('-').map(Number);
+    const [vy, vm, vd] = visitDate.split('-').map(Number);
+    const diffDays = Math.round((new Date(vy, vm - 1, vd) - new Date(ly, lm - 1, ld)) / 86400000);
+
+    return {
+      eligible: diffDays >= 0 && diffDays <= bufferDays,
+      lastVisitDate,
+      diffDays,
+      bufferDays,
     };
   }
 
@@ -1049,6 +1095,7 @@
     getAllQueues,
     searchBookedPatients,
     getPatientLookupByPhone,
+    checkFollowUpEligibility,
     getBillingPatientLookup,
     createInvoice,
     getTodayInvoices,

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=72" />
+<link rel="stylesheet" href="styles.css?v=73" />
 </head>
 <body>
   <div class="app-shell">
@@ -103,6 +103,7 @@
       <div class="card-grid" id="summaryCards" style="margin-bottom:14px;"></div>
 
       <div class="panel">
+        <div class="panel-header"><h2>Bills</h2><button type="button" class="btn-sm" id="exportCsvBtn">Export CSV</button></div>
         <div id="revenueTableWrap"></div>
         <div class="pager" id="revenuePager"></div>
       </div>
@@ -113,7 +114,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=31"></script>
+  <script src="clinic-data.js?v=32"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -189,6 +190,44 @@
         t.textContent = msg;
         t.classList.add('show');
         setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      function csvCell(value) {
+        const s = String(value == null ? '' : value);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }
+      function downloadCsv(filename, csvText) {
+        const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+      // Exports exactly what's currently filtered/visible (search, doctor,
+      // type), not just the current page of the table — matches Reception's
+      // own "Export CSV" the same way, so both act the same on the current
+      // view, not just what fits on screen.
+      function buildRevenueCsv(invoices) {
+        const rows = [['Patient', 'Age', 'Address', 'Doctor', 'Type', 'Payment mode', 'Amount billed', 'Amount received', 'Balance']];
+        invoices.forEach((inv) => {
+          const doctor = doctorById[inv.doctorId];
+          rows.push([
+            inv.patientName,
+            inv.patientAge || '',
+            inv.patientAddress || '',
+            doctor ? doctor.name : '',
+            FEE_TYPE_LABELS[inv.feeType] || inv.feeType,
+            PAYMENT_MODE_LABELS[inv.paymentMode] || inv.paymentMode,
+            inv.amount,
+            inv.amountReceived,
+            inv.amount - inv.amountReceived,
+          ]);
+        });
+        return rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
       }
 
       async function loadDoctorFilterOptions() {
@@ -439,6 +478,13 @@
         currentPage = 1;
         renderSummary();
         renderTable();
+      });
+      document.getElementById('exportCsvBtn').addEventListener('click', () => {
+        const csv = buildRevenueCsv(filteredInvoices());
+        const label = viewMode === 'range'
+          ? `${document.getElementById('rangeStartInput').value}_to_${document.getElementById('rangeEndInput').value}`
+          : document.getElementById('dateFilter').value;
+        downloadCsv(`revenue-${label}.csv`, csv);
       });
 
       document.getElementById('dateFilter').value = Qlinic.getTodayDate();

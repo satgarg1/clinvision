@@ -846,7 +846,7 @@ table.qtable tr:last-child td { border-bottom: none; }
    to the same height as the field beside it rather than the shorter
    default .btn-sm. */
 #rulesForm, #displayLanguageForm { gap: 16px; }
-#rulesForm .time-picker-trigger, #displayLanguageForm select {
+#rulesForm .time-picker-trigger, #displayLanguageForm select, #followUpBufferInput {
   padding: 12px 14px;
   font-size: 15px;
 }
