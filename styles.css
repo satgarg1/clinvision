@@ -871,7 +871,7 @@ table.qtable tr:last-child td { border-bottom: none; }
    grey-300 border alone reads as washed-out against it. Range mode's
    From/To inputs get the same treatment so switching modes doesn't
    change the size of the boxes in the row. */
-#dateFilter, #typeFilter, #doctorFilter, #rangeStartInput, #rangeEndInput, #directoryDoctorFilter {
+#dateFilter, #typeFilter, #doctorFilter, #rangeStartInput, #rangeEndInput, #directoryDoctorFilter, #periodStartInput, #periodEndInput {
   padding: 13px 14px;
   font-size: 17px;
   font-weight: 500;

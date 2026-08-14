@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=74" />
+<link rel="stylesheet" href="styles.css?v=75" />
 </head>
 <body>
   <div class="app-shell">
@@ -66,17 +66,6 @@
           </div>
         </div>
 
-        <div class="inline-form" style="display:none;flex:0 0 auto;" id="rangeFilters">
-          <div class="field" style="max-width:170px;flex:0;">
-            <label>From</label>
-            <input type="date" id="rangeStartInput" />
-          </div>
-          <div class="field" style="max-width:170px;flex:0;">
-            <label>To</label>
-            <input type="date" id="rangeEndInput" />
-          </div>
-        </div>
-
         <div class="field" style="min-width:180px;flex:0;">
           <label>Doctor</label>
           <select id="doctorFilter">
@@ -94,10 +83,17 @@
         </div>
       </div>
 
-      <div class="period-pills" id="rangePresets" style="display:none;margin-bottom:14px;">
-        <button type="button" class="period-pill" data-preset="lastweek">Last week</button>
-        <button type="button" class="period-pill" data-preset="lastmonth">Last month</button>
-        <button type="button" class="period-pill" data-preset="lastfy">Last financial year</button>
+      <div class="period-pills" id="rangePresets" style="display:none;margin-bottom:14px;"></div>
+
+      <div class="inline-form" style="display:none;margin-bottom:14px;" id="customRangeFilters">
+        <div class="field" style="max-width:170px;flex:0;">
+          <label>From</label>
+          <input type="month" id="rangeStartInput" />
+        </div>
+        <div class="field" style="max-width:170px;flex:0;">
+          <label>To</label>
+          <input type="month" id="rangeEndInput" />
+        </div>
       </div>
 
       <div class="card-grid" id="summaryCards" style="margin-bottom:14px;"></div>
@@ -143,16 +139,19 @@
       let doctorById = {};
       let editingInvoiceId = null;
       let viewMode = 'single'; // 'single' | 'range'
+      let rangePreset = 'lastweek';
+      let customRange = null; // exact {start,end} for the 'custom' preset
 
       function pad2(n) { return String(n).padStart(2, '0'); }
       function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
 
-      // These are all COMPLETE prior periods (last full week/month/FY),
-      // not "so far this period" — matches how a bank statement works:
-      // you get last month's finished statement, not this month's
-      // in-progress one. Trends' own presets are the opposite (current,
-      // in-progress periods), which is a deliberate difference, not an
-      // inconsistency — the two pages answer different questions.
+      // Presets split into two families: "complete prior period" ones
+      // (last week/month/3-6-12 months/FY — a finished statement, like a
+      // bank statement) and "current, in-progress period" ones (current
+      // week/month/FY — capped at today since it hasn't finished yet).
+      // Both live here now; Trends' own presets are separately still
+      // always "current, in-progress," which is a deliberate difference
+      // in what each page answers, not an inconsistency.
       function computeLastWeekRange() {
         const today = new Date();
         const day = today.getDay();
@@ -162,6 +161,24 @@
         const lastSunday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - 1);
         return { start: toDateStr(lastMonday), end: toDateStr(lastSunday) };
       }
+      function computeCurrentWeekRange() {
+        const today = new Date();
+        const day = today.getDay();
+        const diffToMonday = day === 0 ? 6 : day - 1;
+        const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - diffToMonday);
+        const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+        const todayStr = toDateStr(today);
+        const sundayStr = toDateStr(sunday);
+        return { start: toDateStr(monday), end: sundayStr > todayStr ? todayStr : sundayStr };
+      }
+      function computeCurrentMonthRange() {
+        const today = new Date();
+        const first = new Date(today.getFullYear(), today.getMonth(), 1);
+        const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const todayStr = toDateStr(today);
+        const lastStr = toDateStr(last);
+        return { start: toDateStr(first), end: lastStr > todayStr ? todayStr : lastStr };
+      }
       function computeLastMonthRange() {
         const today = new Date();
         const firstOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -169,13 +186,67 @@
         const firstOfLastMonth = new Date(lastOfLastMonth.getFullYear(), lastOfLastMonth.getMonth(), 1);
         return { start: toDateStr(firstOfLastMonth), end: toDateStr(lastOfLastMonth) };
       }
-      function computeLastFYRange() {
+      // N complete calendar months immediately before the current one —
+      // "Current month" covers the in-progress one separately, so these
+      // two never overlap.
+      function computeLastNMonthsRange(n) {
         const today = new Date();
-        const currentFYStartYear = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
-        const lastFYStartYear = currentFYStartYear - 1;
+        const firstOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const end = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth(), 0);
+        const start = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth() - n, 1);
+        return { start: toDateStr(start), end: toDateStr(end) };
+      }
+      // Indian financial year: April 1 - March 31. If we're in Jan-Mar,
+      // the current FY started in April of the previous calendar year.
+      const CURRENT_FY_START_YEAR = (() => {
+        const today = new Date();
+        return today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+      })();
+      function computeCurrentFYRange() {
+        const today = new Date();
+        const start = new Date(CURRENT_FY_START_YEAR, 3, 1);
+        const naturalEnd = new Date(CURRENT_FY_START_YEAR + 1, 2, 31);
+        const todayStr = toDateStr(today);
+        const naturalEndStr = toDateStr(naturalEnd);
+        return { start: toDateStr(start), end: naturalEndStr > todayStr ? todayStr : naturalEndStr };
+      }
+      function computeLastFYRange() {
+        const lastFYStartYear = CURRENT_FY_START_YEAR - 1;
         const start = new Date(lastFYStartYear, 3, 1);
         const end = new Date(lastFYStartYear + 1, 2, 31);
         return { start: toDateStr(start), end: toDateStr(end) };
+      }
+      function fyLabel(startYear) {
+        return `Apr '${String(startYear).slice(-2)} - Mar '${String(startYear + 1).slice(-2)}`;
+      }
+      // Custom is the only preset with visible date fields, and those
+      // fields are month-only (matches the granularity of every other
+      // preset here) — first day of the "from" month through the last
+      // day of the "to" month, no cap on how far apart they can be.
+      function monthInputToRange(fromVal, toVal) {
+        if (!fromVal || !toVal) return null;
+        const [fy, fm] = fromVal.split('-').map(Number);
+        const [ty, tm] = toVal.split('-').map(Number);
+        const start = new Date(fy, fm - 1, 1);
+        const end = new Date(ty, tm, 0);
+        return { start: toDateStr(start), end: toDateStr(end) };
+      }
+
+      const RANGE_PRESETS = [
+        { key: 'lastweek', label: 'Last week', compute: computeLastWeekRange },
+        { key: 'currentweek', label: 'Current week', compute: computeCurrentWeekRange },
+        { key: 'currentmonth', label: 'Current month', compute: computeCurrentMonthRange },
+        { key: 'lastmonth', label: 'Last month', compute: computeLastMonthRange },
+        { key: 'last3months', label: 'Last 3 months', compute: () => computeLastNMonthsRange(3) },
+        { key: 'last6months', label: 'Last 6 months', compute: () => computeLastNMonthsRange(6) },
+        { key: 'last12months', label: 'Last 12 months', compute: () => computeLastNMonthsRange(12) },
+        { key: 'currentfy', label: `Current financial year (${fyLabel(CURRENT_FY_START_YEAR)})`, compute: computeCurrentFYRange },
+        { key: 'lastfy', label: `Last financial year (${fyLabel(CURRENT_FY_START_YEAR - 1)})`, compute: computeLastFYRange },
+        { key: 'custom', label: 'Custom', compute: null },
+      ];
+      function rangeForPreset(preset) {
+        const entry = RANGE_PRESETS.find((p) => p.key === preset);
+        return entry && entry.compute ? entry.compute() : null;
       }
 
       // Clicking a bar on Trends links here with ?start=&end= — same page,
@@ -428,9 +499,15 @@
       }
       window.syncAdjustAmount = syncAdjustAmount;
 
+      function currentRange() {
+        if (viewMode !== 'range') return null;
+        return rangePreset === 'custom' ? customRange : rangeForPreset(rangePreset);
+      }
+
       async function loadInvoices() {
+        const range = currentRange();
         allInvoices = viewMode === 'range'
-          ? await Qlinic.getInvoicesForDateRange(document.getElementById('rangeStartInput').value, document.getElementById('rangeEndInput').value)
+          ? (range ? await Qlinic.getInvoicesForDateRange(range.start, range.end) : [])
           : await Qlinic.getInvoicesForDate(document.getElementById('dateFilter').value);
         currentPage = 1;
         renderSummary();
@@ -442,16 +519,24 @@
         document.getElementById('dateFilter').value = Qlinic.getTodayDate();
         loadInvoices();
       });
-      document.getElementById('rangeStartInput').addEventListener('change', loadInvoices);
-      document.getElementById('rangeEndInput').addEventListener('change', loadInvoices);
+      function updateCustomRangeFromInputs() {
+        customRange = monthInputToRange(document.getElementById('rangeStartInput').value, document.getElementById('rangeEndInput').value);
+        loadInvoices();
+      }
+      document.getElementById('rangeStartInput').addEventListener('change', updateCustomRangeFromInputs);
+      document.getElementById('rangeEndInput').addEventListener('change', updateCustomRangeFromInputs);
+
+      function renderRangePresetButtons() {
+        document.getElementById('rangePresets').innerHTML = RANGE_PRESETS.map((p) =>
+          `<button type="button" class="period-pill ${p.key === rangePreset ? 'active' : ''}" data-preset="${p.key}">${p.label}</button>`
+        ).join('');
+      }
       document.getElementById('rangePresets').addEventListener('click', (e) => {
         const btn = e.target.closest('.period-pill');
         if (!btn) return;
-        const range = btn.dataset.preset === 'lastweek' ? computeLastWeekRange()
-          : btn.dataset.preset === 'lastmonth' ? computeLastMonthRange()
-          : computeLastFYRange();
-        document.getElementById('rangeStartInput').value = range.start;
-        document.getElementById('rangeEndInput').value = range.end;
+        rangePreset = btn.dataset.preset;
+        document.querySelectorAll('#rangePresets .period-pill').forEach((p) => p.classList.toggle('active', p === btn));
+        document.getElementById('customRangeFilters').style.display = rangePreset === 'custom' ? 'flex' : 'none';
         loadInvoices();
       });
       document.getElementById('viewModeToggle').addEventListener('click', (e) => {
@@ -460,8 +545,8 @@
         viewMode = btn.dataset.mode;
         document.querySelectorAll('#viewModeToggle .period-pill').forEach((p) => p.classList.toggle('active', p === btn));
         document.getElementById('singleDayFilters').style.display = viewMode === 'single' ? 'flex' : 'none';
-        document.getElementById('rangeFilters').style.display = viewMode === 'range' ? 'flex' : 'none';
         document.getElementById('rangePresets').style.display = viewMode === 'range' ? 'flex' : 'none';
+        document.getElementById('customRangeFilters').style.display = (viewMode === 'range' && rangePreset === 'custom') ? 'flex' : 'none';
         loadInvoices();
       });
       document.getElementById('typeFilter').addEventListener('change', () => {
@@ -481,25 +566,33 @@
       });
       document.getElementById('exportCsvBtn').addEventListener('click', () => {
         const csv = buildRevenueCsv(filteredInvoices());
-        const label = viewMode === 'range'
-          ? `${document.getElementById('rangeStartInput').value}_to_${document.getElementById('rangeEndInput').value}`
-          : document.getElementById('dateFilter').value;
+        let label;
+        if (viewMode === 'range') {
+          const range = currentRange();
+          label = range ? `${range.start}_to_${range.end}` : 'range';
+        } else {
+          label = document.getElementById('dateFilter').value;
+        }
         downloadCsv(`revenue-${label}.csv`, csv);
       });
 
       document.getElementById('dateFilter').value = Qlinic.getTodayDate();
+      renderRangePresetButtons();
       if (linkedStart && linkedEnd) {
+        // A Trends bar links to an exact day-level range that usually
+        // isn't a whole month, so it's fetched exactly as given rather
+        // than forced through the (month-granularity) custom fields —
+        // those just get a best-effort month-level display value.
         viewMode = 'range';
+        rangePreset = 'custom';
+        customRange = { start: linkedStart, end: linkedEnd };
         document.querySelectorAll('#viewModeToggle .period-pill').forEach((p) => p.classList.toggle('active', p.dataset.mode === 'range'));
+        document.querySelectorAll('#rangePresets .period-pill').forEach((p) => p.classList.toggle('active', p.dataset.preset === 'custom'));
         document.getElementById('singleDayFilters').style.display = 'none';
-        document.getElementById('rangeFilters').style.display = 'flex';
         document.getElementById('rangePresets').style.display = 'flex';
-        document.getElementById('rangeStartInput').value = linkedStart;
-        document.getElementById('rangeEndInput').value = linkedEnd;
-      } else {
-        const initial = computeLastWeekRange();
-        document.getElementById('rangeStartInput').value = initial.start;
-        document.getElementById('rangeEndInput').value = initial.end;
+        document.getElementById('customRangeFilters').style.display = 'flex';
+        document.getElementById('rangeStartInput').value = linkedStart.slice(0, 7);
+        document.getElementById('rangeEndInput').value = linkedEnd.slice(0, 7);
       }
 
       const clinic = await Qlinic.getClinic();

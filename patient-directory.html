@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=74" />
+<link rel="stylesheet" href="styles.css?v=75" />
 </head>
 <body>
   <div class="app-shell">
@@ -54,9 +54,23 @@
 
       <div class="period-pills" id="periodFilter">
         <button type="button" class="period-pill active" data-preset="all">All time</button>
-        <button type="button" class="period-pill" data-preset="lastweek">Last week</button>
+        <button type="button" class="period-pill" data-preset="currentmonth">Current month</button>
         <button type="button" class="period-pill" data-preset="lastmonth">Last month</button>
-        <button type="button" class="period-pill" data-preset="lastfy">Last financial year</button>
+        <button type="button" class="period-pill" data-preset="last3months">Last 3 months</button>
+        <button type="button" class="period-pill" data-preset="last6months">Last 6 months</button>
+        <button type="button" class="period-pill" data-preset="last12months">Last 12 months</button>
+        <button type="button" class="period-pill" data-preset="custom">Custom</button>
+      </div>
+
+      <div class="inline-form" style="display:none;margin-bottom:14px;" id="customPeriodFilters">
+        <div class="field" style="max-width:170px;flex:0;">
+          <label>From</label>
+          <input type="month" id="periodStartInput" />
+        </div>
+        <div class="field" style="max-width:170px;flex:0;">
+          <label>To</label>
+          <input type="month" id="periodEndInput" />
+        </div>
       </div>
 
       <div class="inline-form" style="margin-bottom:14px;">
@@ -103,21 +117,20 @@
       let currentPage = 1;
       let periodPreset = 'all';
       let doctorFilterId = '';
+      let customPeriodRange = null;
 
       function pad2(n) { return String(n).padStart(2, '0'); }
       function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
 
-      // Same "complete prior period" presets and math as Revenue's range
-      // picker — filters by last-visit date, so "Last month" here means
-      // "patients last seen last month," not everyone ever seen.
-      function computeLastWeekRange() {
+      // Filters by last-visit date, so "Last month" here means "patients
+      // last seen last month," not everyone ever seen.
+      function computeCurrentMonthRange() {
         const today = new Date();
-        const day = today.getDay();
-        const diffToMonday = day === 0 ? 6 : day - 1;
-        const thisMonday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - diffToMonday);
-        const lastMonday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - 7);
-        const lastSunday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - 1);
-        return { start: toDateStr(lastMonday), end: toDateStr(lastSunday) };
+        const first = new Date(today.getFullYear(), today.getMonth(), 1);
+        const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const todayStr = toDateStr(today);
+        const lastStr = toDateStr(last);
+        return { start: toDateStr(first), end: lastStr > todayStr ? todayStr : lastStr };
       }
       function computeLastMonthRange() {
         const today = new Date();
@@ -126,19 +139,34 @@
         const firstOfLastMonth = new Date(lastOfLastMonth.getFullYear(), lastOfLastMonth.getMonth(), 1);
         return { start: toDateStr(firstOfLastMonth), end: toDateStr(lastOfLastMonth) };
       }
-      function computeLastFYRange() {
+      // N complete calendar months immediately before the current one —
+      // "Current month" covers the in-progress one separately.
+      function computeLastNMonthsRange(n) {
         const today = new Date();
-        const currentFYStartYear = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
-        const lastFYStartYear = currentFYStartYear - 1;
-        const start = new Date(lastFYStartYear, 3, 1);
-        const end = new Date(lastFYStartYear + 1, 2, 31);
+        const firstOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const end = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth(), 0);
+        const start = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth() - n, 1);
+        return { start: toDateStr(start), end: toDateStr(end) };
+      }
+      // Custom is the only preset with visible fields, and they're
+      // month-only (matches every other preset's granularity) — first
+      // day of the "from" month through the last day of the "to" month.
+      function monthInputToRange(fromVal, toVal) {
+        if (!fromVal || !toVal) return null;
+        const [fy, fm] = fromVal.split('-').map(Number);
+        const [ty, tm] = toVal.split('-').map(Number);
+        const start = new Date(fy, fm - 1, 1);
+        const end = new Date(ty, tm, 0);
         return { start: toDateStr(start), end: toDateStr(end) };
       }
       function periodRange(preset) {
-        if (preset === 'lastweek') return computeLastWeekRange();
+        if (preset === 'currentmonth') return computeCurrentMonthRange();
         if (preset === 'lastmonth') return computeLastMonthRange();
-        if (preset === 'lastfy') return computeLastFYRange();
-        return null;
+        if (preset === 'last3months') return computeLastNMonthsRange(3);
+        if (preset === 'last6months') return computeLastNMonthsRange(6);
+        if (preset === 'last12months') return computeLastNMonthsRange(12);
+        if (preset === 'custom') return customPeriodRange;
+        return null; // 'all'
       }
 
       function showToast(msg) {
@@ -264,9 +292,18 @@
         if (!btn) return;
         periodPreset = btn.dataset.preset;
         document.querySelectorAll('#periodFilter .period-pill').forEach((p) => p.classList.toggle('active', p === btn));
+        document.getElementById('customPeriodFilters').style.display = periodPreset === 'custom' ? 'flex' : 'none';
         currentPage = 1;
         renderTable();
       });
+
+      function updateCustomPeriodFromInputs() {
+        customPeriodRange = monthInputToRange(document.getElementById('periodStartInput').value, document.getElementById('periodEndInput').value);
+        currentPage = 1;
+        renderTable();
+      }
+      document.getElementById('periodStartInput').addEventListener('change', updateCustomPeriodFromInputs);
+      document.getElementById('periodEndInput').addEventListener('change', updateCustomPeriodFromInputs);
 
       document.getElementById('directoryDoctorFilter').addEventListener('change', (e) => {
         doctorFilterId = e.target.value;
