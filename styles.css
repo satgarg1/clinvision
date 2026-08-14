@@ -1086,9 +1086,14 @@ table.qtable tr:last-child td { border-bottom: none; }
 .period-pill:hover { border-color: var(--accent); }
 .period-pill.active { background: var(--accent); color: #ffffff; border-color: var(--accent); }
 
-.trend-bars { display: flex; align-items: stretch; gap: 14px; height: 180px; padding: 10px 4px 0; }
+/* overflow-x lets a chart with many bars (e.g. a clinic with 20+
+   doctors) scroll instead of squeezing every column down to an
+   illegible sliver — each column has a floor width (see .trend-bar-col)
+   that it won't shrink past, so the chart only starts scrolling once it
+   actually runs out of room, not before. */
+.trend-bars { display: flex; align-items: stretch; gap: 14px; height: 180px; padding: 10px 4px 6px; overflow-x: auto; }
 .trend-bars-compact { height: 120px; gap: 8px; }
-.trend-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.trend-bar-col { flex: 1 1 60px; min-width: 60px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .trend-bar-value { font-size: 12px; font-weight: 600; color: var(--grey-700); }
 .trend-bar-track { width: 100%; flex: 1; display: flex; align-items: flex-end; }
 .trend-bar-fill { width: 100%; background: var(--accent); border-radius: 6px 6px 0 0; min-height: 2px; transition: height 0.3s ease; }
