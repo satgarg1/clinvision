@@ -1130,6 +1130,21 @@ button.trend-bar-link { background: none; border: none; padding: 0; margin: 0; f
 button.trend-bar-link:hover { background: var(--grey-100); }
 .trend-bar-selected { background: var(--grey-100); }
 .trend-bar-selected .trend-bar-fill { background: var(--accent-dark); }
+/* .trend-bar-fill-warn (1 class) loses to the two rules above (2-3
+   classes) on specificity alone, so a no-show bar would otherwise flip
+   from red back to blue the moment it's hovered or selected — these
+   target the two classes together to win regardless of source order,
+   keeping a no-show bar visibly red through every interaction state. */
+.trend-bar-link:hover .trend-bar-fill.trend-bar-fill-warn { background: #a01b18; }
+.trend-bar-selected .trend-bar-fill.trend-bar-fill-warn { background: var(--danger); }
+
+/* Non-interactive charts (doctor totals, breakdown bars) still get a
+   hover tint for legibility/feedback even though they don't navigate or
+   toggle anything — no pointer cursor, since nothing happens on click. */
+.trend-bar-hoverable { border-radius: 8px; transition: background 0.15s ease; }
+.trend-bar-hoverable:hover { background: var(--grey-100); }
+.trend-bar-hoverable:hover .trend-bar-fill { background: var(--accent-dark); }
+.trend-bar-hoverable:hover .trend-bar-fill.trend-bar-fill-warn { background: #a01b18; }
 
 .trend-doctor-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .trend-doctor-row:last-child { margin-bottom: 0; }
