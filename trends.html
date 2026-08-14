@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=67" />
+<link rel="stylesheet" href="styles.css?v=68" />
 </head>
 <body>
   <div class="app-shell">
@@ -59,12 +59,6 @@
         <p class="panel-note" style="margin-top:12px;margin-bottom:0;">Click a bar to see who was billed then.</p>
       </div>
 
-      <div class="panel">
-        <div class="panel-header"><h2 id="noShowHeading">No-show rate by week</h2></div>
-        <div id="noShowByWeekday"></div>
-        <div id="noShowBreakdown"></div>
-      </div>
-
       <div style="display:flex;gap:20px;flex-wrap:wrap;">
         <div class="panel" style="flex:1;min-width:320px;">
           <div class="panel-header"><h2 id="visitsPerDoctorHeading">Visits per doctor</h2></div>
@@ -74,6 +68,12 @@
           <div class="panel-header"><h2 id="revenueByDoctorHeading">Revenue by doctor</h2></div>
           <div id="revenueByDoctor"></div>
         </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2 id="noShowHeading">No-show rate by week</h2></div>
+        <div id="noShowByWeekday"></div>
+        <div id="noShowBreakdown"></div>
       </div>
     </main>
   </div>
@@ -104,6 +104,10 @@
 
       const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const PRESET_LABELS = { month: 'This month', '3months': 'Last 3 months', fy: 'This financial year' };
+      // May/June/July aren't shortened — abbreviating them (Jun/Jul) saves
+      // nothing worth the ambiguity, so they're spelled out like the rest
+      // of the app's date formatting.
+      const MONTH_ABBREV = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
       function pad2(n) { return String(n).padStart(2, '0'); }
       function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
@@ -289,19 +293,42 @@
       function renderNoShowBreakdown(key, doctorById) {
         const breakdownEl = document.getElementById('noShowBreakdown');
         const items = noShowBucketsCache[key] || [];
-        const periodLabel = noShowGranularityCache === 'week' ? `week of ${shortDateLabel(key)}` : monthLabel(key);
+        const isWeekBucket = noShowGranularityCache === 'week';
+        const periodLabel = isWeekBucket ? `week of ${shortDateLabel(key)}` : monthLabel(key);
 
-        const totals = new Array(7).fill(0);
+        // A week bucket has exactly one occurrence of each weekday, so
+        // showing the actual calendar date is more useful than a generic
+        // "Sat" label. A month bucket has ~4-5 occurrences of each
+        // weekday, so those bars stay an aggregate-by-weekday rate.
+        let dayLabels;
+        const dayTotals = new Array(7).fill(0);
         const dayNoShows = new Array(7).fill(0);
-        items.forEach((p) => {
-          const [y, m, d] = p.tokenDate.split('-').map(Number);
-          const jsDay = new Date(y, m - 1, d).getDay();
-          const idx = jsDay === 0 ? 6 : jsDay - 1;
-          totals[idx]++;
-          if (p.status === 'no_show') dayNoShows[idx]++;
-        });
-        const dayRates = totals.map((t, i) => (t === 0 ? 0 : (dayNoShows[i] / t) * 100));
+        if (isWeekBucket) {
+          const [y, m, d] = key.split('-').map(Number);
+          const dates = Array.from({ length: 7 }, (_, i) => toDateStr(new Date(y, m - 1, d + i)));
+          dayLabels = dates.map((ds) => {
+            const [, mm, dd] = ds.split('-').map(Number);
+            return `${dd}-${MONTH_ABBREV[mm - 1]}`;
+          });
+          items.forEach((p) => {
+            const idx = dates.indexOf(p.tokenDate);
+            if (idx === -1) return;
+            dayTotals[idx]++;
+            if (p.status === 'no_show') dayNoShows[idx]++;
+          });
+        } else {
+          dayLabels = WEEKDAY_LABELS;
+          items.forEach((p) => {
+            const [y, m, d] = p.tokenDate.split('-').map(Number);
+            const jsDay = new Date(y, m - 1, d).getDay();
+            const idx = jsDay === 0 ? 6 : jsDay - 1;
+            dayTotals[idx]++;
+            if (p.status === 'no_show') dayNoShows[idx]++;
+          });
+        }
+        const dayRates = dayTotals.map((t, i) => (t === 0 ? 0 : (dayNoShows[i] / t) * 100));
         const maxDayRate = Math.max(...dayRates, 1);
+        const dayLabelClass = isWeekBucket ? 'trend-bar-label trend-bar-label-vertical' : 'trend-bar-label';
 
         const byDoctor = {};
         items.forEach((p) => {
@@ -323,12 +350,12 @@
           <p class="panel-note" style="margin:14px 0 12px;">Showing ${periodLabel} · ${items.length} resolved visit${items.length === 1 ? '' : 's'}</p>
           <div style="display:flex;gap:24px;flex-wrap:wrap;">
             <div style="flex:1;min-width:280px;">
-              <h3 style="margin:0 0 10px;font-size:14px;color:var(--grey-700);">By day of week</h3>
+              <h3 style="margin:0 0 10px;font-size:14px;color:var(--grey-700);">${isWeekBucket ? 'By day' : 'By day of week'}</h3>
               <div class="trend-bars trend-bars-compact">
-                ${WEEKDAY_LABELS.map((label, i) => `
+                ${dayLabels.map((label, i) => `
                   <div class="trend-bar-col">
                     <div class="trend-bar-track"><div class="trend-bar-fill ${dayNoShows[i] > 0 ? 'trend-bar-fill-warn' : ''}" style="height:${Math.round((dayRates[i] / maxDayRate) * 100)}%;"></div></div>
-                    <div class="trend-bar-label">${label}</div>
+                    <div class="${dayLabelClass}">${label}</div>
                   </div>
                 `).join('')}
               </div>
@@ -350,47 +377,62 @@
       // Matches getDailySummary's footfall definition exactly: waiting/
       // in_consult/done are actual visits, booked (hasn't arrived yet)
       // and no_show (booked but never arrived) are both excluded.
-      function renderVisitsPerDoctor(patients, doctorById) {
+      //
+      // Built from the full doctor list, not just Object.entries() of the
+      // counts — a doctor with zero visits in this period would otherwise
+      // never appear as a key at all and silently vanish from the chart,
+      // rather than showing as a real 0 bar.
+      function renderVisitsPerDoctor(patients, doctors) {
         const el = document.getElementById('visitsPerDoctor');
-        const visited = patients.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status));
-        if (visited.length === 0) {
-          el.innerHTML = '<div class="empty-state">No visits in this period.</div>';
+        if (doctors.length === 0) {
+          el.innerHTML = '<div class="empty-state">No doctors added yet.</div>';
           return;
         }
+        const visited = patients.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status));
         const counts = {};
         visited.forEach((p) => { counts[p.doctorId] = (counts[p.doctorId] || 0) + 1; });
-        const rows = Object.entries(counts)
-          .map(([doctorId, count]) => ({ name: (doctorById[doctorId] && doctorById[doctorId].name) || 'Unknown', count }))
+        const rows = doctors
+          .map((d) => ({ name: d.name, count: counts[d.id] || 0 }))
           .sort((a, b) => b.count - a.count);
         const maxCount = Math.max(...rows.map((r) => r.count), 1);
-        el.innerHTML = rows.map((r) => `
-          <div class="trend-doctor-row">
-            <span class="trend-doctor-name">${r.name}</span>
-            <div class="trend-doctor-track"><div class="trend-doctor-fill" style="width:${Math.round((r.count / maxCount) * 100)}%;"></div></div>
-            <span class="trend-doctor-count">${r.count}</span>
+        el.innerHTML = `
+          <div class="trend-bars">
+            ${rows.map((r) => `
+              <div class="trend-bar-col">
+                <div class="trend-bar-value">${r.count}</div>
+                <div class="trend-bar-track"><div class="trend-bar-fill" style="height:${Math.round((r.count / maxCount) * 100)}%;"></div></div>
+                <div class="trend-bar-label">${r.name}</div>
+              </div>
+            `).join('')}
           </div>
-        `).join('');
+        `;
       }
 
-      function renderRevenueByDoctor(invoices, doctorById) {
+      // Same "show every doctor, not just the ones with a matching key"
+      // rule as renderVisitsPerDoctor above.
+      function renderRevenueByDoctor(invoices, doctors) {
         const el = document.getElementById('revenueByDoctor');
-        if (invoices.length === 0) {
-          el.innerHTML = '<div class="empty-state">No billed invoices in this period.</div>';
+        if (doctors.length === 0) {
+          el.innerHTML = '<div class="empty-state">No doctors added yet.</div>';
           return;
         }
         const sums = {};
         invoices.forEach((inv) => { sums[inv.doctorId] = (sums[inv.doctorId] || 0) + inv.amountReceived; });
-        const rows = Object.entries(sums)
-          .map(([doctorId, total]) => ({ name: (doctorById[doctorId] && doctorById[doctorId].name) || 'Unknown', total }))
+        const rows = doctors
+          .map((d) => ({ name: d.name, total: sums[d.id] || 0 }))
           .sort((a, b) => b.total - a.total);
         const maxVal = Math.max(...rows.map((r) => r.total), 1);
-        el.innerHTML = rows.map((r) => `
-          <div class="trend-doctor-row">
-            <span class="trend-doctor-name">${r.name}</span>
-            <div class="trend-doctor-track"><div class="trend-doctor-fill" style="width:${Math.round((r.total / maxVal) * 100)}%;"></div></div>
-            <span class="trend-doctor-count">₹${r.total.toLocaleString('en-IN')}</span>
+        el.innerHTML = `
+          <div class="trend-bars">
+            ${rows.map((r) => `
+              <div class="trend-bar-col">
+                <div class="trend-bar-value">₹${r.total.toLocaleString('en-IN')}</div>
+                <div class="trend-bar-track"><div class="trend-bar-fill" style="height:${Math.round((r.total / maxVal) * 100)}%;"></div></div>
+                <div class="trend-bar-label">${r.name}</div>
+              </div>
+            `).join('')}
           </div>
-        `).join('');
+        `;
       }
 
       let currentPreset = 'month';
@@ -407,9 +449,9 @@
         ]);
         doctorByIdCache = Object.fromEntries(doctors.map((d) => [d.id, d]));
         renderRevenueOverTime(invoices, currentPreset);
+        renderVisitsPerDoctor(patients, doctors);
+        renderRevenueByDoctor(invoices, doctors);
         renderNoShowOverTime(patients, currentPreset, doctorByIdCache);
-        renderVisitsPerDoctor(patients, doctorByIdCache);
-        renderRevenueByDoctor(invoices, doctorByIdCache);
       }
 
       document.getElementById('periodPills').addEventListener('click', (e) => {

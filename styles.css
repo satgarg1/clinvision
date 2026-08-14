@@ -1094,6 +1094,11 @@ table.qtable tr:last-child td { border-bottom: none; }
 .trend-bar-fill { width: 100%; background: var(--accent); border-radius: 6px 6px 0 0; min-height: 2px; transition: height 0.3s ease; }
 .trend-bar-fill-warn { background: var(--danger); }
 .trend-bar-label { font-size: 11px; color: var(--grey-500); }
+/* Used for the day-of-week breakdown's date labels (e.g. "3-Aug") once
+   it's showing 7 specific calendar dates instead of short "Mon"/"Tue"
+   names — horizontal text that wide would crowd/wrap in a narrow bar
+   column, so it reads bottom-to-top instead. */
+.trend-bar-label-vertical { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; margin: 0 auto; }
 
 /* Bars that drill into Revenue: plain <a> styling reset (inherit color,
    no underline) plus a hover tint so it reads as clickable rather than
