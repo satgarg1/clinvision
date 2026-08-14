@@ -863,8 +863,10 @@ table.qtable tr:last-child td { border-bottom: none; }
    (not a secondary filter bar like elsewhere inline-form is used), so they
    get a larger treatment than the standard inline-form sizing above. A
    subtle shadow lifts them off the page's grey-100 background, since a
-   grey-300 border alone reads as washed-out against it. */
-#dateFilter, #typeFilter, #doctorFilter {
+   grey-300 border alone reads as washed-out against it. Range mode's
+   From/To inputs get the same treatment so switching modes doesn't
+   change the size of the boxes in the row. */
+#dateFilter, #typeFilter, #doctorFilter, #rangeStartInput, #rangeEndInput {
   padding: 13px 14px;
   font-size: 17px;
   font-weight: 500;
@@ -908,7 +910,7 @@ table.qtable tr:last-child td { border-bottom: none; }
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   background: var(--white);
   color: var(--black);
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 #patientSearch:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 
@@ -1092,12 +1094,23 @@ table.qtable tr:last-child td { border-bottom: none; }
    that it won't shrink past, so the chart only starts scrolling once it
    actually runs out of room, not before. */
 .trend-bars { display: flex; align-items: stretch; gap: 14px; height: 180px; padding: 10px 4px 6px; overflow-x: auto; }
-.trend-bars-compact { height: 120px; gap: 8px; }
+.trend-bars-compact { height: 160px; gap: 8px; }
 .trend-bar-col { flex: 1 1 60px; min-width: 60px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .trend-bar-value { font-size: 12px; font-weight: 600; color: var(--grey-700); }
 .trend-bar-track { width: 100%; flex: 1; display: flex; align-items: flex-end; }
 .trend-bar-fill { width: 100%; background: var(--accent); border-radius: 6px 6px 0 0; min-height: 2px; transition: height 0.3s ease; }
 .trend-bar-fill-warn { background: var(--danger); }
+/* Stacked variant: same footprint as .trend-bar-fill (same height %,
+   same rounded top), but its own height is divided between segments by
+   flex-grow so each segment's share is proportional to its raw count/
+   amount, independent of the wrapper's own height. overflow:hidden lets
+   only the top segment show the rounded corner. */
+.trend-bar-fill-stack { width: 100%; display: flex; flex-direction: column-reverse; border-radius: 6px 6px 0 0; overflow: hidden; min-height: 2px; transition: height 0.3s ease; }
+.trend-bar-seg { width: 100%; }
+.trend-bar-seg-consultation { background: var(--mkt-blue); }
+.trend-bar-seg-emergency { background: var(--mkt-coral); }
+.trend-bar-seg-waived { background: var(--mkt-purple); }
+.trend-bar-seg-unknown { background: var(--grey-300); }
 .trend-bar-label { font-size: 11px; color: var(--grey-500); }
 /* Used for the day-of-week breakdown's date labels (e.g. "3-Aug") once
    it's showing 7 specific calendar dates instead of short "Mon"/"Tue"

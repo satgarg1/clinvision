@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=69" />
+<link rel="stylesheet" href="styles.css?v=70" />
 </head>
 <body>
   <div class="app-shell">
@@ -49,12 +49,12 @@
 
       <input type="text" id="patientSearch" placeholder="Search by patient name..." />
 
-      <div class="period-pills" id="viewModeToggle" style="margin-bottom:14px;">
+      <div class="period-pills" id="viewModeToggle" style="margin-bottom:10px;">
         <button type="button" class="period-pill active" data-mode="single">Single day</button>
         <button type="button" class="period-pill" data-mode="range">Range</button>
       </div>
 
-      <div class="inline-form" style="margin-bottom:12px;" id="filtersRow">
+      <div class="inline-form" style="margin-bottom:10px;" id="filtersRow">
         <div class="inline-form" style="flex:0 0 auto;" id="singleDayFilters">
           <div class="field" style="min-width:180px;flex:0;">
             <label>Date</label>
@@ -94,13 +94,13 @@
         </div>
       </div>
 
-      <div class="period-pills" id="rangePresets" style="display:none;margin-bottom:20px;">
+      <div class="period-pills" id="rangePresets" style="display:none;margin-bottom:14px;">
         <button type="button" class="period-pill" data-preset="lastweek">Last week</button>
         <button type="button" class="period-pill" data-preset="lastmonth">Last month</button>
         <button type="button" class="period-pill" data-preset="lastfy">Last financial year</button>
       </div>
 
-      <div class="card-grid" id="summaryCards" style="margin-bottom:20px;"></div>
+      <div class="card-grid" id="summaryCards" style="margin-bottom:14px;"></div>
 
       <div class="panel">
         <div id="revenueTableWrap"></div>
