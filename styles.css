@@ -864,14 +864,23 @@ table.qtable tr:last-child td { border-bottom: none; }
   font-family: var(--font);
 }
 
-/* Revenue page's date/type filters are the primary controls on that page
-   (not a secondary filter bar like elsewhere inline-form is used), so they
-   get a larger treatment than the standard inline-form sizing above. A
-   subtle shadow lifts them off the page's grey-100 background, since a
-   grey-300 border alone reads as washed-out against it. Range mode's
-   From/To inputs get the same treatment so switching modes doesn't
-   change the size of the boxes in the row. */
-#dateFilter, #typeFilter, #doctorFilter, #rangeStartInput, #rangeEndInput, #directoryDoctorFilter, #periodStartInput, #periodEndInput {
+/* Revenue/Directory's date fields and period dropdown are the primary
+   controls on those pages (not a secondary filter bar like elsewhere
+   inline-form is used), so they get a larger treatment than the
+   standard inline-form sizing above. A subtle shadow lifts them off the
+   page's grey-100 background, since a grey-300 border alone reads as
+   washed-out against it. Applied as a class (not by ID) since the same
+   treatment now covers a growing set of fields: the date input, the
+   period-preset dropdown, and the custom-range month/year selects. */
+/* Selectors are written as ".field select.big-control" (not just
+   ".big-control") on purpose: a big-control select usually sits inside
+   ".inline-form .field", and that context's own generic rule below
+   (.inline-form .field select, 2 classes + a type = higher specificity
+   than ".big-control" alone) would otherwise silently win and shrink
+   it back down — matching that same specificity and relying on this
+   block coming later in the file is what actually makes the override
+   stick, not the class name by itself. */
+#dateFilter, .field select.big-control {
   padding: 13px 14px;
   font-size: 17px;
   font-weight: 500;
@@ -882,7 +891,7 @@ table.qtable tr:last-child td { border-bottom: none; }
 /* Native select arrows render tiny and inconsistent across browsers; swap
    in a matching custom chevron so they don't look like unstyled form
    controls next to the rest of the page. */
-#typeFilter, #doctorFilter, #directoryDoctorFilter {
+.field select.big-control {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -894,12 +903,41 @@ table.qtable tr:last-child td { border-bottom: none; }
   background-size: 14px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-#typeFilter:hover, #doctorFilter:hover, #directoryDoctorFilter:hover {
+.field select.big-control:hover {
   border-color: var(--grey-500);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
-:root[data-theme="dark"] #typeFilter, :root[data-theme="dark"] #doctorFilter, :root[data-theme="dark"] #directoryDoctorFilter {
+:root[data-theme="dark"] .field select.big-control {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+/* Compact select styled exactly like .period-pill (same height, same
+   pill shape) so a dropdown can sit inline with real period-pill
+   toggles without a height mismatch — used for Doctor/Visit Type next
+   to Revenue's Single day/Range toggle, and Directory's Doctor seen
+   next to its period dropdown. */
+.pill-select {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 32px 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--grey-300);
+  background: var(--white);
+  color: var(--black);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a4a4c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+  transition: border-color 0.15s ease;
+}
+.pill-select:hover { border-color: var(--grey-500); }
+:root[data-theme="dark"] .pill-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
 #patientSearch, #directorySearch {

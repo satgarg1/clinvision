@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=75" />
+<link rel="stylesheet" href="styles.css?v=76" />
 </head>
 <body>
   <div class="app-shell">
@@ -52,33 +52,30 @@
 
       <input type="text" id="directorySearch" placeholder="Search by name, phone, or address..." />
 
-      <div class="period-pills" id="periodFilter">
-        <button type="button" class="period-pill active" data-preset="all">All time</button>
-        <button type="button" class="period-pill" data-preset="currentmonth">Current month</button>
-        <button type="button" class="period-pill" data-preset="lastmonth">Last month</button>
-        <button type="button" class="period-pill" data-preset="last3months">Last 3 months</button>
-        <button type="button" class="period-pill" data-preset="last6months">Last 6 months</button>
-        <button type="button" class="period-pill" data-preset="last12months">Last 12 months</button>
-        <button type="button" class="period-pill" data-preset="custom">Custom</button>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        <div class="field" style="max-width:280px;margin-bottom:0;">
+          <label>Period</label>
+          <select id="periodPresetSelect" class="big-control"></select>
+        </div>
+        <select id="directoryDoctorFilter" class="pill-select">
+          <option value="">All doctors</option>
+        </select>
       </div>
 
       <div class="inline-form" style="display:none;margin-bottom:14px;" id="customPeriodFilters">
-        <div class="field" style="max-width:170px;flex:0;">
+        <div class="field" style="flex:0;">
           <label>From</label>
-          <input type="month" id="periodStartInput" />
+          <div style="display:flex;gap:8px;">
+            <select id="periodStartMonth" class="big-control"></select>
+            <select id="periodStartYear" class="big-control" style="max-width:100px;"></select>
+          </div>
         </div>
-        <div class="field" style="max-width:170px;flex:0;">
+        <div class="field" style="flex:0;">
           <label>To</label>
-          <input type="month" id="periodEndInput" />
-        </div>
-      </div>
-
-      <div class="inline-form" style="margin-bottom:14px;">
-        <div class="field" style="min-width:220px;flex:0;">
-          <label>Doctor seen</label>
-          <select id="directoryDoctorFilter">
-            <option value="">All doctors</option>
-          </select>
+          <div style="display:flex;gap:8px;">
+            <select id="periodEndMonth" class="big-control"></select>
+            <select id="periodEndYear" class="big-control" style="max-width:100px;"></select>
+          </div>
         </div>
       </div>
 
@@ -148,17 +145,34 @@
         const start = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth() - n, 1);
         return { start: toDateStr(start), end: toDateStr(end) };
       }
-      // Custom is the only preset with visible fields, and they're
-      // month-only (matches every other preset's granularity) — first
-      // day of the "from" month through the last day of the "to" month.
-      function monthInputToRange(fromVal, toVal) {
-        if (!fromVal || !toVal) return null;
-        const [fy, fm] = fromVal.split('-').map(Number);
-        const [ty, tm] = toVal.split('-').map(Number);
-        const start = new Date(fy, fm - 1, 1);
-        const end = new Date(ty, tm, 0);
+      // Custom is the only preset with visible fields, and they're plain
+      // Month/Year <select> pairs (not <input type="month">, which
+      // renders inconsistently and clips its own year) — first day of
+      // the "from" month through the last day of the "to" month.
+      function monthYearToRange(fromMonth, fromYear, toMonth, toYear) {
+        if (!fromMonth || !fromYear || !toMonth || !toYear) return null;
+        const start = new Date(Number(fromYear), Number(fromMonth) - 1, 1);
+        const end = new Date(Number(toYear), Number(toMonth), 0);
         return { start: toDateStr(start), end: toDateStr(end) };
       }
+      const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      function populateMonthYearSelects(monthSelectId, yearSelectId) {
+        document.getElementById(monthSelectId).innerHTML = MONTH_NAMES.map((name, i) => `<option value="${pad2(i + 1)}">${name}</option>`).join('');
+        const thisYear = new Date().getFullYear();
+        const years = [];
+        for (let y = thisYear - 10; y <= thisYear + 1; y++) years.push(y);
+        document.getElementById(yearSelectId).innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join('');
+      }
+
+      const PERIOD_PRESETS = [
+        { key: 'all', label: 'All time' },
+        { key: 'currentmonth', label: 'Current month' },
+        { key: 'lastmonth', label: 'Last month' },
+        { key: 'last3months', label: 'Last 3 months' },
+        { key: 'last6months', label: 'Last 6 months' },
+        { key: 'last12months', label: 'Last 12 months' },
+        { key: 'custom', label: 'Custom' },
+      ];
       function periodRange(preset) {
         if (preset === 'currentmonth') return computeCurrentMonthRange();
         if (preset === 'lastmonth') return computeLastMonthRange();
@@ -287,23 +301,29 @@
         renderTable();
       });
 
-      document.getElementById('periodFilter').addEventListener('click', (e) => {
-        const btn = e.target.closest('.period-pill');
-        if (!btn) return;
-        periodPreset = btn.dataset.preset;
-        document.querySelectorAll('#periodFilter .period-pill').forEach((p) => p.classList.toggle('active', p === btn));
+      function renderPeriodPresetOptions() {
+        document.getElementById('periodPresetSelect').innerHTML = PERIOD_PRESETS.map((p) =>
+          `<option value="${p.key}" ${p.key === periodPreset ? 'selected' : ''}>${p.label}</option>`
+        ).join('');
+      }
+      document.getElementById('periodPresetSelect').addEventListener('change', (e) => {
+        periodPreset = e.target.value;
         document.getElementById('customPeriodFilters').style.display = periodPreset === 'custom' ? 'flex' : 'none';
         currentPage = 1;
         renderTable();
       });
 
       function updateCustomPeriodFromInputs() {
-        customPeriodRange = monthInputToRange(document.getElementById('periodStartInput').value, document.getElementById('periodEndInput').value);
+        customPeriodRange = monthYearToRange(
+          document.getElementById('periodStartMonth').value, document.getElementById('periodStartYear').value,
+          document.getElementById('periodEndMonth').value, document.getElementById('periodEndYear').value
+        );
         currentPage = 1;
         renderTable();
       }
-      document.getElementById('periodStartInput').addEventListener('change', updateCustomPeriodFromInputs);
-      document.getElementById('periodEndInput').addEventListener('change', updateCustomPeriodFromInputs);
+      ['periodStartMonth', 'periodStartYear', 'periodEndMonth', 'periodEndYear'].forEach((id) => {
+        document.getElementById(id).addEventListener('change', updateCustomPeriodFromInputs);
+      });
 
       document.getElementById('directoryDoctorFilter').addEventListener('change', (e) => {
         doctorFilterId = e.target.value;
@@ -319,6 +339,10 @@
         const csv = rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
         downloadCsv(`patient-directory-${Qlinic.getTodayDate()}.csv`, csv);
       });
+
+      populateMonthYearSelects('periodStartMonth', 'periodStartYear');
+      populateMonthYearSelects('periodEndMonth', 'periodEndYear');
+      renderPeriodPresetOptions();
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';

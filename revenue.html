@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=75" />
+<link rel="stylesheet" href="styles.css?v=76" />
 </head>
 <body>
   <div class="app-shell">
@@ -49,32 +49,16 @@
 
       <input type="text" id="patientSearch" placeholder="Search by patient name..." />
 
-      <div class="period-pills" id="viewModeToggle" style="margin-bottom:10px;">
-        <button type="button" class="period-pill active" data-mode="single">Single day</button>
-        <button type="button" class="period-pill" data-mode="range">Range</button>
-      </div>
-
-      <div class="inline-form" style="margin-bottom:10px;" id="filtersRow">
-        <div class="inline-form" style="flex:0 0 auto;" id="singleDayFilters">
-          <div class="field" style="min-width:180px;flex:0;">
-            <label>Date</label>
-            <input type="date" id="dateFilter" />
-          </div>
-          <div class="field" style="flex:0;">
-            <label>&nbsp;</label>
-            <button type="button" class="btn-sm accent-outline" id="todayBtn">Today</button>
-          </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+        <div class="period-pills" id="viewModeToggle" style="margin-bottom:0;">
+          <button type="button" class="period-pill active" data-mode="single">Single day</button>
+          <button type="button" class="period-pill" data-mode="range">Range</button>
         </div>
-
-        <div class="field" style="min-width:180px;flex:0;">
-          <label>Doctor</label>
-          <select id="doctorFilter">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <select id="doctorFilter" class="pill-select">
             <option value="">All doctors</option>
           </select>
-        </div>
-        <div class="field" style="min-width:180px;flex:0;">
-          <label>Visit Type</label>
-          <select id="typeFilter">
+          <select id="typeFilter" class="pill-select">
             <option value="">All types</option>
             <option value="consultation">Consultation</option>
             <option value="emergency">Emergency</option>
@@ -83,16 +67,36 @@
         </div>
       </div>
 
-      <div class="period-pills" id="rangePresets" style="display:none;margin-bottom:14px;"></div>
+      <div class="inline-form" style="margin-bottom:10px;" id="singleDayFilters">
+        <div class="field" style="min-width:180px;flex:0;">
+          <label>Date</label>
+          <input type="date" id="dateFilter" />
+        </div>
+        <div class="field" style="flex:0;">
+          <label>&nbsp;</label>
+          <button type="button" class="btn-sm accent-outline" id="todayBtn">Today</button>
+        </div>
+      </div>
+
+      <div class="field" style="display:none;max-width:320px;margin-bottom:14px;" id="rangePresetField">
+        <label>Period</label>
+        <select id="rangePresetSelect" class="big-control"></select>
+      </div>
 
       <div class="inline-form" style="display:none;margin-bottom:14px;" id="customRangeFilters">
-        <div class="field" style="max-width:170px;flex:0;">
+        <div class="field" style="flex:0;">
           <label>From</label>
-          <input type="month" id="rangeStartInput" />
+          <div style="display:flex;gap:8px;">
+            <select id="rangeStartMonth" class="big-control"></select>
+            <select id="rangeStartYear" class="big-control" style="max-width:100px;"></select>
+          </div>
         </div>
-        <div class="field" style="max-width:170px;flex:0;">
+        <div class="field" style="flex:0;">
           <label>To</label>
-          <input type="month" id="rangeEndInput" />
+          <div style="display:flex;gap:8px;">
+            <select id="rangeEndMonth" class="big-control"></select>
+            <select id="rangeEndYear" class="big-control" style="max-width:100px;"></select>
+          </div>
         </div>
       </div>
 
@@ -223,13 +227,23 @@
       // fields are month-only (matches the granularity of every other
       // preset here) — first day of the "from" month through the last
       // day of the "to" month, no cap on how far apart they can be.
-      function monthInputToRange(fromVal, toVal) {
-        if (!fromVal || !toVal) return null;
-        const [fy, fm] = fromVal.split('-').map(Number);
-        const [ty, tm] = toVal.split('-').map(Number);
-        const start = new Date(fy, fm - 1, 1);
-        const end = new Date(ty, tm, 0);
+      // Plain Month/Year <select> pairs instead of <input type="month">:
+      // the native month picker renders inconsistently (clipped year,
+      // fiddly year stepper) and is hard to style to match the rest of
+      // the page, where two ordinary dropdowns are reliable everywhere.
+      function monthYearToRange(fromMonth, fromYear, toMonth, toYear) {
+        if (!fromMonth || !fromYear || !toMonth || !toYear) return null;
+        const start = new Date(Number(fromYear), Number(fromMonth) - 1, 1);
+        const end = new Date(Number(toYear), Number(toMonth), 0);
         return { start: toDateStr(start), end: toDateStr(end) };
+      }
+      const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      function populateMonthYearSelects(monthSelectId, yearSelectId) {
+        document.getElementById(monthSelectId).innerHTML = MONTH_NAMES.map((name, i) => `<option value="${pad2(i + 1)}">${name}</option>`).join('');
+        const thisYear = new Date().getFullYear();
+        const years = [];
+        for (let y = thisYear - 10; y <= thisYear + 1; y++) years.push(y);
+        document.getElementById(yearSelectId).innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join('');
       }
 
       const RANGE_PRESETS = [
@@ -520,22 +534,23 @@
         loadInvoices();
       });
       function updateCustomRangeFromInputs() {
-        customRange = monthInputToRange(document.getElementById('rangeStartInput').value, document.getElementById('rangeEndInput').value);
+        customRange = monthYearToRange(
+          document.getElementById('rangeStartMonth').value, document.getElementById('rangeStartYear').value,
+          document.getElementById('rangeEndMonth').value, document.getElementById('rangeEndYear').value
+        );
         loadInvoices();
       }
-      document.getElementById('rangeStartInput').addEventListener('change', updateCustomRangeFromInputs);
-      document.getElementById('rangeEndInput').addEventListener('change', updateCustomRangeFromInputs);
+      ['rangeStartMonth', 'rangeStartYear', 'rangeEndMonth', 'rangeEndYear'].forEach((id) => {
+        document.getElementById(id).addEventListener('change', updateCustomRangeFromInputs);
+      });
 
-      function renderRangePresetButtons() {
-        document.getElementById('rangePresets').innerHTML = RANGE_PRESETS.map((p) =>
-          `<button type="button" class="period-pill ${p.key === rangePreset ? 'active' : ''}" data-preset="${p.key}">${p.label}</button>`
+      function renderRangePresetOptions() {
+        document.getElementById('rangePresetSelect').innerHTML = RANGE_PRESETS.map((p) =>
+          `<option value="${p.key}" ${p.key === rangePreset ? 'selected' : ''}>${p.label}</option>`
         ).join('');
       }
-      document.getElementById('rangePresets').addEventListener('click', (e) => {
-        const btn = e.target.closest('.period-pill');
-        if (!btn) return;
-        rangePreset = btn.dataset.preset;
-        document.querySelectorAll('#rangePresets .period-pill').forEach((p) => p.classList.toggle('active', p === btn));
+      document.getElementById('rangePresetSelect').addEventListener('change', (e) => {
+        rangePreset = e.target.value;
         document.getElementById('customRangeFilters').style.display = rangePreset === 'custom' ? 'flex' : 'none';
         loadInvoices();
       });
@@ -545,7 +560,7 @@
         viewMode = btn.dataset.mode;
         document.querySelectorAll('#viewModeToggle .period-pill').forEach((p) => p.classList.toggle('active', p === btn));
         document.getElementById('singleDayFilters').style.display = viewMode === 'single' ? 'flex' : 'none';
-        document.getElementById('rangePresets').style.display = viewMode === 'range' ? 'flex' : 'none';
+        document.getElementById('rangePresetField').style.display = viewMode === 'range' ? 'block' : 'none';
         document.getElementById('customRangeFilters').style.display = (viewMode === 'range' && rangePreset === 'custom') ? 'flex' : 'none';
         loadInvoices();
       });
@@ -577,7 +592,9 @@
       });
 
       document.getElementById('dateFilter').value = Qlinic.getTodayDate();
-      renderRangePresetButtons();
+      populateMonthYearSelects('rangeStartMonth', 'rangeStartYear');
+      populateMonthYearSelects('rangeEndMonth', 'rangeEndYear');
+      renderRangePresetOptions();
       if (linkedStart && linkedEnd) {
         // A Trends bar links to an exact day-level range that usually
         // isn't a whole month, so it's fetched exactly as given rather
@@ -587,12 +604,16 @@
         rangePreset = 'custom';
         customRange = { start: linkedStart, end: linkedEnd };
         document.querySelectorAll('#viewModeToggle .period-pill').forEach((p) => p.classList.toggle('active', p.dataset.mode === 'range'));
-        document.querySelectorAll('#rangePresets .period-pill').forEach((p) => p.classList.toggle('active', p.dataset.preset === 'custom'));
+        document.getElementById('rangePresetSelect').value = 'custom';
         document.getElementById('singleDayFilters').style.display = 'none';
-        document.getElementById('rangePresets').style.display = 'flex';
+        document.getElementById('rangePresetField').style.display = 'block';
         document.getElementById('customRangeFilters').style.display = 'flex';
-        document.getElementById('rangeStartInput').value = linkedStart.slice(0, 7);
-        document.getElementById('rangeEndInput').value = linkedEnd.slice(0, 7);
+        const [sy, sm] = linkedStart.split('-');
+        const [ey, em] = linkedEnd.split('-');
+        document.getElementById('rangeStartMonth').value = sm;
+        document.getElementById('rangeStartYear').value = sy;
+        document.getElementById('rangeEndMonth').value = em;
+        document.getElementById('rangeEndYear').value = ey;
       }
 
       const clinic = await Qlinic.getClinic();
