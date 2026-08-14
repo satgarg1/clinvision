@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=66" />
+<link rel="stylesheet" href="styles.css?v=67" />
 </head>
 <body>
   <div class="app-shell">
@@ -59,20 +59,21 @@
         <p class="panel-note" style="margin-top:12px;margin-bottom:0;">Click a bar to see who was billed then.</p>
       </div>
 
+      <div class="panel">
+        <div class="panel-header"><h2 id="noShowHeading">No-show rate by week</h2></div>
+        <div id="noShowByWeekday"></div>
+        <div id="noShowBreakdown"></div>
+      </div>
+
       <div style="display:flex;gap:20px;flex-wrap:wrap;">
-        <div class="panel" style="flex:1;min-width:320px;">
-          <div class="panel-header"><h2>No-show rate by day of week</h2></div>
-          <div id="noShowByWeekday"></div>
-        </div>
         <div class="panel" style="flex:1;min-width:320px;">
           <div class="panel-header"><h2 id="visitsPerDoctorHeading">Visits per doctor</h2></div>
           <div id="visitsPerDoctor"></div>
         </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-header"><h2 id="revenueByDoctorHeading">Revenue by doctor</h2></div>
-        <div id="revenueByDoctor"></div>
+        <div class="panel" style="flex:1;min-width:320px;">
+          <div class="panel-header"><h2 id="revenueByDoctorHeading">Revenue by doctor</h2></div>
+          <div id="revenueByDoctor"></div>
+        </div>
       </div>
     </main>
   </div>
@@ -211,41 +212,138 @@
         `;
       }
 
-      // Only counts patients whose visit outcome is actually known
-      // (done or no_show) — someone still booked/waiting hasn't resolved
-      // yet, so including them would understate the no-show rate.
-      function renderNoShowByWeekday(patients) {
+      // Which bucket's breakdown is currently expanded, plus the data
+      // needed to redraw it without a network round-trip: click handling
+      // just re-renders from these caches.
+      let selectedNoShowBucket = null;
+      let noShowBucketsCache = {};
+      let noShowGranularityCache = 'week';
+
+      // Only counts patients whose visit outcome is actually known (done
+      // or no_show) — someone still booked/waiting hasn't resolved yet,
+      // so including them would understate the no-show rate. Buckets by
+      // week or month (same rule as Revenue over time) so a bar always
+      // reads as "this specific week/month," never an ambiguous mix of
+      // occurrences — clicking a bar expands the day-of-week and
+      // per-doctor breakdown for exactly that bucket below.
+      function renderNoShowOverTime(patients, preset, doctorById) {
         const el = document.getElementById('noShowByWeekday');
+        const breakdownEl = document.getElementById('noShowBreakdown');
+        const granularity = bucketGranularity(preset);
+        noShowGranularityCache = granularity;
+        document.getElementById('noShowHeading').textContent =
+          granularity === 'week' ? 'No-show rate by week' : 'No-show rate by month';
+
         const resolved = patients.filter((p) => p.status === 'done' || p.status === 'no_show');
         if (resolved.length === 0) {
           el.innerHTML = '<div class="empty-state">No resolved visits in this period.</div>';
+          breakdownEl.innerHTML = '';
+          selectedNoShowBucket = null;
           return;
         }
-        const totals = new Array(7).fill(0);
-        const noShows = new Array(7).fill(0);
+
+        noShowBucketsCache = {};
         resolved.forEach((p) => {
           const [y, m, d] = p.tokenDate.split('-').map(Number);
-          const jsDay = new Date(y, m - 1, d).getDay(); // 0=Sun..6=Sat
-          const idx = jsDay === 0 ? 6 : jsDay - 1; // Mon=0..Sun=6
-          totals[idx]++;
-          if (p.status === 'no_show') noShows[idx]++;
+          const date = new Date(y, m - 1, d);
+          const key = granularity === 'week' ? weekStartStr(date) : monthStartStr(date);
+          (noShowBucketsCache[key] = noShowBucketsCache[key] || []).push(p);
         });
-        const rates = totals.map((t, i) => (t === 0 ? 0 : (noShows[i] / t) * 100));
-        const maxRate = Math.max(...rates, 1);
-        const worstIdx = rates.indexOf(Math.max(...rates));
+
+        const buckets = Object.keys(noShowBucketsCache).sort();
+        const bucketStats = buckets.map((key) => {
+          const items = noShowBucketsCache[key];
+          const noShows = items.filter((p) => p.status === 'no_show').length;
+          return { key, total: items.length, noShows, rate: (noShows / items.length) * 100 };
+        });
+        const maxRate = Math.max(...bucketStats.map((b) => b.rate), 1);
+
         el.innerHTML = `
-          <div class="trend-bars trend-bars-compact">
-            ${WEEKDAY_LABELS.map((label, i) => {
-              const heightPct = Math.round((rates[i] / maxRate) * 100);
+          <div class="trend-bars">
+            ${bucketStats.map((b) => {
+              const heightPct = Math.round((b.rate / maxRate) * 100);
+              const label = granularity === 'week' ? shortDateLabel(b.key) : monthLabel(b.key);
               return `
-                <div class="trend-bar-col">
-                  <div class="trend-bar-track trend-bar-track-sm"><div class="trend-bar-fill ${i === worstIdx && rates[i] > 0 ? 'trend-bar-fill-warn' : ''}" style="height:${heightPct}%;"></div></div>
+                <button type="button" class="trend-bar-col trend-bar-link ${b.key === selectedNoShowBucket ? 'trend-bar-selected' : ''}" data-bucket="${b.key}">
+                  <div class="trend-bar-value">${Math.round(b.rate)}%</div>
+                  <div class="trend-bar-track"><div class="trend-bar-fill ${b.noShows > 0 ? 'trend-bar-fill-warn' : ''}" style="height:${heightPct}%;"></div></div>
                   <div class="trend-bar-label">${label}</div>
-                </div>
+                </button>
               `;
             }).join('')}
           </div>
-          ${totals[worstIdx] > 0 ? `<p class="panel-note" style="margin-top:12px;margin-bottom:0;">${WEEKDAY_LABELS[worstIdx]} has the highest no-show rate at ${Math.round(rates[worstIdx])}% (${noShows[worstIdx]} of ${totals[worstIdx]}).</p>` : ''}
+        `;
+
+        // A live update or period change can make the previously-selected
+        // bucket disappear (its key no longer exists in the new data) —
+        // collapse rather than render a breakdown for a bucket that's no
+        // longer on the chart.
+        if (selectedNoShowBucket && noShowBucketsCache[selectedNoShowBucket]) {
+          renderNoShowBreakdown(selectedNoShowBucket, doctorById);
+        } else {
+          selectedNoShowBucket = null;
+          breakdownEl.innerHTML = '<p class="panel-note" style="margin:14px 0 0;">Click a bar to see no-shows by day of week and by doctor for that period.</p>';
+        }
+      }
+
+      function renderNoShowBreakdown(key, doctorById) {
+        const breakdownEl = document.getElementById('noShowBreakdown');
+        const items = noShowBucketsCache[key] || [];
+        const periodLabel = noShowGranularityCache === 'week' ? `week of ${shortDateLabel(key)}` : monthLabel(key);
+
+        const totals = new Array(7).fill(0);
+        const dayNoShows = new Array(7).fill(0);
+        items.forEach((p) => {
+          const [y, m, d] = p.tokenDate.split('-').map(Number);
+          const jsDay = new Date(y, m - 1, d).getDay();
+          const idx = jsDay === 0 ? 6 : jsDay - 1;
+          totals[idx]++;
+          if (p.status === 'no_show') dayNoShows[idx]++;
+        });
+        const dayRates = totals.map((t, i) => (t === 0 ? 0 : (dayNoShows[i] / t) * 100));
+        const maxDayRate = Math.max(...dayRates, 1);
+
+        const byDoctor = {};
+        items.forEach((p) => {
+          if (!byDoctor[p.doctorId]) byDoctor[p.doctorId] = { total: 0, noShows: 0 };
+          byDoctor[p.doctorId].total++;
+          if (p.status === 'no_show') byDoctor[p.doctorId].noShows++;
+        });
+        const doctorRows = Object.entries(byDoctor)
+          .map(([doctorId, s]) => ({
+            name: (doctorById[doctorId] && doctorById[doctorId].name) || 'Unknown',
+            total: s.total,
+            noShows: s.noShows,
+            rate: (s.noShows / s.total) * 100,
+          }))
+          .sort((a, b) => b.rate - a.rate);
+        const maxDoctorRate = Math.max(...doctorRows.map((r) => r.rate), 1);
+
+        breakdownEl.innerHTML = `
+          <p class="panel-note" style="margin:14px 0 12px;">Showing ${periodLabel} · ${items.length} resolved visit${items.length === 1 ? '' : 's'}</p>
+          <div style="display:flex;gap:24px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:280px;">
+              <h3 style="margin:0 0 10px;font-size:14px;color:var(--grey-700);">By day of week</h3>
+              <div class="trend-bars trend-bars-compact">
+                ${WEEKDAY_LABELS.map((label, i) => `
+                  <div class="trend-bar-col">
+                    <div class="trend-bar-track"><div class="trend-bar-fill ${dayNoShows[i] > 0 ? 'trend-bar-fill-warn' : ''}" style="height:${Math.round((dayRates[i] / maxDayRate) * 100)}%;"></div></div>
+                    <div class="trend-bar-label">${label}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            <div style="flex:1;min-width:280px;">
+              <h3 style="margin:0 0 10px;font-size:14px;color:var(--grey-700);">By doctor</h3>
+              ${doctorRows.map((r) => `
+                <div class="trend-doctor-row">
+                  <span class="trend-doctor-name">${r.name}</span>
+                  <div class="trend-doctor-track"><div class="trend-doctor-fill ${r.noShows > 0 ? 'trend-doctor-fill-warn' : ''}" style="width:${Math.round((r.rate / maxDoctorRate) * 100)}%;"></div></div>
+                  <span class="trend-doctor-count">${r.noShows}/${r.total} (${Math.round(r.rate)}%)</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
         `;
       }
 
@@ -296,6 +394,7 @@
       }
 
       let currentPreset = 'month';
+      let doctorByIdCache = {};
 
       async function loadAndRender() {
         const range = rangeForPreset(currentPreset);
@@ -306,11 +405,11 @@
           Qlinic.getPatientsInRange(range.start, range.end),
           Qlinic.getDoctors({ includeInactive: true }),
         ]);
-        const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
+        doctorByIdCache = Object.fromEntries(doctors.map((d) => [d.id, d]));
         renderRevenueOverTime(invoices, currentPreset);
-        renderNoShowByWeekday(patients);
-        renderVisitsPerDoctor(patients, doctorById);
-        renderRevenueByDoctor(invoices, doctorById);
+        renderNoShowOverTime(patients, currentPreset, doctorByIdCache);
+        renderVisitsPerDoctor(patients, doctorByIdCache);
+        renderRevenueByDoctor(invoices, doctorByIdCache);
       }
 
       document.getElementById('periodPills').addEventListener('click', (e) => {
@@ -318,7 +417,27 @@
         if (!btn) return;
         currentPreset = btn.dataset.preset;
         document.querySelectorAll('.period-pill').forEach((p) => p.classList.toggle('active', p === btn));
+        selectedNoShowBucket = null;
         loadAndRender();
+      });
+
+      // Toggling a bucket is purely a display-state change over data
+      // that's already loaded, so it just re-renders from the caches
+      // built during the last loadAndRender — no network round-trip.
+      document.getElementById('noShowByWeekday').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-bucket]');
+        if (!btn) return;
+        const key = btn.dataset.bucket;
+        selectedNoShowBucket = selectedNoShowBucket === key ? null : key;
+        document.querySelectorAll('#noShowByWeekday [data-bucket]').forEach((b) => {
+          b.classList.toggle('trend-bar-selected', b.dataset.bucket === selectedNoShowBucket);
+        });
+        if (selectedNoShowBucket) {
+          renderNoShowBreakdown(selectedNoShowBucket, doctorByIdCache);
+        } else {
+          document.getElementById('noShowBreakdown').innerHTML =
+            '<p class="panel-note" style="margin:14px 0 0;">Click a bar to see no-shows by day of week and by doctor for that period.</p>';
+        }
       });
 
       const clinic = await Qlinic.getClinic();
