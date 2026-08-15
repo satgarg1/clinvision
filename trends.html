@@ -47,10 +47,26 @@
         <h1>Trends</h1>
       </div>
 
-      <div class="period-pills" id="periodPills">
-        <button type="button" class="period-pill" data-preset="month">This month</button>
-        <button type="button" class="period-pill" data-preset="3months">Last 3 months</button>
-        <button type="button" class="period-pill" data-preset="fy">This financial year</button>
+      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:10px;" id="trendsPeriodField">
+        <label class="pill-label">Period</label>
+        <select id="trendsPeriodSelect" class="pill-select"></select>
+      </div>
+
+      <div style="display:none;gap:24px;flex-wrap:wrap;margin-bottom:14px;" id="trendsCustomRangeFilters">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">From</label>
+          <div style="display:flex;gap:8px;">
+            <select id="trendsRangeStartMonth" class="pill-select"></select>
+            <select id="trendsRangeStartYear" class="pill-select"></select>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">To</label>
+          <div style="display:flex;gap:8px;">
+            <select id="trendsRangeEndMonth" class="pill-select"></select>
+            <select id="trendsRangeEndYear" class="pill-select"></select>
+          </div>
+        </div>
       </div>
 
       <div class="panel">
@@ -102,7 +118,6 @@
       }
 
       const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      const PRESET_LABELS = { month: 'This month', '3months': 'Last 3 months', fy: 'This financial year' };
       // May/June/July aren't shortened — abbreviating them (Jun/Jul) saves
       // nothing worth the ambiguity, so they're spelled out like the rest
       // of the app's date formatting.
@@ -112,25 +127,129 @@
       function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
       function todayStr() { return toDateStr(new Date()); }
 
-      // "This month" is only ~4-5 weeks, so weekly bars stay readable.
-      // "Last 3 months" and "This financial year" (up to 52 weeks) get
-      // bucketed by calendar month instead, or the chart turns into an
-      // unreadable strip of dozens of thin bars.
-      function bucketGranularity(preset) { return preset === 'month' ? 'week' : 'month'; }
-
-      // Indian financial year: April 1 - March 31. If we're in Jan-Mar,
-      // the current FY started in April of the PREVIOUS calendar year.
-      function rangeForPreset(preset) {
+      // Same preset family and date math as Revenue (kept as a per-page
+      // copy, matching this codebase's no-build-step convention), so
+      // "Period" here answers the same question the same way in both
+      // places. Custom is additionally capped at 12 months (see
+      // updateCustomRangeFromInputs) so its bars stay readable.
+      function computeLastWeekRange() {
         const today = new Date();
-        const end = toDateStr(today);
-        if (preset === 'month') {
-          return { start: toDateStr(new Date(today.getFullYear(), today.getMonth(), 1)), end };
+        const day = today.getDay();
+        const diffToMonday = day === 0 ? 6 : day - 1;
+        const thisMonday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - diffToMonday);
+        const lastMonday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - 7);
+        const lastSunday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - 1);
+        return { start: toDateStr(lastMonday), end: toDateStr(lastSunday) };
+      }
+      function computeCurrentWeekRange() {
+        const today = new Date();
+        const day = today.getDay();
+        const diffToMonday = day === 0 ? 6 : day - 1;
+        const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - diffToMonday);
+        const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+        const tStr = toDateStr(today);
+        const sundayStr = toDateStr(sunday);
+        return { start: toDateStr(monday), end: sundayStr > tStr ? tStr : sundayStr };
+      }
+      function computeCurrentMonthRange() {
+        const today = new Date();
+        const first = new Date(today.getFullYear(), today.getMonth(), 1);
+        const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const tStr = toDateStr(today);
+        const lastStr = toDateStr(last);
+        return { start: toDateStr(first), end: lastStr > tStr ? tStr : lastStr };
+      }
+      function computeLastMonthRange() {
+        const today = new Date();
+        const firstOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastOfLastMonth = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth(), 0);
+        const firstOfLastMonth = new Date(lastOfLastMonth.getFullYear(), lastOfLastMonth.getMonth(), 1);
+        return { start: toDateStr(firstOfLastMonth), end: toDateStr(lastOfLastMonth) };
+      }
+      function computeLastNMonthsRange(n) {
+        const today = new Date();
+        const firstOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const end = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth(), 0);
+        const start = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth() - n, 1);
+        return { start: toDateStr(start), end: toDateStr(end) };
+      }
+      // Indian financial year: April 1 - March 31. If we're in Jan-Mar,
+      // the current FY started in April of the previous calendar year.
+      const CURRENT_FY_START_YEAR = (() => {
+        const today = new Date();
+        return today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+      })();
+      function computeCurrentFYRange() {
+        const today = new Date();
+        const start = new Date(CURRENT_FY_START_YEAR, 3, 1);
+        const naturalEnd = new Date(CURRENT_FY_START_YEAR + 1, 2, 31);
+        const tStr = toDateStr(today);
+        const naturalEndStr = toDateStr(naturalEnd);
+        return { start: toDateStr(start), end: naturalEndStr > tStr ? tStr : naturalEndStr };
+      }
+      function computeLastFYRange() {
+        const lastFYStartYear = CURRENT_FY_START_YEAR - 1;
+        const start = new Date(lastFYStartYear, 3, 1);
+        const end = new Date(lastFYStartYear + 1, 2, 31);
+        return { start: toDateStr(start), end: toDateStr(end) };
+      }
+      function fyLabel(startYear) {
+        return `Apr '${String(startYear).slice(-2)} - Mar '${String(startYear + 1).slice(-2)}`;
+      }
+      function monthYearToRange(fromMonth, fromYear, toMonth, toYear) {
+        if (!fromMonth || !fromYear || !toMonth || !toYear) return null;
+        const start = new Date(Number(fromYear), Number(fromMonth) - 1, 1);
+        const end = new Date(Number(toYear), Number(toMonth), 0);
+        return { start: toDateStr(start), end: toDateStr(end) };
+      }
+      const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      function populateMonthYearSelects(monthSelectId, yearSelectId) {
+        document.getElementById(monthSelectId).innerHTML = MONTH_NAMES.map((name, i) => `<option value="${pad2(i + 1)}">${name}</option>`).join('');
+        const thisYear = new Date().getFullYear();
+        const years = [];
+        for (let y = thisYear - 10; y <= thisYear + 1; y++) years.push(y);
+        document.getElementById(yearSelectId).innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join('');
+      }
+
+      const RANGE_PRESETS = [
+        { key: 'lastweek', label: 'Last week', compute: computeLastWeekRange },
+        { key: 'currentweek', label: 'Current week', compute: computeCurrentWeekRange },
+        { key: 'currentmonth', label: 'Current month', compute: computeCurrentMonthRange },
+        { key: 'lastmonth', label: 'Last month', compute: computeLastMonthRange },
+        { key: 'last3months', label: 'Last 3 months', compute: () => computeLastNMonthsRange(3) },
+        { key: 'last6months', label: 'Last 6 months', compute: () => computeLastNMonthsRange(6) },
+        { key: 'last12months', label: 'Last 12 months', compute: () => computeLastNMonthsRange(12) },
+        { key: 'currentfy', label: `Current financial year (${fyLabel(CURRENT_FY_START_YEAR)})`, compute: computeCurrentFYRange },
+        { key: 'lastfy', label: `Last financial year (${fyLabel(CURRENT_FY_START_YEAR - 1)})`, compute: computeLastFYRange },
+        { key: 'custom', label: 'Custom', compute: null },
+      ];
+      function rangeForPreset(preset) {
+        const entry = RANGE_PRESETS.find((p) => p.key === preset);
+        return entry && entry.compute ? entry.compute() : null;
+      }
+      function presetLabel() {
+        if (rangePreset !== 'custom') {
+          const entry = RANGE_PRESETS.find((p) => p.key === rangePreset);
+          return entry ? entry.label : '';
         }
-        if (preset === '3months') {
-          return { start: toDateStr(new Date(today.getFullYear(), today.getMonth() - 3, today.getDate())), end };
-        }
-        const fyStartYear = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
-        return { start: toDateStr(new Date(fyStartYear, 3, 1)), end };
+        if (!customRange) return 'Custom';
+        const [sy, sm] = customRange.start.split('-').map(Number);
+        const [ey, em] = customRange.end.split('-').map(Number);
+        return `${MONTH_NAMES[sm - 1].slice(0, 3)} ${sy} - ${MONTH_NAMES[em - 1].slice(0, 3)} ${ey}`;
+      }
+
+      // Bar granularity adapts to how wide the selected period actually
+      // is, not to which preset was picked — that way every preset (and
+      // any Custom range) automatically lands on a readable bar count:
+      // ~a week or less -> one bar per day, ~a month -> one bar per week
+      // (~4-5 bars), anything longer -> one bar per calendar month.
+      // Custom is separately capped at 12 months (see
+      // updateCustomRangeFromInputs), so the month case never exceeds 12 bars.
+      function bucketGranularity(startStr, endStr) {
+        const days = Math.round((new Date(endStr) - new Date(startStr)) / 86400000) + 1;
+        if (days <= 8) return 'day';
+        if (days <= 35) return 'week';
+        return 'month';
       }
 
       // Monday-of-the-week bucket key for a given Date.
@@ -168,6 +287,27 @@
         return { start: firstStr, end: lastDay > todayStr() ? todayStr() : lastDay };
       }
 
+      const GRANULARITY_NOUN = { day: 'day', week: 'week', month: 'month' };
+
+      // Dispatches to the day/week/month bucket-key, drill-down-range, and
+      // label helpers above based on the granularity bucketGranularity
+      // picked for the current period, so every chart shares one set of
+      // bucketing rules instead of each re-implementing the day case.
+      function bucketKeyFor(date, granularity) {
+        if (granularity === 'day') return toDateStr(date);
+        if (granularity === 'week') return weekStartStr(date);
+        return monthStartStr(date);
+      }
+      function bucketRangeFor(key, granularity) {
+        if (granularity === 'day') return { start: key, end: key };
+        if (granularity === 'week') return weekRangeFromMonday(key);
+        return monthRangeFromFirst(key);
+      }
+      function bucketLabelFor(key, granularity) {
+        if (granularity === 'month') return monthLabel(key);
+        return shortDateLabel(key);
+      }
+
       function showToast(msg) {
         const t = document.getElementById('toast');
         t.textContent = msg;
@@ -175,23 +315,21 @@
         setTimeout(() => t.classList.remove('show'), 2200);
       }
 
-      // Buckets every invoice in range by week or month (see
+      // Buckets every invoice in range by day/week/month (see
       // bucketGranularity) and sums amountReceived per bucket. Each bar
       // links straight into Revenue, pre-filtered to that bucket's exact
-      // date range, so "who was billed in this week/month" is one click
-      // away instead of a separate lookup.
-      function renderRevenueOverTime(invoices, preset) {
+      // date range, so "who was billed on this day/week/month" is one
+      // click away instead of a separate lookup.
+      function renderRevenueOverTime(invoices, granularity) {
         const el = document.getElementById('revenueByWeek');
-        const granularity = bucketGranularity(preset);
-        document.getElementById('revenueOverTimeHeading').textContent =
-          granularity === 'week' ? 'Revenue by week' : 'Revenue by month';
+        document.getElementById('revenueOverTimeHeading').textContent = `Revenue by ${GRANULARITY_NOUN[granularity]}`;
         if (invoices.length === 0) {
           el.innerHTML = '<div class="empty-state">No billed invoices in this period.</div>';
           return;
         }
         const byBucket = {};
         invoices.forEach((inv) => {
-          const key = granularity === 'week' ? weekStartStr(new Date(inv.createdAt)) : monthStartStr(new Date(inv.createdAt));
+          const key = bucketKeyFor(new Date(inv.createdAt), granularity);
           byBucket[key] = (byBucket[key] || 0) + inv.amountReceived;
         });
         const buckets = Object.keys(byBucket).sort();
@@ -201,8 +339,8 @@
             ${buckets.map((key) => {
               const val = byBucket[key];
               const heightPct = Math.round((val / maxVal) * 100);
-              const range = granularity === 'week' ? weekRangeFromMonday(key) : monthRangeFromFirst(key);
-              const label = granularity === 'week' ? shortDateLabel(key) : monthLabel(key);
+              const range = bucketRangeFor(key, granularity);
+              const label = bucketLabelFor(key, granularity);
               return `
                 <a class="trend-bar-col trend-bar-link" href="revenue.html?start=${range.start}&end=${range.end}">
                   <div class="trend-bar-value">₹${val.toLocaleString('en-IN')}</div>
@@ -225,17 +363,15 @@
       // Only counts patients whose visit outcome is actually known (done
       // or no_show) — someone still booked/waiting hasn't resolved yet,
       // so including them would understate the no-show rate. Buckets by
-      // week or month (same rule as Revenue over time) so a bar always
-      // reads as "this specific week/month," never an ambiguous mix of
-      // occurrences — clicking a bar expands the day-of-week and
-      // per-doctor breakdown for exactly that bucket below.
-      function renderNoShowOverTime(patients, preset, doctorById) {
+      // day/week/month (same rule as Revenue over time) so a bar always
+      // reads as "this specific day/week/month," never an ambiguous mix
+      // of occurrences — clicking a bar expands the per-doctor (and, for
+      // week/month bars, day-level) breakdown for exactly that bucket below.
+      function renderNoShowOverTime(patients, granularity, doctorById) {
         const el = document.getElementById('noShowByWeekday');
         const breakdownEl = document.getElementById('noShowBreakdown');
-        const granularity = bucketGranularity(preset);
         noShowGranularityCache = granularity;
-        document.getElementById('noShowHeading').textContent =
-          granularity === 'week' ? 'No-show rate by week' : 'No-show rate by month';
+        document.getElementById('noShowHeading').textContent = `No-show rate by ${GRANULARITY_NOUN[granularity]}`;
 
         const resolved = patients.filter((p) => p.status === 'done' || p.status === 'no_show');
         if (resolved.length === 0) {
@@ -249,7 +385,7 @@
         resolved.forEach((p) => {
           const [y, m, d] = p.tokenDate.split('-').map(Number);
           const date = new Date(y, m - 1, d);
-          const key = granularity === 'week' ? weekStartStr(date) : monthStartStr(date);
+          const key = bucketKeyFor(date, granularity);
           (noShowBucketsCache[key] = noShowBucketsCache[key] || []).push(p);
         });
 
@@ -265,7 +401,7 @@
           <div class="trend-bars">
             ${bucketStats.map((b) => {
               const heightPct = Math.round((b.rate / maxRate) * 100);
-              const label = granularity === 'week' ? shortDateLabel(b.key) : monthLabel(b.key);
+              const label = bucketLabelFor(b.key, granularity);
               return `
                 <button type="button" class="trend-bar-col trend-bar-link ${b.key === selectedNoShowBucket ? 'trend-bar-selected' : ''}" data-bucket="${b.key}" title="${b.noShows} no-show${b.noShows === 1 ? '' : 's'} of ${b.total} resolved visit${b.total === 1 ? '' : 's'}">
                   <div class="trend-bar-value">${Math.round(b.rate)}%</div>
@@ -292,10 +428,13 @@
       function renderNoShowBreakdown(key, doctorById) {
         const breakdownEl = document.getElementById('noShowBreakdown');
         const items = noShowBucketsCache[key] || [];
+        const isDayBucket = noShowGranularityCache === 'day';
         const isWeekBucket = noShowGranularityCache === 'week';
-        const periodLabel = isWeekBucket ? `week of ${shortDateLabel(key)}` : monthLabel(key);
+        const periodLabel = isDayBucket ? shortDateLabel(key) : isWeekBucket ? `week of ${shortDateLabel(key)}` : monthLabel(key);
 
-        // A week bucket has exactly one occurrence of each weekday, so
+        // A day bucket already IS a single day, so there's no further
+        // day-level split to show — only "By doctor" renders below. A
+        // week bucket has exactly one occurrence of each weekday, so
         // showing the actual calendar date is more useful than a generic
         // "Sat" label. A month bucket has ~4-5 occurrences of each
         // weekday, so those bars stay an aggregate-by-weekday rate.
@@ -315,7 +454,7 @@
             dayTotals[idx]++;
             if (p.status === 'no_show') dayNoShows[idx]++;
           });
-        } else {
+        } else if (!isDayBucket) {
           dayLabels = WEEKDAY_LABELS;
           items.forEach((p) => {
             const [y, m, d] = p.tokenDate.split('-').map(Number);
@@ -347,6 +486,7 @@
 
         breakdownEl.innerHTML = `
           <p class="panel-note" style="margin:14px 0 12px;">Showing ${periodLabel} · ${items.length} resolved visit${items.length === 1 ? '' : 's'}</p>
+          ${isDayBucket ? '' : `
           <div>
             <h3 style="margin:0 0 10px;font-size:14px;color:var(--grey-700);">${isWeekBucket ? 'By day' : 'By day of week'}</h3>
             <div class="trend-bars trend-bars-compact">
@@ -358,7 +498,8 @@
               `).join('')}
             </div>
           </div>
-          <div style="margin-top:36px;">
+          `}
+          <div style="margin-top:${isDayBucket ? '0' : '36px'};">
             <h3 style="margin:0 0 10px;font-size:14px;color:var(--grey-700);">By doctor</h3>
             <div class="trend-bars trend-bars-compact">
               ${doctorRows.map((r) => `
@@ -487,32 +628,81 @@
         `;
       }
 
-      let currentPreset = 'month';
+      let rangePreset = 'currentmonth';
+      let customRange = null; // exact {start,end} for the 'custom' preset
       let doctorByIdCache = {};
 
+      function currentRange() {
+        return rangePreset === 'custom' ? customRange : rangeForPreset(rangePreset);
+      }
+
       async function loadAndRender() {
-        const range = rangeForPreset(currentPreset);
-        document.getElementById('visitsPerDoctorHeading').textContent = `Visits per doctor (${PRESET_LABELS[currentPreset]})`;
-        document.getElementById('revenueByDoctorHeading').textContent = `Revenue by doctor (${PRESET_LABELS[currentPreset]})`;
+        const range = currentRange();
+        if (!range) return;
+        const granularity = bucketGranularity(range.start, range.end);
+        const label = presetLabel();
+        document.getElementById('visitsPerDoctorHeading').textContent = `Visits per doctor (${label})`;
+        document.getElementById('revenueByDoctorHeading').textContent = `Revenue by doctor (${label})`;
         const [invoices, patients, doctors] = await Promise.all([
           Qlinic.getInvoicesForDateRange(range.start, range.end),
           Qlinic.getPatientsInRange(range.start, range.end),
           Qlinic.getDoctors({ includeInactive: true }),
         ]);
         doctorByIdCache = Object.fromEntries(doctors.map((d) => [d.id, d]));
-        renderRevenueOverTime(invoices, currentPreset);
+        renderRevenueOverTime(invoices, granularity);
         renderVisitsPerDoctor(patients, doctors, invoices);
         renderRevenueByDoctor(invoices, doctors);
-        renderNoShowOverTime(patients, currentPreset, doctorByIdCache);
+        renderNoShowOverTime(patients, granularity, doctorByIdCache);
       }
 
-      document.getElementById('periodPills').addEventListener('click', (e) => {
-        const btn = e.target.closest('.period-pill');
-        if (!btn) return;
-        currentPreset = btn.dataset.preset;
-        document.querySelectorAll('.period-pill').forEach((p) => p.classList.toggle('active', p === btn));
+      function renderPeriodOptions() {
+        document.getElementById('trendsPeriodSelect').innerHTML = RANGE_PRESETS.map((p) =>
+          `<option value="${p.key}" ${p.key === rangePreset ? 'selected' : ''}>${p.label}</option>`
+        ).join('');
+      }
+
+      // Custom is restricted to at most 12 months so bars never exceed a
+      // readable count (bucketGranularity always lands on monthly bars
+      // past 35 days, so this caps it at 12 monthly bars). Auto-clamps
+      // and toasts rather than blocking, since there's no explicit
+      // "Apply" step here — the chart updates live as the fields change.
+      function updateCustomRangeFromInputs() {
+        const sMonthEl = document.getElementById('trendsRangeStartMonth');
+        const sYearEl = document.getElementById('trendsRangeStartYear');
+        const eMonthEl = document.getElementById('trendsRangeEndMonth');
+        const eYearEl = document.getElementById('trendsRangeEndYear');
+        const sm = Number(sMonthEl.value), sy = Number(sYearEl.value);
+        const em = Number(eMonthEl.value), ey = Number(eYearEl.value);
+        const startIdx = sy * 12 + (sm - 1);
+        let endIdx = ey * 12 + (em - 1);
+        if (endIdx < startIdx) {
+          endIdx = startIdx;
+          showToast("End date can't be before start date — adjusted.");
+        } else if (endIdx - startIdx > 11) {
+          endIdx = startIdx + 11;
+          showToast('Custom period is limited to 12 months — end date adjusted.');
+        }
+        if (endIdx !== ey * 12 + (em - 1)) {
+          eYearEl.value = String(Math.floor(endIdx / 12));
+          eMonthEl.value = pad2((endIdx % 12) + 1);
+        }
+        customRange = monthYearToRange(sMonthEl.value, sYearEl.value, eMonthEl.value, eYearEl.value);
         selectedNoShowBucket = null;
         loadAndRender();
+      }
+      ['trendsRangeStartMonth', 'trendsRangeStartYear', 'trendsRangeEndMonth', 'trendsRangeEndYear'].forEach((id) => {
+        document.getElementById(id).addEventListener('change', updateCustomRangeFromInputs);
+      });
+
+      document.getElementById('trendsPeriodSelect').addEventListener('change', (e) => {
+        rangePreset = e.target.value;
+        document.getElementById('trendsCustomRangeFilters').style.display = rangePreset === 'custom' ? 'flex' : 'none';
+        selectedNoShowBucket = null;
+        if (rangePreset === 'custom') {
+          updateCustomRangeFromInputs();
+        } else {
+          loadAndRender();
+        }
       });
 
       // Toggling a bucket is purely a display-state change over data
@@ -536,7 +726,9 @@
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
-      document.querySelector('.period-pill[data-preset="month"]').classList.add('active');
+      populateMonthYearSelects('trendsRangeStartMonth', 'trendsRangeStartYear');
+      populateMonthYearSelects('trendsRangeEndMonth', 'trendsRangeEndYear');
+      renderPeriodOptions();
       await loadAndRender();
       Qlinic.onLiveChange(loadAndRender);
     })();
