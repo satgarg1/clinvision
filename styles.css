@@ -1061,6 +1061,42 @@ table.qtable tr:last-child td { border-bottom: none; }
 .time-picker-option.selected { background: var(--accent); color: #ffffff; font-weight: 600; }
 .time-picker-empty { padding: 16px 12px; text-align: center; color: var(--grey-500); font-size: 13px; }
 
+/* Reception's "Find a Patient" inline edit row: Name/Phone/Doctor were
+   left as bare, unstyled inputs while Booked's date + time-picker got the
+   normal polished treatment, so the row read as mismatched. Every editable
+   cell now shares one small, rounded input style; #searchResults scoping
+   (an ID, so it wins over .time-picker-trigger's own rule without relying
+   on source order) keeps this deliberately smaller than the main
+   Add-a-patient form's picker, since Booked stacks two controls (date
+   above time) and a full-size picker there would make that one cell much
+   taller than its single-line neighbors. vertical-align: top keeps every
+   cell starting from the same line instead of centering around whichever
+   cell happens to be tallest. */
+#searchResults .qtable td { vertical-align: top; }
+#searchResults .search-edit-name,
+#searchResults .search-edit-phone,
+#searchResults .search-edit-doctor,
+#searchResults .search-edit-date,
+#searchResults .time-picker-trigger {
+  width: 100%;
+  padding: 7px 9px;
+  font-size: 13px;
+  font-family: var(--font);
+  border: 1px solid var(--grey-300);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--black);
+}
+#searchResults .search-edit-name:focus,
+#searchResults .search-edit-phone:focus,
+#searchResults .search-edit-doctor:focus,
+#searchResults .search-edit-date:focus,
+#searchResults .time-picker-trigger:focus {
+  outline: 2px solid var(--accent);
+  border-color: var(--accent);
+}
+#searchResults .search-edit-date { display: block; margin-bottom: 4px; }
+
 /* A row of toggleable day buttons — for picking a set of weekdays (e.g.
    which days a clinic is closed) where a native multi-select's ctrl/cmd-
    click gesture would be unclear to most reception/admin users. */

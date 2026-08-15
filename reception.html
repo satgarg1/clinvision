@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=81" />
+<link rel="stylesheet" href="styles.css?v=82" />
 </head>
 <body>
   <div class="app-shell">
@@ -549,7 +549,7 @@
                 if (editingSearchPatientId === p.id) {
                   const doctorOptions = doctorsCache.map((d) => `<option value="${d.id}" ${d.id === p.doctorId ? 'selected' : ''}>${d.name}</option>`).join('');
                   const bookedEditCell = p.type === 'appointment'
-                    ? `<input type="date" class="search-edit-date" value="${p.bookedDate || ''}" style="width:100%;margin-bottom:6px;" />
+                    ? `<input type="date" class="search-edit-date" value="${p.bookedDate || ''}" />
                        <div class="time-picker" id="searchEditTimePicker">
                          <button type="button" class="time-picker-trigger ${p.bookedTime ? '' : 'placeholder'}" id="searchEditTimeTrigger">
                            <span id="searchEditTimeTriggerText">${p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : 'Select a time'}</span><span class="time-picker-caret">▾</span>
@@ -560,9 +560,9 @@
                     : 'Walk-in';
                   return `
                     <tr>
-                      <td><input type="text" class="search-edit-name" value="${p.name}" style="width:100%;" /></td>
-                      <td><input type="text" class="search-edit-phone" value="${p.phone}" style="width:100%;" /></td>
-                      <td><select class="search-edit-doctor" style="width:100%;">${doctorOptions}</select></td>
+                      <td><input type="text" class="search-edit-name" value="${p.name}" /></td>
+                      <td><input type="text" class="search-edit-phone" value="${p.phone}" /></td>
+                      <td><select class="search-edit-doctor">${doctorOptions}</select></td>
                       <td>${bookedEditCell}</td>
                       <td>${searchStatusBadge(p)}</td>
                       <td>
