@@ -845,12 +845,13 @@ table.qtable tr:last-child td { border-bottom: none; }
    time-pickers): bigger boxes, a wider gap, and the Save button matched
    to the same height as the field beside it rather than the shorter
    default .btn-sm. */
-#rulesForm, #displayLanguageForm { gap: 16px; }
-#rulesForm .time-picker-trigger, #displayLanguageForm select, #followUpBufferInput, #openingTimeInput, #closingTimeInput {
+#rulesForm, #clinicControlsForm, #displayLanguageForm { gap: 16px; }
+#rulesForm .time-picker-trigger, #clinicControlsForm .time-picker-trigger, #clinicControlsForm select,
+#displayLanguageForm select, #followUpBufferInput {
   padding: 12px 14px;
   font-size: 15px;
 }
-#rulesForm .btn-sm, #displayLanguageForm .btn-sm {
+#rulesForm .btn-sm, #clinicControlsForm .btn-sm, #displayLanguageForm .btn-sm {
   padding: 12px 18px;
   font-size: 15px;
 }
@@ -1054,6 +1055,11 @@ table.qtable tr:last-child td { border-bottom: none; }
 .time-picker-empty { padding: 16px 12px; text-align: center; color: var(--grey-500); font-size: 13px; }
 
 .panel-note { font-size: 13px; color: var(--grey-500); margin: 0 0 14px; }
+
+/* A one-line caption under a single field, for the short "what does this
+   do" hint that used to live as one big paragraph under the whole form —
+   attached to the field it explains instead of read separately. */
+.field-hint { display: block; font-size: 12px; color: var(--grey-500); margin-top: 6px; }
 
 .viewing-label {
   font-size: 13px;

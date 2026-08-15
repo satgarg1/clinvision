@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=77" />
+<link rel="stylesheet" href="styles.css?v=78" />
 </head>
 <body>
   <div class="app-shell">
@@ -100,6 +100,7 @@
             <div class="field mode-only mode-only-appointment">
               <label>Appointment date</label>
               <input type="date" id="pDate" />
+              <span class="field-hint" id="closedDayHint" style="display:none;color:var(--danger);"></span>
             </div>
             <div class="field mode-only mode-only-appointment">
               <label>Appointment time</label>
@@ -151,7 +152,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=34"></script>
+  <script src="clinic-data.js?v=35"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -182,6 +183,7 @@
       let patientMode = 'appointment';
       let clinicOpenMin = 0;
       let clinicCloseMin = 1440;
+      let clinicWeeklyOffDay = null;
       let queueDoctorId = null;
       let queueViewDate = null;
       let bookedExpanded = false;
@@ -221,6 +223,27 @@
       // opens. Values stay "HH:MM" 24-hour strings in a hidden input, so
       // nothing else that reads/sets pTime.value has to change.
       let timePickerOptions = [];
+
+      // Parsed manually (not new Date(dateStr)) so the weekday check is
+      // always against local calendar time, not thrown off by the
+      // UTC-midnight parsing a plain "YYYY-MM-DD" string gets otherwise.
+      const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      function isClosedDate(dateStr) {
+        if (!clinicWeeklyOffDay || !dateStr) return false;
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return DAY_NAMES[new Date(y, m - 1, d).getDay()] === clinicWeeklyOffDay;
+      }
+      function updateClosedDayHint() {
+        const hint = document.getElementById('closedDayHint');
+        const dateVal = document.getElementById('pDate').value;
+        if (isClosedDate(dateVal)) {
+          const dayLabel = clinicWeeklyOffDay[0].toUpperCase() + clinicWeeklyOffDay.slice(1);
+          hint.textContent = `⛔ Clinic is closed on this date (${dayLabel}s) — choose a different date.`;
+          hint.style.display = 'block';
+        } else {
+          hint.style.display = 'none';
+        }
+      }
 
       function buildTimePickerOptions() {
         const dateVal = document.getElementById('pDate').value;
@@ -770,6 +793,10 @@
         } else {
           const date = document.getElementById('pDate').value;
           const time = document.getElementById('pTime').value;
+          if (isClosedDate(date)) {
+            showToast('Clinic is closed on this date — choose a different date');
+            return;
+          }
           if (!time) {
             showToast('Pick an appointment time first');
             return;
@@ -804,6 +831,7 @@
         resetTimePicker();
         clearPatientLookupHint();
         clearFollowUpHint();
+        updateClosedDayHint();
         renderQueues();
       });
 
@@ -811,6 +839,7 @@
       document.getElementById('pDate').addEventListener('change', () => {
         resetTimePicker();
         updateSlotHint();
+        updateClosedDayHint();
       });
 
       // Looking up the phone number on blur (not every keystroke) is a
@@ -887,11 +916,13 @@
       if (clinic) {
         if (clinic.opening_time) clinicOpenMin = Qlinic.parseTime(clinic.opening_time);
         if (clinic.closing_time) clinicCloseMin = Qlinic.parseTime(clinic.closing_time);
+        clinicWeeklyOffDay = clinic.weekly_off_day || null;
       }
       document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
       setInterval(() => { document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date()); }, 30000);
       document.getElementById('pDate').min = Qlinic.getTodayDate();
       document.getElementById('pDate').value = Qlinic.getTodayDate();
+      updateClosedDayHint();
 
       await refreshDoctorsCache();
       fillDoctorSelects();

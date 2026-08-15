@@ -267,6 +267,7 @@
     if (fields.followUpBufferDays !== undefined) payload.follow_up_buffer_days = Number(fields.followUpBufferDays);
     if (fields.openingTime !== undefined) payload.opening_time = fields.openingTime;
     if (fields.closingTime !== undefined) payload.closing_time = fields.closingTime;
+    if (fields.weeklyOffDay !== undefined) payload.weekly_off_day = fields.weeklyOffDay || null;
     if (fields.displayLanguage !== undefined) payload.display_language = fields.displayLanguage;
     if (fields.addressLine !== undefined) payload.address_line = fields.addressLine;
     if (fields.city !== undefined) payload.city = fields.city;

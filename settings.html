@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=77" />
+<link rel="stylesheet" href="styles.css?v=78" />
 </head>
 <body>
   <div class="app-shell">
@@ -94,6 +94,7 @@
               <input type="hidden" id="graceWindowInput" required />
               <div class="time-picker-panel" id="graceWindowPanel" style="display:none;"></div>
             </div>
+            <span class="field-hint">Minutes late before a "likely no-show" flag</span>
           </div>
           <div class="field" style="max-width:160px;">
             <label>Slot length</label>
@@ -104,6 +105,7 @@
               <input type="hidden" id="slotIntervalInput" required />
               <div class="time-picker-panel" id="slotIntervalPanel" style="display:none;"></div>
             </div>
+            <span class="field-hint">Booking bucket size for overbooking checks</span>
           </div>
           <div class="field" style="max-width:160px;">
             <label>Max patients per slot</label>
@@ -114,30 +116,63 @@
               <input type="hidden" id="slotCapacityInput" required />
               <div class="time-picker-panel" id="slotCapacityPanel" style="display:none;"></div>
             </div>
-          </div>
-          <div class="field" style="max-width:160px;">
-            <label>Follow-up window</label>
-            <input type="number" id="followUpBufferInput" min="0" max="90" step="1" placeholder="0" />
-          </div>
-          <div class="field" style="max-width:160px;">
-            <label>Opening time</label>
-            <input type="time" id="openingTimeInput" required />
-          </div>
-          <div class="field" style="max-width:160px;">
-            <label>Closing time</label>
-            <input type="time" id="closingTimeInput" required />
+            <span class="field-hint">Triggers the overbooking warning</span>
           </div>
           <div class="field" style="flex:0;">
             <label>&nbsp;</label>
             <button type="submit" class="btn-sm primary">Save</button>
           </div>
         </form>
-        <p class="panel-note" style="margin-top:10px;margin-bottom:0;">
-          Grace window: how many minutes past a booked time before a no-show patient gets flagged as "likely no-show."
-          Slot length &amp; capacity: how bookings get bucketed for the overbooking warning in Reception.
-          Follow-up window: if a patient returns to the <em>same doctor</em> within this many days of their last completed visit, Reception gets a heads-up that no consultation fee is needed. Set to 0 to turn this off.
-          Opening/closing time: bounds which times Reception can offer when booking an appointment.
-        </p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>Clinic controls</h2></div>
+        <form id="clinicControlsForm" class="inline-form">
+          <div class="field" style="max-width:160px;">
+            <label>Follow-up window</label>
+            <input type="number" id="followUpBufferInput" min="0" max="90" step="1" placeholder="0" />
+            <span class="field-hint">Days a repeat visit skips the fee (0 = off)</span>
+          </div>
+          <div class="field" style="max-width:180px;">
+            <label>Opening time</label>
+            <div class="time-picker" id="openingTimePicker">
+              <button type="button" class="time-picker-trigger" id="openingTimeTrigger">
+                <span id="openingTimeTriggerText">Loading…</span><span class="time-picker-caret">▾</span>
+              </button>
+              <input type="hidden" id="openingTimeInput" required />
+              <div class="time-picker-panel" id="openingTimePanel" style="display:none;"></div>
+            </div>
+          </div>
+          <div class="field" style="max-width:180px;">
+            <label>Closing time</label>
+            <div class="time-picker" id="closingTimePicker">
+              <button type="button" class="time-picker-trigger" id="closingTimeTrigger">
+                <span id="closingTimeTriggerText">Loading…</span><span class="time-picker-caret">▾</span>
+              </button>
+              <input type="hidden" id="closingTimeInput" required />
+              <div class="time-picker-panel" id="closingTimePanel" style="display:none;"></div>
+            </div>
+            <span class="field-hint">Bounds Reception's appointment times</span>
+          </div>
+          <div class="field" style="max-width:180px;">
+            <label>Weekly off day</label>
+            <select id="weeklyOffDayInput">
+              <option value="">None</option>
+              <option value="monday">Monday</option>
+              <option value="tuesday">Tuesday</option>
+              <option value="wednesday">Wednesday</option>
+              <option value="thursday">Thursday</option>
+              <option value="friday">Friday</option>
+              <option value="saturday">Saturday</option>
+              <option value="sunday">Sunday</option>
+            </select>
+            <span class="field-hint">Warns Reception before booking this day</span>
+          </div>
+          <div class="field" style="flex:0;">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn-sm primary">Save</button>
+          </div>
+        </form>
       </div>
 
       <div class="panel">
@@ -199,7 +234,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=34"></script>
+  <script src="clinic-data.js?v=35"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -309,6 +344,16 @@
       const CAPACITY_OPTIONS = [];
       for (let n = 1; n <= 10; n += 1) CAPACITY_OPTIONS.push({ value: n, label: `${n}` });
 
+      // 30-min steps, 4:00 AM to 11:30 PM — every realistic opening or
+      // closing time a clinic would pick, without the unusable
+      // every-single-minute list a native <input type="time"> shows.
+      function pad2(n) { return String(n).padStart(2, '0'); }
+      const TIME_OF_DAY_OPTIONS = [];
+      for (let m = 4 * 60; m <= 23 * 60 + 30; m += 30) {
+        const value = `${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`;
+        TIME_OF_DAY_OPTIONS.push({ value, label: Qlinic.formatTime(m) });
+      }
+
       const graceWindowPicker = setupDropdownPicker({
         pickerId: 'graceWindowPicker', triggerId: 'graceWindowTrigger', triggerTextId: 'graceWindowTriggerText',
         hiddenId: 'graceWindowInput', panelId: 'graceWindowPanel', options: DURATION_OPTIONS,
@@ -323,6 +368,16 @@
         pickerId: 'slotCapacityPicker', triggerId: 'slotCapacityTrigger', triggerTextId: 'slotCapacityTriggerText',
         hiddenId: 'slotCapacityInput', panelId: 'slotCapacityPanel', options: CAPACITY_OPTIONS,
         fallbackLabel: (v) => `${v}`,
+      });
+      const openingTimePicker = setupDropdownPicker({
+        pickerId: 'openingTimePicker', triggerId: 'openingTimeTrigger', triggerTextId: 'openingTimeTriggerText',
+        hiddenId: 'openingTimeInput', panelId: 'openingTimePanel', options: TIME_OF_DAY_OPTIONS,
+        fallbackLabel: (v) => Qlinic.formatTime(Qlinic.parseTime(v)),
+      });
+      const closingTimePicker = setupDropdownPicker({
+        pickerId: 'closingTimePicker', triggerId: 'closingTimeTrigger', triggerTextId: 'closingTimeTriggerText',
+        hiddenId: 'closingTimeInput', panelId: 'closingTimePanel', options: TIME_OF_DAY_OPTIONS,
+        fallbackLabel: (v) => Qlinic.formatTime(Qlinic.parseTime(v)),
       });
 
       document.getElementById('stateInput').innerHTML = '<option value="">Select state</option>' +
@@ -357,8 +412,9 @@
         slotIntervalPicker.setValue(clinic.slot_interval_mins);
         slotCapacityPicker.setValue(clinic.slot_capacity);
         document.getElementById('followUpBufferInput').value = clinic.follow_up_buffer_days || 0;
-        document.getElementById('openingTimeInput').value = (clinic.opening_time || '09:00').slice(0, 5);
-        document.getElementById('closingTimeInput').value = (clinic.closing_time || '18:00').slice(0, 5);
+        openingTimePicker.setValue((clinic.opening_time || '09:00').slice(0, 5));
+        closingTimePicker.setValue((clinic.closing_time || '18:00').slice(0, 5));
+        document.getElementById('weeklyOffDayInput').value = clinic.weekly_off_day || '';
         document.getElementById('displayLanguageInput').value = clinic.display_language;
       }
 
@@ -401,6 +457,16 @@
 
       document.getElementById('rulesForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        await Qlinic.updateClinic({
+          graceWindowMins: document.getElementById('graceWindowInput').value,
+          slotIntervalMins: document.getElementById('slotIntervalInput').value,
+          slotCapacity: document.getElementById('slotCapacityInput').value,
+        });
+        showToast('Queue rules updated');
+      });
+
+      document.getElementById('clinicControlsForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
         const openingTime = document.getElementById('openingTimeInput').value;
         const closingTime = document.getElementById('closingTimeInput').value;
         if (openingTime >= closingTime) {
@@ -408,14 +474,12 @@
           return;
         }
         await Qlinic.updateClinic({
-          graceWindowMins: document.getElementById('graceWindowInput').value,
-          slotIntervalMins: document.getElementById('slotIntervalInput').value,
-          slotCapacity: document.getElementById('slotCapacityInput').value,
           followUpBufferDays: document.getElementById('followUpBufferInput').value || 0,
           openingTime,
           closingTime,
+          weeklyOffDay: document.getElementById('weeklyOffDayInput').value,
         });
-        showToast('Queue rules updated');
+        showToast('Clinic controls updated');
       });
 
       document.getElementById('displayLanguageForm').addEventListener('submit', async (e) => {
