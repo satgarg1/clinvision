@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Billing: Qlinic</title>
+<title>Closed Dates: Qlinic</title>
 <script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,32 +33,47 @@
         <a href="dashboard.html" class="nav-link">Dashboard</a>
         <a href="reception.html" class="nav-link">Reception</a>
         <a href="doctor.html" class="nav-link">Doctor View</a>
-        <a href="billing.html" class="nav-link active" id="billingNavLink">Billing</a>
+        <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
         <a href="trends.html" class="nav-link" id="trendsNavLink">Trends</a>
         <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
         <a href="display.html" class="nav-link">Display Screen</a>
-        <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
+        <a href="settings.html" class="nav-link active pinned-bottom">Settings</a>
       </nav>
     </aside>
 
     <main class="app-main">
       <div class="app-topbar">
-        <h1>Billing</h1>
+        <div>
+          <div class="breadcrumb"><a href="settings.html">Settings</a> <span>/</span> Closed Dates</div>
+          <h1>Closed dates</h1>
+        </div>
       </div>
 
-      <div class="card-grid">
-        <a href="billing-consultation.html" class="panel billing-option-card" style="text-decoration:none;color:inherit;display:block;">
-          <div class="panel-header"><h2>Consultation billing</h2></div>
-          <p class="panel-note">Bill a patient for a doctor visit, consultation or emergency fee, and print a receipt.</p>
-        </a>
-        <div class="panel" style="opacity:0.55;">
-          <div class="panel-header"><h2>Pharmacy billing</h2></div>
-          <p class="panel-note">Bill a patient for dispensed medicines. Coming soon.</p>
-        </div>
+      <div class="panel">
+        <div class="panel-header"><h2>Add a closure</h2></div>
+        <p class="panel-note">Reception is warned before booking an appointment on any date listed below.</p>
+        <form id="closureForm" class="inline-form">
+          <div class="field" style="max-width:200px;">
+            <label>Date</label>
+            <input type="date" id="closureDate" required />
+          </div>
+          <div class="field" style="flex:1;min-width:220px;">
+            <label>Note (optional)</label>
+            <input type="text" id="closureNote" placeholder="e.g. Diwali" />
+          </div>
+          <div class="field" style="flex:0;">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn-sm primary">Add closure</button>
+          </div>
+        </form>
+
+        <div id="closuresTableWrap" style="margin-top:20px;"></div>
       </div>
     </main>
   </div>
+
+  <div class="toast" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
@@ -67,9 +82,6 @@
     (async function () {
       await Qlinic.requireLogin('login.html');
 
-      // The sidebar logo links to the marketing site, which has no way
-      // back into the app without logging in again, worth a heads-up
-      // before someone loses their place by accident.
       document.querySelector('a.brand').addEventListener('click', (e) => {
         e.preventDefault();
         if (confirm("Going to the homepage will end your session here, you'll need to log in again to get back in. Continue?")) {
@@ -77,16 +89,79 @@
         }
       });
 
-      if (!(await Qlinic.canAccessBilling())) {
+      if (!(await Qlinic.isAdmin())) {
         window.location.href = 'dashboard.html';
         return;
       }
-      if (!(await Qlinic.isAdmin())) {
-        document.getElementById('settingsNavLink').style.display = 'none';
+
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
       }
+
+      let closures = [];
+
+      function fmtDate(dateStr) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+      }
+
+      function renderClosures() {
+        const wrap = document.getElementById('closuresTableWrap');
+        if (closures.length === 0) {
+          wrap.innerHTML = '<div class="empty-state">No closed dates added yet.</div>';
+          return;
+        }
+        wrap.innerHTML = `
+          <table class="qtable">
+            <thead><tr><th>Date</th><th>Note</th><th></th></tr></thead>
+            <tbody>
+              ${closures.map((c) => `
+                <tr>
+                  <td>${fmtDate(c.date)}</td>
+                  <td>${c.note ? c.note : '<span class="sub-line">No note</span>'}</td>
+                  <td style="text-align:right;"><button type="button" class="btn-sm danger" data-id="${c.id}">Delete</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        wrap.querySelectorAll('[data-id]').forEach((btn) => {
+          btn.addEventListener('click', () => doDeleteClosure(btn.getAttribute('data-id')));
+        });
+      }
+
+      async function loadClosures() {
+        closures = await Qlinic.getClinicClosures();
+        renderClosures();
+      }
+
+      async function doDeleteClosure(id) {
+        if (!confirm('Remove this closed date?')) return;
+        await Qlinic.deleteClinicClosure(id);
+        showToast('Closed date removed');
+        loadClosures();
+      }
+
+      document.getElementById('closureForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const dateInput = document.getElementById('closureDate');
+        const noteInput = document.getElementById('closureNote');
+        const date = dateInput.value;
+        if (!date) { showToast('Pick a date first'); return; }
+        if (closures.some((c) => c.date === date)) { showToast('That date is already on the list'); return; }
+        await Qlinic.addClinicClosure({ date, note: noteInput.value.trim() });
+        dateInput.value = '';
+        noteInput.value = '';
+        showToast('Closed date added');
+        loadClosures();
+      });
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      await loadClosures();
     })();
   </script>
   <script>

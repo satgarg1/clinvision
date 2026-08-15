@@ -279,6 +279,36 @@
     currentClinic = null; // force a fresh read next time
   }
 
+  // ---------------- clinic closures (one-off closed dates) ----------------
+
+  function normalizeClosure(row) {
+    return { id: row.id, date: row.closure_date, note: row.note || '' };
+  }
+
+  async function getClinicClosures() {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId) return [];
+    const { data, error } = await sb.from('clinic_closures').select('*')
+      .eq('clinic_id', clinicId)
+      .order('closure_date');
+    if (error) throw error;
+    return data.map(normalizeClosure);
+  }
+
+  async function addClinicClosure({ date, note }) {
+    const clinicId = await ensureClinicContext();
+    const { data, error } = await sb.from('clinic_closures').insert({
+      clinic_id: clinicId, closure_date: date, note: note || '',
+    }).select().single();
+    if (error) throw error;
+    return normalizeClosure(data);
+  }
+
+  async function deleteClinicClosure(closureId) {
+    const { error } = await sb.from('clinic_closures').delete().eq('id', closureId);
+    if (error) throw error;
+  }
+
   // Defaults to active doctors only: that's what every operational screen
   // (reception, doctor view, dashboard, display) should ever see. Settings
   // passes { includeInactive: true } since it's the one place that needs to
@@ -1162,6 +1192,9 @@
 
     getClinic,
     updateClinic,
+    getClinicClosures,
+    addClinicClosure,
+    deleteClinicClosure,
     getDoctors,
     getDoctor,
     addDoctor,

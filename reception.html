@@ -152,7 +152,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=37"></script>
+  <script src="clinic-data.js?v=38"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -184,6 +184,7 @@
       let clinicOpenMin = 0;
       let clinicCloseMin = 1440;
       let clinicWeeklyOffDays = [];
+      let clinicClosureByDate = {};
       let queueDoctorId = null;
       let queueViewDate = null;
       let bookedExpanded = false;
@@ -228,19 +229,34 @@
       // always against local calendar time, not thrown off by the
       // UTC-midnight parsing a plain "YYYY-MM-DD" string gets otherwise.
       const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      // Checks both the weekly off days and any one-off closure (holidays,
+      // etc. — see Settings > Closed Dates) against a single date, and
+      // returns why it's closed so callers can show a specific message
+      // instead of a generic "clinic is closed."
+      function closureReason(dateStr) {
+        if (!dateStr) return null;
+        if (clinicWeeklyOffDays.length) {
+          const [y, m, d] = dateStr.split('-').map(Number);
+          const dayName = DAY_NAMES[new Date(y, m - 1, d).getDay()];
+          if (clinicWeeklyOffDays.includes(dayName)) {
+            const dayLabel = dayName[0].toUpperCase() + dayName.slice(1);
+            return `Clinic is closed on this date (${dayLabel}s)`;
+          }
+        }
+        if (clinicClosureByDate[dateStr] !== undefined) {
+          const note = clinicClosureByDate[dateStr];
+          return note ? `Clinic is closed on this date (${note})` : 'Clinic is closed on this date';
+        }
+        return null;
+      }
       function isClosedDate(dateStr) {
-        if (!clinicWeeklyOffDays.length || !dateStr) return false;
-        const [y, m, d] = dateStr.split('-').map(Number);
-        return clinicWeeklyOffDays.includes(DAY_NAMES[new Date(y, m - 1, d).getDay()]);
+        return !!closureReason(dateStr);
       }
       function updateClosedDayHint() {
         const hint = document.getElementById('closedDayHint');
-        const dateVal = document.getElementById('pDate').value;
-        if (isClosedDate(dateVal)) {
-          const [y, m, d] = dateVal.split('-').map(Number);
-          const dayName = DAY_NAMES[new Date(y, m - 1, d).getDay()];
-          const dayLabel = dayName[0].toUpperCase() + dayName.slice(1);
-          hint.textContent = `⛔ Clinic is closed on this date (${dayLabel}s) — choose a different date.`;
+        const reason = closureReason(document.getElementById('pDate').value);
+        if (reason) {
+          hint.textContent = `⛔ ${reason} — choose a different date.`;
           hint.style.display = 'block';
         } else {
           hint.style.display = 'none';
@@ -317,11 +333,18 @@
         if (!opt) return;
         selectTime(opt.getAttribute('data-value'), opt.getAttribute('data-label'));
       });
+      // Delegated (not bound to one specific .time-picker) so it also
+      // covers the search-edit row's time picker, which is rebuilt fresh
+      // on every render and can't hold a persistent listener of its own.
       document.addEventListener('click', (e) => {
-        if (!document.getElementById('pTimePicker').contains(e.target)) closeTimePanel();
+        if (!e.target.closest('.time-picker')) {
+          document.querySelectorAll('.time-picker-panel').forEach((p) => { p.style.display = 'none'; });
+        }
       });
       document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeTimePanel();
+        if (e.key === 'Escape') {
+          document.querySelectorAll('.time-picker-panel').forEach((p) => { p.style.display = 'none'; });
+        }
       });
 
       // Walk-in and phoned-appointment used to be two separate, near-identical
@@ -526,8 +549,14 @@
                 if (editingSearchPatientId === p.id) {
                   const doctorOptions = doctorsCache.map((d) => `<option value="${d.id}" ${d.id === p.doctorId ? 'selected' : ''}>${d.name}</option>`).join('');
                   const bookedEditCell = p.type === 'appointment'
-                    ? `<input type="date" class="search-edit-date" value="${p.bookedDate || ''}" style="width:100%;margin-bottom:4px;" />
-                       <input type="time" class="search-edit-time" value="${p.bookedTime || ''}" style="width:100%;" />`
+                    ? `<input type="date" class="search-edit-date" value="${p.bookedDate || ''}" style="width:100%;margin-bottom:6px;" />
+                       <div class="time-picker" id="searchEditTimePicker">
+                         <button type="button" class="time-picker-trigger ${p.bookedTime ? '' : 'placeholder'}" id="searchEditTimeTrigger">
+                           <span id="searchEditTimeTriggerText">${p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : 'Select a time'}</span><span class="time-picker-caret">▾</span>
+                         </button>
+                         <input type="hidden" class="search-edit-time" value="${p.bookedTime || ''}" />
+                         <div class="time-picker-panel" id="searchEditTimePanel" style="display:none;"></div>
+                       </div>`
                     : 'Walk-in';
                   return `
                     <tr>
@@ -560,6 +589,47 @@
             </tbody>
           </table>
         `;
+        const editingPatient = results.find((p) => p.id === editingSearchPatientId);
+        if (editingPatient && editingPatient.type === 'appointment') wireSearchEditTimePicker();
+      }
+
+      // Same 5-min-step dropdown as the main Appointment time field, wired
+      // fresh each render since the row (and its DOM) is rebuilt every time
+      // — no "now" restriction here, unlike the new-booking picker, since
+      // this is fixing an existing booking's time, not scheduling a new one;
+      // doSaveSearchEdit still hard-blocks saving an actually-past time.
+      function wireSearchEditTimePicker() {
+        const trigger = document.getElementById('searchEditTimeTrigger');
+        const panel = document.getElementById('searchEditTimePanel');
+        const hidden = document.querySelector('.search-edit-time');
+        if (!trigger) return;
+        const options = [];
+        for (let m = clinicOpenMin; m < clinicCloseMin; m += 5) {
+          const hh = String(Math.floor(m / 60)).padStart(2, '0');
+          const mm = String(m % 60).padStart(2, '0');
+          options.push({ value: `${hh}:${mm}`, label: Qlinic.formatTime(m) });
+        }
+        function renderPanel() {
+          panel.innerHTML = options.map((o) => `
+            <div class="time-picker-option ${o.value === hidden.value ? 'selected' : ''}" data-value="${o.value}" data-label="${o.label}">${o.label}</div>
+          `).join('');
+        }
+        trigger.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
+          renderPanel();
+          panel.style.display = 'block';
+          const sel = panel.querySelector('.selected') || panel.querySelector('.time-picker-option');
+          if (sel) sel.scrollIntoView({ block: 'nearest' });
+        });
+        panel.addEventListener('click', (e) => {
+          const opt = e.target.closest('.time-picker-option');
+          if (!opt) return;
+          hidden.value = opt.getAttribute('data-value');
+          document.getElementById('searchEditTimeTriggerText').textContent = opt.getAttribute('data-label');
+          trigger.classList.remove('placeholder');
+          panel.style.display = 'none';
+        });
       }
 
       function doStartSearchEdit(id) {
@@ -575,6 +645,7 @@
         const name = row.querySelector('.search-edit-name').value.trim();
         const phone = row.querySelector('.search-edit-phone').value.trim();
         if (!name || !phone) { showToast('Name and phone are both required'); return; }
+        if (!isValidPhone(phone)) { showToast('Enter a valid 10-digit phone number'); return; }
         const doctorSelect = row.querySelector('.search-edit-doctor');
         const update = { name, phone, doctorId: doctorSelect.value };
         const dateInput = row.querySelector('.search-edit-date');
@@ -584,7 +655,8 @@
           const bookedTime = timeInput.value;
           if (!bookedDate || !bookedTime) { showToast('Appointment date and time are both required'); return; }
           if (Qlinic.isPastRealDateTime(bookedDate, bookedTime)) { showToast("Can't set an appointment time that's already passed"); return; }
-          if (isClosedDate(bookedDate)) { showToast('Clinic is closed on this date — choose a different date'); return; }
+          const bookedDateReason = closureReason(bookedDate);
+          if (bookedDateReason) { showToast(`${bookedDateReason} — choose a different date`); return; }
           update.bookedDate = bookedDate;
           update.bookedTime = bookedTime;
         }
@@ -796,10 +868,34 @@
 
       document.getElementById('searchBox').addEventListener('input', renderSearch);
 
+      // Delegated (not bound per-render) since the edit row's phone input
+      // is rebuilt from scratch on every renderSearch() call.
+      document.getElementById('searchResults').addEventListener('input', (e) => {
+        if (e.target.classList.contains('search-edit-phone')) {
+          e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+        }
+      });
+
+      // Same 10-digit-only rule as signup's mobile number field: strips
+      // anything non-numeric as it's typed, so a pasted or typed letter
+      // never even lands in the field, and blocks submission on anything
+      // short of exactly 10 digits.
+      function isValidPhone(value) {
+        return /^[0-9]{10}$/.test(value);
+      }
+      document.getElementById('pPhone').addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').slice(0, 10);
+      });
+
       document.getElementById('patientForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = document.getElementById('pName').value;
         const phone = document.getElementById('pPhone').value;
+        if (!isValidPhone(phone)) {
+          showToast('Enter a valid 10-digit phone number');
+          document.getElementById('pPhone').focus();
+          return;
+        }
         const age = document.getElementById('pAge').value ? Number(document.getElementById('pAge').value) : null;
         const gender = document.getElementById('pGender').value;
         const address = document.getElementById('pAddress').value;
@@ -813,8 +909,9 @@
         } else {
           const date = document.getElementById('pDate').value;
           const time = document.getElementById('pTime').value;
-          if (isClosedDate(date)) {
-            showToast('Clinic is closed on this date — choose a different date');
+          const dateReason = closureReason(date);
+          if (dateReason) {
+            showToast(`${dateReason} — choose a different date`);
             return;
           }
           if (!time) {
@@ -931,13 +1028,14 @@
       document.getElementById('pDoctor').addEventListener('change', checkFollowUpHint);
       document.getElementById('pDate').addEventListener('change', checkFollowUpHint);
 
-      const clinic = await Qlinic.getClinic();
+      const [clinic, closures] = await Promise.all([Qlinic.getClinic(), Qlinic.getClinicClosures()]);
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
       if (clinic) {
         if (clinic.opening_time) clinicOpenMin = Qlinic.parseTime(clinic.opening_time);
         if (clinic.closing_time) clinicCloseMin = Qlinic.parseTime(clinic.closing_time);
         clinicWeeklyOffDays = clinic.weekly_off_days || [];
       }
+      clinicClosureByDate = Object.fromEntries(closures.map((c) => [c.date, c.note]));
       document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
       setInterval(() => { document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date()); }, 30000);
       document.getElementById('pDate').min = Qlinic.getTodayDate();

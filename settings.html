@@ -187,6 +187,12 @@
       </div>
 
       <div class="panel">
+        <div class="panel-header"><h2>Closed Dates</h2></div>
+        <p class="panel-note">Holidays and other one-off dates the clinic is closed, beyond the weekly off days above.</p>
+        <a href="closed-dates.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage closed dates</a>
+      </div>
+
+      <div class="panel">
         <div class="panel-header"><h2>Team</h2></div>
         <p class="panel-note" id="teamSummaryNote">Loading…</p>
         <a href="team.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage team</a>
@@ -234,7 +240,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=37"></script>
+  <script src="clinic-data.js?v=38"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
