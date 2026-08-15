@@ -1064,7 +1064,7 @@ table.qtable tr:last-child td { border-bottom: none; }
 /* A row of toggleable day buttons — for picking a set of weekdays (e.g.
    which days a clinic is closed) where a native multi-select's ctrl/cmd-
    click gesture would be unclear to most reception/admin users. */
-.day-chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.day-chip-group { display: flex; flex-wrap: nowrap; gap: 6px; }
 .day-chip {
   padding: 8px 10px;
   font-size: 13px;
