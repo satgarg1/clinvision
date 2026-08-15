@@ -232,12 +232,14 @@
       // signUp() time — covers both the immediate-session path and the
       // email-confirmation path, where this runs on first login instead.
       const pendingAddress = session.user.user_metadata && session.user.user_metadata.pending_clinic_address;
-      if (pendingAddress) {
+      const pendingPhone = session.user.user_metadata && session.user.user_metadata.pending_clinic_phone;
+      if (pendingAddress || pendingPhone) {
         await updateClinic({
-          addressLine: pendingAddress.addressLine,
-          city: pendingAddress.city,
-          pincode: pendingAddress.pincode,
-          state: pendingAddress.state,
+          addressLine: pendingAddress ? pendingAddress.addressLine : undefined,
+          city: pendingAddress ? pendingAddress.city : undefined,
+          pincode: pendingAddress ? pendingAddress.pincode : undefined,
+          state: pendingAddress ? pendingAddress.state : undefined,
+          phone: pendingPhone || undefined,
         });
       }
     }
@@ -263,11 +265,14 @@
     if (fields.slotIntervalMins !== undefined) payload.slot_interval_mins = Number(fields.slotIntervalMins);
     if (fields.slotCapacity !== undefined) payload.slot_capacity = Number(fields.slotCapacity);
     if (fields.followUpBufferDays !== undefined) payload.follow_up_buffer_days = Number(fields.followUpBufferDays);
+    if (fields.openingTime !== undefined) payload.opening_time = fields.openingTime;
+    if (fields.closingTime !== undefined) payload.closing_time = fields.closingTime;
     if (fields.displayLanguage !== undefined) payload.display_language = fields.displayLanguage;
     if (fields.addressLine !== undefined) payload.address_line = fields.addressLine;
     if (fields.city !== undefined) payload.city = fields.city;
     if (fields.pincode !== undefined) payload.pincode = fields.pincode;
     if (fields.state !== undefined) payload.state = fields.state;
+    if (fields.phone !== undefined) payload.phone = fields.phone;
     const { error } = await sb.from('clinics').update(payload).eq('id', clinicId);
     if (error) throw error;
     currentClinic = null; // force a fresh read next time
@@ -373,8 +378,11 @@
     return doctors.map((d, i) => ({ doctor: d, queue: queues[i] }));
   }
 
-  // Searches only today's bookings: "mark arrived" only makes sense for
-  // someone who could plausibly be standing at the desk right now.
+  // Searches today's queue entries who haven't finished their visit yet:
+  // booked (hasn't arrived — "mark arrived" applies) or waiting (already
+  // checked in — here so a typo in their name/phone can still be fixed).
+  // token_date (not booked_date, which is always null for walk-ins) is
+  // the field that's reliably set for both booking types.
   async function searchBookedPatients(query) {
     const clinicId = await ensureClinicContext();
     const q = query.trim();
@@ -387,14 +395,25 @@
       .from('patients')
       .select('*')
       .eq('clinic_id', clinicId)
-      .eq('status', 'booked')
-      .eq('booked_date', today)
+      .in('status', ['booked', 'waiting'])
+      .eq('token_date', today)
       .or(`name.ilike.%${q}%,phone.ilike.%${q}%`);
     if (error) throw error;
     return data.map(normalizePatient).map((p) => Object.assign({}, p, {
-      likelyNoShow: isLikelyNoShow(p, doctorById[p.doctorId], clinic.grace_window_mins),
+      likelyNoShow: p.status === 'booked' ? isLikelyNoShow(p, doctorById[p.doctorId], clinic.grace_window_mins) : false,
       effectiveTime: scheduledMoment(p, doctorById[p.doctorId]),
     }));
+  }
+
+  // Fixes a typo in a patient's name/phone caught after they were already
+  // added — used from Reception's search results, not part of the normal
+  // add-patient flow.
+  async function updatePatientContact(patientId, { name, phone }) {
+    const payload = {};
+    if (name !== undefined) payload.name = name;
+    if (phone !== undefined) payload.phone = phone;
+    const { error } = await sb.from('patients').update(payload).eq('id', patientId);
+    if (error) throw error;
   }
 
   async function markArrived(patientId) {
@@ -951,11 +970,11 @@
 
   // ---------------- auth ----------------
 
-  async function signUp(email, password, clinicName, clinicAddress) {
+  async function signUp(email, password, clinicName, clinicAddress, clinicPhone) {
     const { data, error } = await sb.auth.signUp({
       email,
       password,
-      options: { data: { pending_clinic_name: clinicName, pending_clinic_address: clinicAddress || null } },
+      options: { data: { pending_clinic_name: clinicName, pending_clinic_address: clinicAddress || null, pending_clinic_phone: clinicPhone || null } },
     });
     if (error) throw error;
     if (data.session) {
@@ -1146,6 +1165,7 @@
     getQueueForDoctor,
     getAllQueues,
     searchBookedPatients,
+    updatePatientContact,
     getPatientLookupByPhone,
     getPatientDirectory,
     checkFollowUpEligibility,

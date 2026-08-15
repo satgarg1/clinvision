@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=76" />
+<link rel="stylesheet" href="styles.css?v=77" />
 </head>
 <body>
   <div class="app-shell">
@@ -78,24 +78,24 @@
         </div>
       </div>
 
-      <div class="field" style="display:none;max-width:320px;margin-bottom:14px;" id="rangePresetField">
-        <label>Period</label>
-        <select id="rangePresetSelect" class="big-control"></select>
+      <div style="display:none;flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:14px;" id="rangePresetField">
+        <label class="pill-label">Period</label>
+        <select id="rangePresetSelect" class="pill-select"></select>
       </div>
 
-      <div class="inline-form" style="display:none;margin-bottom:14px;" id="customRangeFilters">
-        <div class="field" style="flex:0;">
-          <label>From</label>
+      <div style="display:none;gap:24px;flex-wrap:wrap;margin-bottom:14px;" id="customRangeFilters">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">From</label>
           <div style="display:flex;gap:8px;">
-            <select id="rangeStartMonth" class="big-control"></select>
-            <select id="rangeStartYear" class="big-control" style="max-width:100px;"></select>
+            <select id="rangeStartMonth" class="pill-select"></select>
+            <select id="rangeStartYear" class="pill-select"></select>
           </div>
         </div>
-        <div class="field" style="flex:0;">
-          <label>To</label>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">To</label>
           <div style="display:flex;gap:8px;">
-            <select id="rangeEndMonth" class="big-control"></select>
-            <select id="rangeEndYear" class="big-control" style="max-width:100px;"></select>
+            <select id="rangeEndMonth" class="pill-select"></select>
+            <select id="rangeEndYear" class="pill-select"></select>
           </div>
         </div>
       </div>
@@ -114,7 +114,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=33"></script>
+  <script src="clinic-data.js?v=34"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -560,7 +560,7 @@
         viewMode = btn.dataset.mode;
         document.querySelectorAll('#viewModeToggle .period-pill').forEach((p) => p.classList.toggle('active', p === btn));
         document.getElementById('singleDayFilters').style.display = viewMode === 'single' ? 'flex' : 'none';
-        document.getElementById('rangePresetField').style.display = viewMode === 'range' ? 'block' : 'none';
+        document.getElementById('rangePresetField').style.display = viewMode === 'range' ? 'flex' : 'none';
         document.getElementById('customRangeFilters').style.display = (viewMode === 'range' && rangePreset === 'custom') ? 'flex' : 'none';
         loadInvoices();
       });
@@ -606,7 +606,7 @@
         document.querySelectorAll('#viewModeToggle .period-pill').forEach((p) => p.classList.toggle('active', p.dataset.mode === 'range'));
         document.getElementById('rangePresetSelect').value = 'custom';
         document.getElementById('singleDayFilters').style.display = 'none';
-        document.getElementById('rangePresetField').style.display = 'block';
+        document.getElementById('rangePresetField').style.display = 'flex';
         document.getElementById('customRangeFilters').style.display = 'flex';
         const [sy, sm] = linkedStart.split('-');
         const [ey, em] = linkedEnd.split('-');

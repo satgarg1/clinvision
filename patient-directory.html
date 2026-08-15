@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=76" />
+<link rel="stylesheet" href="styles.css?v=77" />
 </head>
 <body>
   <div class="app-shell">
@@ -53,28 +53,28 @@
       <input type="text" id="directorySearch" placeholder="Search by name, phone, or address..." />
 
       <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
-        <div class="field" style="max-width:280px;margin-bottom:0;">
-          <label>Period</label>
-          <select id="periodPresetSelect" class="big-control"></select>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">Period</label>
+          <select id="periodPresetSelect" class="pill-select"></select>
         </div>
         <select id="directoryDoctorFilter" class="pill-select">
           <option value="">All doctors</option>
         </select>
       </div>
 
-      <div class="inline-form" style="display:none;margin-bottom:14px;" id="customPeriodFilters">
-        <div class="field" style="flex:0;">
-          <label>From</label>
+      <div style="display:none;gap:24px;flex-wrap:wrap;margin-bottom:14px;" id="customPeriodFilters">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">From</label>
           <div style="display:flex;gap:8px;">
-            <select id="periodStartMonth" class="big-control"></select>
-            <select id="periodStartYear" class="big-control" style="max-width:100px;"></select>
+            <select id="periodStartMonth" class="pill-select"></select>
+            <select id="periodStartYear" class="pill-select"></select>
           </div>
         </div>
-        <div class="field" style="flex:0;">
-          <label>To</label>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">To</label>
           <div style="display:flex;gap:8px;">
-            <select id="periodEndMonth" class="big-control"></select>
-            <select id="periodEndYear" class="big-control" style="max-width:100px;"></select>
+            <select id="periodEndMonth" class="pill-select"></select>
+            <select id="periodEndYear" class="pill-select"></select>
           </div>
         </div>
       </div>
@@ -91,7 +91,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=33"></script>
+  <script src="clinic-data.js?v=34"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');

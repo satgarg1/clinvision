@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=76" />
+<link rel="stylesheet" href="styles.css?v=77" />
 </head>
 <body>
   <div class="app-shell">
@@ -51,10 +51,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-header"><h2>Find a patient who just arrived</h2></div>
-        <p class="panel-note">
-          Same as today: ask their name, search it here, tap "Mark arrived." That's the only new step.
-        </p>
+        <div class="panel-header"><h2>Find a Patient</h2></div>
         <div class="field">
           <input type="text" id="searchBox" placeholder="Search by name or phone…" />
         </div>
@@ -154,7 +151,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=33"></script>
+  <script src="clinic-data.js?v=34"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -183,6 +180,8 @@
 
       const BOOKED_PAGE_SIZE = 8;
       let patientMode = 'appointment';
+      let clinicOpenMin = 0;
+      let clinicCloseMin = 1440;
       let queueDoctorId = null;
       let queueViewDate = null;
       let bookedExpanded = false;
@@ -226,13 +225,14 @@
       function buildTimePickerOptions() {
         const dateVal = document.getElementById('pDate').value;
         const isToday = dateVal === Qlinic.getTodayDate();
-        let startMin = 0;
+        let startMin = clinicOpenMin;
         if (isToday) {
           const now = new Date();
-          startMin = Math.ceil((now.getHours() * 60 + now.getMinutes()) / 5) * 5;
+          const nowMin = Math.ceil((now.getHours() * 60 + now.getMinutes()) / 5) * 5;
+          startMin = Math.max(startMin, nowMin);
         }
         const opts = [];
-        for (let m = startMin; m < 1440; m += 5) {
+        for (let m = startMin; m < clinicCloseMin; m += 5) {
           const hh = String(Math.floor(m / 60)).padStart(2, '0');
           const mm = String(m % 60).padStart(2, '0');
           opts.push({ value: `${hh}:${mm}`, label: Qlinic.formatTime(m) });
@@ -469,6 +469,13 @@
         }
       }
 
+      let editingSearchPatientId = null;
+
+      function searchStatusBadge(p) {
+        if (p.status === 'waiting') return '<span class="badge badge-done">Waiting</span>';
+        return p.likelyNoShow ? '<span class="badge badge-likely">Likely no-show</span>' : '<span class="badge badge-booked">Not yet arrived</span>';
+      }
+
       async function renderSearch() {
         const q = document.getElementById('searchBox').value;
         const box = document.getElementById('searchResults');
@@ -480,7 +487,7 @@
         // since moved on, otherwise it stomps the newer/cleared state.
         if (document.getElementById('searchBox').value !== q) return;
         if (results.length === 0) {
-          box.innerHTML = '<div class="empty-state">No booked patient matches "' + q + '". Add them as a walk-in instead.</div>';
+          box.innerHTML = '<div class="empty-state">No match for "' + q + '" in today\'s queue. Add them as a walk-in instead.</div>';
           return;
         }
         const doctorById = Object.fromEntries(doctorsCache.map((d) => [d.id, d]));
@@ -490,14 +497,33 @@
             <tbody>
               ${results.map((p) => {
                 const doc = doctorById[p.doctorId];
+                const bookedCell = p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : 'Walk-in';
+                if (editingSearchPatientId === p.id) {
+                  return `
+                    <tr>
+                      <td><input type="text" class="search-edit-name" value="${p.name}" style="width:100%;" /></td>
+                      <td><input type="text" class="search-edit-phone" value="${p.phone}" style="width:100%;" /></td>
+                      <td>${doc ? doc.name : '·'}</td>
+                      <td>${bookedCell}</td>
+                      <td>${searchStatusBadge(p)}</td>
+                      <td>
+                        <button class="btn-sm primary" onclick="doSaveSearchEdit('${p.id}')">Save</button>
+                        <button class="btn-sm" onclick="doCancelSearchEdit()">Cancel</button>
+                      </td>
+                    </tr>
+                  `;
+                }
                 return `
                   <tr>
                     <td>${nameCell(p)}</td>
                     <td>${p.phone}</td>
                     <td>${doc ? doc.name : '·'}</td>
-                    <td>${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}</td>
-                    <td>${p.likelyNoShow ? '<span class="badge badge-likely">Likely no-show</span>' : '<span class="badge badge-booked">Not yet arrived</span>'}</td>
-                    <td><button class="btn-sm primary" onclick="doMarkArrived('${p.id}')">Mark arrived</button></td>
+                    <td>${bookedCell}</td>
+                    <td>${searchStatusBadge(p)}</td>
+                    <td>
+                      ${p.status === 'booked' ? `<button class="btn-sm primary" onclick="doMarkArrived('${p.id}')">Mark arrived</button>` : ''}
+                      <button class="btn-sm" onclick="doStartSearchEdit('${p.id}')">Edit</button>
+                    </td>
                   </tr>
                 `;
               }).join('')}
@@ -505,6 +531,29 @@
           </table>
         `;
       }
+
+      function doStartSearchEdit(id) {
+        editingSearchPatientId = id;
+        renderSearch();
+      }
+      function doCancelSearchEdit() {
+        editingSearchPatientId = null;
+        renderSearch();
+      }
+      async function doSaveSearchEdit(id) {
+        const row = document.querySelector(`[onclick*="doSaveSearchEdit('${id}')"]`).closest('tr');
+        const name = row.querySelector('.search-edit-name').value.trim();
+        const phone = row.querySelector('.search-edit-phone').value.trim();
+        if (!name || !phone) { showToast('Name and phone are both required'); return; }
+        await Qlinic.updatePatientContact(id, { name, phone });
+        editingSearchPatientId = null;
+        showToast('Patient details updated');
+        renderSearch();
+        renderQueues();
+      }
+      window.doStartSearchEdit = doStartSearchEdit;
+      window.doCancelSearchEdit = doCancelSearchEdit;
+      window.doSaveSearchEdit = doSaveSearchEdit;
 
       async function doMarkArrived(id) {
         await Qlinic.markArrived(id);
@@ -835,6 +884,10 @@
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      if (clinic) {
+        if (clinic.opening_time) clinicOpenMin = Qlinic.parseTime(clinic.opening_time);
+        if (clinic.closing_time) clinicCloseMin = Qlinic.parseTime(clinic.closing_time);
+      }
       document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
       setInterval(() => { document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date()); }, 30000);
       document.getElementById('pDate').min = Qlinic.getTodayDate();

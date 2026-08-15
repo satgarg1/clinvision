@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=76" />
+<link rel="stylesheet" href="styles.css?v=77" />
 </head>
 <body>
   <div class="login-wrap">
@@ -46,6 +46,14 @@
           </div>
         </div>
         <div class="field">
+          <label for="phoneNumber">Your mobile number</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" value="+91" disabled style="flex:0 0 60px;text-align:center;" />
+            <input type="tel" id="phoneNumber" inputmode="numeric" maxlength="10" placeholder="10-digit number" required style="flex:1;min-width:0;" />
+          </div>
+          <div id="phoneError" style="display:none;color:var(--danger);font-size:13px;margin-top:6px;"></div>
+        </div>
+        <div class="field">
           <label for="email">Your email</label>
           <input type="email" id="email" required />
         </div>
@@ -64,7 +72,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=33"></script>
+  <script src="clinic-data.js?v=34"></script>
   <script>
     document.getElementById('state').innerHTML = '<option value="">Select state</option>' +
       Qlinic.INDIA_STATES_AND_UTS.map((s) => `<option value="${s}">${s}</option>`).join('');
@@ -113,8 +121,31 @@
       runPincodeLookup(this.value);
     });
 
+    // Strips anything non-numeric as they type, so a pasted or typed
+    // letter/symbol never even lands in the field rather than being
+    // rejected after the fact.
+    document.getElementById('phoneNumber').addEventListener('input', function () {
+      this.value = this.value.replace(/\D/g, '').slice(0, 10);
+    });
+    function validatePhone() {
+      const val = document.getElementById('phoneNumber').value.trim();
+      const errorEl = document.getElementById('phoneError');
+      if (!/^[0-9]{10}$/.test(val)) {
+        errorEl.textContent = 'Please provide a correct 10-digit mobile number.';
+        errorEl.style.display = 'block';
+        return false;
+      }
+      errorEl.style.display = 'none';
+      return true;
+    }
+    document.getElementById('phoneNumber').addEventListener('blur', validatePhone);
+
     document.getElementById('signupForm').addEventListener('submit', async function (e) {
       e.preventDefault();
+      if (!validatePhone()) {
+        document.getElementById('phoneNumber').focus();
+        return;
+      }
       const btn = document.getElementById('signupBtn');
       const errorBox = document.getElementById('signupError');
       errorBox.style.display = 'none';
@@ -124,13 +155,14 @@
         const clinicName = document.getElementById('clinicName').value;
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
+        const clinicPhone = '+91' + document.getElementById('phoneNumber').value.trim();
         const clinicAddress = {
           addressLine: document.getElementById('addressLine').value,
           city: document.getElementById('city').value,
           pincode: document.getElementById('pincode').value,
           state: document.getElementById('state').value,
         };
-        const result = await Qlinic.signUp(email, password, clinicName, clinicAddress);
+        const result = await Qlinic.signUp(email, password, clinicName, clinicAddress, clinicPhone);
 
         if (result.session) {
           // Email confirmation is off for this project: clinic is set up
