@@ -845,7 +845,14 @@ table.qtable tr:last-child td { border-bottom: none; }
    time-pickers): bigger boxes, a wider gap, and the Save button matched
    to the same height as the field beside it rather than the shorter
    default .btn-sm. */
-#rulesForm, #clinicControlsForm, #displayLanguageForm { gap: 16px; }
+/* flex-end (the .inline-form default) bottom-aligns every field's box,
+   so a field whose .field-hint wraps to two lines pushes every shorter
+   field's label+control down to match — the field with the longest hint
+   sets everyone else's vertical position. flex-start instead aligns
+   labels and controls in one straight row regardless of hint length;
+   only the hints themselves end up ragged at the bottom, which reads as
+   normal captioning rather than a broken layout. */
+#rulesForm, #clinicControlsForm, #displayLanguageForm { gap: 16px; align-items: flex-start; }
 #rulesForm .time-picker-trigger, #clinicControlsForm .time-picker-trigger, #clinicControlsForm select,
 #displayLanguageForm select, #followUpBufferInput {
   padding: 12px 14px;
@@ -1053,6 +1060,23 @@ table.qtable tr:last-child td { border-bottom: none; }
 .time-picker-option:hover { background: var(--grey-100); }
 .time-picker-option.selected { background: var(--accent); color: #ffffff; font-weight: 600; }
 .time-picker-empty { padding: 16px 12px; text-align: center; color: var(--grey-500); font-size: 13px; }
+
+/* A row of toggleable day buttons — for picking a set of weekdays (e.g.
+   which days a clinic is closed) where a native multi-select's ctrl/cmd-
+   click gesture would be unclear to most reception/admin users. */
+.day-chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.day-chip {
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: var(--font);
+  border: 1px solid var(--grey-300);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--black);
+  cursor: pointer;
+}
+.day-chip:hover { border-color: var(--grey-500); }
+.day-chip.active { background: var(--accent); border-color: var(--accent); color: #ffffff; font-weight: 600; }
 
 .panel-note { font-size: 13px; color: var(--grey-500); margin: 0 0 14px; }
 

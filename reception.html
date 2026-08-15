@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=78" />
+<link rel="stylesheet" href="styles.css?v=79" />
 </head>
 <body>
   <div class="app-shell">
@@ -152,7 +152,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=35"></script>
+  <script src="clinic-data.js?v=36"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -183,7 +183,7 @@
       let patientMode = 'appointment';
       let clinicOpenMin = 0;
       let clinicCloseMin = 1440;
-      let clinicWeeklyOffDay = null;
+      let clinicWeeklyOffDays = [];
       let queueDoctorId = null;
       let queueViewDate = null;
       let bookedExpanded = false;
@@ -229,15 +229,17 @@
       // UTC-midnight parsing a plain "YYYY-MM-DD" string gets otherwise.
       const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       function isClosedDate(dateStr) {
-        if (!clinicWeeklyOffDay || !dateStr) return false;
+        if (!clinicWeeklyOffDays.length || !dateStr) return false;
         const [y, m, d] = dateStr.split('-').map(Number);
-        return DAY_NAMES[new Date(y, m - 1, d).getDay()] === clinicWeeklyOffDay;
+        return clinicWeeklyOffDays.includes(DAY_NAMES[new Date(y, m - 1, d).getDay()]);
       }
       function updateClosedDayHint() {
         const hint = document.getElementById('closedDayHint');
         const dateVal = document.getElementById('pDate').value;
         if (isClosedDate(dateVal)) {
-          const dayLabel = clinicWeeklyOffDay[0].toUpperCase() + clinicWeeklyOffDay.slice(1);
+          const [y, m, d] = dateVal.split('-').map(Number);
+          const dayName = DAY_NAMES[new Date(y, m - 1, d).getDay()];
+          const dayLabel = dayName[0].toUpperCase() + dayName.slice(1);
           hint.textContent = `⛔ Clinic is closed on this date (${dayLabel}s) — choose a different date.`;
           hint.style.display = 'block';
         } else {
@@ -916,7 +918,7 @@
       if (clinic) {
         if (clinic.opening_time) clinicOpenMin = Qlinic.parseTime(clinic.opening_time);
         if (clinic.closing_time) clinicCloseMin = Qlinic.parseTime(clinic.closing_time);
-        clinicWeeklyOffDay = clinic.weekly_off_day || null;
+        clinicWeeklyOffDays = clinic.weekly_off_days || [];
       }
       document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
       setInterval(() => { document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date()); }, 30000);

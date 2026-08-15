@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=78" />
+<link rel="stylesheet" href="styles.css?v=79" />
 </head>
 <body>
   <div class="app-shell">
@@ -142,6 +142,7 @@
               <input type="hidden" id="openingTimeInput" required />
               <div class="time-picker-panel" id="openingTimePanel" style="display:none;"></div>
             </div>
+            <span class="field-hint">Start of the appointment window</span>
           </div>
           <div class="field" style="max-width:180px;">
             <label>Closing time</label>
@@ -152,21 +153,20 @@
               <input type="hidden" id="closingTimeInput" required />
               <div class="time-picker-panel" id="closingTimePanel" style="display:none;"></div>
             </div>
-            <span class="field-hint">Bounds Reception's appointment times</span>
+            <span class="field-hint">End of the appointment window</span>
           </div>
-          <div class="field" style="max-width:180px;">
-            <label>Weekly off day</label>
-            <select id="weeklyOffDayInput">
-              <option value="">None</option>
-              <option value="monday">Monday</option>
-              <option value="tuesday">Tuesday</option>
-              <option value="wednesday">Wednesday</option>
-              <option value="thursday">Thursday</option>
-              <option value="friday">Friday</option>
-              <option value="saturday">Saturday</option>
-              <option value="sunday">Sunday</option>
-            </select>
-            <span class="field-hint">Warns Reception before booking this day</span>
+          <div class="field" style="max-width:300px;">
+            <label>Weekly off days</label>
+            <div class="day-chip-group" id="weeklyOffDaysGroup">
+              <button type="button" class="day-chip" data-day="monday">Mon</button>
+              <button type="button" class="day-chip" data-day="tuesday">Tue</button>
+              <button type="button" class="day-chip" data-day="wednesday">Wed</button>
+              <button type="button" class="day-chip" data-day="thursday">Thu</button>
+              <button type="button" class="day-chip" data-day="friday">Fri</button>
+              <button type="button" class="day-chip" data-day="saturday">Sat</button>
+              <button type="button" class="day-chip" data-day="sunday">Sun</button>
+            </div>
+            <span class="field-hint">Warns Reception before booking these days</span>
           </div>
           <div class="field" style="flex:0;">
             <label>&nbsp;</label>
@@ -234,7 +234,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=35"></script>
+  <script src="clinic-data.js?v=36"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -380,6 +380,24 @@
         fallbackLabel: (v) => Qlinic.formatTime(Qlinic.parseTime(v)),
       });
 
+      // Multiple weekdays can be toggled on at once (some clinics close
+      // two days a week), so this reads/writes an array rather than a
+      // single value — clicking a chip just flips its own .active class.
+      document.getElementById('weeklyOffDaysGroup').addEventListener('click', (e) => {
+        const chip = e.target.closest('.day-chip');
+        if (!chip) return;
+        chip.classList.toggle('active');
+      });
+      function getWeeklyOffDays() {
+        return Array.from(document.querySelectorAll('#weeklyOffDaysGroup .day-chip.active')).map((c) => c.getAttribute('data-day'));
+      }
+      function setWeeklyOffDays(days) {
+        const set = new Set(days || []);
+        document.querySelectorAll('#weeklyOffDaysGroup .day-chip').forEach((c) => {
+          c.classList.toggle('active', set.has(c.getAttribute('data-day')));
+        });
+      }
+
       document.getElementById('stateInput').innerHTML = '<option value="">Select state</option>' +
         Qlinic.INDIA_STATES_AND_UTS.map((s) => `<option value="${s}">${s}</option>`).join('');
 
@@ -414,7 +432,7 @@
         document.getElementById('followUpBufferInput').value = clinic.follow_up_buffer_days || 0;
         openingTimePicker.setValue((clinic.opening_time || '09:00').slice(0, 5));
         closingTimePicker.setValue((clinic.closing_time || '18:00').slice(0, 5));
-        document.getElementById('weeklyOffDayInput').value = clinic.weekly_off_day || '';
+        setWeeklyOffDays(clinic.weekly_off_days);
         document.getElementById('displayLanguageInput').value = clinic.display_language;
       }
 
@@ -477,7 +495,7 @@
           followUpBufferDays: document.getElementById('followUpBufferInput').value || 0,
           openingTime,
           closingTime,
-          weeklyOffDay: document.getElementById('weeklyOffDayInput').value,
+          weeklyOffDays: getWeeklyOffDays(),
         });
         showToast('Clinic controls updated');
       });
