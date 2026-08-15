@@ -793,12 +793,21 @@ table.qtable tr:last-child td { border-bottom: none; }
 
 .badge {
   display: inline-block;
+  white-space: nowrap;
   font-size: 12px;
   font-weight: 600;
+  line-height: 1.3;
   padding: 4px 10px;
   border-radius: 999px;
 }
 .badge-waiting { background: var(--grey-100); color: var(--grey-700); }
+/* Same shape/weight as the status badges, for a cell that shows a plain
+   informational label (not a queue status) next to one — e.g. "Walk-in"
+   sitting beside a "Waiting" badge. Matching the box, not just the
+   position, is what actually keeps two different-shaped pieces of text
+   reading as aligned, since bare text and a padded pill never share a
+   glyph baseline exactly even when their boxes start at the same y. */
+.badge-neutral { background: var(--grey-100); color: var(--grey-700); }
 .badge-in-consult { background: #e8f0fe; color: var(--accent-dark); }
 .badge-done { background: var(--success-bg); color: var(--success); }
 .badge-no-show { background: var(--danger-bg); color: var(--danger); }

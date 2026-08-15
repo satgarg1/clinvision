@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=82" />
+<link rel="stylesheet" href="styles.css?v=85" />
 </head>
 <body>
   <div class="app-shell">
@@ -545,7 +545,7 @@
             <tbody>
               ${results.map((p) => {
                 const doc = doctorById[p.doctorId];
-                const bookedCell = p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : 'Walk-in';
+                const bookedCell = p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '<span class="badge badge-neutral">Walk-in</span>';
                 if (editingSearchPatientId === p.id) {
                   const doctorOptions = doctorsCache.map((d) => `<option value="${d.id}" ${d.id === p.doctorId ? 'selected' : ''}>${d.name}</option>`).join('');
                   const bookedEditCell = p.type === 'appointment'
@@ -557,7 +557,7 @@
                          <input type="hidden" class="search-edit-time" value="${p.bookedTime || ''}" />
                          <div class="time-picker-panel" id="searchEditTimePanel" style="display:none;"></div>
                        </div>`
-                    : 'Walk-in';
+                    : '<span class="badge badge-neutral">Walk-in</span>';
                   return `
                     <tr>
                       <td><input type="text" class="search-edit-name" value="${p.name}" /></td>
@@ -911,16 +911,24 @@
           const time = document.getElementById('pTime').value;
           const dateReason = closureReason(date);
           if (dateReason) {
-            showToast(`${dateReason} — choose a different date`);
+            updateClosedDayHint();
+            document.getElementById('pDate').focus();
             return;
           }
           if (!time) {
-            showToast('Pick an appointment time first');
+            // Shown right in the form (not a corner toast that fades in
+            // ~2s) since this is the single most common reason "Add
+            // appointment" silently does nothing — a receptionist glancing
+            // back at the button, not the far corner of the screen, needs
+            // to see why nothing happened.
+            const hint = document.getElementById('slotHint');
+            hint.className = 'slot-hint error';
+            hint.innerHTML = '⛔ Pick an appointment time first.';
+            document.getElementById('pTimeTrigger').focus();
             return;
           }
           if (Qlinic.isPastRealDateTime(date, time)) {
             updateSlotHint();
-            showToast("Can't book, that date/time has already passed");
             return;
           }
           const avail = await Qlinic.getSlotAvailability(doctorId, date, time);
