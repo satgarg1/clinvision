@@ -152,7 +152,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=36"></script>
+  <script src="clinic-data.js?v=37"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -524,12 +524,17 @@
                 const doc = doctorById[p.doctorId];
                 const bookedCell = p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : 'Walk-in';
                 if (editingSearchPatientId === p.id) {
+                  const doctorOptions = doctorsCache.map((d) => `<option value="${d.id}" ${d.id === p.doctorId ? 'selected' : ''}>${d.name}</option>`).join('');
+                  const bookedEditCell = p.type === 'appointment'
+                    ? `<input type="date" class="search-edit-date" value="${p.bookedDate || ''}" style="width:100%;margin-bottom:4px;" />
+                       <input type="time" class="search-edit-time" value="${p.bookedTime || ''}" style="width:100%;" />`
+                    : 'Walk-in';
                   return `
                     <tr>
                       <td><input type="text" class="search-edit-name" value="${p.name}" style="width:100%;" /></td>
                       <td><input type="text" class="search-edit-phone" value="${p.phone}" style="width:100%;" /></td>
-                      <td>${doc ? doc.name : '·'}</td>
-                      <td>${bookedCell}</td>
+                      <td><select class="search-edit-doctor" style="width:100%;">${doctorOptions}</select></td>
+                      <td>${bookedEditCell}</td>
                       <td>${searchStatusBadge(p)}</td>
                       <td>
                         <button class="btn-sm primary" onclick="doSaveSearchEdit('${p.id}')">Save</button>
@@ -570,7 +575,20 @@
         const name = row.querySelector('.search-edit-name').value.trim();
         const phone = row.querySelector('.search-edit-phone').value.trim();
         if (!name || !phone) { showToast('Name and phone are both required'); return; }
-        await Qlinic.updatePatientContact(id, { name, phone });
+        const doctorSelect = row.querySelector('.search-edit-doctor');
+        const update = { name, phone, doctorId: doctorSelect.value };
+        const dateInput = row.querySelector('.search-edit-date');
+        const timeInput = row.querySelector('.search-edit-time');
+        if (dateInput && timeInput) {
+          const bookedDate = dateInput.value;
+          const bookedTime = timeInput.value;
+          if (!bookedDate || !bookedTime) { showToast('Appointment date and time are both required'); return; }
+          if (Qlinic.isPastRealDateTime(bookedDate, bookedTime)) { showToast("Can't set an appointment time that's already passed"); return; }
+          if (isClosedDate(bookedDate)) { showToast('Clinic is closed on this date — choose a different date'); return; }
+          update.bookedDate = bookedDate;
+          update.bookedTime = bookedTime;
+        }
+        await Qlinic.updatePatientContact(id, update);
         editingSearchPatientId = null;
         showToast('Patient details updated');
         renderSearch();

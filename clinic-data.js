@@ -406,13 +406,18 @@
     }));
   }
 
-  // Fixes a typo in a patient's name/phone caught after they were already
-  // added — used from Reception's search results, not part of the normal
-  // add-patient flow.
-  async function updatePatientContact(patientId, { name, phone }) {
+  // Fixes a mistake caught after a patient was already added — used from
+  // Reception's search results, not part of the normal add-patient flow.
+  // doctorId can be corrected for any patient; bookedDate/bookedTime only
+  // apply to appointment-type patients, and token_date is kept mirrored to
+  // booked_date since that's the field every other query filters by.
+  async function updatePatientContact(patientId, { name, phone, doctorId, bookedDate, bookedTime }) {
     const payload = {};
     if (name !== undefined) payload.name = name;
     if (phone !== undefined) payload.phone = phone;
+    if (doctorId !== undefined) payload.doctor_id = doctorId;
+    if (bookedDate !== undefined) { payload.booked_date = bookedDate; payload.token_date = bookedDate; }
+    if (bookedTime !== undefined) payload.booked_time = bookedTime;
     const { error } = await sb.from('patients').update(payload).eq('id', patientId);
     if (error) throw error;
   }
