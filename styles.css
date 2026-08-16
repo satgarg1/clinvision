@@ -909,6 +909,22 @@ table.qtable tr:last-child td { border-bottom: none; }
   padding: 12px 18px;
   font-size: 15px;
 }
+
+/* An action button sharing an .inline-form/.form-grid row with a real
+   <input>/<select> field (wrapped in its own .field, same as the
+   button) should match that field's height — .btn-sm's own smaller
+   default padding/font (7px/13px) otherwise renders visibly shorter
+   than the 10px-padding/14px-font control beside it. Scoped to .field >
+   .btn-sm (not every .btn-sm in these rows) so standalone button
+   toolbars with no field counterpart — e.g. Doctor View's status-pill
+   row — are left at their normal compact size. Forms with their own
+   bigger field sizing (#rulesForm/#clinicControlsForm/
+   #displayLanguageForm above, Revenue's #singleDayFilters below)
+   already override this via a higher-specificity selector. */
+.inline-form .field > .btn-sm, .form-grid .field > .btn-sm {
+  padding: 10px 18px;
+  font-size: 14px;
+}
 .inline-form .field { margin-bottom: 0; min-width: 160px; flex: 1; }
 .inline-form .field input, .inline-form .field select {
   width: 100%;
@@ -941,6 +957,13 @@ table.qtable tr:last-child td { border-bottom: none; }
   font-weight: 500;
   border-color: var(--grey-300);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+/* #dateFilter's own outsized big-control padding/font (above) makes the
+   generic .inline-form .field > .btn-sm rule undersized next to it, so
+   the Today button next to it needs the same bigger tier. */
+#singleDayFilters .btn-sm {
+  padding: 14px 20px;
+  font-size: 17px;
 }
 
 /* Native select arrows render tiny and inconsistent across browsers; swap

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=89" />
+<link rel="stylesheet" href="styles.css?v=90" />
 </head>
 <body>
   <div class="app-shell">
@@ -369,7 +369,7 @@
         document.getElementById('modeHint').textContent = mode === 'walkin'
           ? "They're standing at the desk, this queues them immediately."
           : 'Booking a call-in appointment ahead of time: pick when they should arrive.';
-        document.getElementById('patientSubmitBtn').textContent = mode === 'walkin' ? 'Add walk-in & queue now' : 'Add appointment';
+        document.getElementById('patientSubmitBtn').textContent = mode === 'walkin' ? 'Add walk-in' : 'Add appointment';
         updateSlotHint();
         checkFollowUpHint();
       }
@@ -790,7 +790,7 @@
 
         panelEl.innerHTML = `
           <div class="panel accent-${accentForDoctor(queueDoctorId)}">
-            <div class="panel-header"><span class="board-doc-dot dot-${accentForDoctor(queueDoctorId)}"></span><h2>${doctor.name}, ${doctor.specialty}</h2><span class="date-pill">${dateLabel}</span><button type="button" class="btn-sm" id="exportCsvBtn">Export CSV</button></div>
+            <div class="panel-header"><span class="board-doc-dot dot-${accentForDoctor(queueDoctorId)}"></span><h2>${doctor.name}, ${doctor.specialty}</h2><span class="date-pill">${dateLabel}</span><button type="button" class="btn-sm primary" id="exportCsvBtn">Export CSV</button></div>
             ${isTodayView ? `
               ${queue.nowServing ? `<p style="font-size:14px;margin:0 0 14px;"><strong>Now with:</strong> ${queue.nowServing.name}</p>` : '<p style="font-size:14px;color:var(--grey-500);margin:0 0 14px;">No one in consultation right now.</p>'}
 
