@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=96" />
+<link rel="stylesheet" href="styles.css?v=97" />
 </head>
 <body>
   <div class="login-wrap">
@@ -15,7 +15,21 @@
     <div class="login-blob login-blob-coral"></div>
     <div class="login-blob login-blob-purple"></div>
     <div class="login-card">
-      <a href="index.html" class="brand">Qlinic</a>
+      <a href="index.html" class="brand">
+        <span class="brand-top">
+          <span class="brand-clock clock-face" id="navClock">
+            <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;color:var(--black);">
+              <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="5"></circle>
+              <line class="clock-hour" x1="50" y1="50" x2="50" y2="30" stroke="currentColor" stroke-width="6" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <line class="clock-min" x1="50" y1="50" x2="50" y2="18" stroke="currentColor" stroke-width="4" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <line class="clock-sec" x1="50" y1="50" x2="50" y2="14" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <circle cx="50" cy="50" r="3" fill="currentColor"></circle>
+            </svg>
+          </span>
+          Qlinic
+        </span>
+        <span class="brand-tagline">Time is the one asset nobody gets back</span>
+      </a>
       <h1>Register your clinic</h1>
 
       <div id="signupError" class="login-error"></div>
@@ -31,12 +45,12 @@
         </div>
         <div class="field">
           <label for="pincode">Pincode</label>
-          <input type="text" id="pincode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required />
+          <input type="text" id="pincode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit pincode" required />
         </div>
         <div style="display:flex;gap:12px;">
           <div class="field" style="flex:1;min-width:0;">
             <label for="city">City</label>
-            <input type="text" id="city" placeholder="Auto-filled from pincode" required style="font-size:12px;" />
+            <input type="text" id="city" placeholder="Auto-filled from pincode" required />
           </div>
           <div class="field" style="flex:1;min-width:0;">
             <label for="state">State</label>
@@ -237,6 +251,27 @@
         btn.textContent = 'Create account';
       }
     });
+  </script>
+  <script>
+    (function () {
+      function applyTime(root) {
+        const now = new Date();
+        const s = now.getSeconds();
+        const m = now.getMinutes();
+        const h = now.getHours() % 12;
+        const sec = root.querySelector(".clock-sec");
+        const min = root.querySelector(".clock-min");
+        const hour = root.querySelector(".clock-hour");
+        if (sec) sec.style.transform = `rotate(${s * 6}deg)`;
+        if (min) min.style.transform = `rotate(${m * 6 + s * 0.1}deg)`;
+        if (hour) hour.style.transform = `rotate(${h * 30 + m * 0.5}deg)`;
+      }
+      function tickAll() {
+        document.querySelectorAll(".clock-face").forEach(applyTime);
+      }
+      tickAll();
+      setInterval(tickAll, 1000);
+    })();
   </script>
 </body>
 </html>

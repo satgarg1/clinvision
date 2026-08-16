@@ -525,15 +525,41 @@ a { color: inherit; }
 .login-card .btn { padding: 17px 28px; font-size: 17px; border-radius: 16px; }
 .login-card .login-hint { font-size: 14px; margin-top: 26px; }
 .login-card .login-error { font-size: 14px; }
+/* "Auto-filled from pincode" is too long to fit this column at the
+   card's full 17px input font, but that's only a placeholder-string
+   problem — shrinking the whole input (old approach) also shrunk
+   whatever the user or the pincode lookup actually put in the field,
+   so a filled city visibly mismatched the State box beside it.
+   Scoping the shrink to ::placeholder leaves the real value at the
+   same size as every other field. */
+#city::placeholder { font-size: 12px; }
 
+/* Every other page (marketing nav, app sidebar) shows the ticking clock
+   icon and tagline next to "Qlinic" — the auth pages only ever had the
+   bare wordmark. Same .brand/.brand-top/.brand-clock/.brand-tagline
+   structure, just centered and scaled to this card instead of a
+   left-aligned nav bar. */
 .login-card .brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  margin-bottom: 10px;
+}
+.login-card .brand-top {
   font-size: 27px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  display: block;
-  text-align: center;
-  text-decoration: none;
-  margin-bottom: 8px;
+  color: var(--black);
+}
+.login-card .brand-clock {
+  width: 30px;
+  height: 30px;
+  margin-right: 10px;
+}
+.login-card .brand-tagline {
+  font-size: 14px;
+  margin-top: 6px;
 }
 
 .login-card h1 {
