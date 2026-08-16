@@ -535,31 +535,46 @@ a { color: inherit; }
 #city::placeholder { font-size: 12px; }
 
 /* Every other page (marketing nav, app sidebar) shows the ticking clock
-   icon and tagline next to "Qlinic" — the auth pages only ever had the
-   bare wordmark. Same .brand/.brand-top/.brand-clock/.brand-tagline
-   structure, just centered and scaled to this card instead of a
-   left-aligned nav bar. */
-.login-card .brand {
+   icon and tagline next to "Qlinic" in the top-left corner of the page,
+   not inside the content card itself — the auth pages get the same
+   treatment: a corner brand mark over the login-wrap, left-aligned,
+   with the card below starting directly at its own heading. */
+.login-brand-corner {
+  position: absolute;
+  top: 28px;
+  left: 32px;
+  z-index: 2;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   text-decoration: none;
-  margin-bottom: 10px;
 }
-.login-card .brand-top {
-  font-size: 27px;
+.login-brand-corner .brand-top {
+  font-size: 19px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   color: var(--black);
 }
-.login-card .brand-clock {
-  width: 30px;
-  height: 30px;
-  margin-right: 10px;
+.login-brand-corner .brand-clock {
+  width: 22px;
+  height: 22px;
+  margin-right: 8px;
 }
-.login-card .brand-tagline {
-  font-size: 14px;
-  margin-top: 6px;
+.login-brand-corner .brand-tagline {
+  font-size: 11px;
+  margin-top: 2px;
+}
+/* On a narrow/short viewport the card grows nearly full-bleed (see
+   .login-wrap's padding:24px), so a fixed top-left corner mark would sit
+   underneath it. Drop out of absolute positioning back into normal flow,
+   centered above the card, rather than overlapping or disappearing. */
+@media (max-width: 480px) {
+  .login-wrap { flex-direction: column; }
+  .login-brand-corner {
+    position: static;
+    align-items: center;
+    margin-bottom: 16px;
+  }
 }
 
 .login-card h1 {
