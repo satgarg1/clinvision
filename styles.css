@@ -191,7 +191,7 @@ a { color: inherit; }
   font-size: 15px;
   font-weight: 600;
   padding: 10px 22px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   text-decoration: none;
   border: none;
   cursor: pointer;
@@ -505,8 +505,9 @@ a { color: inherit; }
   z-index: 1;
   background: var(--white);
   border: 1px solid var(--grey-300);
-  border-radius: var(--radius);
-  padding: 44px 40px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-resting);
+  padding: var(--space-9) var(--space-8);
   width: 100%;
   max-width: 400px;
 }
