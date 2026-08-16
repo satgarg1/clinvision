@@ -188,9 +188,9 @@ a { color: inherit; }
 .btn {
   display: inline-block;
   font-family: var(--font);
-  font-size: 15px;
+  font-size: var(--text-md);
   font-weight: 600;
-  padding: 10px 22px;
+  padding: var(--space-3) var(--space-6);
   border-radius: var(--radius-md);
   text-decoration: none;
   border: none;
@@ -545,10 +545,10 @@ a { color: inherit; }
 .field input, .field select {
   width: 100%;
   box-sizing: border-box;
-  padding: 12px 14px;
-  font-size: 15px;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-md);
   border: 1px solid var(--grey-300);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   font-family: var(--font);
 }
 .field input:focus, .field select:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
@@ -748,7 +748,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 
 .app-topbar h1 {
-  font-size: 24px;
+  font-size: var(--text-2xl);
   font-weight: 700;
   letter-spacing: -0.02em;
   margin: 0;
@@ -882,10 +882,10 @@ table.qtable tr:last-child td { border-bottom: none; }
 
 .btn-sm {
   font-family: var(--font);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
-  padding: 7px 14px;
-  border-radius: 8px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: var(--grey-100);
   color: var(--grey-700);
@@ -930,12 +930,12 @@ table.qtable tr:last-child td { border-bottom: none; }
 #rulesForm, #clinicControlsForm, #displayLanguageForm { gap: 16px; align-items: flex-start; }
 #rulesForm .time-picker-trigger, #clinicControlsForm .time-picker-trigger, #clinicControlsForm select,
 #displayLanguageForm select, #followUpBufferInput, #clinicControlsForm .day-chip {
-  padding: 12px 14px;
-  font-size: 15px;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-md);
 }
 #rulesForm .btn-sm, #clinicControlsForm .btn-sm, #displayLanguageForm .btn-sm {
-  padding: 12px 18px;
-  font-size: 15px;
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-md);
 }
 
 /* An action button sharing an .inline-form/.form-grid row with a real
@@ -950,16 +950,16 @@ table.qtable tr:last-child td { border-bottom: none; }
    #displayLanguageForm above, Revenue's #singleDayFilters below)
    already override this via a higher-specificity selector. */
 .inline-form .field > .btn-sm, .form-grid .field > .btn-sm {
-  padding: 10px 18px;
-  font-size: 14px;
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-base);
 }
 .inline-form .field { margin-bottom: 0; min-width: 160px; flex: 1; }
 .inline-form .field input, .inline-form .field select {
   width: 100%;
-  padding: 10px 12px;
-  font-size: 14px;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
   border: 1px solid var(--grey-300);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-family: var(--font);
 }
 
@@ -1091,10 +1091,10 @@ table.qtable tr:last-child td { border-bottom: none; }
 .form-grid .field { margin-bottom: 0; }
 .form-grid .field input, .form-grid .field select {
   width: 100%;
-  padding: 10px 12px;
-  font-size: 14px;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
   border: 1px solid var(--grey-300);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-family: var(--font);
 }
 
