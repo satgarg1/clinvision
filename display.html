@@ -86,6 +86,8 @@
           acrossAllDoctors: (n) => `(${n} across all doctors)`,
           allClosedTitle: 'No doctor is available right now',
           allClosedSub: 'All doctors have closed for the day. Please check back tomorrow.',
+          notArrived: 'Not arrived yet',
+          notArrivedSub: 'Queue will start once they arrive',
         },
         hi: {
           tagline: 'लाइव कतार',
@@ -110,6 +112,8 @@
           acrossAllDoctors: (n) => `(सभी डॉक्टरों को मिलाकर ${n})`,
           allClosedTitle: 'अभी कोई डॉक्टर उपलब्ध नहीं है',
           allClosedSub: 'आज सभी डॉक्टर बंद हो चुके हैं। कृपया कल फिर देखें।',
+          notArrived: 'अभी नहीं पहुंचे',
+          notArrivedSub: 'डॉक्टर के आते ही कतार शुरू होगी',
         },
       };
       let T = STRINGS.en;
@@ -267,7 +271,12 @@
 
       function renderDoctorStrip(all) {
         document.getElementById('doctorStrip').innerHTML = all.map(({ doctor, queue }, index) => {
-          const detail = doctor.dayClosedAt ? '' : statusDetailLine(doctor);
+          const closedToday = Qlinic.isDoctorClosedToday(doctor);
+          // day_closed_at is set but from a prior day — the doctor hasn't
+          // tapped "I'm back" since logging in today, so as far as the
+          // waiting room can tell they simply haven't arrived yet.
+          const notArrived = !!doctor.dayClosedAt && !closedToday;
+          const detail = (closedToday || notArrived) ? '' : statusDetailLine(doctor);
           return `
           <div class="strip-card accent-${ACCENT_COLORS[index % ACCENT_COLORS.length]}">
             <div class="strip-top">
@@ -277,14 +286,18 @@
                 ${detail ? `<div class="strip-status-detail">${detail}</div>` : ''}
               </div>
               <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-                ${doctor.dayClosedAt
+                ${closedToday
                   ? `<span class="strip-pill strip-pill-warn">${T.dayClosed}</span>`
-                  : doctor.status === 'on_time'
-                    ? `<span class="strip-pill strip-pill-ok">${T.onTime}</span>`
-                    : `<span class="strip-pill strip-pill-warn">${statusLabel(doctor.status)}</span>`}
-                ${doctor.dayClosedAt
+                  : notArrived
+                    ? `<span class="strip-pill strip-pill-warn">${T.notArrived}</span>`
+                    : doctor.status === 'on_time'
+                      ? `<span class="strip-pill strip-pill-ok">${T.onTime}</span>`
+                      : `<span class="strip-pill strip-pill-warn">${statusLabel(doctor.status)}</span>`}
+                ${closedToday
                   ? `<div class="strip-fade-note" data-day-closed-at="${doctor.dayClosedAt}"></div>`
-                  : ''}
+                  : notArrived
+                    ? `<div class="strip-fade-note">${T.notArrivedSub}</div>`
+                    : ''}
               </div>
             </div>
             <div class="strip-serving">
@@ -392,8 +405,16 @@
         // then drops off the board entirely — checked here on every
         // refresh rather than a server job, since this loop already runs
         // every REFRESH_MS.
+        //
+        // day_closed_at left over from a PRIOR day (they haven't tapped
+        // "I'm back" yet since logging in today) is a different situation
+        // and never fades: reception can already book them for today (see
+        // reception.html's isDoctorClosedToday-gated blocker), so their
+        // queued patients need to stay visible on the board too — renderDoctorStrip
+        // shows them as "not arrived yet" instead of "day closed."
         const all = allQueues.filter(({ doctor }) => {
           if (!doctor.dayClosedAt) return true;
+          if (!Qlinic.isDoctorClosedToday(doctor)) return true;
           return Date.now() - new Date(doctor.dayClosedAt).getTime() < DAY_CLOSED_FADE_MS;
         });
 
