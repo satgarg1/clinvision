@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=86" />
+<link rel="stylesheet" href="styles.css?v=87" />
 </head>
 <body>
   <div class="app-shell">
@@ -28,7 +28,10 @@
         </span>
         <span class="brand-tagline">Time is the one asset nobody gets back</span>
       </a>
-      <div class="clinic-name" id="clinicName">Loading…</div>
+      <div class="clinic-name-row">
+        <img class="clinic-logo-thumb" id="clinicLogoThumb" style="display:none;" alt="" />
+        <div class="clinic-name" id="clinicName">Loading…</div>
+      </div>
       <nav>
         <a href="dashboard.html" class="nav-link">Dashboard</a>
         <a href="reception.html" class="nav-link">Reception</a>
@@ -77,6 +80,22 @@
             <button type="submit" class="btn-sm primary">Save</button>
           </div>
         </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>Clinic logo</h2></div>
+        <p class="panel-note">Shown next to your clinic name in the sidebar, and on printed invoices. Optional — leave it blank and everything works exactly as it does today.</p>
+        <div class="logo-upload-row">
+          <div class="logo-preview empty" id="logoPreview">No logo</div>
+          <div>
+            <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" />
+            <div class="logo-actions">
+              <button type="button" class="btn-sm primary" id="chooseLogoBtn">Upload logo</button>
+              <button type="button" class="btn-sm danger" id="removeLogoBtn" style="display:none;">Remove</button>
+            </div>
+            <div class="logo-hint">PNG, JPG or WebP, up to 2 MB. Square images look best.</div>
+          </div>
+        </div>
       </div>
 
       <div class="panel">
@@ -240,7 +259,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=38"></script>
+  <script src="clinic-data.js?v=39"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -427,6 +446,13 @@
         const clinic = await Qlinic.getClinic();
         if (!clinic) return;
         document.getElementById('clinicName').textContent = clinic.name;
+        if (clinic.logo_url) {
+          document.getElementById('clinicLogoThumb').src = clinic.logo_url;
+          document.getElementById('clinicLogoThumb').style.display = 'block';
+        } else {
+          document.getElementById('clinicLogoThumb').style.display = 'none';
+        }
+        renderLogoPreview(clinic.logo_url);
         document.getElementById('clinicNameInput').value = clinic.name;
         document.getElementById('addressLineInput').value = clinic.address_line || '';
         document.getElementById('cityInput').value = clinic.city || '';
@@ -476,6 +502,46 @@
           state: document.getElementById('stateInput').value,
         });
         showToast('Clinic profile updated');
+        loadClinic();
+      });
+
+      function renderLogoPreview(logoUrl) {
+        const preview = document.getElementById('logoPreview');
+        const removeBtn = document.getElementById('removeLogoBtn');
+        if (logoUrl) {
+          preview.innerHTML = `<img src="${logoUrl}" alt="Clinic logo" />`;
+          preview.classList.remove('empty');
+          removeBtn.style.display = 'inline-block';
+        } else {
+          preview.innerHTML = 'No logo';
+          preview.classList.add('empty');
+          removeBtn.style.display = 'none';
+        }
+      }
+
+      document.getElementById('chooseLogoBtn').addEventListener('click', () => {
+        document.getElementById('logoFileInput').click();
+      });
+      document.getElementById('logoFileInput').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        e.target.value = ''; // lets picking the same file again re-fire change
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+          showToast('Logo must be under 2 MB');
+          return;
+        }
+        try {
+          await Qlinic.uploadClinicLogo(file);
+          showToast('Logo updated');
+          loadClinic();
+        } catch (err) {
+          showToast(err.message || 'Could not upload logo');
+        }
+      });
+      document.getElementById('removeLogoBtn').addEventListener('click', async () => {
+        if (!confirm('Remove your clinic logo?')) return;
+        await Qlinic.removeClinicLogo();
+        showToast('Logo removed');
         loadClinic();
       });
 

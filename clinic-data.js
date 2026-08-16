@@ -274,9 +274,44 @@
     if (fields.pincode !== undefined) payload.pincode = fields.pincode;
     if (fields.state !== undefined) payload.state = fields.state;
     if (fields.phone !== undefined) payload.phone = fields.phone;
+    if (fields.logoUrl !== undefined) payload.logo_url = fields.logoUrl;
     const { error } = await sb.from('clinics').update(payload).eq('id', clinicId);
     if (error) throw error;
     currentClinic = null; // force a fresh read next time
+  }
+
+  // ---------------- clinic logo ----------------
+
+  const LOGO_BUCKET = 'clinic-logos';
+  const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+
+  // One fixed path per clinic ("{clinicId}/logo", no extension — the
+  // content-type is set explicitly below, so the extension isn't needed
+  // for the browser to render it correctly) — a re-upload always
+  // overwrites the same file rather than accumulating orphaned ones for
+  // clinics that change their logo more than once.
+  async function uploadClinicLogo(file) {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId) throw new Error('No clinic to upload a logo for yet.');
+    if (file.size > MAX_LOGO_BYTES) throw new Error('Logo must be under 2 MB.');
+    const path = `${clinicId}/logo`;
+    const { error: uploadError } = await sb.storage.from(LOGO_BUCKET).upload(path, file, {
+      upsert: true, cacheControl: '3600', contentType: file.type,
+    });
+    if (uploadError) throw uploadError;
+    const { data } = sb.storage.from(LOGO_BUCKET).getPublicUrl(path);
+    // Cache-busted so a changed logo shows immediately instead of
+    // whatever the browser cached for the previous file at this same path.
+    const url = `${data.publicUrl}?t=${Date.now()}`;
+    await updateClinic({ logoUrl: url });
+    return url;
+  }
+
+  async function removeClinicLogo() {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId) return;
+    await sb.storage.from(LOGO_BUCKET).remove([`${clinicId}/logo`]);
+    await updateClinic({ logoUrl: null });
   }
 
   // ---------------- clinic closures (one-off closed dates) ----------------
@@ -1192,6 +1227,8 @@
 
     getClinic,
     updateClinic,
+    uploadClinicLogo,
+    removeClinicLogo,
     getClinicClosures,
     addClinicClosure,
     deleteClinicClosure,

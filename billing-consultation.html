@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=86" />
+<link rel="stylesheet" href="styles.css?v=87" />
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -28,7 +28,10 @@
         </span>
         <span class="brand-tagline">Time is the one asset nobody gets back</span>
       </a>
-      <div class="clinic-name" id="clinicName">Loading…</div>
+      <div class="clinic-name-row">
+        <img class="clinic-logo-thumb" id="clinicLogoThumb" style="display:none;" alt="" />
+        <div class="clinic-name" id="clinicName">Loading…</div>
+      </div>
       <nav>
         <a href="dashboard.html" class="nav-link">Dashboard</a>
         <a href="reception.html" class="nav-link">Reception</a>
@@ -126,9 +129,12 @@
 
   <div id="printReceipt" class="receipt">
     <div class="receipt-header">
-      <div>
-        <div class="receipt-clinic-name" id="rClinicName"></div>
-        <div class="receipt-clinic-address" id="rClinicAddress"></div>
+      <div class="receipt-clinic-block">
+        <img class="receipt-logo" id="rClinicLogo" style="display:none;" alt="" />
+        <div>
+          <div class="receipt-clinic-name" id="rClinicName"></div>
+          <div class="receipt-clinic-address" id="rClinicAddress"></div>
+        </div>
       </div>
       <div class="receipt-number-block">
         <div class="receipt-number-label">Receipt</div>
@@ -179,7 +185,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=38"></script>
+  <script src="clinic-data.js?v=39"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -298,6 +304,13 @@
         document.getElementById('rClinicName').textContent = clinic.name;
         document.getElementById('rClinicName2').textContent = clinic.name;
         document.getElementById('rClinicAddress').textContent = addressParts.join(', ');
+        const rLogo = document.getElementById('rClinicLogo');
+        if (clinic.logo_url) {
+          rLogo.src = clinic.logo_url;
+          rLogo.style.display = 'block';
+        } else {
+          rLogo.style.display = 'none';
+        }
         document.getElementById('rInvoiceNumber').textContent = `#RC-${String(invoice.invoiceNumber).padStart(4, '0')}`;
         document.getElementById('rDateTime').textContent = Qlinic.formatDateTime(invoice.createdAt);
         document.getElementById('rBilledBy').textContent = `Billed by: ${(myProfile && myProfile.fullName) || 'Reception'}`;
@@ -359,6 +372,12 @@
 
       clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      if (clinic && clinic.logo_url) {
+        document.getElementById('clinicLogoThumb').src = clinic.logo_url;
+        document.getElementById('clinicLogoThumb').style.display = 'block';
+      } else {
+        document.getElementById('clinicLogoThumb').style.display = 'none';
+      }
       myProfile = await Qlinic.getMyProfile();
       await loadDoctors();
 

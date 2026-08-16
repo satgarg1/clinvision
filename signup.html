@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=86" />
+<link rel="stylesheet" href="styles.css?v=87" />
 </head>
 <body>
   <div class="login-wrap">
@@ -24,6 +24,17 @@
         <div class="field">
           <label for="clinicName">Clinic name</label>
           <input type="text" id="clinicName" placeholder="e.g., Rao Family Clinic" required />
+        </div>
+        <div class="field">
+          <label>Clinic logo <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
+          <div class="logo-upload-row">
+            <div class="logo-preview empty" id="signupLogoPreview" style="width:44px;height:44px;border-radius:10px;">No logo</div>
+            <div>
+              <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" />
+              <button type="button" class="btn-sm" id="chooseLogoBtn">Choose file</button>
+            </div>
+          </div>
+          <div id="logoError" style="display:none;color:var(--danger);font-size:13px;margin-top:6px;"></div>
         </div>
         <div class="field">
           <label for="addressLine">Address</label>
@@ -72,7 +83,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=38"></script>
+  <script src="clinic-data.js?v=39"></script>
   <script>
     document.getElementById('state').innerHTML = '<option value="">Select state</option>' +
       Qlinic.INDIA_STATES_AND_UTS.map((s) => `<option value="${s}">${s}</option>`).join('');
@@ -140,6 +151,36 @@
     }
     document.getElementById('phoneNumber').addEventListener('blur', validatePhone);
 
+    // Held in memory only — the actual Storage upload happens after
+    // Qlinic.signUp() below, once a clinic row (and therefore a clinic_id
+    // to scope the file to) actually exists. A File object can't survive
+    // navigating to a different page, so this only works for the
+    // immediate-session path; see the submit handler's comment.
+    let selectedLogoFile = null;
+    document.getElementById('chooseLogoBtn').addEventListener('click', () => {
+      document.getElementById('logoFileInput').click();
+    });
+    document.getElementById('logoFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      const errorEl = document.getElementById('logoError');
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        errorEl.textContent = 'Logo must be under 2 MB.';
+        errorEl.style.display = 'block';
+        e.target.value = '';
+        return;
+      }
+      errorEl.style.display = 'none';
+      selectedLogoFile = file;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const preview = document.getElementById('signupLogoPreview');
+        preview.innerHTML = `<img src="${ev.target.result}" alt="Clinic logo" />`;
+        preview.classList.remove('empty');
+      };
+      reader.readAsDataURL(file);
+    });
+
     document.getElementById('signupForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       if (!validatePhone()) {
@@ -166,7 +207,17 @@
 
         if (result.session) {
           // Email confirmation is off for this project: clinic is set up
-          // and the user is already logged in.
+          // and the user is already logged in, so a clinic_id already
+          // exists to scope the upload to. Best-effort: a failed logo
+          // upload shouldn't block a successful signup — they can always
+          // add one later from Settings.
+          if (selectedLogoFile) {
+            try {
+              await Qlinic.uploadClinicLogo(selectedLogoFile);
+            } catch (err) {
+              console.error('Logo upload failed:', err);
+            }
+          }
           window.location.href = 'dashboard.html';
           return;
         }

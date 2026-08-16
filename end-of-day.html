@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=86" />
+<link rel="stylesheet" href="styles.css?v=87" />
 </head>
 <body>
   <div class="app-shell">
@@ -28,7 +28,10 @@
         </span>
         <span class="brand-tagline">Time is the one asset nobody gets back</span>
       </a>
-      <div class="clinic-name" id="clinicName">Loading…</div>
+      <div class="clinic-name-row">
+        <img class="clinic-logo-thumb" id="clinicLogoThumb" style="display:none;" alt="" />
+        <div class="clinic-name" id="clinicName">Loading…</div>
+      </div>
       <nav>
         <a href="dashboard.html" class="nav-link">Dashboard</a>
         <a href="reception.html" class="nav-link">Reception</a>
@@ -54,7 +57,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=38"></script>
+  <script src="clinic-data.js?v=39"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -124,6 +127,12 @@
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      if (clinic && clinic.logo_url) {
+        document.getElementById('clinicLogoThumb').src = clinic.logo_url;
+        document.getElementById('clinicLogoThumb').style.display = 'block';
+      } else {
+        document.getElementById('clinicLogoThumb').style.display = 'none';
+      }
       await renderEndOfDay();
       Qlinic.onLiveChange(renderEndOfDay);
     })();
