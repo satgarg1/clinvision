@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=104" />
+<link rel="stylesheet" href="styles.css?v=105" />
 </head>
 <body>
   <div class="app-shell">
@@ -70,6 +70,7 @@
             <button class="btn-sm accent-outline" data-status="on_break">On a break</button>
             <button class="btn-sm accent-outline" data-status="emergency">Emergency</button>
           </div>
+          <div id="statusLockedNote" class="field-hint" style="display:none;"></div>
           <div id="delayInputWrap" style="display:none;margin-top:10px;">
             <div class="inline-form">
               <div class="field" style="max-width:230px;">
@@ -217,22 +218,32 @@
            <span style="color:var(--grey-500);"> · updated ${Qlinic.formatTimestamp(doc.statusUpdatedAt)}${doc.statusNote ? ' · "' + doc.statusNote + '"' : ''}</span>`;
 
         // Once the day is closed, status buttons (Clear status/Running
-        // late/On a break/Emergency) are locked — broadcasting a new delay
-        // to patients who've already been told you're done for the day
-        // doesn't make sense. "I'm back" is the only way out, and the
-        // tooltip says so on hover so it's not just a mystery-disabled
-        // button.
+        // late/On a break/Emergency) and "Call next patient" are locked —
+        // broadcasting a new delay, or calling someone in, to patients
+        // who've already been told you're done for the day doesn't make
+        // sense. "I'm back" is the only way out. A persistent note (not a
+        // hover tooltip: with 4 tightly-packed buttons and only 16px of
+        // room above them, a floating tooltip long enough to be
+        // descriptive reliably overlapped the paragraph above and spilled
+        // past the panel edge) explains why, plus a native title attribute
+        // as a light hover reinforcement.
         const dayIsClosed = !!doc.dayClosedAt;
+        const lockTitle = dayIsClosed ? 'Day closed — press "I\'m back" to regain control.' : '';
         document.querySelectorAll('[data-status]').forEach((btn) => {
           btn.disabled = dayIsClosed;
-          if (dayIsClosed) {
-            btn.setAttribute('data-tooltip', 'Day closed — press "I\'m back" below to regain control of your status.');
-          } else {
-            btn.removeAttribute('data-tooltip');
-          }
+          if (dayIsClosed) btn.title = lockTitle; else btn.removeAttribute('title');
         });
+        const callNextBtn = document.getElementById('callNextBtn');
+        callNextBtn.disabled = dayIsClosed;
+        if (dayIsClosed) callNextBtn.title = lockTitle; else callNextBtn.removeAttribute('title');
+
+        const lockedNote = document.getElementById('statusLockedNote');
         if (dayIsClosed) {
+          lockedNote.textContent = '🔒 Status is locked while your day is closed — press "I\'m back" below to make changes.';
+          lockedNote.style.display = 'block';
           document.getElementById('delayInputWrap').style.display = 'none';
+        } else {
+          lockedNote.style.display = 'none';
         }
 
         document.getElementById('nowServingBox').innerHTML = q.nowServing

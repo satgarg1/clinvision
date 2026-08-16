@@ -1278,6 +1278,7 @@
     reopenDay,
     closeDoctorDay,
     reopenDoctorDay,
+    isDoctorClosedToday,
     isLikelyNoShow,
     getQueueStatus,
 
