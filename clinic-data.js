@@ -1039,6 +1039,19 @@
     if (error) throw error;
   }
 
+  // "Closed today" on purpose, not just "closed" — compares the LOCAL
+  // calendar date of day_closed_at against today's, so a doctor who closed
+  // yesterday and forgot to tap "I'm back" doesn't keep blocking bookings
+  // once a new day has started. Callers never need to reset this by hand.
+  function isDoctorClosedToday(doctor) {
+    if (!doctor || !doctor.dayClosedAt) return false;
+    const closed = new Date(doctor.dayClosedAt);
+    const y = closed.getFullYear();
+    const m = String(closed.getMonth() + 1).padStart(2, '0');
+    const d = String(closed.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}` === todayDateStr();
+  }
+
   // ---------------- auth ----------------
 
   async function signUp(email, password, clinicName, clinicAddress, clinicPhone) {

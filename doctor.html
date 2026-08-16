@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=103" />
+<link rel="stylesheet" href="styles.css?v=104" />
 </head>
 <body>
   <div class="app-shell">
@@ -215,6 +215,25 @@
         document.getElementById('currentStatusLine').innerHTML =
           `Currently: <span class="status-pill status-${doc.status}">${statusLabel(doc.status)}${doc.delayMins ? ' · ' + doc.delayMins + ' min' : ''}</span>
            <span style="color:var(--grey-500);"> · updated ${Qlinic.formatTimestamp(doc.statusUpdatedAt)}${doc.statusNote ? ' · "' + doc.statusNote + '"' : ''}</span>`;
+
+        // Once the day is closed, status buttons (Clear status/Running
+        // late/On a break/Emergency) are locked — broadcasting a new delay
+        // to patients who've already been told you're done for the day
+        // doesn't make sense. "I'm back" is the only way out, and the
+        // tooltip says so on hover so it's not just a mystery-disabled
+        // button.
+        const dayIsClosed = !!doc.dayClosedAt;
+        document.querySelectorAll('[data-status]').forEach((btn) => {
+          btn.disabled = dayIsClosed;
+          if (dayIsClosed) {
+            btn.setAttribute('data-tooltip', 'Day closed — press "I\'m back" below to regain control of your status.');
+          } else {
+            btn.removeAttribute('data-tooltip');
+          }
+        });
+        if (dayIsClosed) {
+          document.getElementById('delayInputWrap').style.display = 'none';
+        }
 
         document.getElementById('nowServingBox').innerHTML = q.nowServing
           ? `<div style="font-size:20px;font-weight:700;">${q.nowServing.name}</div><div style="font-size:13px;color:var(--grey-500);">${q.nowServing.address ? q.nowServing.address + ' · ' : ''}${q.nowServing.type === 'appointment' ? 'Appointment' : 'Walk-in'}</div>`

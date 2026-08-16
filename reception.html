@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=103" />
+<link rel="stylesheet" href="styles.css?v=104" />
 </head>
 <body>
   <div class="app-shell">
@@ -46,6 +46,7 @@
     </aside>
 
     <main class="app-main">
+      <div class="closed-day-banner" id="closedDayBanner" style="display:none;"></div>
       <div class="app-topbar">
         <h1>Reception</h1>
         <div class="clock-pill">
@@ -99,6 +100,7 @@
             <div class="field">
               <label>Doctor</label>
               <select id="pDoctor" required></select>
+              <span class="field-hint" id="doctorClosedHint" style="display:none;color:var(--danger);"></span>
             </div>
             <div class="field mode-only mode-only-appointment">
               <label>Appointment date</label>
@@ -266,6 +268,56 @@
         }
       }
 
+      // Names up to 2 closed doctors; beyond that a name list gets long and
+      // hard to scan, so it switches to a count + a Dashboard pointer
+      // (Dashboard already shows each doctor's real status, including
+      // "Day closed"). Time-bound to today only — see isDoctorClosedToday —
+      // so this clears itself at midnight without anyone reopening a day.
+      function renderClosedDayBanner() {
+        const banner = document.getElementById('closedDayBanner');
+        const closed = doctorsCache.filter((d) => Qlinic.isDoctorClosedToday(d));
+        if (closed.length === 0) {
+          banner.style.display = 'none';
+          banner.innerHTML = '';
+          return;
+        }
+        let msg;
+        if (closed.length === 1) {
+          msg = `<strong>${closed[0].name}</strong> has closed for the day — don't book any more appointments for them today.`;
+        } else if (closed.length === 2) {
+          msg = `<strong>${closed[0].name}</strong> and <strong>${closed[1].name}</strong> have closed for the day — don't book any more appointments for them today.`;
+        } else {
+          msg = `<strong>${closed.length} doctors</strong> have closed for the day — check <strong>Dashboard</strong> to see who's still available before booking.`;
+        }
+        banner.innerHTML = `<span class="dot"></span><span>${msg}</span>`;
+        banner.style.display = 'flex';
+      }
+
+      // The banner covers the common case, but with enough doctors on the
+      // roster it's easy to miss — this is the safety net right where
+      // booking actually happens, checked for BOTH walk-ins (always today)
+      // and phoned-in appointments (only when booked for today; booking a
+      // closed doctor for tomorrow is fine and stays allowed).
+      function doctorBookingBlockReason() {
+        const doctorId = document.getElementById('pDoctor').value;
+        const doctor = doctorsCache.find((d) => d.id === doctorId);
+        if (!doctor || !Qlinic.isDoctorClosedToday(doctor)) return null;
+        const date = document.getElementById('pDate').value;
+        const bookingForToday = patientMode === 'walkin' || date === Qlinic.getTodayDate();
+        if (!bookingForToday) return null;
+        return `${doctor.name} has closed for the day and can't take any more patients today. Pick another doctor, or book them for a different date.`;
+      }
+      function updateDoctorClosedHint() {
+        const hint = document.getElementById('doctorClosedHint');
+        const reason = doctorBookingBlockReason();
+        if (reason) {
+          hint.textContent = `⛔ ${reason}`;
+          hint.style.display = 'block';
+        } else {
+          hint.style.display = 'none';
+        }
+      }
+
       function buildTimePickerOptions() {
         const dateVal = document.getElementById('pDate').value;
         const isToday = dateVal === Qlinic.getTodayDate();
@@ -372,6 +424,7 @@
         document.getElementById('patientSubmitBtn').textContent = mode === 'walkin' ? 'Add walk-in' : 'Add appointment';
         updateSlotHint();
         checkFollowUpHint();
+        updateDoctorClosedHint();
       }
 
       document.querySelectorAll('.mode-btn').forEach((btn) => {
@@ -755,6 +808,8 @@
 
       async function renderQueues() {
         await refreshDoctorsCache();
+        renderClosedDayBanner();
+        updateDoctorClosedHint();
         if (!queueViewDate) queueViewDate = Qlinic.getTodayDate();
         document.getElementById('queueDateFilter').value = queueViewDate;
 
@@ -906,6 +961,13 @@
         const address = document.getElementById('pAddress').value;
         const doctorId = document.getElementById('pDoctor').value;
 
+        const doctorBlock = doctorBookingBlockReason();
+        if (doctorBlock) {
+          updateDoctorClosedHint();
+          document.getElementById('pDoctor').focus();
+          return;
+        }
+
         let bookedForToday = true;
 
         if (patientMode === 'walkin') {
@@ -962,14 +1024,19 @@
         clearPatientLookupHint();
         clearFollowUpHint();
         updateClosedDayHint();
+        updateDoctorClosedHint();
         renderQueues();
       });
 
-      document.getElementById('pDoctor').addEventListener('change', updateSlotHint);
+      document.getElementById('pDoctor').addEventListener('change', () => {
+        updateSlotHint();
+        updateDoctorClosedHint();
+      });
       document.getElementById('pDate').addEventListener('change', () => {
         resetTimePicker();
         updateSlotHint();
         updateClosedDayHint();
+        updateDoctorClosedHint();
       });
 
       // Looking up the phone number on blur (not every keystroke) is a
@@ -1056,7 +1123,15 @@
       }
       clinicClosureByDate = Object.fromEntries(closures.map((c) => [c.date, c.note]));
       document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
-      setInterval(() => { document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date()); }, 30000);
+      // Also re-checks the closed-day banner/hint on this same tick: they're
+      // time-bound to midnight (see isDoctorClosedToday), and without a
+      // doctor/patient row actually changing, nothing else would trigger a
+      // re-render right at the moment the calendar date rolls over.
+      setInterval(() => {
+        document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
+        renderClosedDayBanner();
+        updateDoctorClosedHint();
+      }, 30000);
       document.getElementById('pDate').min = Qlinic.getTodayDate();
       document.getElementById('pDate').value = Qlinic.getTodayDate();
       updateClosedDayHint();
