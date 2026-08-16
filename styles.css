@@ -1295,16 +1295,20 @@ table.qtable tr:last-child td { border-bottom: none; }
 /* Reception's "a doctor has closed for the day" notice, sitting above the
    page heading so it's the first thing read, not a corner toast that
    fades. Deliberately neutral grey (not warning/danger) — closing for the
-   day is routine, not an error. */
+   day is routine, not an error. A flush top strip, not a boxed card: the
+   negative margin pulls it out of .app-main's own padding so it sits
+   flush against the true top of the page instead of floating in the
+   padded gap above "Reception," and the matching horizontal padding
+   keeps its text aligned with the page content below it. No border or
+   radius — a card-shaped box here read as its own separate alert rather
+   than page-level context. */
 .closed-day-banner {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   background: var(--grey-100);
-  border: 1px solid var(--grey-300);
-  border-radius: var(--radius-sm);
-  padding: var(--space-3) var(--space-4);
-  margin-bottom: var(--space-4);
+  padding: 10px 48px;
+  margin: -40px -48px 16px;
   font-size: var(--text-base);
   color: var(--grey-700);
   line-height: 1.4;
@@ -1656,6 +1660,7 @@ button.trend-bar-link:hover { background: var(--grey-100); }
   .app-sidebar nav { flex-direction: row; }
   .app-sidebar .clinic-name-row { display: none; }
   .app-main { padding: 24px 20px; }
+  .closed-day-banner { padding: 10px 20px; margin: -24px -20px 14px; }
 }
 
 @media (max-width: 900px) {
