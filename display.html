@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=101" />
+<link rel="stylesheet" href="styles.css?v=102" />
 </head>
 <body class="display-body">
 
@@ -71,7 +71,6 @@
           onBreak: 'On a break',
           emergency: 'Emergency',
           dayClosed: 'Day closed',
-          fadingIn: (m) => `Fading in ${m} min`,
           runningLateDetail: (m) => `Running late by ${m} minutes`,
           onBreakDetail: (m) => `On a break for ${m} minutes`,
           emergencyDetail: 'Attending an emergency, please bear with us',
@@ -93,7 +92,6 @@
           onBreak: 'ब्रेक पर',
           emergency: 'आपातकाल',
           dayClosed: 'दिन समाप्त',
-          fadingIn: (m) => `${m} मिनट में हट जाएगा`,
           runningLateDetail: (m) => `${m} मिनट देरी से`,
           onBreakDetail: (m) => `${m} मिनट के लिए ब्रेक पर`,
           emergencyDetail: 'आपातकाल में व्यस्त, कृपया प्रतीक्षा करें',
@@ -267,14 +265,14 @@
                 <div class="strip-spec">${localizeSpecialty(doctor.specialty)}</div>
                 ${detail ? `<div class="strip-status-detail">${detail}</div>` : ''}
               </div>
-              <div style="text-align:right;">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
                 ${doctor.dayClosedAt
                   ? `<span class="strip-pill strip-pill-warn">${T.dayClosed}</span>`
                   : doctor.status === 'on_time'
                     ? `<span class="strip-pill strip-pill-ok">${T.onTime}</span>`
                     : `<span class="strip-pill strip-pill-warn">${statusLabel(doctor.status)}</span>`}
                 ${doctor.dayClosedAt
-                  ? `<div class="strip-fade-note">${T.fadingIn(Math.max(0, Math.ceil((DAY_CLOSED_FADE_MS - (Date.now() - new Date(doctor.dayClosedAt).getTime())) / 60000)))}</div>`
+                  ? `<div class="strip-fade-note" data-day-closed-at="${doctor.dayClosedAt}"></div>`
                   : ''}
               </div>
             </div>
@@ -352,7 +350,25 @@
         renderDots(totalPages);
       }
 
-      const DAY_CLOSED_FADE_MS = 10 * 60 * 1000;
+      const DAY_CLOSED_FADE_MS = 3 * 60 * 1000;
+
+      // Runs every second (independent of the 5s REFRESH_MS data poll) so
+      // the "3:00, 2:59, ..." countdown actually ticks in real time instead
+      // of jumping in 5-second steps. Reads the closed-at timestamp back
+      // off the DOM rather than keeping separate JS state, so it stays
+      // correct across every re-render without extra bookkeeping.
+      function formatCountdown(dayClosedAtIso) {
+        const remainingMs = Math.max(0, DAY_CLOSED_FADE_MS - (Date.now() - new Date(dayClosedAtIso).getTime()));
+        const totalSec = Math.ceil(remainingMs / 1000);
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        return `${m}:${String(s).padStart(2, '0')}`;
+      }
+      function tickFadeCountdowns() {
+        document.querySelectorAll('.strip-fade-note[data-day-closed-at]').forEach((el) => {
+          el.textContent = formatCountdown(el.getAttribute('data-day-closed-at'));
+        });
+      }
 
       async function refreshData() {
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
@@ -361,14 +377,16 @@
         applyStaticStrings();
         const allQueues = await Qlinic.getAllQueues();
         // A doctor who's closed their day keeps showing (with the "Day
-        // closed" pill) for a 10-minute grace window, then drops off the
-        // board entirely — checked here on every refresh rather than a
-        // server job, since this loop already runs every REFRESH_MS.
+        // closed" pill and a live countdown) for a 3-minute grace window,
+        // then drops off the board entirely — checked here on every
+        // refresh rather than a server job, since this loop already runs
+        // every REFRESH_MS.
         const all = allQueues.filter(({ doctor }) => {
           if (!doctor.dayClosedAt) return true;
           return Date.now() - new Date(doctor.dayClosedAt).getTime() < DAY_CLOSED_FADE_MS;
         });
         renderDoctorStrip(all);
+        tickFadeCountdowns();
         combined = computeCombinedWaiting(all);
         renderPage();
       }
@@ -387,6 +405,7 @@
 
       refreshData();
       setInterval(refreshData, REFRESH_MS); // catches anything Realtime might miss
+      setInterval(tickFadeCountdowns, 1000);
       setInterval(rotatePage, ROTATE_MS); // airport-board style: cycle to the next set of names
       Qlinic.onLiveChange(refreshData); // instant update the moment reception/doctor changes anything, genuinely cross-device now
     })();

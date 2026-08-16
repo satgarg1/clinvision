@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=101" />
+<link rel="stylesheet" href="styles.css?v=102" />
 </head>
 <body>
   <div class="app-shell">
@@ -243,17 +243,17 @@
         document.getElementById('endOfDayBody').innerHTML = doc.dayClosedAt
           ? `
             <span class="badge badge-no-show" style="margin-bottom:12px;display:inline-block;">Day closed &middot; ${Qlinic.formatTimestamp(doc.dayClosedAt)}</span>
-            <p class="panel-note">Reception and the display screen have been notified. You'll drop off the display screen 10 minutes after closing.</p>
+            <p class="panel-note">Reception and the display screen have been notified. You'll drop off the display screen 3 minutes after closing.</p>
             <button class="btn-sm accent-outline" id="reopenDoctorDayBtn">I'm back</button>
           `
           : `
-            <p class="panel-note">Let reception and the waiting screen know you're done for today. You'll disappear from the display screen 10 minutes after closing.</p>
+            <p class="panel-note">Let reception and the waiting screen know you're done for today. You'll disappear from the display screen 3 minutes after closing.</p>
             <button class="btn-sm accent-outline" id="closeDoctorDayBtn" style="border-color:var(--danger);color:var(--danger);">Close my day</button>
           `;
         const closeBtn = document.getElementById('closeDoctorDayBtn');
         if (closeBtn) {
           closeBtn.addEventListener('click', async () => {
-            if (confirm("Close your day? Reception and the waiting screen will be notified, and you'll drop off the display screen in 10 minutes.")) {
+            if (confirm("Close your day? Reception and the waiting screen will be notified, and you'll drop off the display screen in 3 minutes.")) {
               await Qlinic.closeDoctorDay(currentDoctorId());
               render();
               showToast('Day closed, reception notified');

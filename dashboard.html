@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=101" />
+<link rel="stylesheet" href="styles.css?v=102" />
 </head>
 <body>
   <div class="app-shell">
@@ -153,8 +153,24 @@
         const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id)));
         document.getElementById('doctorStatusList').innerHTML = doctors.map((d, i) => {
           const q = queues[i];
+          // dayClosedAt is a separate field from status (a doctor can close
+          // their day while status is still whatever it last was), so it
+          // has to be checked on its own — otherwise a closed doctor keeps
+          // showing their old "On time"/"Running late" pill here even
+          // though doctor.html and the display board both already know
+          // they're done for the day.
+          const rowClass = d.dayClosedAt ? 'row-status-closed' : (d.status !== 'on_time' ? 'row-status-' + d.status : '');
+          const rightCol = d.dayClosedAt
+            ? `
+                <span class="status-pill status-closed">Day closed</span>
+                <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">closed ${Qlinic.formatTimestamp(d.dayClosedAt)}</div>
+              `
+            : `
+                <span class="status-pill status-${d.status}">${statusLabel(d.status)}${d.delayMins ? ' · ' + d.delayMins + ' min' : ''}</span>
+                <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">updated ${Qlinic.formatTimestamp(d.statusUpdatedAt)}</div>
+              `;
           return `
-            <div class="doctor-status-row ${d.status !== 'on_time' ? 'row-status-' + d.status : ''}">
+            <div class="doctor-status-row ${rowClass}">
               <div style="display:flex;align-items:center;gap:10px;">
                 <span class="board-doc-dot dot-${accentForDoctor(d.id, doctors)}"></span>
                 <div>
@@ -163,8 +179,7 @@
                 </div>
               </div>
               <div style="text-align:right;">
-                <span class="status-pill status-${d.status}">${statusLabel(d.status)}${d.delayMins ? ' · ' + d.delayMins + ' min' : ''}</span>
-                <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">updated ${Qlinic.formatTimestamp(d.statusUpdatedAt)}</div>
+                ${rightCol}
               </div>
             </div>
           `;
