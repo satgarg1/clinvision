@@ -507,28 +507,40 @@ a { color: inherit; }
   z-index: 1;
   background: var(--white);
   border: 1px solid var(--grey-300);
-  border-radius: var(--radius-lg);
+  border-radius: 24px;
   box-shadow: var(--shadow-resting);
-  padding: var(--space-9) var(--space-8);
+  padding: 64px 56px;
   width: 100%;
-  max-width: 400px;
+  max-width: 480px;
 }
 
+/* The auth-card family (login/signup/forgot-reset-password/queue-status)
+   is the one page context with nothing else competing for space, so it
+   gets its own bigger scale on top of the shared .field/.btn tokens
+   rather than bumping those tokens globally (which would also inflate
+   every dense in-app form). Scoped to .login-card so it doesn't touch
+   any other page using the same .field/.btn classes. */
+.login-card .field label { font-size: 14px; margin-bottom: 8px; }
+.login-card .field input, .login-card .field select { padding: 16px 18px; font-size: 17px; }
+.login-card .btn { padding: 17px 28px; font-size: 17px; border-radius: 16px; }
+.login-card .login-hint { font-size: 14px; margin-top: 26px; }
+.login-card .login-error { font-size: 14px; }
+
 .login-card .brand {
-  font-size: 22px;
+  font-size: 27px;
   font-weight: 700;
   letter-spacing: -0.02em;
   display: block;
   text-align: center;
   text-decoration: none;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .login-card h1 {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 600;
   text-align: center;
-  margin: 0 0 28px;
+  margin: 0 0 36px;
   color: var(--grey-700);
 }
 
