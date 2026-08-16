@@ -23,7 +23,12 @@ insert into storage.buckets (id, name, public)
 values ('clinic-logos', 'clinic-logos', true)
 on conflict (id) do nothing;
 
-alter table storage.objects enable row level security;
+-- storage.objects is owned by an internal Supabase role, not the project
+-- owner, so "alter table storage.objects enable row level security"
+-- fails with "must be owner of table objects" even in the SQL Editor —
+-- and it's unnecessary anyway, since every Supabase project already
+-- ships with RLS enabled on storage.objects by default. Only the
+-- policies below need to be created.
 
 create policy "clinic logos public read" on storage.objects
   for select using (bucket_id = 'clinic-logos');
