@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=88" />
+<link rel="stylesheet" href="styles.css?v=89" />
 </head>
 <body>
   <div class="app-shell">
@@ -80,22 +80,6 @@
             <button type="submit" class="btn-sm primary">Save</button>
           </div>
         </form>
-      </div>
-
-      <div class="panel">
-        <div class="panel-header"><h2>Clinic logo</h2></div>
-        <p class="panel-note">Shown next to your clinic name in the sidebar, and on printed invoices.</p>
-        <div class="logo-upload-row">
-          <div class="logo-preview empty" id="logoPreview"></div>
-          <div>
-            <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" />
-            <div class="logo-actions">
-              <button type="button" class="btn-sm primary" id="chooseLogoBtn">Upload logo</button>
-              <button type="button" class="btn-sm danger" id="removeLogoBtn" style="display:none;">Remove</button>
-            </div>
-            <div class="logo-hint">PNG, JPG or WebP, up to 2 MB. Square images look best.</div>
-          </div>
-        </div>
       </div>
 
       <div class="panel">
@@ -250,6 +234,22 @@
         <div class="mode-toggle" role="tablist" aria-label="Day or night theme">
           <button type="button" class="mode-btn" data-theme-choice="light">☀️ Day</button>
           <button type="button" class="mode-btn" data-theme-choice="dark">🌙 Night</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>Clinic logo</h2></div>
+        <p class="panel-note">Shown next to your clinic name in the sidebar, and on printed invoices.</p>
+        <div class="logo-upload-row">
+          <div class="logo-preview empty" id="logoPreview"></div>
+          <div>
+            <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" />
+            <div class="logo-actions">
+              <button type="button" class="btn-sm primary" id="chooseLogoBtn">Upload logo</button>
+              <button type="button" class="btn-sm danger" id="removeLogoBtn" style="display:none;">Remove</button>
+            </div>
+            <div class="logo-hint">PNG, JPG or WebP, up to 2 MB. Square images look best.</div>
+          </div>
         </div>
       </div>
     </main>

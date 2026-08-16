@@ -683,7 +683,7 @@ input[type="number"] { -moz-appearance: textfield; }
    registration (signup.html) share this look — a small square preview
    plus a button, not a full dropzone, since this is a one-off logo pick
    rather than a repeated file-management task. */
-.logo-upload-row { display: flex; align-items: center; gap: 18px; }
+.logo-upload-row { display: flex; align-items: flex-start; gap: 18px; }
 .logo-preview {
   width: 64px;
   height: 64px;

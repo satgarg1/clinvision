@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=88" />
+<link rel="stylesheet" href="styles.css?v=89" />
 </head>
 <body>
   <div class="app-shell">
@@ -70,6 +70,25 @@
         <p class="panel-note" id="emailNote" style="display:none;"></p>
       </div>
 
+      <div class="panel" id="phonePanel">
+        <div class="panel-header"><h2>Phone</h2></div>
+        <p class="panel-note">Current: <strong id="currentPhone">·</strong></p>
+        <form id="phoneForm" class="inline-form">
+          <div class="field">
+            <label>New phone number</label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" value="+91" disabled style="flex:0 0 60px;text-align:center;" />
+              <input type="tel" id="newPhoneInput" inputmode="numeric" maxlength="10" placeholder="10-digit number" required style="flex:1;min-width:0;" />
+            </div>
+          </div>
+          <div class="field" style="flex:0;">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn-sm primary">Change phone</button>
+          </div>
+        </form>
+        <p class="panel-note" id="phoneNote" style="display:none;"></p>
+      </div>
+
       <div class="panel" id="passwordPanel">
         <div class="panel-header"><h2>Password</h2></div>
         <form id="passwordForm" class="inline-form">
@@ -120,6 +139,7 @@
       if (!admin) {
         document.getElementById('settingsNavLink').style.display = 'none';
         document.getElementById('emailPanel').style.display = 'none';
+        document.getElementById('phonePanel').style.display = 'none';
         document.getElementById('passwordPanel').style.display = 'none';
         document.getElementById('staffRestrictedNote').style.display = 'block';
       }
@@ -148,6 +168,35 @@
         } catch (err) {
           note.style.display = 'block';
           note.textContent = err.message || 'Could not change email.';
+        }
+      });
+
+      // Strips anything non-numeric as they type, matching registration's
+      // phone field, so a pasted or typed letter/symbol never even lands
+      // in the input rather than being rejected after the fact.
+      document.getElementById('newPhoneInput').addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').slice(0, 10);
+      });
+
+      document.getElementById('phoneForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const note = document.getElementById('phoneNote');
+        const val = document.getElementById('newPhoneInput').value.trim();
+        if (!/^[0-9]{10}$/.test(val)) {
+          note.style.display = 'block';
+          note.textContent = 'Please provide a correct 10-digit mobile number.';
+          return;
+        }
+        try {
+          const newPhone = '+91' + val;
+          await Qlinic.updateClinic({ phone: newPhone });
+          note.style.display = 'block';
+          note.textContent = 'Phone number updated.';
+          document.getElementById('currentPhone').textContent = newPhone;
+          e.target.reset();
+        } catch (err) {
+          note.style.display = 'block';
+          note.textContent = err.message || 'Could not update phone number.';
         }
       });
 
@@ -187,6 +236,7 @@
         document.getElementById('clinicLogoThumb').style.display = 'none';
       }
       document.getElementById('currentEmail').textContent = (await Qlinic.getCurrentUserEmail()) || '·';
+      document.getElementById('currentPhone').textContent = (clinic && clinic.phone) || '·';
     })();
   </script>
   <script>
