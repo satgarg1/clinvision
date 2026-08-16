@@ -1105,6 +1105,12 @@ table.qtable tr:last-child td { border-bottom: none; }
   border-color: var(--accent);
 }
 #searchResults .search-edit-date { display: block; margin-bottom: 4px; }
+/* Mark arrived/Edit/Save/Cancel kept the default .btn-sm size (~32px
+   tall) while every other cell in this table was shrunk to a ~24px
+   compact scale, so the buttons visually dominated the row and made
+   everything beside them read as randomly sized/misaligned even though
+   every cell's content already starts at the same top and left offset. */
+#searchResults .btn-sm { padding: 5px 10px; font-size: 12px; }
 
 /* A row of toggleable day buttons — for picking a set of weekdays (e.g.
    which days a clinic is closed) where a native multi-select's ctrl/cmd-
