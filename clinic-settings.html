@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=100" />
+<link rel="stylesheet" href="styles.css?v=101" />
 </head>
 <body>
   <div class="app-shell">
@@ -56,26 +56,34 @@
       <div class="panel">
         <div class="panel-header"><h2>Clinic profile</h2></div>
         <form id="clinicForm" class="inline-form">
-          <div class="field" style="min-width:260px;">
+          <div class="field" style="min-width:220px;">
             <label>Clinic name</label>
             <input type="text" id="clinicNameInput" required />
-          </div>
-          <div class="field" style="min-width:260px;">
-            <label>Address</label>
-            <input type="text" id="addressLineInput" placeholder="Building, street, area" />
           </div>
           <div class="field" style="max-width:140px;">
             <label>Pincode</label>
             <input type="text" id="pincodeInput" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" />
           </div>
+          <div class="field" style="min-width:200px;">
+            <label>Flat, house no., building</label>
+            <input type="text" id="buildingLineInput" placeholder="e.g., Flat 4B, Sunrise Apartments" />
+          </div>
+          <div class="field" style="min-width:200px;">
+            <label>Area, street, sector</label>
+            <input type="text" id="areaLineInput" placeholder="e.g., MG Road, Sector 12" />
+          </div>
+          <div class="field" style="min-width:180px;">
+            <label>Landmark <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
+            <input type="text" id="landmarkInput" placeholder="e.g., near Apollo Hospital" />
+          </div>
           <div class="field" style="min-width:160px;">
             <label>City</label>
-            <input type="text" id="cityInput" placeholder="Auto-filled from pincode" />
+            <input type="text" id="cityInput" placeholder="From pincode" />
           </div>
           <div class="field" style="min-width:160px;">
             <label>State</label>
             <select id="stateInput">
-              <option value="">Auto-filled from pincode</option>
+              <option value="">From pincode</option>
             </select>
           </div>
           <div class="field" style="flex:0;">
@@ -391,7 +399,15 @@
         }
         renderLogoPreview(clinic.logo_url);
         document.getElementById('clinicNameInput').value = clinic.name;
-        document.getElementById('addressLineInput').value = clinic.address_line || '';
+        // address_line is stored as one joined string (see signup.html's
+        // submit handler) — there's no reliable way to split it back into
+        // building/area/landmark, so the saved address loads whole into
+        // Building and Area/Landmark start blank, ready to re-enter if the
+        // admin wants to restructure it. Left untouched, re-saving just
+        // round-trips the same full address through Building alone.
+        document.getElementById('buildingLineInput').value = clinic.address_line || '';
+        document.getElementById('areaLineInput').value = '';
+        document.getElementById('landmarkInput').value = '';
         document.getElementById('cityInput').value = clinic.city || '';
         document.getElementById('pincodeInput').value = clinic.pincode || '';
         setStateValue(document.getElementById('stateInput'), clinic.state || '');
@@ -430,9 +446,14 @@
 
       document.getElementById('clinicForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const building = document.getElementById('buildingLineInput').value.trim();
+        const area = document.getElementById('areaLineInput').value.trim();
+        const landmark = document.getElementById('landmarkInput').value.trim();
+        const addressParts = [building, area];
+        if (landmark) addressParts.push(`near ${landmark}`);
         await Qlinic.updateClinic({
           name: document.getElementById('clinicNameInput').value,
-          addressLine: document.getElementById('addressLineInput').value,
+          addressLine: addressParts.filter(Boolean).join(', '),
           city: document.getElementById('cityInput').value,
           pincode: document.getElementById('pincodeInput').value,
           state: document.getElementById('stateInput').value,

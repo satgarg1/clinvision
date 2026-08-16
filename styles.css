@@ -522,6 +522,21 @@ a { color: inherit; }
 .login-card .btn { padding: 17px 28px; font-size: 17px; border-radius: 16px; }
 .login-card .login-hint { font-size: 14px; margin-top: 26px; }
 .login-card .login-error { font-size: 14px; }
+
+/* Registration has 10 fields (address split into 3 rows) where every
+   other login-card page has 1-4, so it alone gets a denser tier on top
+   of the shared login-card scale — not applied to login/forgot/reset,
+   which don't have a scrolling problem to solve. Reuses the app's own
+   base .field-input tier (12px/16px padding, 15px font) rather than
+   inventing new numbers. */
+.login-card.login-card-compact { padding: 48px 48px; }
+.login-card.login-card-compact .field { margin-bottom: 10px; }
+.login-card.login-card-compact .field label { font-size: 13px; margin-bottom: 6px; }
+.login-card.login-card-compact .field input, .login-card.login-card-compact .field select {
+  padding: 11px 14px;
+  font-size: 15px;
+}
+.login-card.login-card-compact .btn { padding: 12px 24px; font-size: 15px; border-radius: var(--radius-md); }
 /* Every other page (marketing nav, app sidebar) shows the ticking clock
    icon and tagline next to "Qlinic" in the top-left corner of the page,
    not inside the content card itself — the auth pages get the same
