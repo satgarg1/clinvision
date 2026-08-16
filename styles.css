@@ -1307,8 +1307,8 @@ table.qtable tr:last-child td { border-bottom: none; }
   align-items: center;
   gap: var(--space-2);
   background: var(--grey-100);
-  padding: 10px 48px;
-  margin: -40px -48px 16px;
+  padding: 6px 48px;
+  margin: -40px -48px 6px;
   font-size: var(--text-base);
   color: var(--grey-700);
   line-height: 1.4;
@@ -1660,7 +1660,7 @@ button.trend-bar-link:hover { background: var(--grey-100); }
   .app-sidebar nav { flex-direction: row; }
   .app-sidebar .clinic-name-row { display: none; }
   .app-main { padding: 24px 20px; }
-  .closed-day-banner { padding: 10px 20px; margin: -24px -20px 14px; }
+  .closed-day-banner { padding: 6px 20px; margin: -24px -20px 6px; }
 }
 
 @media (max-width: 900px) {
