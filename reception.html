@@ -273,9 +273,12 @@
       // hard to scan. Once EVERY doctor is closed, that count collapses to
       // "All doctors" instead — a clearer, stronger signal than "5 doctors"
       // when 5 happens to be all of them, and "check Dashboard" stops
-      // making sense once there's no one left to find there. Time-bound to
-      // today only — see isDoctorClosedToday — so this clears itself at
-      // midnight without anyone reopening a day.
+      // making sense once there's no one left to find there. But only once
+      // total is 3+: a solo or two-doctor clinic's last closure still names
+      // them — "All doctors" reads like clinic-wide news on a roster that
+      // small, where naming the one or two people involved is clearer, not
+      // vaguer. Time-bound to today only — see isDoctorClosedToday — so
+      // this clears itself at midnight without anyone reopening a day.
       function renderClosedDayBanner() {
         const banner = document.getElementById('closedDayBanner');
         const closed = doctorsCache.filter((d) => Qlinic.isDoctorClosedToday(d));
@@ -286,7 +289,7 @@
           return;
         }
         let msg;
-        if (total > 0 && closed.length === total) {
+        if (total >= 3 && closed.length === total) {
           msg = `<strong>All doctors</strong> have closed for the day — don't book any more appointments today.`;
         } else if (closed.length === 1) {
           msg = `<strong>${closed[0].name}</strong> has closed for the day — don't book any more appointments for them today.`;
