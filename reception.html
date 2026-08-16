@@ -268,21 +268,27 @@
         }
       }
 
-      // Names up to 2 closed doctors; beyond that a name list gets long and
-      // hard to scan, so it switches to a count + a Dashboard pointer
-      // (Dashboard already shows each doctor's real status, including
-      // "Day closed"). Time-bound to today only — see isDoctorClosedToday —
-      // so this clears itself at midnight without anyone reopening a day.
+      // Names up to 2 closed doctors; from 3 up to (total - 1) it switches
+      // to a count + a Dashboard pointer, since a name list that long gets
+      // hard to scan. Once EVERY doctor is closed, that count collapses to
+      // "All doctors" instead — a clearer, stronger signal than "5 doctors"
+      // when 5 happens to be all of them, and "check Dashboard" stops
+      // making sense once there's no one left to find there. Time-bound to
+      // today only — see isDoctorClosedToday — so this clears itself at
+      // midnight without anyone reopening a day.
       function renderClosedDayBanner() {
         const banner = document.getElementById('closedDayBanner');
         const closed = doctorsCache.filter((d) => Qlinic.isDoctorClosedToday(d));
+        const total = doctorsCache.length;
         if (closed.length === 0) {
           banner.style.display = 'none';
           banner.innerHTML = '';
           return;
         }
         let msg;
-        if (closed.length === 1) {
+        if (total > 0 && closed.length === total) {
+          msg = `<strong>All doctors</strong> have closed for the day — don't book any more appointments today.`;
+        } else if (closed.length === 1) {
           msg = `<strong>${closed[0].name}</strong> has closed for the day — don't book any more appointments for them today.`;
         } else if (closed.length === 2) {
           msg = `<strong>${closed[0].name}</strong> and <strong>${closed[1].name}</strong> have closed for the day — don't book any more appointments for them today.`;
