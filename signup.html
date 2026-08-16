@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=87" />
+<link rel="stylesheet" href="styles.css?v=88" />
 </head>
 <body>
   <div class="login-wrap">
@@ -28,10 +28,10 @@
         <div class="field">
           <label>Clinic logo <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
           <div class="logo-upload-row">
-            <div class="logo-preview empty" id="signupLogoPreview" style="width:44px;height:44px;border-radius:10px;">No logo</div>
+            <div class="logo-preview empty" id="signupLogoPreview"></div>
             <div>
               <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" />
-              <button type="button" class="btn-sm" id="chooseLogoBtn">Choose file</button>
+              <button type="button" class="btn-sm primary" id="chooseLogoBtn">Choose file</button>
             </div>
           </div>
           <div id="logoError" style="display:none;color:var(--danger);font-size:13px;margin-top:6px;"></div>

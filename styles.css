@@ -689,15 +689,18 @@ input[type="number"] { -moz-appearance: textfield; }
   height: 64px;
   border-radius: 14px;
   border: 1px solid var(--grey-300);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
   flex-shrink: 0;
   background: var(--grey-100);
 }
-.logo-preview img { width: 100%; height: 100%; object-fit: cover; }
-.logo-preview.empty { font-size: 11px; color: var(--grey-500); text-align: center; line-height: 1.3; padding: 4px; }
+.logo-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Empty state matches the Upload button's own height (not the larger
+   64px a real logo gets) — a blank box that size next to a much shorter
+   button is what actually reads as sloppy, not the lack of a preview
+   image itself. No "No logo" label either: at button height there's no
+   room to set it legibly, and the button beside it already makes the
+   empty state obvious. */
+.logo-preview.empty { width: 32px; height: 32px; border-radius: 8px; }
 .logo-actions { display: flex; gap: 8px; }
 .logo-hint { font-size: 12px; color: var(--grey-500); margin-top: 8px; }
 

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=87" />
+<link rel="stylesheet" href="styles.css?v=88" />
 </head>
 <body>
   <div class="app-shell">
@@ -84,9 +84,9 @@
 
       <div class="panel">
         <div class="panel-header"><h2>Clinic logo</h2></div>
-        <p class="panel-note">Shown next to your clinic name in the sidebar, and on printed invoices. Optional — leave it blank and everything works exactly as it does today.</p>
+        <p class="panel-note">Shown next to your clinic name in the sidebar, and on printed invoices.</p>
         <div class="logo-upload-row">
-          <div class="logo-preview empty" id="logoPreview">No logo</div>
+          <div class="logo-preview empty" id="logoPreview"></div>
           <div>
             <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" />
             <div class="logo-actions">
@@ -513,7 +513,7 @@
           preview.classList.remove('empty');
           removeBtn.style.display = 'inline-block';
         } else {
-          preview.innerHTML = 'No logo';
+          preview.innerHTML = '';
           preview.classList.add('empty');
           removeBtn.style.display = 'none';
         }
