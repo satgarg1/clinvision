@@ -29,18 +29,20 @@
   --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
   --space-5: 20px; --space-6: 24px; --space-7: 32px; --space-8: 40px; --space-9: 48px;
 
-  --radius-sm: 8px;     /* inputs, .btn-sm, chips, dropdown menus */
-  --radius-md: 12px;    /* .btn (primary/large actions) */
-  --radius-lg: 16px;    /* card surfaces: .login-card, .panel, .stat-card */
+  --radius-sm: 8px;     /* inputs, .btn-sm, chips, dropdown menus — unchanged, matches un-tokenized 8px elements (.time-picker-trigger etc) sitewide */
+  --radius-md: 14px;    /* .btn (primary/large actions) */
+  --radius-lg: 20px;    /* card surfaces: .login-card, .panel, .stat-card — the "big rounded rectangle" look */
   --radius-pill: 999px; /* clock-pill, status pills, badges */
 
   --text-xs: 12px;   --text-sm: 13px;   --text-base: 14px; --text-md: 15px;
   --text-lg: 17px;   --text-xl: 20px;   --text-2xl: 24px;  --text-3xl: 30px;
 
   /* Resting elevation for card surfaces — today's shadows only fire on
-     :hover, so .login-card/.panel look flat until touched. */
-  --shadow-resting: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
-  --shadow-hover: 0 12px 28px rgba(0, 0, 0, 0.10);
+     :hover, so .login-card/.panel look flat until touched. Deliberately
+     bold enough to actually read as "lifted" at a glance against the
+     grey-100 page background, not just technically present. */
+  --shadow-resting: 0 2px 8px rgba(0, 0, 0, 0.08), 0 20px 48px rgba(0, 0, 0, 0.12);
+  --shadow-hover: 0 28px 64px rgba(0, 0, 0, 0.18);
   /* Fixed dark-surface colors for floating chrome that stays dark
      regardless of the day/night toggle (the toast) — deliberately NOT the
      same variables as --black/--white/--grey-*, which flip in dark mode. */
@@ -85,8 +87,8 @@
 
   /* Low-opacity black shadows read as invisible against a dark surface —
      brighter/more-opaque so resting elevation still shows in dark mode. */
-  --shadow-resting: 0 1px 2px rgba(0, 0, 0, 0.24), 0 8px 24px rgba(0, 0, 0, 0.32);
-  --shadow-hover: 0 12px 28px rgba(0, 0, 0, 0.40);
+  --shadow-resting: 0 2px 8px rgba(0, 0, 0, 0.40), 0 20px 48px rgba(0, 0, 0, 0.50);
+  --shadow-hover: 0 28px 64px rgba(0, 0, 0, 0.60);
 }
 
 * { box-sizing: border-box; }
