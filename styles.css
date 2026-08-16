@@ -1654,6 +1654,22 @@ button.trend-bar-link:hover { background: var(--grey-100); }
 .board-type { font-size: 14px; color: var(--grey-500); }
 .board-empty { padding: 60px 0; text-align: center; color: var(--grey-500); font-size: 18px; }
 
+/* Replaces the doctor strip + waiting board entirely once every doctor
+   has closed for the day — a passerby glancing at an otherwise-quiet TV
+   screen shouldn't have to guess whether it's broken or just genuinely
+   nobody's here. Deliberately much bigger than anything else on this
+   screen (.board-title is 18px) since it's meant to be read from across
+   a waiting room, not up close. */
+.display-all-closed {
+  background: var(--grey-900);
+  border-radius: 24px;
+  padding: 110px 40px;
+  text-align: center;
+  margin-bottom: 32px;
+}
+.display-all-closed-title { font-size: 48px; font-weight: 700; color: var(--white); margin-bottom: 14px; }
+.display-all-closed-sub { font-size: 19px; color: var(--grey-300); }
+
 @media (max-width: 720px) {
   .app-shell { flex-direction: column; }
   .app-sidebar { width: 100%; flex-direction: row; overflow-x: auto; align-items: center; }

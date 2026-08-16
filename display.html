@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=107" />
+<link rel="stylesheet" href="styles.css?v=108" />
 </head>
 <body class="display-body">
 
@@ -18,7 +18,12 @@
 
   <div class="display-strip" id="doctorStrip"></div>
 
-  <div class="board">
+  <div class="display-all-closed" id="allClosedMessage" style="display:none;">
+    <div class="display-all-closed-title" id="allClosedTitle"></div>
+    <div class="display-all-closed-sub" id="allClosedSub"></div>
+  </div>
+
+  <div class="board" id="boardPanel">
     <div class="board-head">
       <div class="board-title"><span id="waitingNowText">Waiting now</span> <span id="boardCount" class="board-count"></span></div>
       <div class="board-page-indicator" id="pageDots"></div>
@@ -79,6 +84,8 @@
           walkin: 'Walk-in',
           empty: 'No one waiting right now. The waiting room is clear.',
           acrossAllDoctors: (n) => `(${n} across all doctors)`,
+          allClosedTitle: 'No doctor is available right now',
+          allClosedSub: 'All doctors have closed for the day. Please check back tomorrow.',
         },
         hi: {
           tagline: 'लाइव कतार',
@@ -101,6 +108,8 @@
           walkin: 'वॉक-इन',
           empty: 'अभी कोई प्रतीक्षा में नहीं है। प्रतीक्षालय खाली है।',
           acrossAllDoctors: (n) => `(सभी डॉक्टरों को मिलाकर ${n})`,
+          allClosedTitle: 'अभी कोई डॉक्टर उपलब्ध नहीं है',
+          allClosedSub: 'आज सभी डॉक्टर बंद हो चुके हैं। कृपया कल फिर देखें।',
         },
       };
       let T = STRINGS.en;
@@ -387,6 +396,22 @@
           if (!doctor.dayClosedAt) return true;
           return Date.now() - new Date(doctor.dayClosedAt).getTime() < DAY_CLOSED_FADE_MS;
         });
+
+        // Once literally every doctor has closed for the day, the strip and
+        // waiting board would just render empty — indistinguishable from a
+        // frozen or broken screen to anyone glancing at it. Swap to one big
+        // unmistakable message instead. Uses isDoctorClosedToday (date-bound,
+        // not tied to the 3-minute fade above) so this resolves itself the
+        // moment the calendar date rolls over, same as Reception's banner.
+        const allClosedToday = allQueues.length > 0 && allQueues.every(({ doctor }) => Qlinic.isDoctorClosedToday(doctor));
+        document.getElementById('doctorStrip').style.display = allClosedToday ? 'none' : '';
+        document.getElementById('boardPanel').style.display = allClosedToday ? 'none' : '';
+        document.getElementById('allClosedMessage').style.display = allClosedToday ? 'block' : 'none';
+        if (allClosedToday) {
+          document.getElementById('allClosedTitle').textContent = T.allClosedTitle;
+          document.getElementById('allClosedSub').textContent = T.allClosedSub;
+        }
+
         renderDoctorStrip(all);
         tickFadeCountdowns();
         combined = computeCombinedWaiting(all);
