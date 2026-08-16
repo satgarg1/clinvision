@@ -516,20 +516,12 @@ a { color: inherit; }
    rather than bumping those tokens globally (which would also inflate
    every dense in-app form). Scoped to .login-card so it doesn't touch
    any other page using the same .field/.btn classes. */
+.login-card .field { margin-bottom: 12px; }
 .login-card .field label { font-size: 14px; margin-bottom: 8px; }
 .login-card .field input, .login-card .field select { padding: 16px 18px; font-size: 17px; }
 .login-card .btn { padding: 17px 28px; font-size: 17px; border-radius: 16px; }
 .login-card .login-hint { font-size: 14px; margin-top: 26px; }
 .login-card .login-error { font-size: 14px; }
-/* "Auto-filled from pincode" is too long to fit this column at the
-   card's full 17px input font, but that's only a placeholder-string
-   problem — shrinking the whole input (old approach) also shrunk
-   whatever the user or the pincode lookup actually put in the field,
-   so a filled city visibly mismatched the State box beside it.
-   Scoping the shrink to ::placeholder leaves the real value at the
-   same size as every other field. */
-#city::placeholder { font-size: 12px; }
-
 /* Every other page (marketing nav, app sidebar) shows the ticking clock
    icon and tagline next to "Qlinic" in the top-left corner of the page,
    not inside the content card itself — the auth pages get the same
