@@ -21,6 +21,26 @@
   --danger-bg: #fce8e6;
   --font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --radius: 12px;
+
+  /* ---- Design tokens: visual polish pass (see robust-questing-walrus.md) ----
+     Additive only for now — nothing consumes these yet. Existing hardcoded
+     padding/font-size/radius/shadow values are migrated onto this scale in
+     later phases, one component family at a time, verified independently. */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-7: 32px; --space-8: 40px; --space-9: 48px;
+
+  --radius-sm: 8px;     /* inputs, .btn-sm, chips, dropdown menus */
+  --radius-md: 12px;    /* .btn (primary/large actions) */
+  --radius-lg: 16px;    /* card surfaces: .login-card, .panel, .stat-card */
+  --radius-pill: 999px; /* clock-pill, status pills, badges */
+
+  --text-xs: 12px;   --text-sm: 13px;   --text-base: 14px; --text-md: 15px;
+  --text-lg: 17px;   --text-xl: 20px;   --text-2xl: 24px;  --text-3xl: 30px;
+
+  /* Resting elevation for card surfaces — today's shadows only fire on
+     :hover, so .login-card/.panel look flat until touched. */
+  --shadow-resting: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 12px 28px rgba(0, 0, 0, 0.10);
   /* Fixed dark-surface colors for floating chrome that stays dark
      regardless of the day/night toggle (the toast) — deliberately NOT the
      same variables as --black/--white/--grey-*, which flip in dark mode. */
@@ -62,6 +82,11 @@
   --mkt-purple-bg: rgba(124, 58, 237, 0.24);
   --mkt-coral-bg: rgba(249, 115, 22, 0.22);
   --mkt-pink-bg: rgba(219, 39, 119, 0.22);
+
+  /* Low-opacity black shadows read as invisible against a dark surface —
+     brighter/more-opaque so resting elevation still shows in dark mode. */
+  --shadow-resting: 0 1px 2px rgba(0, 0, 0, 0.24), 0 8px 24px rgba(0, 0, 0, 0.32);
+  --shadow-hover: 0 12px 28px rgba(0, 0, 0, 0.40);
 }
 
 * { box-sizing: border-box; }
