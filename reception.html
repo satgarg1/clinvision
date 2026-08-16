@@ -100,7 +100,6 @@
             <div class="field">
               <label>Doctor</label>
               <select id="pDoctor" required></select>
-              <span class="field-hint" id="doctorClosedHint" style="display:none;color:var(--danger);"></span>
             </div>
             <div class="field mode-only mode-only-appointment">
               <label>Appointment date</label>
@@ -125,6 +124,7 @@
               <button type="submit" class="btn-sm primary" id="patientSubmitBtn" style="width:100%;">Add appointment</button>
             </div>
           </div>
+          <div id="doctorClosedHint" class="slot-hint" style="display:none;"></div>
           <div id="patientLookupHint" class="slot-hint" style="display:none;"></div>
           <div id="followUpHint" class="slot-hint" style="display:none;"></div>
           <div id="slotHint" class="slot-hint"></div>
@@ -311,7 +311,8 @@
         const hint = document.getElementById('doctorClosedHint');
         const reason = doctorBookingBlockReason();
         if (reason) {
-          hint.textContent = `⛔ ${reason}`;
+          hint.className = 'slot-hint error';
+          hint.innerHTML = `⛔ ${reason}`;
           hint.style.display = 'block';
         } else {
           hint.style.display = 'none';
