@@ -1547,7 +1547,10 @@ button.trend-bar-link:hover { background: var(--grey-100); }
 }
 .strip-pill-ok { background: rgba(52, 199, 89, 0.16); color: #34c759; }
 .strip-pill-warn { background: rgba(255, 159, 10, 0.18); color: #ff9f0a; }
-.strip-fade-note { font-size: 11px; color: var(--grey-500); margin-top: 6px; }
+/* Long enough ("Fading from screen in M:SS") to wrap to 2 lines on
+   narrower cards — text-align:center keeps both lines on the same
+   visual center as the pill above, instead of ragged-left. */
+.strip-fade-note { font-size: 11px; color: var(--grey-500); margin-top: 6px; text-align: center; max-width: 130px; }
 .strip-status-detail { font-size: 14px; font-weight: 600; color: #ff9f0a; margin-top: 6px; }
 .strip-serving { margin-top: 16px; padding-top: 14px; border-top: 1px solid #3a3a3c; }
 .strip-serving .tiny-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--grey-500); margin-bottom: 4px; }

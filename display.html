@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=102" />
+<link rel="stylesheet" href="styles.css?v=103" />
 </head>
 <body class="display-body">
 
@@ -71,6 +71,7 @@
           onBreak: 'On a break',
           emergency: 'Emergency',
           dayClosed: 'Day closed',
+          fadingLabel: 'Fading from screen in',
           runningLateDetail: (m) => `Running late by ${m} minutes`,
           onBreakDetail: (m) => `On a break for ${m} minutes`,
           emergencyDetail: 'Attending an emergency, please bear with us',
@@ -92,6 +93,7 @@
           onBreak: 'ब्रेक पर',
           emergency: 'आपातकाल',
           dayClosed: 'दिन समाप्त',
+          fadingLabel: 'स्क्रीन से हटने में',
           runningLateDetail: (m) => `${m} मिनट देरी से`,
           onBreakDetail: (m) => `${m} मिनट के लिए ब्रेक पर`,
           emergencyDetail: 'आपातकाल में व्यस्त, कृपया प्रतीक्षा करें',
@@ -366,7 +368,7 @@
       }
       function tickFadeCountdowns() {
         document.querySelectorAll('.strip-fade-note[data-day-closed-at]').forEach((el) => {
-          el.textContent = formatCountdown(el.getAttribute('data-day-closed-at'));
+          el.textContent = `${T.fadingLabel} ${formatCountdown(el.getAttribute('data-day-closed-at'))}`;
         });
       }
 
