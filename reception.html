@@ -197,6 +197,18 @@
       let bookedExpanded = false;
       let bookedPage = 0;
       let waitingPage = 0;
+      // Generation counters for async renders that can overlap (rapid
+      // submissions, or a direct call racing Realtime's own onLiveChange
+      // firing for the same change): each call captures its own number,
+      // and bails without touching the DOM if a newer call has since
+      // started — otherwise a slower, older response can resolve last
+      // and clobber fresher data with stale data, which is exactly what
+      // produced the flickering counts and the patient that seemed to
+      // vanish and reappear.
+      let queueRenderToken = 0;
+      let slotHintToken = 0;
+      let patientLookupToken = 0;
+      let followUpHintToken = 0;
       let doctorsCache = [];
       let todayInvoices = [];
       let editingInvoiceId = null;
@@ -561,6 +573,7 @@
       }
 
       async function updateSlotHint() {
+        const myToken = ++slotHintToken;
         const hint = document.getElementById('slotHint');
         if (patientMode !== 'appointment') { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
         const doctorId = document.getElementById('pDoctor').value;
@@ -575,6 +588,7 @@
           return;
         }
         const avail = await Qlinic.getSlotAvailability(doctorId, date, time);
+        if (myToken !== slotHintToken) return;
         if (!avail) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
         // Names the actual booking window (e.g. "9:20–9:30 pm") instead of
         // a vague "around this time" — two times that look comfortably
@@ -838,7 +852,9 @@
       });
 
       async function renderQueues() {
+        const myToken = ++queueRenderToken;
         await refreshDoctorsCache();
+        if (myToken !== queueRenderToken) return;
         renderClosedDayBanner();
         updateDoctorClosedHint();
         if (!queueViewDate) queueViewDate = Qlinic.getTodayDate();
@@ -852,15 +868,18 @@
         }
 
         await fillQueueDoctorFilter();
+        if (myToken !== queueRenderToken) return;
         if (!queueDoctorId) { panelEl.innerHTML = ''; return; }
 
         const isTodayView = queueViewDate === Qlinic.getTodayDate();
         const doctor = doctorsCache.find((d) => d.id === queueDoctorId);
         const queue = await Qlinic.getQueueForDoctor(queueDoctorId, queueViewDate);
+        if (myToken !== queueRenderToken) return;
 
         const invoiceByPatientId = {};
         if (canBill && isTodayView) {
           todayInvoices = await Qlinic.getTodayInvoices();
+          if (myToken !== queueRenderToken) return;
           todayInvoices.forEach((inv) => { if (inv.patientId) invoiceByPatientId[inv.patientId] = inv; });
         }
 
@@ -1098,10 +1117,12 @@
         hint.innerHTML = '';
       }
       async function checkPatientLookup() {
+        const myToken = ++patientLookupToken;
         const phone = document.getElementById('pPhone').value.trim();
         const hint = document.getElementById('patientLookupHint');
         if (!phone) { clearPatientLookupHint(); return; }
         const match = await Qlinic.getPatientLookupByPhone(phone);
+        if (myToken !== patientLookupToken) return;
         if (!match) { clearPatientLookupHint(); return; }
         const visitWord = match.visitsChecked === 1 ? 'visit' : 'visits';
         let html = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -1134,12 +1155,14 @@
         hint.innerHTML = '';
       }
       async function checkFollowUpHint() {
+        const myToken = ++followUpHintToken;
         const hint = document.getElementById('followUpHint');
         const phone = document.getElementById('pPhone').value.trim();
         const doctorId = document.getElementById('pDoctor').value;
         const visitDate = patientMode === 'walkin' ? Qlinic.getTodayDate() : document.getElementById('pDate').value;
         if (!phone || !doctorId || !visitDate) { clearFollowUpHint(); return; }
         const result = await Qlinic.checkFollowUpEligibility({ doctorId, phone, visitDate });
+        if (myToken !== followUpHintToken) return;
         if (!result) { clearFollowUpHint(); return; }
         const doctor = doctorsCache.find((d) => d.id === doctorId);
         const doctorName = doctor ? doctor.name : 'this doctor';

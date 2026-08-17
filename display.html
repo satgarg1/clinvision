@@ -78,8 +78,8 @@
           emergency: 'Emergency',
           dayClosed: 'Day closed',
           fadingLabel: 'Fading from screen in',
-          runningLateDetail: (m) => `Running late by ${m} minutes`,
-          onBreakDetail: (m) => `On a break for ${m} minutes`,
+          runningLateDetail: (m, since) => `Running late by ${m} minutes · since ${since}`,
+          onBreakDetail: (m, since) => `On a break for ${m} minutes · since ${since}`,
           emergencyDetail: 'Attending an emergency, please bear with us',
           appointment: 'Appointment',
           walkin: 'Walk-in',
@@ -104,8 +104,8 @@
           emergency: 'आपातकाल',
           dayClosed: 'दिन समाप्त',
           fadingLabel: 'स्क्रीन से हटने में',
-          runningLateDetail: (m) => `${m} मिनट देरी से`,
-          onBreakDetail: (m) => `${m} मिनट के लिए ब्रेक पर`,
+          runningLateDetail: (m, since) => `${m} मिनट देरी से · ${since} से`,
+          onBreakDetail: (m, since) => `${m} मिनट के लिए ब्रेक पर · ${since} से`,
           emergencyDetail: 'आपातकाल में व्यस्त, कृपया प्रतीक्षा करें',
           appointment: 'अपॉइंटमेंट',
           walkin: 'वॉक-इन',
@@ -264,8 +264,9 @@
       // it at a glance from across the waiting room, not squint at an
       // abbreviation.
       function statusDetailLine(doctor) {
-        if (doctor.status === 'running_late') return T.runningLateDetail(doctor.delayMins || 0);
-        if (doctor.status === 'on_break') return T.onBreakDetail(doctor.delayMins || 0);
+        const since = Qlinic.formatTimestamp(doctor.statusUpdatedAt);
+        if (doctor.status === 'running_late') return T.runningLateDetail(doctor.delayMins || 0, since);
+        if (doctor.status === 'on_break') return T.onBreakDetail(doctor.delayMins || 0, since);
         if (doctor.status === 'emergency') return T.emergencyDetail;
         return '';
       }
