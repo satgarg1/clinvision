@@ -270,6 +270,36 @@
         return '';
       }
 
+      // Walk-ins share the same underlying token_number sequence as
+      // appointments (that single shared ordering is what the public
+      // queue-status page uses to compute "how many ahead of me," so it
+      // can't be split into independent per-type counters without also
+      // rewriting that RPC's position math). Rather than touch the
+      // database, walk-ins just get their own 1-based "W" label computed
+      // here for display only: rank a doctor's walk-ins today by their
+      // existing token_number and prefix the rank. Scoped per doctor,
+      // rebuilt fresh from the full day's patients (not just whoever's
+      // currently on the board) every refresh, so a walk-in's number
+      // never changes as they move between waiting/booked/done.
+      let walkinRanks = new Map();
+      function buildWalkinRanks(allQueues) {
+        const ranks = new Map();
+        allQueues.forEach(({ queue }) => {
+          const walkins = [
+            ...(queue.nowServing ? [queue.nowServing] : []),
+            ...queue.waiting, ...queue.booked, ...queue.done, ...queue.noShow,
+          ].filter((p) => p.type === 'walkin');
+          walkins.sort((a, b) => (a.tokenNumber || 0) - (b.tokenNumber || 0));
+          walkins.forEach((p, i) => ranks.set(p.id, i + 1));
+        });
+        return ranks;
+      }
+      function formatToken(p) {
+        if (!p || p.tokenNumber == null) return null;
+        if (p.type === 'walkin') return 'W' + (walkinRanks.get(p.id) || '?');
+        return String(p.tokenNumber);
+      }
+
       function renderDoctorStrip(all) {
         document.getElementById('doctorStrip').innerHTML = all.map(({ doctor, queue }, index) => {
           const closedToday = Qlinic.isDoctorClosedToday(doctor);
@@ -303,7 +333,7 @@
             </div>
             <div class="strip-serving">
               <span class="tiny-label">${T.nowServing}</span>
-              <span class="strip-serving-name">${queue.nowServing ? (queue.nowServing.tokenNumber != null ? '#' + queue.nowServing.tokenNumber + ' ' : '') + localizeName(queue.nowServing.name) : '·'}</span>
+              <span class="strip-serving-name">${queue.nowServing ? (formatToken(queue.nowServing) ? '#' + formatToken(queue.nowServing) + ' ' : '') + localizeName(queue.nowServing.name) : '·'}</span>
             </div>
           </div>
         `;
@@ -326,7 +356,7 @@
               doctorAccent,
               position: p.position,
               effectiveTime: p.effectiveTime,
-              tokenNumber: p.tokenNumber,
+              tokenDisplay: formatToken(p),
             });
           });
         });
@@ -340,7 +370,7 @@
         }
         return pageItems.map((p, i) => `
           <div class="board-row">
-            <span class="board-pos">${p.tokenNumber != null ? '#' + p.tokenNumber : '·'}</span>
+            <span class="board-pos">${p.tokenDisplay ? '#' + p.tokenDisplay : '·'}</span>
             <span class="board-name">${localizeName(p.name)}${p.address ? `<span class="board-sub">${localizeName(p.address)}</span>` : ''}</span>
             <span class="board-doc"><span class="board-doc-dot dot-${p.doctorAccent}"></span>${localizeName(p.doctorName)}</span>
             <span class="board-type">${p.type === 'appointment' ? T.appointment : T.walkin}</span>
@@ -401,6 +431,7 @@
         T = STRINGS[clinic && clinic.display_language] || STRINGS.en;
         applyStaticStrings();
         const allQueues = await Qlinic.getAllQueues();
+        walkinRanks = buildWalkinRanks(allQueues);
         // A doctor who's closed their day keeps showing (with the "Day
         // closed" pill and a live countdown) for a 3-minute grace window,
         // then drops off the board entirely — checked here on every

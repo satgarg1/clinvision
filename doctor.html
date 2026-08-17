@@ -195,6 +195,30 @@
         return `<div>${primary}</div><div class="sub-line">arrived ${Qlinic.formatTimestamp(p.arrivedAt)}</div>`;
       }
 
+      // Walk-ins share the same token_number sequence as appointments (a
+      // single shared ordering the public queue-status page relies on for
+      // its "how many ahead of me" math, so it can't be split at the
+      // database level without rewriting that too). Walk-ins instead get
+      // a "W"-prefixed rank computed here, purely for display: ranked by
+      // their existing token_number among today's walk-ins for this
+      // doctor, across every status so the number stays stable as they
+      // move from waiting to done.
+      function buildWalkinRanks(q) {
+        const ranks = new Map();
+        const walkins = [
+          ...(q.nowServing ? [q.nowServing] : []),
+          ...q.waiting, ...q.booked, ...q.done, ...q.noShow,
+        ].filter((p) => p.type === 'walkin');
+        walkins.sort((a, b) => (a.tokenNumber || 0) - (b.tokenNumber || 0));
+        walkins.forEach((p, i) => ranks.set(p.id, i + 1));
+        return ranks;
+      }
+      function formatToken(p, ranks) {
+        if (!p || p.tokenNumber == null) return null;
+        if (p.type === 'walkin') return 'W' + (ranks.get(p.id) || '?');
+        return String(p.tokenNumber);
+      }
+
       async function render() {
         doctors = await Qlinic.getDoctors();
         const sel = document.getElementById('doctorSelect');
@@ -213,6 +237,7 @@
         const doctorId = currentDoctorId();
         const doc = doctors.find((d) => d.id === doctorId);
         const q = await Qlinic.getQueueForDoctor(doctorId);
+        const walkinRanks = buildWalkinRanks(q);
         applyDoctorAccent(doctorId);
 
         document.getElementById('currentStatusLine').innerHTML =
@@ -262,7 +287,7 @@
             <tbody>
               ${q.waiting.map((p) => `
                 <tr>
-                  <td>${p.tokenNumber != null ? '#' + p.tokenNumber : '·'}</td>
+                  <td>${formatToken(p, walkinRanks) ? '#' + formatToken(p, walkinRanks) : '·'}</td>
                   <td><div>${p.name}</div><div class="sub-line">${p.address || 'No address on file'}</div></td>
                   <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
                   <td>${queueTimeCell(p)}</td>
