@@ -88,6 +88,10 @@
                 <label>&nbsp;</label>
                 <button class="btn-sm primary" id="confirmDelayBtn">Broadcast delay</button>
               </div>
+              <div class="field" style="flex:0;">
+                <label>&nbsp;</label>
+                <button type="button" class="btn-sm" id="cancelDelayBtn">Cancel</button>
+              </div>
             </div>
             <div id="delayHistoryNote" class="field-hint" style="display:none;"></div>
           </div>
@@ -471,6 +475,13 @@
             document.getElementById('delayInputWrap').style.display = 'block';
             return;
           }
+
+          // Emergency (and Clear status) deliberately stay one click with
+          // no confirm dialog — the earlier "should Call next patient
+          // stay reachable during a break" call was that Emergency must
+          // never gain friction, since that's exactly the moment it
+          // matters least. A mis-click here is already one click away
+          // from undone: hitting "Clear status" reverses it immediately.
           document.getElementById('delayInputWrap').style.display = 'none';
           try {
             await Qlinic.setDoctorStatus(currentDoctorId(), status, 0, '');
@@ -480,6 +491,17 @@
             showToast(err.message || 'Could not update status');
           }
         });
+      });
+
+      // Closes the picker without broadcasting anything — for the case a
+      // status button (e.g. "On a break") got clicked by mistake. Nothing
+      // was sent to setDoctorStatus yet at this point, so this genuinely
+      // leaves things exactly as if it had never been clicked, not just
+      // visually hidden.
+      document.getElementById('cancelDelayBtn').addEventListener('click', () => {
+        document.getElementById('delayInputWrap').style.display = 'none';
+        document.getElementById('delayHistoryNote').style.display = 'none';
+        pendingStatus = null;
       });
 
       document.getElementById('confirmDelayBtn').addEventListener('click', async () => {

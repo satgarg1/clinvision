@@ -576,15 +576,21 @@
         }
         const avail = await Qlinic.getSlotAvailability(doctorId, date, time);
         if (!avail) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
+        // Names the actual booking window (e.g. "9:20–9:30 pm") instead of
+        // a vague "around this time" — two times that look comfortably
+        // apart, like 9:20 and 9:25, can land in the same slot once Queue
+        // Rules' slot length is wider than 5 minutes, and that's genuinely
+        // baffling without seeing the window it's actually checking.
+        const windowLabel = `${Qlinic.formatTime(Qlinic.parseTime(avail.windowStart))}–${Qlinic.formatTime(Qlinic.parseTime(avail.windowEnd))}`;
         if (avail.isFull) {
           hint.className = 'slot-hint warn';
-          hint.innerHTML = `⚠ ${avail.count} patients already booked around this time (max ${avail.capacity} per slot). Next open slot: <strong>${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}</strong> <button type="button" class="btn-sm" id="useSuggestedTimeBtn">Use this time</button>`;
+          hint.innerHTML = `⚠ ${avail.count} patients already booked between <strong>${windowLabel}</strong> (max ${avail.capacity} per slot). Next open slot: <strong>${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}</strong> <button type="button" class="btn-sm" id="useSuggestedTimeBtn">Use this time</button>`;
           document.getElementById('useSuggestedTimeBtn').addEventListener('click', () => {
             selectTime(avail.suggestion, Qlinic.formatTime(Qlinic.parseTime(avail.suggestion)));
           });
         } else {
           hint.className = 'slot-hint ok';
-          hint.innerHTML = `✓ ${avail.count}/${avail.capacity} booked at this time, room to add.`;
+          hint.innerHTML = `✓ ${avail.count}/${avail.capacity} booked between ${windowLabel}, room to add.`;
         }
       }
 
@@ -1041,7 +1047,7 @@
             return;
           }
           const avail = await Qlinic.getSlotAvailability(doctorId, date, time);
-          if (avail && avail.isFull && !confirm(`This slot already has ${avail.count} patients booked (max ${avail.capacity}). The next open slot is ${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}. Add anyway at the requested time?`)) {
+          if (avail && avail.isFull && !confirm(`The ${Qlinic.formatTime(Qlinic.parseTime(avail.windowStart))}–${Qlinic.formatTime(Qlinic.parseTime(avail.windowEnd))} slot already has ${avail.count} patients booked (max ${avail.capacity}). The next open slot is ${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}. Add anyway at the requested time?`)) {
             return;
           }
           await Qlinic.addAppointment({ name, phone, age, gender, address, doctorId, bookedDate: date, bookedTime: time, reason: document.getElementById('pReason').value });

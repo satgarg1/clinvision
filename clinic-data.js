@@ -993,16 +993,26 @@
     return formatHHMM(bucket);
   }
 
+  // windowStart/windowEnd expose the actual bucket a given time falls
+  // into (see bucketStartMinutes) — "4 booked around this time" was
+  // genuinely confusing when Queue Rules' slot length is narrower than
+  // the reasonable-looking gap between two times a receptionist might
+  // pick (e.g. 9:20 and 9:25 landing in the same 10-minute bucket).
+  // Surfacing the real window turns that from a mystery into a visible
+  // rule, without reception needing to know Queue Rules exists.
   async function getSlotAvailability(doctorId, dateStr, timeStr) {
     if (!doctorId || !dateStr || !timeStr) return null;
     const clinic = await getClinic();
     const count = await countActiveAtSlot(doctorId, dateStr, timeStr);
     const isFull = count >= clinic.slot_capacity;
+    const bucketStart = bucketStartMinutes(timeStr, clinic.slot_interval_mins);
     return {
       count,
       capacity: clinic.slot_capacity,
       isFull,
       suggestion: isFull ? await findNextAvailableSlot(doctorId, dateStr, timeStr) : null,
+      windowStart: formatHHMM(bucketStart),
+      windowEnd: formatHHMM(bucketStart + clinic.slot_interval_mins),
     };
   }
 
