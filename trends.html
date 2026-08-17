@@ -333,7 +333,14 @@
         }
         const byBucket = {};
         invoices.forEach((inv) => {
-          const key = bucketKeyFor(new Date(inv.createdAt), granularity);
+          // invoiceDate (migration 024), not createdAt — a backdated bill
+          // belongs in the day it's FOR, same as Revenue's own filtering.
+          // Built via the y/m/d constructor rather than new Date(string):
+          // invoiceDate is a plain "YYYY-MM-DD" with no time component, so
+          // parsing it as a string reads as UTC midnight, which rolls back
+          // to the previous local calendar day in any timezone behind UTC.
+          const [y, m, d] = inv.invoiceDate.split('-').map(Number);
+          const key = bucketKeyFor(new Date(y, m - 1, d), granularity);
           byBucket[key] = (byBucket[key] || 0) + inv.amountReceived;
         });
         const buckets = Object.keys(byBucket).sort();

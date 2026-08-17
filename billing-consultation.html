@@ -64,7 +64,7 @@
         <div class="panel-header"><h2>Patient</h2></div>
         <form id="billingForm">
           <div class="form-grid">
-            <div class="field">
+            <div class="field" style="grid-column:span 2;min-width:280px;">
               <label>Phone</label>
               <div style="display:flex;gap:8px;">
                 <input type="text" value="+91" disabled style="flex:0 0 60px;text-align:center;" />
@@ -92,6 +92,8 @@
                 <option value="other">Other</option>
               </select>
             </div>
+          </div>
+          <div class="form-grid" style="margin-top:16px;">
             <div class="field">
               <label>Doctor</label>
               <select id="bDoctor" required></select>
@@ -101,6 +103,10 @@
               <select id="bFeeType" required disabled>
                 <option value="">Select doctor first</option>
               </select>
+            </div>
+            <div class="field">
+              <label>Consultation date</label>
+              <input type="date" id="bDate" required />
             </div>
           </div>
           <div id="lookupHint" class="slot-hint"></div>
@@ -289,7 +295,12 @@
           hint.className = 'slot-hint';
           return;
         }
-        const match = await Qlinic.getBillingPatientLookup(phone);
+        // Keyed off whatever's in the Consultation date field, not
+        // literally "today" — that's what makes autofill work correctly
+        // when reception is backdating a bill for a patient seen
+        // yesterday: it looks up THAT day's visit, not today's.
+        const billingDate = document.getElementById('bDate').value || Qlinic.getTodayDate();
+        const match = await Qlinic.getBillingPatientLookup(phone, billingDate);
         if (!match) {
           hint.textContent = 'No previous visit found for this number, fill in details manually.';
           hint.className = 'slot-hint';
@@ -300,11 +311,12 @@
         if (match.age) document.getElementById('bAge').value = match.age;
         if (match.gender) document.getElementById('bGender').value = match.gender;
 
-        // Doctor + fee type only autofill from a visit TODAY specifically
-        // (see getBillingPatientLookup) — pairing them with whoever they
-        // saw weeks ago would be wrong more often than it'd help. Fee type
-        // only comes along if they've already been auto-billed on arrival;
-        // otherwise it's left for reception to pick, same as always.
+        // Doctor + fee type only autofill from a visit on the selected
+        // billing date specifically (see getBillingPatientLookup) —
+        // pairing them with whoever they saw weeks ago would be wrong
+        // more often than it'd help. Fee type only comes along if
+        // they've already been auto-billed on arrival; otherwise it's
+        // left for reception to pick, same as always.
         if (match.todayDoctorId) {
           document.getElementById('bDoctor').value = match.todayDoctorId;
           updateFeeTypeOptions();
@@ -313,12 +325,14 @@
           }
         }
 
+        const dateLabel = Qlinic.formatDateLabel(billingDate);
         hint.textContent = match.todayDoctorId
-          ? `Found ${match.name} — today's consultation details filled in, double-check before printing.`
+          ? `Found ${match.name} — ${dateLabel}'s consultation details filled in, double-check before printing.`
           : `Found ${match.name}, details filled in, edit anything that's changed.`;
         hint.className = 'slot-hint ok';
         updateTotal();
       }
+      document.getElementById('bDate').addEventListener('change', checkPhoneLookup);
       document.getElementById('bPhone').addEventListener('blur', checkPhoneLookup);
 
       document.getElementById('bDoctor').addEventListener('change', updateFeeTypeOptions);
@@ -347,7 +361,21 @@
           rLogo.style.display = 'none';
         }
         document.getElementById('rInvoiceNumber').textContent = `#RC-${String(invoice.invoiceNumber).padStart(4, '0')}`;
-        document.getElementById('rDateTime').textContent = Qlinic.formatDateTime(invoice.createdAt);
+        // invoiceDate (the consultation date, editable on the form) and
+        // createdAt (the honest audit timestamp of when this receipt was
+        // actually printed) usually fall on the same day and there's
+        // nothing extra to say — but a backdated bill needs the receipt
+        // itself to say so, or the patient's own record of which day
+        // they were actually seen is wrong. Local calendar date, not
+        // toISOString's UTC date — those disagree in the early-morning
+        // hours in timezones ahead of UTC (e.g. IST), which would
+        // otherwise show a spurious "Visit:" note on an ordinary same-day
+        // bill printed after midnight.
+        const printedAt = new Date(invoice.createdAt);
+        const printedDateStr = `${printedAt.getFullYear()}-${String(printedAt.getMonth() + 1).padStart(2, '0')}-${String(printedAt.getDate()).padStart(2, '0')}`;
+        document.getElementById('rDateTime').textContent = invoice.invoiceDate && invoice.invoiceDate !== printedDateStr
+          ? `${Qlinic.formatDateTime(invoice.createdAt)} · Visit: ${Qlinic.formatDateLabel(invoice.invoiceDate)}`
+          : Qlinic.formatDateTime(invoice.createdAt);
         document.getElementById('rBilledBy').textContent = `Billed by: ${(myProfile && myProfile.fullName) || 'Reception'}`;
         document.getElementById('rPatientName').textContent = invoice.patientName;
         document.getElementById('rPatientPhone').textContent = invoice.patientPhone || '—';
@@ -371,6 +399,7 @@
 
       function resetForm() {
         document.getElementById('billingForm').reset();
+        document.getElementById('bDate').value = Qlinic.getTodayDate();
         document.getElementById('lookupHint').textContent = '';
         document.getElementById('lookupHint').className = 'slot-hint';
         updateFeeTypeOptions();
@@ -400,6 +429,7 @@
             patientGender: document.getElementById('bGender').value,
             paymentMode: document.getElementById('bPaymentMode').value,
             amountReceived: Number(document.getElementById('bAmountReceived').value) || 0,
+            invoiceDate: document.getElementById('bDate').value || Qlinic.getTodayDate(),
           });
           renderReceipt(invoice);
           window.print();
@@ -423,6 +453,11 @@
       }
       myProfile = await Qlinic.getMyProfile();
       await loadDoctors();
+      // Backdating is the whole point of this field (billing a patient
+      // seen yesterday, forgot at the time), but a bill dated in the
+      // FUTURE never makes sense — capped at today.
+      document.getElementById('bDate').value = Qlinic.getTodayDate();
+      document.getElementById('bDate').max = Qlinic.getTodayDate();
 
       // Reception's "Print receipt" link on an already auto-billed
       // queue row lands here instead of on the form: the bill already

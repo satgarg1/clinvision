@@ -677,7 +677,7 @@
   // recent booking (Reception's own "age" field), falling back to the
   // most recent invoice's age for patients billed before that field
   // existed.
-  async function getBillingPatientLookup(phone) {
+  async function getBillingPatientLookup(phone, dateStr) {
     const clinicId = await ensureClinicContext();
     const cleanPhone = (phone || '').trim();
     if (!clinicId || !cleanPhone) return null;
@@ -705,20 +705,24 @@
       invoice = data;
     } catch (e) { /* best-effort */ }
 
-    // A visit TODAY specifically (not just "most recent ever") is what
-    // makes doctor/fee-type autofill trustworthy — pairing a patient with
-    // whichever doctor they saw months ago would be actively wrong more
-    // often than it'd help. If they've seen more than one doctor today,
-    // this picks whichever visit was created most recently; the caller's
-    // "double-check before printing" hint is the guard against that edge
-    // case rather than trying to disambiguate it here.
+    // A visit on the SELECTED billing date specifically (not just "most
+    // recent ever") is what makes doctor/fee-type autofill trustworthy —
+    // pairing a patient with whichever doctor they saw months ago would
+    // be actively wrong more often than it'd help. Defaults to today when
+    // the caller doesn't pass a date, matching billing-consultation.html's
+    // own date field default; passing a backdated date here is what makes
+    // that field's autofill actually look up the right day's visit. If
+    // they've seen more than one doctor that day, this picks whichever
+    // visit was created most recently; the caller's "double-check before
+    // printing" hint is the guard against that edge case rather than
+    // trying to disambiguate it here.
     let todayDoctorId = null;
     let todayFeeType = null;
     try {
-      const todayStr = todayDateStr();
+      const targetDateStr = dateStr || todayDateStr();
       const { data: todayPatient, error: patientErr } = await sb.from('patients')
         .select('id, doctor_id')
-        .eq('clinic_id', clinicId).eq('phone', cleanPhone).eq('token_date', todayStr)
+        .eq('clinic_id', clinicId).eq('phone', cleanPhone).eq('token_date', targetDateStr)
         .order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (patientErr) throw patientErr;
       if (todayPatient) {
@@ -763,10 +767,11 @@
       paymentMode: row.payment_mode,
       amountReceived: Number(row.amount_received),
       createdAt: row.created_at,
+      invoiceDate: row.invoice_date,
     };
   }
 
-  async function createInvoice({ doctorId, feeType, patientName, patientPhone, patientAddress, patientAge, patientGender, paymentMode, amountReceived }) {
+  async function createInvoice({ doctorId, feeType, patientName, patientPhone, patientAddress, patientAge, patientGender, paymentMode, amountReceived, invoiceDate }) {
     const { data, error } = await sb.rpc('create_invoice', {
       p_doctor_id: doctorId,
       p_fee_type: feeType,
@@ -777,6 +782,7 @@
       p_patient_gender: patientGender || '',
       p_payment_mode: paymentMode || 'cash',
       p_amount_received: amountReceived == null ? null : Number(amountReceived),
+      p_invoice_date: invoiceDate || todayDateStr(),
     });
     if (error) throw error;
     return normalizeInvoice(data);
@@ -788,19 +794,18 @@
   // out which of today's queued patients already got billed, so it
   // can show the auto-billed status instead of prompting anyone to
   // re-enter it.
-  // dateStr is a plain "YYYY-MM-DD" in the clinic's local time (same
-  // convention as todayDateStr()); the two Date objects below just turn
-  // that into the actual local-time boundaries for the created_at range.
+  // invoice_date (migration 024) is a plain date column, not a
+  // timestamp — it's "which day this bill is for," editable on the
+  // billing form and separate from created_at's role as an honest audit
+  // timestamp of when the row was actually inserted. A straight equality/
+  // range filter here, no local-time-boundary conversion needed (that
+  // was only ever a workaround for created_at being a timestamptz).
   async function getInvoicesForDate(dateStr) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const start = new Date(y, m - 1, d, 0, 0, 0, 0);
-    const end = new Date(y, m - 1, d, 23, 59, 59, 999);
     const { data, error } = await sb.from('invoices').select('*')
       .eq('clinic_id', clinicId)
-      .gte('created_at', start.toISOString())
-      .lte('created_at', end.toISOString())
+      .eq('invoice_date', dateStr)
       .order('created_at', { ascending: true });
     if (error) throw error;
     return data.map(normalizeInvoice);
@@ -810,19 +815,13 @@
     return getInvoicesForDate(todayDateStr());
   }
 
-  // Same local-time-boundary approach as getInvoicesForDate, just spanning
-  // startDateStr through endDateStr inclusive instead of a single day.
   async function getInvoicesForDateRange(startDateStr, endDateStr) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    const [sy, sm, sd] = startDateStr.split('-').map(Number);
-    const [ey, em, ed] = endDateStr.split('-').map(Number);
-    const start = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
-    const end = new Date(ey, em - 1, ed, 23, 59, 59, 999);
     const { data, error } = await sb.from('invoices').select('*')
       .eq('clinic_id', clinicId)
-      .gte('created_at', start.toISOString())
-      .lte('created_at', end.toISOString())
+      .gte('invoice_date', startDateStr)
+      .lte('invoice_date', endDateStr)
       .order('created_at', { ascending: true });
     if (error) throw error;
     return data.map(normalizeInvoice);
