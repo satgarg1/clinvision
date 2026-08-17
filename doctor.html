@@ -8,7 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=108" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css?v=109" />
 </head>
 <body>
   <div class="app-shell">
@@ -184,13 +185,14 @@
 
       // The list is sorted by scheduled/effective time, not raw arrival time:
       // a walk-in's slot is when they arrived, an appointment's is its booked
-      // time plus any doctor delay.
+      // time plus any doctor delay. Only ever called on patients already in
+      // the live queue, where arrivedAt is always set regardless of type —
+      // the sub-line always shows when they actually walked in, not when an
+      // appointment was originally booked (often identical to the primary
+      // time above it and redundant here).
       function queueTimeCell(p) {
         const primary = Qlinic.formatTimestamp(p.effectiveTime);
-        const secondary = p.type === 'appointment'
-          ? `booked ${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}`
-          : `arrived ${Qlinic.formatTimestamp(p.arrivedAt)}`;
-        return `<div>${primary}</div><div class="sub-line">${secondary}</div>`;
+        return `<div>${primary}</div><div class="sub-line">arrived ${Qlinic.formatTimestamp(p.arrivedAt)}</div>`;
       }
 
       async function render() {

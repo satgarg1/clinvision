@@ -1031,10 +1031,21 @@
     if (error) throw error;
   }
 
+  // Also resets status back to on_time with a fresh status_updated_at —
+  // without this, Dashboard's "updated" time for the doctor kept showing
+  // whenever their status was last touched before the day closed (hours
+  // or even a day earlier), giving reception no way to tell that this
+  // doctor actually just came back.
   async function reopenDoctorDay(doctorId) {
     const { error } = await sb
       .from('doctors')
-      .update({ day_closed_at: null })
+      .update({
+        day_closed_at: null,
+        status: 'on_time',
+        delay_mins: 0,
+        status_note: '',
+        status_updated_at: new Date().toISOString(),
+      })
       .eq('id', doctorId);
     if (error) throw error;
   }

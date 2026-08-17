@@ -895,6 +895,29 @@ input[type="number"] { -moz-appearance: textfield; }
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
   }
 }
+/* The only billing type that actually works today needs to read as the
+   obvious choice next to one that doesn't, not just differ by a hover
+   effect nobody's triggered yet. */
+.billing-option-active { border: 2px solid var(--accent); }
+.billing-option-active h2 { font-weight: 700; }
+.billing-option-disabled {
+  position: relative;
+  opacity: 0.55;
+  overflow: hidden;
+}
+.coming-soon-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: var(--grey-300);
+  color: var(--grey-700);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+}
 .panel h2 {
   font-size: 16px;
   font-weight: 600;
