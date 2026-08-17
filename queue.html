@@ -27,6 +27,13 @@
         </p>
       </div>
 
+      <div id="closedState" style="display:none;">
+        <div style="text-align:center;color:var(--grey-500);font-size:13px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;" id="closedClinicName"></div>
+        <div style="text-align:center;font-size:18px;font-weight:600;margin:4px 0 20px;" id="closedDoctorName"></div>
+        <h1 style="text-align:center;font-size:22px;">Doctor has closed for the day</h1>
+        <p class="panel-note" style="text-align:center;">Please check back tomorrow, or contact the clinic directly.</p>
+      </div>
+
       <div id="statusState" style="display:none;">
         <div style="text-align:center;color:var(--grey-500);font-size:13px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;" id="clinicName"></div>
         <div style="text-align:center;font-size:18px;font-weight:600;margin:4px 0 20px;" id="doctorName"></div>
@@ -71,14 +78,30 @@
 
       const loadingEl = document.getElementById('loadingState');
       const errorEl = document.getElementById('errorState');
+      const closedEl = document.getElementById('closedState');
       const statusEl = document.getElementById('statusState');
       const footerEl = document.getElementById('footerNote');
 
       function showError() {
         loadingEl.style.display = 'none';
         statusEl.style.display = 'none';
+        closedEl.style.display = 'none';
         footerEl.style.display = 'none';
         errorEl.style.display = 'block';
+      }
+
+      // Only pre-empts the normal status card for a patient who hasn't
+      // been seen yet — a patient who's already done/no-show gets their
+      // final status either way, and "closed for the day" would just be
+      // a confusing thing to see on an old link at that point.
+      function showClosed(data) {
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'none';
+        statusEl.style.display = 'none';
+        footerEl.style.display = 'block';
+        closedEl.style.display = 'block';
+        document.getElementById('closedClinicName').textContent = data.clinicName;
+        document.getElementById('closedDoctorName').textContent = data.doctorName;
       }
 
       const DOCTOR_STATUS_LABEL = {
@@ -102,8 +125,19 @@
           showError();
           return;
         }
+
+        // Mirrors the waiting-room display screen: a patient who hasn't
+        // been seen yet should know the doctor closed for the day just
+        // as clearly as someone sitting in the waiting room would.
+        const isClosed = Qlinic.isDoctorClosedToday({ dayClosedAt: data.doctorDayClosedAt });
+        if (isClosed && (data.status === 'booked' || data.status === 'waiting')) {
+          showClosed(data);
+          return;
+        }
+
         loadingEl.style.display = 'none';
         errorEl.style.display = 'none';
+        closedEl.style.display = 'none';
         statusEl.style.display = 'block';
         footerEl.style.display = 'block';
 
@@ -114,7 +148,8 @@
         let badgeHtml = PATIENT_STATUS_BADGE[data.status] || '';
         if (data.doctorStatus && data.doctorStatus !== 'on_time') {
           const label = DOCTOR_STATUS_LABEL[data.doctorStatus] || data.doctorStatus;
-          badgeHtml += `<span class="badge badge-likely">${label}${data.doctorDelayMins ? ' · +' + data.doctorDelayMins + 'm' : ''}</span>`;
+          const since = data.doctorStatusUpdatedAt ? ' · since ' + Qlinic.formatTimestamp(data.doctorStatusUpdatedAt) : '';
+          badgeHtml += `<span class="badge badge-likely">${label}${data.doctorDelayMins ? ' · +' + data.doctorDelayMins + 'm' : ''}${since}</span>`;
         }
         document.getElementById('statusBadgeRow').innerHTML = badgeHtml;
 
