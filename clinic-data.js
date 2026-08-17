@@ -705,12 +705,45 @@
       invoice = data;
     } catch (e) { /* best-effort */ }
 
-    if (!patient && !invoice) return null;
+    // A visit TODAY specifically (not just "most recent ever") is what
+    // makes doctor/fee-type autofill trustworthy — pairing a patient with
+    // whichever doctor they saw months ago would be actively wrong more
+    // often than it'd help. If they've seen more than one doctor today,
+    // this picks whichever visit was created most recently; the caller's
+    // "double-check before printing" hint is the guard against that edge
+    // case rather than trying to disambiguate it here.
+    let todayDoctorId = null;
+    let todayFeeType = null;
+    try {
+      const todayStr = todayDateStr();
+      const { data: todayPatient, error: patientErr } = await sb.from('patients')
+        .select('id, doctor_id')
+        .eq('clinic_id', clinicId).eq('phone', cleanPhone).eq('token_date', todayStr)
+        .order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (patientErr) throw patientErr;
+      if (todayPatient) {
+        todayDoctorId = todayPatient.doctor_id;
+        // Fee type only exists once they're actually billed (e.g. the
+        // auto-invoice-on-arrival trigger already ran); a booked-but-not-
+        // arrived visit has a doctor but no fee type yet, left for
+        // reception to pick.
+        const { data: todayInvoice, error: invoiceErr } = await sb.from('invoices')
+          .select('fee_type')
+          .eq('clinic_id', clinicId).eq('patient_id', todayPatient.id)
+          .order('created_at', { ascending: false }).limit(1).maybeSingle();
+        if (invoiceErr) throw invoiceErr;
+        todayFeeType = todayInvoice ? todayInvoice.fee_type : null;
+      }
+    } catch (e) { /* best-effort */ }
+
+    if (!patient && !invoice && !todayDoctorId) return null;
     return {
       name: (patient && patient.name) || (invoice && invoice.patient_name) || '',
       address: (patient && patient.address) || (invoice && invoice.patient_address) || '',
       gender: (patient && patient.gender) || (invoice && invoice.patient_gender) || '',
       age: (patient && patient.age) || (invoice && invoice.patient_age) || null,
+      todayDoctorId,
+      todayFeeType,
     };
   }
 

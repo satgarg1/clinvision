@@ -299,7 +299,23 @@
         if (match.address) document.getElementById('bAddress').value = match.address;
         if (match.age) document.getElementById('bAge').value = match.age;
         if (match.gender) document.getElementById('bGender').value = match.gender;
-        hint.textContent = `Found ${match.name}, details filled in, edit anything that's changed.`;
+
+        // Doctor + fee type only autofill from a visit TODAY specifically
+        // (see getBillingPatientLookup) — pairing them with whoever they
+        // saw weeks ago would be wrong more often than it'd help. Fee type
+        // only comes along if they've already been auto-billed on arrival;
+        // otherwise it's left for reception to pick, same as always.
+        if (match.todayDoctorId) {
+          document.getElementById('bDoctor').value = match.todayDoctorId;
+          updateFeeTypeOptions();
+          if (match.todayFeeType === 'consultation' || match.todayFeeType === 'emergency') {
+            document.getElementById('bFeeType').value = match.todayFeeType;
+          }
+        }
+
+        hint.textContent = match.todayDoctorId
+          ? `Found ${match.name} — today's consultation details filled in, double-check before printing.`
+          : `Found ${match.name}, details filled in, edit anything that's changed.`;
         hint.className = 'slot-hint ok';
         updateTotal();
       }
