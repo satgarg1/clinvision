@@ -1084,6 +1084,18 @@ table.qtable tr:last-child td { border-bottom: none; }
   font-size: 17px;
 }
 
+/* Broadcast delay/Cancel sit next to a .time-picker-trigger (10px 12px /
+   14px, no bold), not a plain field — they're nested one level deeper
+   than a bare .field > .btn-sm (wrapped together so they stay close to
+   each other, not spread across the row's 160px-min-width field gap),
+   so the generic rule can't reach them and they'd otherwise fall back to
+   .btn-sm's smaller default padding. */
+#delayInputWrap .btn-sm {
+  padding: 10px 12px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
 /* Native select arrows render tiny and inconsistent across browsers; swap
    in a matching custom chevron so they don't look like unstyled form
    controls next to the rest of the page. */
