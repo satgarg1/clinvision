@@ -147,6 +147,10 @@
       }
 
       let doctors = [];
+      // Set at the end of every render(), so the status-button click
+      // handler below can check who's currently being seen without a
+      // redundant extra fetch of its own.
+      let currentQueue = null;
 
       function showToast(msg) {
         const t = document.getElementById('toast');
@@ -237,6 +241,7 @@
         const doctorId = currentDoctorId();
         const doc = doctors.find((d) => d.id === doctorId);
         const q = await Qlinic.getQueueForDoctor(doctorId);
+        currentQueue = q;
         const walkinRanks = buildWalkinRanks(q);
         applyDoctorAccent(doctorId);
 
@@ -260,9 +265,19 @@
           btn.disabled = dayIsClosed;
           if (dayIsClosed) btn.title = lockTitle; else btn.removeAttribute('title');
         });
+
+        // Call next patient also locks while on a break or in an
+        // emergency — not the status buttons themselves, since "Clear
+        // status" is exactly how a doctor gets back out of either state.
+        // Otherwise nothing stopped a new patient from being pulled in
+        // while the doctor had just said they're unavailable.
+        const isAway = doc.status === 'on_break' || doc.status === 'emergency';
+        const awayPhrase = doc.status === 'on_break' ? "you're on a break" : "you're in an emergency";
         const callNextBtn = document.getElementById('callNextBtn');
-        callNextBtn.disabled = dayIsClosed;
-        if (dayIsClosed) callNextBtn.title = lockTitle; else callNextBtn.removeAttribute('title');
+        callNextBtn.disabled = dayIsClosed || isAway;
+        if (dayIsClosed) callNextBtn.title = lockTitle;
+        else if (isAway) callNextBtn.title = `Clear your status first — ${awayPhrase} right now.`;
+        else callNextBtn.removeAttribute('title');
 
         const lockedNote = document.getElementById('statusLockedNote');
         if (dayIsClosed) {
@@ -273,9 +288,15 @@
           lockedNote.style.display = 'none';
         }
 
+        // The empty state matters here specifically: once a currently-
+        // seen patient is marked done (see the on-a-break/emergency
+        // confirm below), the generic "Tap Call next patient" message
+        // would be actively wrong — that button is disabled right now.
         document.getElementById('nowServingBox').innerHTML = q.nowServing
           ? `<div style="font-size:20px;font-weight:700;">${q.nowServing.name}</div><div style="font-size:13px;color:var(--grey-500);">${q.nowServing.address ? q.nowServing.address + ' · ' : ''}${q.nowServing.type === 'appointment' ? 'Appointment' : 'Walk-in'}</div>`
-          : `<div class="empty-state">No one in consultation. Tap "Call next patient" to begin.</div>`;
+          : isAway
+            ? `<div class="empty-state">No one in consultation — ${awayPhrase}.</div>`
+            : `<div class="empty-state">No one in consultation. Tap "Call next patient" to begin.</div>`;
 
         document.getElementById('waitingHeading').innerHTML = `Waiting <span class="order-note">· ordered by scheduled time, not arrival order</span>`;
 
@@ -385,6 +406,29 @@
       document.querySelectorAll('[data-status]').forEach((btn) => {
         btn.addEventListener('click', async () => {
           const status = btn.getAttribute('data-status');
+
+          // Going on a break or into an emergency while someone's still
+          // in consultation is genuinely ambiguous: did the visit just
+          // finish and the doctor hasn't called the next patient yet, or
+          // are they stepping away mid-visit with this same patient still
+          // in the room? Only the doctor knows, so ask instead of
+          // guessing — a wrong guess either way is misleading on the
+          // display board. "Done" clears them via finishCurrentPatient,
+          // not callNextPatient — nobody should get pulled in while the
+          // doctor isn't available. "Still with them" leaves Now Serving
+          // untouched, exactly as it already worked before this.
+          if ((status === 'on_break' || status === 'emergency') && currentQueue && currentQueue.nowServing) {
+            const isDone = confirm(`Have you finished with ${currentQueue.nowServing.name}?\n\nOK — their visit is over, clear them from "Now serving."\nCancel — you're just stepping away, they're still with you.`);
+            if (isDone) {
+              try {
+                await Qlinic.finishCurrentPatient(currentDoctorId());
+                render();
+              } catch (err) {
+                showToast(err.message || 'Could not update the queue');
+              }
+            }
+          }
+
           const config = DURATION_CONFIG[status];
           if (config) {
             pendingStatus = status;

@@ -935,6 +935,22 @@
     }
   }
 
+  // Half of callNextPatient, deliberately: marks the current in-consult
+  // patient done WITHOUT pulling the next waiting patient in. Used when a
+  // doctor goes on a break or has an emergency right after finishing with
+  // someone — they're stepping away, not ready to see anyone new, so
+  // nothing should get pulled into the room. doctor.html's "Call next
+  // patient" stays disabled the whole time regardless, so there's no
+  // window where an empty in-consult slot could get auto-filled anyway.
+  async function finishCurrentPatient(doctorId) {
+    const today = todayDateStr();
+    const mine = await fetchPatientsForDoctorAndDate(doctorId, today);
+    const current = mine.find((p) => p.status === 'in_consult');
+    if (current) {
+      await sb.from('patients').update({ status: 'done' }).eq('id', current.id);
+    }
+  }
+
   async function setDoctorStatus(doctorId, status, delayMins, note) {
     const { error } = await sb.from('doctors').update({
       status,
@@ -1314,6 +1330,7 @@
     addWalkIn,
     addAppointment,
     callNextPatient,
+    finishCurrentPatient,
     setDoctorStatus,
     getSlotAvailability,
     getDailySummary,
