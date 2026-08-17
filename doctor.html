@@ -151,6 +151,7 @@
       // handler below can check who's currently being seen without a
       // redundant extra fetch of its own.
       let currentQueue = null;
+      let currentDoctor = null;
 
       function showToast(msg) {
         const t = document.getElementById('toast');
@@ -240,6 +241,7 @@
 
         const doctorId = currentDoctorId();
         const doc = doctors.find((d) => d.id === doctorId);
+        currentDoctor = doc;
         const q = await Qlinic.getQueueForDoctor(doctorId);
         currentQueue = q;
         const walkinRanks = buildWalkinRanks(q);
@@ -434,6 +436,21 @@
             pendingStatus = status;
             document.getElementById('delayInputLabel').textContent = config.label;
             document.getElementById('confirmDelayBtn').textContent = config.button;
+
+            // Reopening for the status that's ALREADY active (extending a
+            // break or delay already in progress) pre-selects the
+            // doctor's current duration instead of whatever was last
+            // picked in this session — the whole point of extending is
+            // seeing where you're at now and bumping it up from there,
+            // not re-finding your own value from a stale/default list.
+            // Switching to a genuinely different status starts fresh.
+            if (currentDoctor && currentDoctor.status === status && currentDoctor.delayMins) {
+              const match = DURATION_OPTIONS.find((o) => o.value === currentDoctor.delayMins);
+              selectDelay(currentDoctor.delayMins, match ? match.label : `${currentDoctor.delayMins} min`);
+            } else {
+              selectDelay(30, '30 min');
+            }
+
             document.getElementById('delayInputWrap').style.display = 'block';
             return;
           }
