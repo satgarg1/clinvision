@@ -89,6 +89,7 @@
                 <button class="btn-sm primary" id="confirmDelayBtn">Broadcast delay</button>
               </div>
             </div>
+            <div id="delayHistoryNote" class="field-hint" style="display:none;"></div>
           </div>
           <div id="currentStatusLine" style="margin-top:14px;font-size:14px;"></div>
         </div>
@@ -353,8 +354,14 @@
       // Both "Running late" and "On a break" ask for a duration before
       // broadcasting: the doctor picks how it'll show up, then confirms.
       const DURATION_CONFIG = {
-        running_late: { label: 'How many minutes behind?', button: 'Broadcast delay', note: (l) => `Running about ${l} behind.` },
-        on_break: { label: 'How long is your break?', button: 'Broadcast break', note: (l) => `On a break for about ${l}.` },
+        running_late: {
+          label: 'How many minutes behind?', button: 'Broadcast delay', note: (l) => `Running about ${l} behind.`,
+          historyNote: (l, time, elapsedMin) => `You said ${l} behind at ${time} (${elapsedMin} min ago) — pick again if that's no longer right.`,
+        },
+        on_break: {
+          label: 'How long is your break?', button: 'Broadcast break', note: (l) => `On a break for about ${l}.`,
+          historyNote: (l, time, elapsedMin) => `You selected a ${l} break at ${time} (${elapsedMin} min ago) — pick again if you need more time.`,
+        },
       };
       let pendingStatus = null;
 
@@ -440,15 +447,25 @@
             // Reopening for the status that's ALREADY active (extending a
             // break or delay already in progress) pre-selects the
             // doctor's current duration instead of whatever was last
-            // picked in this session — the whole point of extending is
-            // seeing where you're at now and bumping it up from there,
-            // not re-finding your own value from a stale/default list.
-            // Switching to a genuinely different status starts fresh.
+            // picked in this session, AND — the actually useful part —
+            // shows WHEN they picked it and how long ago that was. A
+            // pre-filled dropdown alone doesn't tell a doctor whether
+            // they're 2 minutes or 40 minutes into a "30 min" break;
+            // the elapsed time is what actually tells them whether to
+            // extend. Switching to a genuinely different status starts
+            // fresh with no history note.
+            const historyNote = document.getElementById('delayHistoryNote');
             if (currentDoctor && currentDoctor.status === status && currentDoctor.delayMins) {
               const match = DURATION_OPTIONS.find((o) => o.value === currentDoctor.delayMins);
-              selectDelay(currentDoctor.delayMins, match ? match.label : `${currentDoctor.delayMins} min`);
+              const durationLabel = match ? match.label : `${currentDoctor.delayMins} min`;
+              selectDelay(currentDoctor.delayMins, durationLabel);
+              const setAt = new Date(currentDoctor.statusUpdatedAt);
+              const elapsedMin = Math.max(0, Math.round((Date.now() - setAt.getTime()) / 60000));
+              historyNote.textContent = config.historyNote(durationLabel, Qlinic.formatTimestamp(setAt), elapsedMin);
+              historyNote.style.display = 'block';
             } else {
               selectDelay(30, '30 min');
+              historyNote.style.display = 'none';
             }
 
             document.getElementById('delayInputWrap').style.display = 'block';
