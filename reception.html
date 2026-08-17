@@ -185,7 +185,8 @@
         document.getElementById('endOfDayNavLink').style.display = 'none';
       }
 
-      const BOOKED_PAGE_SIZE = 8;
+      const BOOKED_PAGE_SIZE = 10;
+      const WAITING_PAGE_SIZE = 10;
       let patientMode = 'appointment';
       let clinicOpenMin = 0;
       let clinicCloseMin = 1440;
@@ -195,6 +196,7 @@
       let queueViewDate = null;
       let bookedExpanded = false;
       let bookedPage = 0;
+      let waitingPage = 0;
       let doctorsCache = [];
       let todayInvoices = [];
       let editingInvoiceId = null;
@@ -808,6 +810,7 @@
         queueDoctorId = e.target.value;
         bookedExpanded = false;
         bookedPage = 0;
+        waitingPage = 0;
         renderQueues();
       });
 
@@ -815,6 +818,7 @@
         queueViewDate = e.target.value || Qlinic.getTodayDate();
         bookedExpanded = false;
         bookedPage = 0;
+        waitingPage = 0;
         renderQueues();
       });
 
@@ -823,6 +827,7 @@
         document.getElementById('queueDateFilter').value = queueViewDate;
         bookedExpanded = false;
         bookedPage = 0;
+        waitingPage = 0;
         renderQueues();
       });
 
@@ -853,10 +858,16 @@
           todayInvoices.forEach((inv) => { if (inv.patientId) invoiceByPatientId[inv.patientId] = inv; });
         }
 
-        // Waiting is bounded by how many people can physically be in the
-        // room; it stays fully visible since it's the list reception acts
-        // on minute to minute. Booked-not-yet-arrived is the day's full
-        // schedule, so it's collapsed by default and paginated.
+        // Both lists paginate at 10/page now — a busy clinic's Waiting
+        // list can run just as long as Booked once appointments pile up,
+        // and an unbounded table here was the same problem in a list
+        // reception is actively working from minute to minute, not just
+        // scanning. Search (renderSearch, above) is unaffected either
+        // way: it queries the server directly, not this paginated slice.
+        const totalWaitingPages = Math.max(1, Math.ceil(queue.waiting.length / WAITING_PAGE_SIZE));
+        if (waitingPage >= totalWaitingPages) waitingPage = 0;
+        const waitingPageItems = queue.waiting.slice(waitingPage * WAITING_PAGE_SIZE, waitingPage * WAITING_PAGE_SIZE + WAITING_PAGE_SIZE);
+
         const totalBookedPages = Math.max(1, Math.ceil(queue.booked.length / BOOKED_PAGE_SIZE));
         if (bookedPage >= totalBookedPages) bookedPage = 0;
         const bookedPageItems = queue.booked.slice(bookedPage * BOOKED_PAGE_SIZE, bookedPage * BOOKED_PAGE_SIZE + BOOKED_PAGE_SIZE);
@@ -874,7 +885,7 @@
                 <table class="qtable">
                   <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Queue time</th>${canBill ? '<th>Billing</th>' : ''}</tr></thead>
                   <tbody>
-                    ${queue.waiting.map((p) => `
+                    ${waitingPageItems.map((p) => `
                       <tr>
                         <td>${p.position}</td>
                         <td>${nameCell(p)}</td>
@@ -885,6 +896,13 @@
                     `).join('')}
                   </tbody>
                 </table>
+                ${totalWaitingPages > 1 ? `
+                  <div class="pager">
+                    <button type="button" class="btn-sm" id="waitingPrevBtn" ${waitingPage === 0 ? 'disabled' : ''}>‹ Prev</button>
+                    <span class="pager-label">Page ${waitingPage + 1} of ${totalWaitingPages}</span>
+                    <button type="button" class="btn-sm" id="waitingNextBtn" ${waitingPage >= totalWaitingPages - 1 ? 'disabled' : ''}>Next ›</button>
+                  </div>
+                ` : ''}
               `}
             ` : `
               <p class="panel-note">Live queue details (now serving, waiting) only apply to today: this is showing what's booked for ${dateLabel}.</p>
@@ -942,6 +960,10 @@
         const nextBtn = document.getElementById('bookedNextBtn');
         if (prevBtn) prevBtn.addEventListener('click', () => { bookedPage = Math.max(0, bookedPage - 1); renderQueues(); });
         if (nextBtn) nextBtn.addEventListener('click', () => { bookedPage = Math.min(totalBookedPages - 1, bookedPage + 1); renderQueues(); });
+        const waitingPrevBtn = document.getElementById('waitingPrevBtn');
+        const waitingNextBtn = document.getElementById('waitingNextBtn');
+        if (waitingPrevBtn) waitingPrevBtn.addEventListener('click', () => { waitingPage = Math.max(0, waitingPage - 1); renderQueues(); });
+        if (waitingNextBtn) waitingNextBtn.addEventListener('click', () => { waitingPage = Math.min(totalWaitingPages - 1, waitingPage + 1); renderQueues(); });
       }
 
       document.getElementById('searchBox').addEventListener('input', renderSearch);
@@ -1034,6 +1056,7 @@
           queueDoctorId = doctorId;
           bookedExpanded = false;
           bookedPage = 0;
+          waitingPage = 0;
         }
 
         e.target.reset();

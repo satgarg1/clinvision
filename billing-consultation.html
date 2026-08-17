@@ -66,7 +66,10 @@
           <div class="form-grid">
             <div class="field">
               <label>Phone</label>
-              <input type="tel" id="bPhone" required />
+              <div style="display:flex;gap:8px;">
+                <input type="text" value="+91" disabled style="flex:0 0 60px;text-align:center;" />
+                <input type="tel" id="bPhone" inputmode="numeric" maxlength="10" placeholder="10-digit number" required style="flex:1;min-width:0;" />
+              </div>
             </div>
             <div class="field">
               <label>Name</label>
@@ -264,6 +267,16 @@
           allDoctors.map((d) => `<option value="${d.id}">${d.name}, ${d.specialty}</option>`).join('');
       }
 
+      // Strips anything non-numeric as they type, matching reception's
+      // patient forms and registration's phone field, so a pasted or
+      // typed letter/symbol never even lands in the input.
+      document.getElementById('bPhone').addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').slice(0, 10);
+      });
+      function isValidPhone(value) {
+        return /^[0-9]{10}$/.test(value);
+      }
+
       // Direct autofill, not a suggestion card: the receptionist already
       // typed the phone to look the patient up, so there's no extra
       // confirmation step, just editable fields ready to bill from.
@@ -271,6 +284,11 @@
         const phone = document.getElementById('bPhone').value.trim();
         const hint = document.getElementById('lookupHint');
         if (!phone) { hint.textContent = ''; hint.className = 'slot-hint'; return; }
+        if (!isValidPhone(phone)) {
+          hint.textContent = 'Enter a valid 10-digit phone number to look up their visit.';
+          hint.className = 'slot-hint';
+          return;
+        }
         const match = await Qlinic.getBillingPatientLookup(phone);
         if (!match) {
           hint.textContent = 'No previous visit found for this number, fill in details manually.';
@@ -344,6 +362,14 @@
 
       document.getElementById('billingForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const phone = document.getElementById('bPhone').value.trim();
+        if (!isValidPhone(phone)) {
+          const hint = document.getElementById('lookupHint');
+          hint.textContent = 'Enter a valid 10-digit phone number before printing.';
+          hint.className = 'slot-hint error';
+          document.getElementById('bPhone').focus();
+          return;
+        }
         const btn = document.getElementById('billingSubmitBtn');
         btn.disabled = true;
         btn.textContent = 'Printing…';

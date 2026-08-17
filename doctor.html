@@ -258,11 +258,11 @@
           ? '<div class="empty-state">No one waiting.</div>'
           : `
           <table class="qtable">
-            <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Queue time</th></tr></thead>
+            <thead><tr><th>Token</th><th>Name</th><th>Type</th><th>Queue time</th></tr></thead>
             <tbody>
               ${q.waiting.map((p) => `
                 <tr>
-                  <td>${p.position}</td>
+                  <td>${p.tokenNumber != null ? '#' + p.tokenNumber : '·'}</td>
                   <td><div>${p.name}</div><div class="sub-line">${p.address || 'No address on file'}</div></td>
                   <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
                   <td>${queueTimeCell(p)}</td>
