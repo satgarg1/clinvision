@@ -303,10 +303,11 @@
 
       function renderDoctorStrip(all) {
         document.getElementById('doctorStrip').innerHTML = all.map(({ doctor, queue }, index) => {
-          const closedToday = Qlinic.isDoctorClosedToday(doctor);
-          // day_closed_at is set but from a prior day — the doctor hasn't
-          // tapped "I'm back" since logging in today, so as far as the
-          // waiting room can tell they simply haven't arrived yet.
+          // Reaching this function at all means the doctor already passed
+          // the refreshData filter above, so they're either still inside
+          // their 3-minute "just closed" window, or past their 4am reset —
+          // never in between (that gap is exactly what's hidden).
+          const closedToday = !!doctor.dayClosedAt && (Date.now() - new Date(doctor.dayClosedAt).getTime() < DAY_CLOSED_FADE_MS);
           const notArrived = !!doctor.dayClosedAt && !closedToday;
           const detail = (closedToday || notArrived) ? '' : statusDetailLine(doctor);
           return `
@@ -408,6 +409,23 @@
 
       const DAY_CLOSED_FADE_MS = 3 * 60 * 1000;
 
+      // 4am, not midnight: comparing calendar dates meant a doctor who
+      // closed at 11:58pm and one who closed at 12:03am landed on
+      // opposite sides of "today" purely because the clock ticked over —
+      // one kept showing "Not arrived yet" for hours, the other vanished
+      // within minutes, for what's functionally the same event. No
+      // clinic operates through 4am, so anchoring the reset there instead
+      // means every closure — 5pm or 2am — waits for the SAME next
+      // checkpoint, and two closures a few minutes apart behave the same.
+      const RESET_HOUR = 4;
+      function nextResetAfter(closedAtIso) {
+        const closedAt = new Date(closedAtIso);
+        const reset = new Date(closedAt);
+        reset.setHours(RESET_HOUR, 0, 0, 0);
+        if (reset <= closedAt) reset.setDate(reset.getDate() + 1);
+        return reset;
+      }
+
       // Runs every second (independent of the 5s REFRESH_MS data poll) so
       // the "3:00, 2:59, ..." countdown actually ticks in real time instead
       // of jumping in 5-second steps. Reads the closed-at timestamp back
@@ -435,29 +453,27 @@
         walkinRanks = buildWalkinRanks(allQueues);
         // A doctor who's closed their day keeps showing (with the "Day
         // closed" pill and a live countdown) for a 3-minute grace window,
-        // then drops off the board entirely — checked here on every
-        // refresh rather than a server job, since this loop already runs
-        // every REFRESH_MS.
-        //
-        // day_closed_at left over from a PRIOR day (they haven't tapped
-        // "I'm back" yet since logging in today) is a different situation
-        // and never fades: reception can already book them for today (see
-        // reception.html's isDoctorClosedToday-gated blocker), so their
-        // queued patients need to stay visible on the board too — renderDoctorStrip
-        // shows them as "not arrived yet" instead of "day closed."
+        // then drops off the board entirely — no patients still waiting
+        // on them, nothing left to say. They stay off the board until the
+        // next 4am checkpoint after they closed (see nextResetAfter
+        // above), at which point renderDoctorStrip brings them back as
+        // "Not arrived yet" — signaling a new day's queue can start once
+        // they log back in, same as before, just no longer keyed off
+        // literal midnight.
         const all = allQueues.filter(({ doctor }) => {
           if (!doctor.dayClosedAt) return true;
-          if (!Qlinic.isDoctorClosedToday(doctor)) return true;
-          return Date.now() - new Date(doctor.dayClosedAt).getTime() < DAY_CLOSED_FADE_MS;
+          if (Date.now() - new Date(doctor.dayClosedAt).getTime() < DAY_CLOSED_FADE_MS) return true;
+          return Date.now() >= nextResetAfter(doctor.dayClosedAt).getTime();
         });
 
-        // Once literally every doctor has closed for the day, the strip and
-        // waiting board would just render empty — indistinguishable from a
-        // frozen or broken screen to anyone glancing at it. Swap to one big
-        // unmistakable message instead. Uses isDoctorClosedToday (date-bound,
-        // not tied to the 3-minute fade above) so this resolves itself the
-        // moment the calendar date rolls over, same as Reception's banner.
-        const allClosedToday = allQueues.length > 0 && allQueues.every(({ doctor }) => Qlinic.isDoctorClosedToday(doctor));
+        // Once every doctor is either closed-and-hidden or simply has no
+        // data, the strip/board would render empty — indistinguishable
+        // from a frozen or broken screen to anyone glancing at it. Swap to
+        // one big unmistakable message instead, reusing the same `all`
+        // filter above rather than a separate calendar check: the message
+        // clears itself the instant even one doctor has something to show
+        // (available, or past their reset showing "Not arrived yet").
+        const allClosedToday = allQueues.length > 0 && all.length === 0;
         document.getElementById('doctorStrip').style.display = allClosedToday ? 'none' : '';
         document.getElementById('boardPanel').style.display = allClosedToday ? 'none' : '';
         document.getElementById('allClosedMessage').style.display = allClosedToday ? 'block' : 'none';
