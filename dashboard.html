@@ -175,8 +175,8 @@
               <div style="display:flex;align-items:center;gap:10px;">
                 <span class="board-doc-dot dot-${accentForDoctor(d.id, doctors)}"></span>
                 <div>
-                  <div class="doc-name">${d.name}</div>
-                  <div class="doc-specialty">${d.specialty} &middot; ${q.waiting.length} waiting ${q.nowServing ? '&middot; now with ' + q.nowServing.name : ''}</div>
+                  <div class="doc-name">${Qlinic.escapeHtml(d.name)}</div>
+                  <div class="doc-specialty">${Qlinic.escapeHtml(d.specialty)} &middot; ${q.waiting.length} waiting ${q.nowServing ? '&middot; now with ' + Qlinic.escapeHtml(q.nowServing.name) : ''}</div>
                 </div>
               </div>
               <div style="text-align:right;">

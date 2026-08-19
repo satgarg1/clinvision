@@ -487,7 +487,7 @@
         });
         const doctorRows = Object.entries(byDoctor)
           .map(([doctorId, s]) => ({
-            name: (doctorById[doctorId] && doctorById[doctorId].name) || 'Unknown',
+            name: Qlinic.escapeHtml((doctorById[doctorId] && doctorById[doctorId].name) || 'Unknown'),
             total: s.total,
             noShows: s.noShows,
             rate: (s.noShows / s.total) * 100,
@@ -569,7 +569,7 @@
           counts[p.doctorId].total++;
         });
         const rows = doctors
-          .map((d) => ({ name: d.name, ...(counts[d.id] || { consultation: 0, emergency: 0, waived: 0, unknown: 0, total: 0 }) }))
+          .map((d) => ({ name: Qlinic.escapeHtml(d.name), ...(counts[d.id] || { consultation: 0, emergency: 0, waived: 0, unknown: 0, total: 0 }) }))
           .sort((a, b) => b.total - a.total);
         const maxCount = Math.max(...rows.map((r) => r.total), 1);
         el.innerHTML = `
@@ -613,7 +613,7 @@
         const rows = doctors
           .map((d) => {
             const s = sums[d.id] || { consultation: 0, emergency: 0 };
-            return { name: d.name, consultation: s.consultation, emergency: s.emergency, total: s.consultation + s.emergency };
+            return { name: Qlinic.escapeHtml(d.name), consultation: s.consultation, emergency: s.emergency, total: s.consultation + s.emergency };
           })
           .sort((a, b) => b.total - a.total);
         const maxVal = Math.max(...rows.map((r) => r.total), 1);

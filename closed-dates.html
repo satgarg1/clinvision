@@ -125,7 +125,7 @@
               ${closures.map((c) => `
                 <tr>
                   <td>${fmtDate(c.date)}</td>
-                  <td>${c.note ? c.note : '<span class="sub-line">No note</span>'}</td>
+                  <td>${c.note ? Qlinic.escapeHtml(c.note) : '<span class="sub-line">No note</span>'}</td>
                   <td style="text-align:right;"><button type="button" class="btn-sm danger" data-id="${c.id}">Delete</button></td>
                 </tr>
               `).join('')}

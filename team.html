@@ -146,8 +146,8 @@
                 const isSelf = p.id === myProfileId;
                 return `
                 <tr style="${p.isActive ? '' : 'opacity:0.5;'}">
-                  <td>${p.fullName || '·'}${isSelf ? ' <span class="sub-line">(you)</span>' : ''}</td>
-                  <td>${p.email}</td>
+                  <td>${p.fullName ? Qlinic.escapeHtml(p.fullName) : '·'}${isSelf ? ' <span class="sub-line">(you)</span>' : ''}</td>
+                  <td>${Qlinic.escapeHtml(p.email)}</td>
                   <td>
                     <select class="staff-role" data-id="${p.id}" ${isSelf ? 'disabled' : ''} style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);">${roleOptionsHtml(p.role)}</select>
                   </td>

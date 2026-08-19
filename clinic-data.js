@@ -18,6 +18,30 @@
   let currentClinicId = null;
   let currentClinic = null;
 
+  // Patient/doctor names, addresses, and other free text are typed by
+  // clinic staff (or, for a booking's own reason field, indirectly by
+  // whoever asked them to write it down) and then get interpolated into
+  // innerHTML template strings all over the app to build tables, cards,
+  // and the public display/queue screens. None of that text was ever
+  // escaped, so a name containing HTML would be parsed as markup on
+  // every page that shows it — including queue.html and display.html,
+  // which have no login at all. Shared here so every page uses the same
+  // one function rather than each re-implementing it slightly differently.
+  //
+  // Escapes quotes too, not just &/</>: several call sites use this
+  // inside value="${...}" (editable table rows), where a raw " would
+  // close the attribute early and let anything after it — including a
+  // new onXXX="..." attribute — get parsed as a live event handler.
+  // textContent-via-a-detached-div only escapes &/</> (correct for a
+  // text node, not for an attribute value), so quotes are handled
+  // manually on top of that.
+  function escapeHtml(text) {
+    if (text == null) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   // ---------------- time-of-day helpers (unchanged from the old data.js:
   // these operate on "HH:MM" strings like <input type="time"> values, not
   // on real timestamps, so they don't need to change just because the
@@ -1379,6 +1403,7 @@
     reopenDoctorDay,
     isDoctorClosedToday,
     isRealStatusReason,
+    escapeHtml,
     isLikelyNoShow,
     getQueueStatus,
 

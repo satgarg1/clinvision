@@ -237,7 +237,7 @@
       }
 
       function fillDoctorSelects() {
-        const opts = doctorsCache.map((d) => `<option value="${d.id}">${d.name}, ${d.specialty}</option>`).join('');
+        const opts = doctorsCache.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)}</option>`).join('');
         document.getElementById('pDoctor').innerHTML = opts;
       }
 
@@ -310,9 +310,9 @@
         if (total >= 3 && closed.length === total) {
           msg = `<strong>All doctors</strong> have closed for the day — don't book any more appointments today.`;
         } else if (closed.length === 1) {
-          msg = `<strong>${closed[0].name}</strong> has closed for the day — don't book any more appointments for them today.`;
+          msg = `<strong>${Qlinic.escapeHtml(closed[0].name)}</strong> has closed for the day — don't book any more appointments for them today.`;
         } else if (closed.length === 2) {
-          msg = `<strong>${closed[0].name}</strong> and <strong>${closed[1].name}</strong> have closed for the day — don't book any more appointments for them today.`;
+          msg = `<strong>${Qlinic.escapeHtml(closed[0].name)}</strong> and <strong>${Qlinic.escapeHtml(closed[1].name)}</strong> have closed for the day — don't book any more appointments for them today.`;
         } else {
           msg = `<strong>${closed.length} doctors</strong> have closed for the day — check <strong>Dashboard</strong> to see who's still available before booking.`;
         }
@@ -332,7 +332,7 @@
         const date = document.getElementById('pDate').value;
         const bookingForToday = patientMode === 'walkin' || date === Qlinic.getTodayDate();
         if (!bookingForToday) return null;
-        return `${doctor.name} has closed for the day and can't take any more patients today. Pick another doctor, or book them for a different date.`;
+        return `${Qlinic.escapeHtml(doctor.name)} has closed for the day and can't take any more patients today. Pick another doctor, or book them for a different date.`;
       }
       function updateDoctorClosedHint() {
         const hint = document.getElementById('doctorClosedHint');
@@ -463,7 +463,7 @@
       // line is what actually tells reception (or the doctor) which one is
       // which.
       function nameCell(p) {
-        return `<div>${p.name}</div><div class="sub-line">${p.address ? p.address : 'No address on file'}</div>`;
+        return `<div>${Qlinic.escapeHtml(p.name)}</div><div class="sub-line">${p.address ? Qlinic.escapeHtml(p.address) : 'No address on file'}</div>`;
       }
 
       // The Waiting list is sorted by scheduled/effective time, not raw
@@ -630,7 +630,7 @@
         // since moved on, otherwise it stomps the newer/cleared state.
         if (document.getElementById('searchBox').value !== q) return;
         if (results.length === 0) {
-          box.innerHTML = '<div class="empty-state">No match for "' + q + '" in today\'s queue. Add them as a walk-in instead.</div>';
+          box.innerHTML = '<div class="empty-state">No match for "' + Qlinic.escapeHtml(q) + '" in today\'s queue. Add them as a walk-in instead.</div>';
           return;
         }
         const doctorById = Object.fromEntries(doctorsCache.map((d) => [d.id, d]));
@@ -642,7 +642,7 @@
                 const doc = doctorById[p.doctorId];
                 const bookedCell = p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '<span class="badge badge-neutral">Walk-in</span>';
                 if (editingSearchPatientId === p.id) {
-                  const doctorOptions = doctorsCache.map((d) => `<option value="${d.id}" ${d.id === p.doctorId ? 'selected' : ''}>${d.name}</option>`).join('');
+                  const doctorOptions = doctorsCache.map((d) => `<option value="${d.id}" ${d.id === p.doctorId ? 'selected' : ''}>${Qlinic.escapeHtml(d.name)}</option>`).join('');
                   const bookedEditCell = p.type === 'appointment'
                     ? `<input type="date" class="search-edit-date" value="${p.bookedDate || ''}" />
                        <div class="time-picker" id="searchEditTimePicker">
@@ -655,8 +655,8 @@
                     : '<span class="badge badge-neutral">Walk-in</span>';
                   return `
                     <tr class="search-edit-row">
-                      <td><input type="text" class="search-edit-name" value="${p.name}" /></td>
-                      <td><input type="text" class="search-edit-phone" value="${p.phone}" /></td>
+                      <td><input type="text" class="search-edit-name" value="${Qlinic.escapeHtml(p.name)}" /></td>
+                      <td><input type="text" class="search-edit-phone" value="${Qlinic.escapeHtml(p.phone)}" /></td>
                       <td><select class="search-edit-doctor">${doctorOptions}</select></td>
                       <td>${bookedEditCell}</td>
                       <td>${searchStatusBadge(p)}</td>
@@ -670,8 +670,8 @@
                 return `
                   <tr>
                     <td>${nameCell(p)}</td>
-                    <td>${p.phone}</td>
-                    <td>${doc ? doc.name : '·'}</td>
+                    <td>${Qlinic.escapeHtml(p.phone)}</td>
+                    <td>${doc ? Qlinic.escapeHtml(doc.name) : '·'}</td>
                     <td>${bookedCell}</td>
                     <td>${searchStatusBadge(p)}</td>
                     <td>
@@ -831,7 +831,7 @@
         sel.innerHTML = doctors.map((d, i) => {
           const q = queues[i];
           const countLabel = isToday ? `${q.waiting.length} waiting` : `${q.booked.length} booked`;
-          return `<option value="${d.id}" ${d.id === queueDoctorId ? 'selected' : ''}>${d.name}, ${d.specialty} (${countLabel})</option>`;
+          return `<option value="${d.id}" ${d.id === queueDoctorId ? 'selected' : ''}>${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)} (${countLabel})</option>`;
         }).join('');
       }
 
@@ -910,9 +910,9 @@
 
         panelEl.innerHTML = `
           <div class="panel accent-${accentForDoctor(queueDoctorId)}">
-            <div class="panel-header"><span class="board-doc-dot dot-${accentForDoctor(queueDoctorId)}"></span><h2>${doctor.name}, ${doctor.specialty}</h2><span class="date-pill">${dateLabel}</span><button type="button" class="btn-sm primary" id="exportCsvBtn">Export CSV</button></div>
+            <div class="panel-header"><span class="board-doc-dot dot-${accentForDoctor(queueDoctorId)}"></span><h2>${Qlinic.escapeHtml(doctor.name)}, ${Qlinic.escapeHtml(doctor.specialty)}</h2><span class="date-pill">${dateLabel}</span><button type="button" class="btn-sm primary" id="exportCsvBtn">Export CSV</button></div>
             ${isTodayView ? `
-              ${queue.nowServing ? `<p style="font-size:14px;margin:0 0 14px;"><strong>Now with:</strong> ${queue.nowServing.name}</p>` : '<p style="font-size:14px;color:var(--grey-500);margin:0 0 14px;">No one in consultation right now.</p>'}
+              ${queue.nowServing ? `<p style="font-size:14px;margin:0 0 14px;"><strong>Now with:</strong> ${Qlinic.escapeHtml(queue.nowServing.name)}</p>` : '<p style="font-size:14px;color:var(--grey-500);margin:0 0 14px;">No one in consultation right now.</p>'}
 
               <h3 style="font-size:14px;margin:0 0 8px;color:var(--grey-700);">Waiting (${queue.waiting.length}) <span class="order-note">· ordered by scheduled time, not arrival order</span></h3>
               ${queue.waiting.length === 0 ? '<div class="empty-state">No one waiting.</div>' : `
@@ -1147,7 +1147,7 @@
         if (!match) { clearPatientLookupHint(); return; }
         const visitWord = match.visitsChecked === 1 ? 'visit' : 'visits';
         let html = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <span style="color:var(--accent);font-weight:600;">Found: ${match.name}, ${match.address || 'no address on file'} &middot; ${match.visitsChecked} ${visitWord} on file</span>
+          <span style="color:var(--accent);font-weight:600;">Found: ${Qlinic.escapeHtml(match.name)}, ${match.address ? Qlinic.escapeHtml(match.address) : 'no address on file'} &middot; ${match.visitsChecked} ${visitWord} on file</span>
           <button type="button" class="btn-sm" id="useLookupBtn">Use these details</button>
         </div>`;
         if (match.noShowCount >= 2) {
@@ -1186,7 +1186,7 @@
         if (myToken !== followUpHintToken) return;
         if (!result) { clearFollowUpHint(); return; }
         const doctor = doctorsCache.find((d) => d.id === doctorId);
-        const doctorName = doctor ? doctor.name : 'this doctor';
+        const doctorName = doctor ? Qlinic.escapeHtml(doctor.name) : 'this doctor';
         const lastVisitLabel = Qlinic.formatDateLabel(result.lastVisitDate);
         if (result.eligible) {
           hint.className = 'slot-hint ok';

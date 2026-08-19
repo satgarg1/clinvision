@@ -327,7 +327,7 @@
         const select = document.getElementById('doctorFilter');
         const current = select.value;
         select.innerHTML = '<option value="">All doctors</option>' +
-          doctors.map((d) => `<option value="${d.id}">${d.name}</option>`).join('');
+          doctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}</option>`).join('');
         select.value = current;
       }
 
@@ -427,15 +427,15 @@
               ${pageItems.map((inv) => {
                 const balance = inv.amount - inv.amountReceived;
                 const doctor = doctorById[inv.doctorId];
-                const subInfo = [inv.patientAge ? `${inv.patientAge} yrs` : '', inv.patientAddress || ''].filter(Boolean).join(' · ');
+                const subInfo = [inv.patientAge ? `${inv.patientAge} yrs` : '', inv.patientAddress ? Qlinic.escapeHtml(inv.patientAddress) : ''].filter(Boolean).join(' · ');
                 return `
                 <tr>
                   <td>
-                    <div>${inv.patientName}</div>
+                    <div>${Qlinic.escapeHtml(inv.patientName)}</div>
                     ${subInfo ? `<div class="sub-line">${subInfo}</div>` : ''}
                   </td>
                   <td>${Qlinic.formatDateLabel(inv.invoiceDate)}</td>
-                  <td>${doctor ? doctor.name : '—'}</td>
+                  <td>${doctor ? Qlinic.escapeHtml(doctor.name) : '—'}</td>
                   <td>${FEE_TYPE_LABELS[inv.feeType] || inv.feeType}</td>
                   <td>${PAYMENT_MODE_LABELS[inv.paymentMode] || inv.paymentMode}</td>
                   <td>${billingCell(inv, doctor)}</td>

@@ -270,7 +270,7 @@
       async function loadDoctors() {
         allDoctors = await Qlinic.getDoctors();
         document.getElementById('bDoctor').innerHTML = '<option value="">Select doctor</option>' +
-          allDoctors.map((d) => `<option value="${d.id}">${d.name}, ${d.specialty}</option>`).join('');
+          allDoctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)}</option>`).join('');
       }
 
       // Strips anything non-numeric as they type, matching reception's

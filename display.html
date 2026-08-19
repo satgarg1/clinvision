@@ -46,6 +46,12 @@
     (async function () {
       await Qlinic.requireLogin('login.html');
 
+      // Every name/address/reason rendered on this board is free text
+      // typed by staff (or a patient's own booking reason) — this screen
+      // is meant to run unattended on a waiting-room TV, so it's escaped
+      // before going into innerHTML anywhere it appears.
+      const escapeHtml = Qlinic.escapeHtml;
+
       // Whatever app page sent someone here (Reception, Doctor View,
       // Dashboard, ...) is where "back" should return them to — a fixed
       // dashboard.html link ignored where they actually came from. Only
@@ -257,12 +263,15 @@
         'Physiotherapist': 'फिजियोथेरेपिस्ट',
       };
 
+      // Escaped first, then transliterated — toDevanagari only rewrites
+      // Latin letters, so any HTML-special characters in the original
+      // text pass through it unchanged and reach escapeHtml either way.
       function localizeName(text) {
-        return T === STRINGS.hi ? toDevanagari(text) : text;
+        return escapeHtml(T === STRINGS.hi ? toDevanagari(text) : text);
       }
       function localizeSpecialty(text) {
-        if (T !== STRINGS.hi) return text;
-        return SPECIALTY_HI[text] || toDevanagari(text);
+        if (T !== STRINGS.hi) return escapeHtml(text);
+        return escapeHtml(SPECIALTY_HI[text] || toDevanagari(text));
       }
 
       function statusLabel(status) {
@@ -278,16 +287,6 @@
       // burying "+20m" inside the pill: patients should be able to read
       // it at a glance from across the waiting room, not squint at an
       // abbreviation.
-      // statusNote is free text a doctor types themselves (unlike every
-      // other piece of this line, which is a fixed label or a number) —
-      // this is a public, unauthenticated screen, so it's escaped before
-      // going into innerHTML rather than trusted as-is.
-      function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-      }
-
       function statusDetailLine(doctor) {
         const since = Qlinic.formatTimestamp(doctor.statusUpdatedAt);
         const note = Qlinic.isRealStatusReason(doctor.statusNote) ? ` — ${escapeHtml(doctor.statusNote)}` : '';

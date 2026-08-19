@@ -211,7 +211,7 @@
       }
 
       function doctorNames(doctorIds) {
-        return doctorIds.map((id) => (doctorById[id] ? doctorById[id].name : null)).filter(Boolean).join(', ') || '—';
+        return doctorIds.map((id) => (doctorById[id] ? Qlinic.escapeHtml(doctorById[id].name) : null)).filter(Boolean).join(', ') || '—';
       }
 
       function searchTerm() {
@@ -283,11 +283,11 @@
             <tbody>
               ${pageItems.map((e) => `
                 <tr>
-                  <td>${e.name}</td>
-                  <td>${e.phone}</td>
+                  <td>${Qlinic.escapeHtml(e.name)}</td>
+                  <td>${Qlinic.escapeHtml(e.phone)}</td>
                   <td>${e.age || '—'}</td>
                   <td>${e.gender || '—'}</td>
-                  <td>${e.address || '—'}</td>
+                  <td>${e.address ? Qlinic.escapeHtml(e.address) : '—'}</td>
                   <td>${e.totalVisits}</td>
                   <td>${Qlinic.formatDateLabel(e.firstVisitDate)}</td>
                   <td>${Qlinic.formatDateLabel(e.lastVisitDate)}</td>
@@ -360,7 +360,7 @@
       const doctors = await Qlinic.getDoctors({ includeInactive: true });
       doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
       document.getElementById('directoryDoctorFilter').innerHTML = '<option value="">All doctors</option>' +
-        doctors.map((d) => `<option value="${d.id}">${d.name}</option>`).join('');
+        doctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}</option>`).join('');
       allEntries = await Qlinic.getPatientDirectory();
       // Most recently active patients first — the ones most likely to be
       // relevant to whatever admin is looking this page up for.

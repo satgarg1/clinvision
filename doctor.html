@@ -236,7 +236,7 @@
         doctors = await Qlinic.getDoctors();
         const sel = document.getElementById('doctorSelect');
         const prevSelected = sel.value;
-        sel.innerHTML = doctors.map((d) => `<option value="${d.id}">${d.name}, ${d.specialty}</option>`).join('');
+        sel.innerHTML = doctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)}</option>`).join('');
 
         if (doctors.length === 0) {
           document.getElementById('doctorPanels').style.display = 'none';
@@ -255,9 +255,10 @@
         const walkinRanks = buildWalkinRanks(q);
         applyDoctorAccent(doctorId);
 
+        const statusNoteHtml = Qlinic.isRealStatusReason(doc.statusNote) ? ' · "' + Qlinic.escapeHtml(doc.statusNote) + '"' : '';
         document.getElementById('currentStatusLine').innerHTML =
           `Currently: <span class="status-pill status-${doc.status}">${statusLabel(doc.status)}${doc.delayMins ? ' · ' + doc.delayMins + ' min' : ''}</span>
-           <span style="color:var(--grey-500);"> · updated ${Qlinic.formatTimestamp(doc.statusUpdatedAt)}${doc.statusNote ? ' · "' + doc.statusNote + '"' : ''}</span>`;
+           <span style="color:var(--grey-500);"> · updated ${Qlinic.formatTimestamp(doc.statusUpdatedAt)}${statusNoteHtml}</span>`;
 
         // Once the day is closed, status buttons (Clear status/Running
         // late/On a break/Emergency) and "Call next patient" are locked —
@@ -303,7 +304,7 @@
         // confirm below), the generic "Tap Call next patient" message
         // would be actively wrong — that button is disabled right now.
         document.getElementById('nowServingBox').innerHTML = q.nowServing
-          ? `<div style="font-size:20px;font-weight:700;">${q.nowServing.name}</div><div style="font-size:13px;color:var(--grey-500);">${q.nowServing.address ? q.nowServing.address + ' · ' : ''}${q.nowServing.type === 'appointment' ? 'Appointment' : 'Walk-in'}${q.nowServing.calledAt ? ' · called in at ' + Qlinic.formatTimestamp(q.nowServing.calledAt) : ''}</div>`
+          ? `<div style="font-size:20px;font-weight:700;">${Qlinic.escapeHtml(q.nowServing.name)}</div><div style="font-size:13px;color:var(--grey-500);">${q.nowServing.address ? Qlinic.escapeHtml(q.nowServing.address) + ' · ' : ''}${q.nowServing.type === 'appointment' ? 'Appointment' : 'Walk-in'}${q.nowServing.calledAt ? ' · called in at ' + Qlinic.formatTimestamp(q.nowServing.calledAt) : ''}</div>`
           : isAway
             ? `<div class="empty-state">No one in consultation — ${awayPhrase}.</div>`
             : `<div class="empty-state">No one in consultation. Tap "Call next patient" to begin.</div>`;
@@ -319,7 +320,7 @@
               ${q.waiting.map((p) => `
                 <tr>
                   <td>${formatToken(p, walkinRanks) ? '#' + formatToken(p, walkinRanks) : '·'}</td>
-                  <td><div>${p.name}</div><div class="sub-line">${p.address || 'No address on file'}</div></td>
+                  <td><div>${Qlinic.escapeHtml(p.name)}</div><div class="sub-line">${p.address ? Qlinic.escapeHtml(p.address) : 'No address on file'}</div></td>
                   <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
                   <td>${queueTimeCell(p)}</td>
                 </tr>
