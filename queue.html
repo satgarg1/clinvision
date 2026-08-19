@@ -158,7 +158,7 @@
         // typed text landing on a public, unauthenticated page, so it
         // must never be interpreted as markup.
         const noteEl = document.getElementById('statusNoteText');
-        if (data.doctorStatus && data.doctorStatus !== 'on_time' && data.doctorStatusNote) {
+        if (data.doctorStatus && data.doctorStatus !== 'on_time' && Qlinic.isRealStatusReason(data.doctorStatusNote)) {
           noteEl.textContent = data.doctorStatusNote;
           noteEl.style.display = 'block';
         } else {

@@ -344,7 +344,7 @@
           if (doctorId && inv.doctorId !== doctorId) return false;
           if (search && !inv.patientName.toLowerCase().includes(search)) return false;
           return true;
-        });
+        }).sort((a, b) => (a.invoiceDate || '').localeCompare(b.invoiceDate || '') || new Date(a.createdAt) - new Date(b.createdAt));
       }
 
       // Total revenue/Outstanding track both active filters exactly, so a

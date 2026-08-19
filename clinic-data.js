@@ -1123,6 +1123,20 @@
     if (error) throw error;
   }
 
+  // Status broadcasts made before the "Reason (optional)" field existed
+  // stored an auto-generated line like "On a break for about 1 hr." in
+  // this exact same status_note column (it just wasn't shown anywhere
+  // yet). Those old values are still sitting on doctors who haven't
+  // re-broadcast since — displaying them now as if they were a
+  // genuinely-typed reason produces a redundant, garbled-looking line
+  // ("On a break for 60 minutes · since 7:13 pm — On a break for about 1
+  // hr."). A real typed reason essentially never matches this exact
+  // machine-generated phrasing, so it's filtered out rather than shown.
+  const STALE_AUTO_NOTE_RE = /^(on a break for about .+\.|running about .+ behind\.)$/i;
+  function isRealStatusReason(note) {
+    return !!note && !STALE_AUTO_NOTE_RE.test(note.trim());
+  }
+
   // "Closed today" on purpose, not just "closed" — compares the LOCAL
   // calendar date of day_closed_at against today's, so a doctor who closed
   // yesterday and forgot to tap "I'm back" doesn't keep blocking bookings
@@ -1364,6 +1378,7 @@
     closeDoctorDay,
     reopenDoctorDay,
     isDoctorClosedToday,
+    isRealStatusReason,
     isLikelyNoShow,
     getQueueStatus,
 

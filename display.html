@@ -290,7 +290,7 @@
 
       function statusDetailLine(doctor) {
         const since = Qlinic.formatTimestamp(doctor.statusUpdatedAt);
-        const note = doctor.statusNote ? ` — ${escapeHtml(doctor.statusNote)}` : '';
+        const note = Qlinic.isRealStatusReason(doctor.statusNote) ? ` — ${escapeHtml(doctor.statusNote)}` : '';
         if (doctor.status === 'running_late') return T.runningLateDetail(doctor.delayMins || 0, since) + note;
         if (doctor.status === 'on_break') return T.onBreakDetail(doctor.delayMins || 0, since) + note;
         if (doctor.status === 'emergency') return T.emergencyDetail;
