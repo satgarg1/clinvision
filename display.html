@@ -97,8 +97,8 @@
           emergency: 'Emergency',
           dayClosed: 'Day closed',
           fadingLabel: 'Fading from screen in',
-          runningLateDetail: (m, since) => `Running late by ${m} minutes · since ${since}`,
-          onBreakDetail: (m, since) => `On a break for ${m} minutes · since ${since}`,
+          runningLateDetail: (m, since) => `Running late by ${m} minutes since ${since}`,
+          onBreakDetail: (m, since) => `On a break for ${m} minutes since ${since}`,
           emergencyDetail: 'Attending an emergency, please bear with us',
           appointment: 'Appointment',
           walkin: 'Walk-in',
@@ -124,8 +124,8 @@
           emergency: 'आपातकाल',
           dayClosed: 'दिन समाप्त',
           fadingLabel: 'स्क्रीन से हटने में',
-          runningLateDetail: (m, since) => `${m} मिनट देरी से · ${since} से`,
-          onBreakDetail: (m, since) => `${m} मिनट के लिए ब्रेक पर · ${since} से`,
+          runningLateDetail: (m, since) => `${m} मिनट देरी से ${since} से`,
+          onBreakDetail: (m, since) => `${m} मिनट के लिए ब्रेक पर ${since} से`,
           emergencyDetail: 'आपातकाल में व्यस्त, कृपया प्रतीक्षा करें',
           appointment: 'अपॉइंटमेंट',
           walkin: 'वॉक-इन',
@@ -289,7 +289,11 @@
       // abbreviation.
       function statusDetailLine(doctor) {
         const since = Qlinic.formatTimestamp(doctor.statusUpdatedAt);
-        const note = Qlinic.isRealStatusReason(doctor.statusNote) ? ` — ${escapeHtml(doctor.statusNote)}` : '';
+        // The reason goes on its own line, not tacked onto the end of the
+        // duration/time sentence with a dash — that read as one long
+        // run-on line that wrapped wherever it happened to run out of
+        // room, instead of breaking in a sensible place.
+        const note = Qlinic.isRealStatusReason(doctor.statusNote) ? `<br>${escapeHtml(doctor.statusNote)}` : '';
         if (doctor.status === 'running_late') return T.runningLateDetail(doctor.delayMins || 0, since) + note;
         if (doctor.status === 'on_break') return T.onBreakDetail(doctor.delayMins || 0, since) + note;
         if (doctor.status === 'emergency') return T.emergencyDetail;
