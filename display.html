@@ -345,7 +345,6 @@
               <div style="flex:1;min-width:0;">
                 <div class="strip-doc">${localizeName(doctor.name)}</div>
                 <div class="strip-spec">${localizeSpecialty(doctor.specialty)}</div>
-                ${detail ? `<div class="strip-status-detail">${detail}</div>` : ''}
               </div>
               <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;">
                 ${closedToday
@@ -362,6 +361,7 @@
                     : ''}
               </div>
             </div>
+            ${detail ? `<div class="strip-status-detail">${detail}</div>` : ''}
             <div class="strip-serving">
               <span class="tiny-label">${T.nowServing}</span>
               <span class="strip-serving-name">${queue.nowServing ? (formatToken(queue.nowServing) ? '#' + formatToken(queue.nowServing) + ' ' : '') + localizeName(queue.nowServing.name) : '·'}</span>
