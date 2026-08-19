@@ -1095,6 +1095,16 @@ table.qtable tr:last-child td { border-bottom: none; }
   font-size: 14px;
   white-space: nowrap;
 }
+/* The optional Reason field sits below that same row and isn't inside
+   .inline-form (it needs its own full-width line, not squeezed into the
+   row alongside the picker/buttons), so it falls outside every existing
+   sizing rule and would default to the bare .field input tier (12px 16px
+   / 15px) — visibly bigger than its neighbors above. Matched to the same
+   10px 12px / 14px as the rest of this panel instead. */
+#delayInputWrap input[type="text"] {
+  padding: 10px 12px;
+  font-size: 14px;
+}
 
 /* Native select arrows render tiny and inconsistent across browsers; swap
    in a matching custom chevron so they don't look like unstyled form
@@ -1271,8 +1281,12 @@ table.qtable tr:last-child td { border-bottom: none; }
    above time) and a full-size picker there would make that one cell much
    taller than its single-line neighbors. vertical-align: top keeps every
    cell starting from the same line instead of centering around whichever
-   cell happens to be tallest. */
-#searchResults .qtable td { vertical-align: top; }
+   cell happens to be tallest. Scoped to the edit row specifically
+   (.search-edit-row) — the normal read-only row has no stacked cell, so
+   it keeps the base .qtable td middle-alignment; forcing top there made
+   Phone/Doctor/Booked sit flush at the top instead of centered next to
+   Name's two-line name+address block. */
+#searchResults .qtable tr.search-edit-row td { vertical-align: top; }
 #searchResults .search-edit-name,
 #searchResults .search-edit-phone,
 #searchResults .search-edit-doctor,
@@ -1629,6 +1643,7 @@ button.trend-bar-link:hover { background: var(--grey-100); }
 .strip-serving { margin-top: 16px; padding-top: 14px; border-top: 1px solid #3a3a3c; }
 .strip-serving .tiny-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--grey-500); margin-bottom: 4px; }
 .strip-serving-name { font-size: 20px; font-weight: 700; }
+.strip-serving-called { font-size: 12px; color: var(--grey-500); margin-top: 2px; }
 
 /* Airport-departures-style rotating board */
 .board {
@@ -1819,8 +1834,8 @@ button.trend-bar-link:hover { background: var(--grey-100); }
   border-color: var(--grey-300);
 }
 
-.btn:hover, .btn-sm:hover { transform: translateY(-1px) scale(1.04); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
-.btn:active, .btn-sm:active { transform: translateY(0) scale(0.98); box-shadow: none; }
+.btn:hover, .btn-sm:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
+.btn:active, .btn-sm:active { transform: translateY(0); box-shadow: none; }
 
 table.qtable tbody tr { transition: background 0.12s ease; }
 table.qtable tbody tr:hover { background: var(--grey-100); }

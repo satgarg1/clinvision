@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=110" />
+<link rel="stylesheet" href="styles.css?v=111" />
 </head>
 <body>
   <div class="app-shell">
@@ -422,7 +422,7 @@
 
         wrap.innerHTML = `
           <table class="qtable">
-            <thead><tr><th>Patient</th><th>Doctor</th><th>Type</th><th>Payment mode</th><th>Payment collected</th></tr></thead>
+            <thead><tr><th>Patient</th><th>Visit date</th><th>Doctor</th><th>Type</th><th>Payment mode</th><th>Payment collected</th></tr></thead>
             <tbody>
               ${pageItems.map((inv) => {
                 const balance = inv.amount - inv.amountReceived;
@@ -434,6 +434,7 @@
                     <div>${inv.patientName}</div>
                     ${subInfo ? `<div class="sub-line">${subInfo}</div>` : ''}
                   </td>
+                  <td>${Qlinic.formatDateLabel(inv.invoiceDate)}</td>
                   <td>${doctor ? doctor.name : '—'}</td>
                   <td>${FEE_TYPE_LABELS[inv.feeType] || inv.feeType}</td>
                   <td>${PAYMENT_MODE_LABELS[inv.paymentMode] || inv.paymentMode}</td>

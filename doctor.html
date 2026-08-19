@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=110" />
+<link rel="stylesheet" href="styles.css?v=111" />
 </head>
 <body>
   <div class="app-shell">
@@ -91,6 +91,10 @@
                   <button type="button" class="btn-sm accent-outline" id="cancelDelayBtn">Cancel</button>
                 </div>
               </div>
+            </div>
+            <div class="field" style="max-width:340px;margin-top:10px;">
+              <label>Reason (optional)</label>
+              <input type="text" id="delayReasonInput" placeholder="e.g., in a meeting, at lunch" maxlength="60" />
             </div>
             <div id="delayHistoryNote" class="field-hint" style="display:none;"></div>
           </div>
@@ -299,7 +303,7 @@
         // confirm below), the generic "Tap Call next patient" message
         // would be actively wrong — that button is disabled right now.
         document.getElementById('nowServingBox').innerHTML = q.nowServing
-          ? `<div style="font-size:20px;font-weight:700;">${q.nowServing.name}</div><div style="font-size:13px;color:var(--grey-500);">${q.nowServing.address ? q.nowServing.address + ' · ' : ''}${q.nowServing.type === 'appointment' ? 'Appointment' : 'Walk-in'}</div>`
+          ? `<div style="font-size:20px;font-weight:700;">${q.nowServing.name}</div><div style="font-size:13px;color:var(--grey-500);">${q.nowServing.address ? q.nowServing.address + ' · ' : ''}${q.nowServing.type === 'appointment' ? 'Appointment' : 'Walk-in'}${q.nowServing.calledAt ? ' · called in at ' + Qlinic.formatTimestamp(q.nowServing.calledAt) : ''}</div>`
           : isAway
             ? `<div class="empty-state">No one in consultation — ${awayPhrase}.</div>`
             : `<div class="empty-state">No one in consultation. Tap "Call next patient" to begin.</div>`;
@@ -358,11 +362,11 @@
       // broadcasting: the doctor picks how it'll show up, then confirms.
       const DURATION_CONFIG = {
         running_late: {
-          label: 'How many minutes behind?', button: 'Broadcast delay', note: (l) => `Running about ${l} behind.`,
+          label: 'How many minutes behind?', button: 'Broadcast delay',
           historyNote: (l, time, elapsedMin) => `You said ${l} behind at ${time} (${elapsedMin} min ago) — pick again if that's no longer right.`,
         },
         on_break: {
-          label: 'How long is your break?', button: 'Broadcast break', note: (l) => `On a break for about ${l}.`,
+          label: 'How long is your break?', button: 'Broadcast break',
           historyNote: (l, time, elapsedMin) => `You selected a ${l} break at ${time} (${elapsedMin} min ago) — pick again if you need more time.`,
         },
       };
@@ -458,6 +462,7 @@
             // extend. Switching to a genuinely different status starts
             // fresh with no history note.
             const historyNote = document.getElementById('delayHistoryNote');
+            const reasonInput = document.getElementById('delayReasonInput');
             if (currentDoctor && currentDoctor.status === status && currentDoctor.delayMins) {
               const match = DURATION_OPTIONS.find((o) => o.value === currentDoctor.delayMins);
               const durationLabel = match ? match.label : `${currentDoctor.delayMins} min`;
@@ -466,9 +471,15 @@
               const elapsedMin = Math.max(0, Math.round((Date.now() - setAt.getTime()) / 60000));
               historyNote.textContent = config.historyNote(durationLabel, Qlinic.formatTimestamp(setAt), elapsedMin);
               historyNote.style.display = 'block';
+              // Extending an already-active break/delay keeps whatever
+              // reason was already broadcast, since it's very likely
+              // still the same one — the doctor can still edit or clear
+              // it before re-broadcasting.
+              reasonInput.value = currentDoctor.statusNote || '';
             } else {
               selectDelay(30, '30 min');
               historyNote.style.display = 'none';
+              reasonInput.value = '';
             }
 
             document.getElementById('delayInputWrap').style.display = 'block';
@@ -505,10 +516,9 @@
 
       document.getElementById('confirmDelayBtn').addEventListener('click', async () => {
         const mins = document.getElementById('delayMinsInput').value;
-        const label = document.getElementById('delayTriggerText').textContent;
-        const config = DURATION_CONFIG[pendingStatus];
+        const reason = document.getElementById('delayReasonInput').value.trim();
         try {
-          await Qlinic.setDoctorStatus(currentDoctorId(), pendingStatus, mins, config.note(label));
+          await Qlinic.setDoctorStatus(currentDoctorId(), pendingStatus, mins, reason);
           document.getElementById('delayInputWrap').style.display = 'none';
           render();
           showToast(pendingStatus === 'on_break' ? 'Break broadcast to all waiting patients' : 'Delay broadcast to all waiting patients');

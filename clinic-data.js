@@ -110,6 +110,20 @@
     return scheduled;
   }
 
+  // Multiple patients can land on the exact same scheduled/effective
+  // moment — e.g. two appointments booked into the same slot bucket, or
+  // two walk-ins that arrived in the same second. Array.sort is stable,
+  // so a tie between them falls back to whatever order the rows happened
+  // to come back from the server in, which Postgres doesn't guarantee
+  // without an explicit ORDER BY — so the visible row order could
+  // silently swap between refreshes even though nothing about the
+  // patients themselves changed. token_number is a stable, already-unique
+  // tiebreaker (assigned once at booking, never reused), so ties always
+  // resolve the same way regardless of fetch order.
+  function byMomentThenToken(momentA, momentB, a, b) {
+    return (momentA - momentB) || ((a.tokenNumber || 0) - (b.tokenNumber || 0));
+  }
+
   function isLikelyNoShow(patient, doctor, graceWindowMins) {
     if (patient.status !== 'booked' || !belongsToDate(patient, todayDateStr())) return false;
     const scheduled = scheduledMoment(patient, doctor);
@@ -154,6 +168,7 @@
       bookedTime: row.booked_time ? row.booked_time.slice(0, 5) : null,
       status: row.status,
       arrivedAt: row.arrived_at,
+      calledAt: row.called_at,
       reason: row.reason,
       tokenNumber: row.token_number,
       tokenDate: row.token_date,
@@ -422,12 +437,12 @@
 
     const waiting = mine
       .filter((p) => p.status === 'waiting')
-      .sort((a, b) => effectiveMoment(a, doctor) - effectiveMoment(b, doctor))
+      .sort((a, b) => byMomentThenToken(effectiveMoment(a, doctor), effectiveMoment(b, doctor), a, b))
       .map((p, idx) => Object.assign({}, p, { position: idx + 1, effectiveTime: effectiveMoment(p, doctor) }));
 
     const booked = mine
       .filter((p) => p.status === 'booked')
-      .sort((a, b) => scheduledMoment(a, doctor) - scheduledMoment(b, doctor))
+      .sort((a, b) => byMomentThenToken(scheduledMoment(a, doctor), scheduledMoment(b, doctor), a, b))
       .map((p) => Object.assign({}, p, {
         likelyNoShow: isLikelyNoShow(p, doctor, clinic.grace_window_mins),
         effectiveTime: scheduledMoment(p, doctor),
@@ -929,9 +944,9 @@
     if (current) {
       await sb.from('patients').update({ status: 'done' }).eq('id', current.id);
     }
-    const waiting = mine.filter((p) => p.status === 'waiting').sort((a, b) => effectiveMoment(a, doctor) - effectiveMoment(b, doctor));
+    const waiting = mine.filter((p) => p.status === 'waiting').sort((a, b) => byMomentThenToken(effectiveMoment(a, doctor), effectiveMoment(b, doctor), a, b));
     if (waiting.length > 0) {
-      await sb.from('patients').update({ status: 'in_consult' }).eq('id', waiting[0].id);
+      await sb.from('patients').update({ status: 'in_consult', called_at: new Date().toISOString() }).eq('id', waiting[0].id);
     }
   }
 

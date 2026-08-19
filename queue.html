@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=110" />
+<link rel="stylesheet" href="styles.css?v=111" />
 </head>
 <body>
   <div class="login-wrap">
@@ -43,7 +43,8 @@
           <div style="font-size:56px;font-weight:700;line-height:1.15;" id="tokenNumber">·</div>
         </div>
 
-        <div id="statusBadgeRow" style="text-align:center;margin-bottom:18px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;"></div>
+        <div id="statusBadgeRow" style="text-align:center;margin-bottom:6px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;"></div>
+        <p class="panel-note" id="statusNoteText" style="display:none;text-align:center;margin-bottom:18px;"></p>
 
         <div id="positionBlock" style="display:none;text-align:center;margin-bottom:18px;">
           <div style="font-size:16px;font-weight:600;" id="positionText"></div>
@@ -152,6 +153,17 @@
           badgeHtml += `<span class="badge badge-likely">${label}${data.doctorDelayMins ? ' · +' + data.doctorDelayMins + 'm' : ''}${since}</span>`;
         }
         document.getElementById('statusBadgeRow').innerHTML = badgeHtml;
+
+        // Set via textContent, not innerHTML — this is the doctor's own
+        // typed text landing on a public, unauthenticated page, so it
+        // must never be interpreted as markup.
+        const noteEl = document.getElementById('statusNoteText');
+        if (data.doctorStatus && data.doctorStatus !== 'on_time' && data.doctorStatusNote) {
+          noteEl.textContent = data.doctorStatusNote;
+          noteEl.style.display = 'block';
+        } else {
+          noteEl.style.display = 'none';
+        }
 
         const positionBlock = document.getElementById('positionBlock');
         if (data.status === 'waiting' && data.position) {

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=110" />
+<link rel="stylesheet" href="styles.css?v=111" />
 </head>
 <body class="display-body">
 
@@ -36,7 +36,7 @@
   </div>
 
   <div style="position:fixed;bottom:16px;left:60px;right:60px;text-align:center;">
-    <a href="dashboard.html" style="color:var(--grey-500);font-size:13px;text-decoration:none;">&larr; Back to app (this screen is meant to run on a TV/monitor in the waiting room)</a>
+    <a href="dashboard.html" id="backToAppLink" style="color:var(--grey-500);font-size:13px;text-decoration:none;">&larr; Back to app (this screen is meant to run on a TV/monitor in the waiting room)</a>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -45,6 +45,19 @@
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
+
+      // Whatever app page sent someone here (Reception, Doctor View,
+      // Dashboard, ...) is where "back" should return them to — a fixed
+      // dashboard.html link ignored where they actually came from. Only
+      // falls back to the plain href (dashboard) when there's genuinely
+      // no in-app history to go back to, e.g. this tab was opened
+      // directly at display.html.
+      if (window.history.length > 1) {
+        document.getElementById('backToAppLink').addEventListener('click', (e) => {
+          e.preventDefault();
+          window.history.back();
+        });
+      }
 
       const PAGE_SIZE = 8;
       const ROTATE_MS = 6000;
@@ -89,6 +102,7 @@
           allClosedSub: 'All doctors have closed for the day. Please check back tomorrow.',
           notArrived: 'Not arrived yet',
           notArrivedSub: 'Queue will start once they arrive',
+          calledAtLabel: (t) => `called in at ${t}`,
         },
         hi: {
           tagline: 'लाइव कतार',
@@ -115,6 +129,7 @@
           allClosedSub: 'आज सभी डॉक्टर बंद हो चुके हैं। कृपया कल फिर देखें।',
           notArrived: 'अभी नहीं पहुंचे',
           notArrivedSub: 'डॉक्टर के आते ही कतार शुरू होगी',
+          calledAtLabel: (t) => `${t} पर बुलाया गया`,
         },
       };
       let T = STRINGS.en;
@@ -263,10 +278,21 @@
       // burying "+20m" inside the pill: patients should be able to read
       // it at a glance from across the waiting room, not squint at an
       // abbreviation.
+      // statusNote is free text a doctor types themselves (unlike every
+      // other piece of this line, which is a fixed label or a number) —
+      // this is a public, unauthenticated screen, so it's escaped before
+      // going into innerHTML rather than trusted as-is.
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
       function statusDetailLine(doctor) {
         const since = Qlinic.formatTimestamp(doctor.statusUpdatedAt);
-        if (doctor.status === 'running_late') return T.runningLateDetail(doctor.delayMins || 0, since);
-        if (doctor.status === 'on_break') return T.onBreakDetail(doctor.delayMins || 0, since);
+        const note = doctor.statusNote ? ` — ${escapeHtml(doctor.statusNote)}` : '';
+        if (doctor.status === 'running_late') return T.runningLateDetail(doctor.delayMins || 0, since) + note;
+        if (doctor.status === 'on_break') return T.onBreakDetail(doctor.delayMins || 0, since) + note;
         if (doctor.status === 'emergency') return T.emergencyDetail;
         return '';
       }
@@ -313,12 +339,12 @@
           return `
           <div class="strip-card accent-${ACCENT_COLORS[index % ACCENT_COLORS.length]}">
             <div class="strip-top">
-              <div>
+              <div style="flex:1;min-width:0;">
                 <div class="strip-doc">${localizeName(doctor.name)}</div>
                 <div class="strip-spec">${localizeSpecialty(doctor.specialty)}</div>
                 ${detail ? `<div class="strip-status-detail">${detail}</div>` : ''}
               </div>
-              <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;">
                 ${closedToday
                   ? `<span class="strip-pill strip-pill-warn">${T.dayClosed}</span>`
                   : notArrived
@@ -336,6 +362,7 @@
             <div class="strip-serving">
               <span class="tiny-label">${T.nowServing}</span>
               <span class="strip-serving-name">${queue.nowServing ? (formatToken(queue.nowServing) ? '#' + formatToken(queue.nowServing) + ' ' : '') + localizeName(queue.nowServing.name) : '·'}</span>
+              ${queue.nowServing && queue.nowServing.calledAt ? `<div class="strip-serving-called">${T.calledAtLabel(Qlinic.formatTimestamp(queue.nowServing.calledAt))}</div>` : ''}
             </div>
           </div>
         `;
@@ -358,11 +385,16 @@
               doctorAccent,
               position: p.position,
               effectiveTime: p.effectiveTime,
+              tokenNumber: p.tokenNumber,
               tokenDisplay: formatToken(p),
             });
           });
         });
-        rows.sort((a, b) => a.effectiveTime - b.effectiveTime);
+        // See byMomentThenToken in clinic-data.js for why the tiebreak is
+        // needed: multiple patients tied on the exact same effectiveTime
+        // (e.g. two appointments in the same slot bucket) would otherwise
+        // swap places between refreshes purely by chance of fetch order.
+        rows.sort((a, b) => (a.effectiveTime - b.effectiveTime) || ((a.tokenNumber || 0) - (b.tokenNumber || 0)));
         return rows;
       }
 

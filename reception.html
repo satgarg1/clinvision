@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=110" />
+<link rel="stylesheet" href="styles.css?v=111" />
 </head>
 <body>
   <div class="app-shell">
@@ -56,7 +56,10 @@
       </div>
 
       <div class="panel">
-        <div class="panel-header"><h2>Find a Patient</h2></div>
+        <div class="panel-header">
+          <h2>Find a Patient</h2>
+          <button type="button" class="btn-sm" id="clearSearchBtn" style="display:none;margin-left:auto;">Clear</button>
+        </div>
         <div class="field">
           <input type="text" id="searchBox" placeholder="Search by name or phone…" />
         </div>
@@ -79,12 +82,12 @@
               <input type="text" id="pName" required />
             </div>
             <div class="field">
-              <label>Phone</label>
-              <input type="tel" id="pPhone" required />
-            </div>
-            <div class="field">
               <label>Age</label>
               <input type="number" id="pAge" min="0" max="120" />
+            </div>
+            <div class="field">
+              <label>Phone</label>
+              <input type="tel" id="pPhone" required />
             </div>
             <div class="field">
               <label>Gender</label>
@@ -105,7 +108,6 @@
             <div class="field mode-only mode-only-appointment">
               <label>Appointment date</label>
               <input type="date" id="pDate" />
-              <span class="field-hint" id="closedDayHint" style="display:none;color:var(--danger);"></span>
             </div>
             <div class="field mode-only mode-only-appointment">
               <label>Appointment time</label>
@@ -125,6 +127,7 @@
               <button type="submit" class="btn-sm primary" id="patientSubmitBtn" style="width:100%;">Add appointment</button>
             </div>
           </div>
+          <div id="closedDayHint" class="slot-hint error" style="display:none;"></div>
           <div id="doctorClosedHint" class="slot-hint" style="display:none;"></div>
           <div id="patientLookupHint" class="slot-hint" style="display:none;"></div>
           <div id="followUpHint" class="slot-hint" style="display:none;"></div>
@@ -276,7 +279,7 @@
         const hint = document.getElementById('closedDayHint');
         const reason = closureReason(document.getElementById('pDate').value);
         if (reason) {
-          hint.textContent = `⛔ ${reason} — choose a different date.`;
+          hint.textContent = `${reason} — choose a different date.`;
           hint.style.display = 'block';
         } else {
           hint.style.display = 'none';
@@ -618,6 +621,7 @@
       async function renderSearch() {
         const q = document.getElementById('searchBox').value;
         const box = document.getElementById('searchResults');
+        document.getElementById('clearSearchBtn').style.display = q.trim() ? '' : 'none';
         if (!q.trim()) { box.innerHTML = ''; return; }
         const results = await Qlinic.searchBookedPatients(q);
         // The box fires on every keystroke with no debounce, so a slower
@@ -650,7 +654,7 @@
                        </div>`
                     : '<span class="badge badge-neutral">Walk-in</span>';
                   return `
-                    <tr>
+                    <tr class="search-edit-row">
                       <td><input type="text" class="search-edit-name" value="${p.name}" /></td>
                       <td><input type="text" class="search-edit-phone" value="${p.phone}" /></td>
                       <td><select class="search-edit-doctor">${doctorOptions}</select></td>
@@ -770,7 +774,12 @@
       async function doMarkArrived(id, btn) {
         if (btn) btn.disabled = true;
         await Qlinic.markArrived(id);
-        document.getElementById('searchBox').value = '';
+        // Search results used to be cleared here on the assumption
+        // reception was done once one patient was marked — but working
+        // through a whole batch of arrivals means re-typing the same
+        // search after every single click. Leaving the query in place
+        // just re-renders the same results with the updated status, so
+        // the rest of the matches stay right where they were.
         renderSearch();
         renderQueues();
         showToast('Marked arrived, added to the live queue');
@@ -992,6 +1001,12 @@
       }
 
       document.getElementById('searchBox').addEventListener('input', renderSearch);
+      document.getElementById('clearSearchBtn').addEventListener('click', () => {
+        const box = document.getElementById('searchBox');
+        box.value = '';
+        renderSearch();
+        box.focus();
+      });
 
       // Delegated (not bound per-render) since the edit row's phone input
       // is rebuilt from scratch on every renderSearch() call.
@@ -1086,6 +1101,12 @@
 
         e.target.reset();
         fillDoctorSelects();
+        // A native form reset() sends <select id="pDoctor"> back to its
+        // first option — whichever doctor reception was actually working
+        // with a moment ago gets silently swapped out from under them on
+        // the very next patient, which is the opposite of helpful when
+        // they're adding several patients in a row for the same doctor.
+        document.getElementById('pDoctor').value = doctorId;
         setPatientMode(patientMode);
         document.getElementById('pDate').value = Qlinic.getTodayDate();
         resetTimePicker();
