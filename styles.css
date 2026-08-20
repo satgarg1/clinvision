@@ -968,6 +968,40 @@ table.qtable th {
 table.qtable td { padding: 12px 10px; border-bottom: 1px solid var(--grey-100); vertical-align: middle; }
 table.qtable tr:last-child td { border-bottom: none; }
 
+/* Excel-style column-header filter: a small checklist dropdown anchored
+   to a <th>, instead of a separate top-of-page dropdown per filterable
+   column. th-filter-sort wraps the header label + icon so the click
+   target and dropdown-anchor are unambiguous; the icon itself just
+   flags whether a filter is currently narrowing this column. */
+th.th-filterable { position: relative; }
+.th-filter-trigger { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
+.th-filter-icon { width: 12px; height: 12px; flex-shrink: 0; opacity: 0.55; }
+.th-filter-icon.active { opacity: 1; color: var(--accent); }
+.filter-dropdown {
+  position: absolute; top: 100%; left: 0; margin-top: 6px; z-index: 20;
+  background: var(--white); border: 1px solid var(--grey-300); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-hover); padding: 10px; min-width: 200px; max-height: 260px; overflow-y: auto;
+  text-transform: none; letter-spacing: normal; font-weight: 400;
+}
+.filter-dropdown label {
+  display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 4px;
+  color: var(--black); cursor: pointer; border-radius: 6px;
+}
+.filter-dropdown label:hover { background: var(--grey-100); }
+.filter-dropdown input[type="checkbox"] { width: auto; margin: 0; flex-shrink: 0; }
+.filter-dropdown .fd-count { color: var(--grey-500); margin-left: auto; font-size: 12px; }
+.filter-dropdown .fd-actions { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--grey-100); }
+.filter-dropdown .fd-actions button { font-size: 12px; font-weight: 600; border: none; background: none; color: var(--accent); cursor: pointer; padding: 4px; }
+
+.stat-card.clickable { cursor: pointer; }
+.stat-card.active-filter { outline: 2px solid var(--danger); outline-offset: 2px; }
+.active-filter-chip {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;
+  color: var(--danger); background: var(--danger-bg); border-radius: var(--radius-pill);
+  padding: 6px 14px; margin-bottom: 14px;
+}
+.active-filter-chip button { border: none; background: none; color: inherit; font-weight: 700; cursor: pointer; font-size: 15px; padding: 0; line-height: 1; }
+
 .badge {
   display: inline-block;
   white-space: nowrap;

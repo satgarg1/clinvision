@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=114" />
+<link rel="stylesheet" href="styles.css?v=115" />
 </head>
 <body>
   <div class="app-shell">
@@ -57,17 +57,6 @@
         <div class="period-pills" id="viewModeToggle" style="margin-bottom:0;">
           <button type="button" class="period-pill active" data-mode="single">Single day</button>
           <button type="button" class="period-pill" data-mode="range">Range</button>
-        </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <select id="doctorFilter" class="pill-select">
-            <option value="">All doctors</option>
-          </select>
-          <select id="typeFilter" class="pill-select">
-            <option value="">All types</option>
-            <option value="consultation">Consultation</option>
-            <option value="emergency">Emergency</option>
-            <option value="waived">Follow up</option>
-          </select>
         </div>
       </div>
 
@@ -149,6 +138,11 @@
       let viewMode = 'single'; // 'single' | 'range'
       let rangePreset = 'lastweek';
       let customRange = null; // exact {start,end} for the 'custom' preset
+      let doctorFilterIds = new Set();
+      let typeFilterValues = new Set();
+      let paymentModeFilterValues = new Set();
+      let sortDirection = 'asc'; // 'asc' = oldest visit first, 'desc' = newest first
+      let outstandingOnly = false;
 
       function pad2(n) { return String(n).padStart(2, '0'); }
       function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
@@ -301,11 +295,12 @@
       // own "Export CSV" the same way, so both act the same on the current
       // view, not just what fits on screen.
       function buildRevenueCsv(invoices) {
-        const rows = [['Patient', 'Age', 'Address', 'Doctor', 'Type', 'Payment mode', 'Amount billed', 'Amount received', 'Balance']];
+        const rows = [['Patient', 'Phone', 'Age', 'Address', 'Doctor', 'Type', 'Payment mode', 'Amount billed', 'Amount received', 'Balance']];
         invoices.forEach((inv) => {
           const doctor = doctorById[inv.doctorId];
           rows.push([
             inv.patientName,
+            inv.patientPhone || '',
             inv.patientAge || '',
             inv.patientAddress || '',
             doctor ? doctor.name : '',
@@ -324,59 +319,132 @@
         // show a real name in the filter and table, not a blank/missing one.
         const doctors = await Qlinic.getDoctors({ includeInactive: true });
         doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
-        const select = document.getElementById('doctorFilter');
-        const current = select.value;
-        select.innerHTML = '<option value="">All doctors</option>' +
-          doctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}</option>`).join('');
-        select.value = current;
       }
 
       function searchTerm() {
         return document.getElementById('patientSearch').value.trim().toLowerCase();
       }
 
-      function filteredInvoices() {
-        const type = document.getElementById('typeFilter').value;
-        const doctorId = document.getElementById('doctorFilter').value;
+      // Search + date-range only, before any of the three column filters
+      // or the outstanding-only toggle — the base set the filter-dropdown
+      // checklists count against, so each option shows how many bills it
+      // would match given the current search/date range, not narrowed by
+      // whatever's already selected in that same or another checklist.
+      function searchAndDateInvoices() {
         const search = searchTerm();
-        return allInvoices.filter((inv) => {
-          if (type && inv.feeType !== type) return false;
-          if (doctorId && inv.doctorId !== doctorId) return false;
-          if (search && !inv.patientName.toLowerCase().includes(search)) return false;
-          return true;
-        }).sort((a, b) => (a.invoiceDate || '').localeCompare(b.invoiceDate || '') || new Date(a.createdAt) - new Date(b.createdAt));
+        return allInvoices.filter((inv) => !search || inv.patientName.toLowerCase().includes(search));
       }
 
-      // Total revenue/Outstanding track both active filters exactly, so a
-      // multi-doctor clinic can pick a doctor (or a visit type) and see
-      // that slice's numbers, not just the whole day's. The three type
-      // counts only follow the doctor filter, not the type filter — if
-      // they respected the type filter too, picking "Emergency" would
-      // zero out the other two counts, defeating the point of a
-      // breakdown. Doctor-scoping them still answers "how does this
-      // doctor's day split by visit type."
+      function filteredInvoices() {
+        let result = searchAndDateInvoices().filter((inv) => {
+          if (typeFilterValues.size > 0 && !typeFilterValues.has(inv.feeType)) return false;
+          if (doctorFilterIds.size > 0 && !doctorFilterIds.has(inv.doctorId)) return false;
+          if (paymentModeFilterValues.size > 0 && !paymentModeFilterValues.has(inv.paymentMode)) return false;
+          if (outstandingOnly && inv.amount - inv.amountReceived <= 0) return false;
+          return true;
+        });
+        result.sort((a, b) => (a.invoiceDate || '').localeCompare(b.invoiceDate || '') || new Date(a.createdAt) - new Date(b.createdAt));
+        if (sortDirection === 'desc') result.reverse();
+        return result;
+      }
+
+      function doctorFilterOptions() {
+        const counting = searchAndDateInvoices();
+        return Object.values(doctorById)
+          .map((d) => ({ value: d.id, label: d.name, count: counting.filter((inv) => inv.doctorId === d.id).length }))
+          .filter((o) => o.count > 0)
+          .sort((a, b) => b.count - a.count);
+      }
+      function typeFilterOptions() {
+        const counting = searchAndDateInvoices();
+        return Object.keys(FEE_TYPE_LABELS)
+          .map((key) => ({ value: key, label: FEE_TYPE_LABELS[key], count: counting.filter((inv) => inv.feeType === key).length }))
+          .filter((o) => o.count > 0);
+      }
+      function paymentModeFilterOptions() {
+        const counting = searchAndDateInvoices();
+        return Object.keys(PAYMENT_MODE_LABELS)
+          .map((key) => ({ value: key, label: PAYMENT_MODE_LABELS[key], count: counting.filter((inv) => inv.paymentMode === key).length }))
+          .filter((o) => o.count > 0);
+      }
+
+      // ---------------- Excel-style column-header filter dropdowns ----------------
+      let openFilterColumn = null;
+      function closeColumnFilter() {
+        openFilterColumn = null;
+        document.querySelectorAll('.filter-dropdown').forEach((el) => el.remove());
+      }
+      function openColumnFilter(column, anchorTh, options, selectedSet) {
+        if (openFilterColumn === column) { closeColumnFilter(); return; }
+        closeColumnFilter();
+        openFilterColumn = column;
+        const dropdown = document.createElement('div');
+        dropdown.className = 'filter-dropdown';
+        dropdown.innerHTML = options.map((o) => `
+          <label><input type="checkbox" value="${Qlinic.escapeHtml(o.value)}" ${selectedSet.has(o.value) ? 'checked' : ''} /> ${Qlinic.escapeHtml(o.label)}<span class="fd-count">${o.count}</span></label>
+        `).join('') + `
+          <div class="fd-actions"><button type="button" class="fd-clear">Clear</button><button type="button" class="fd-apply">Apply</button></div>
+        `;
+        dropdown.addEventListener('click', (e) => e.stopPropagation());
+        dropdown.querySelector('.fd-clear').addEventListener('click', () => {
+          selectedSet.clear();
+          closeColumnFilter();
+          currentPage = 1;
+          renderSummary();
+          renderTable();
+        });
+        dropdown.querySelector('.fd-apply').addEventListener('click', () => {
+          const checked = Array.from(dropdown.querySelectorAll('input:checked')).map((i) => i.value);
+          selectedSet.clear();
+          checked.forEach((v) => selectedSet.add(v));
+          closeColumnFilter();
+          currentPage = 1;
+          renderSummary();
+          renderTable();
+        });
+        anchorTh.appendChild(dropdown);
+      }
+      document.addEventListener('click', () => closeColumnFilter());
+
+      // Total revenue/Outstanding/Patients served track every active
+      // filter exactly (doctor, type, payment mode, search), so a multi-
+      // doctor clinic can narrow down and see that exact slice's numbers.
+      // The three type-breakdown counts deliberately only follow doctor +
+      // search, not the type filter itself — if they respected it too,
+      // picking "Emergency" would zero out the other two counts, defeating
+      // the point of a breakdown. Patients served counts distinct people
+      // (by patientId), not invoices — one patient can have more than one
+      // bill in a range.
       function renderSummary() {
-        const doctorId = document.getElementById('doctorFilter').value;
-        const type = document.getElementById('typeFilter').value;
         const search = searchTerm();
-        const byDoctor = allInvoices
-          .filter((inv) => !doctorId || inv.doctorId === doctorId)
-          .filter((inv) => !search || inv.patientName.toLowerCase().includes(search));
-        const inSummary = type ? byDoctor.filter((inv) => inv.feeType === type) : byDoctor;
+        const byDoctor = searchAndDateInvoices()
+          .filter((inv) => doctorFilterIds.size === 0 || doctorFilterIds.has(inv.doctorId));
+        const inSummary = byDoctor.filter((inv) =>
+          (typeFilterValues.size === 0 || typeFilterValues.has(inv.feeType)) &&
+          (paymentModeFilterValues.size === 0 || paymentModeFilterValues.has(inv.paymentMode))
+        );
 
         const totalCollected = inSummary.reduce((sum, inv) => sum + inv.amountReceived, 0);
         const totalOutstanding = inSummary.reduce((sum, inv) => sum + Math.max(0, inv.amount - inv.amountReceived), 0);
+        const patientsServedCount = new Set(inSummary.map((inv) => inv.patientId)).size;
         const consultationCount = byDoctor.filter((inv) => inv.feeType === 'consultation').length;
         const emergencyCount = byDoctor.filter((inv) => inv.feeType === 'emergency').length;
         const followUpCount = byDoctor.filter((inv) => inv.feeType === 'waived').length;
 
         document.getElementById('summaryCards').innerHTML = `
           <div class="stat-card accent-teal"><div class="value value-teal">₹${totalCollected}</div><div class="label">Total revenue</div></div>
-          <div class="stat-card accent-danger"><div class="value value-danger">₹${totalOutstanding}</div><div class="label">Outstanding</div></div>
+          <div class="stat-card accent-danger clickable${outstandingOnly ? ' active-filter' : ''}" id="outstandingCard" title="Click to show only bills with an outstanding balance"><div class="value value-danger">₹${totalOutstanding}</div><div class="label">Outstanding</div></div>
+          <div class="stat-card accent-purple"><div class="value value-purple">${patientsServedCount}</div><div class="label">Total patients served</div></div>
           <div class="stat-card accent-blue"><div class="value value-blue">${consultationCount}</div><div class="label">Consultation</div></div>
           <div class="stat-card accent-coral"><div class="value value-coral">${emergencyCount}</div><div class="label">Emergency</div></div>
-          <div class="stat-card accent-purple"><div class="value value-purple">${followUpCount}</div><div class="label">Follow up</div></div>
+          <div class="stat-card accent-pink"><div class="value value-pink">${followUpCount}</div><div class="label">Follow up</div></div>
         `;
+        document.getElementById('outstandingCard').addEventListener('click', () => {
+          outstandingOnly = !outstandingOnly;
+          currentPage = 1;
+          renderSummary();
+          renderTable();
+        });
       }
 
       function renderPager(total) {
@@ -406,6 +474,14 @@
         document.getElementById('pagerNext').addEventListener('click', () => { currentPage += 1; renderTable(); document.getElementById('revenueTableWrap').scrollIntoView({ block: 'start', behavior: 'smooth' }); });
       }
 
+      function FILTER_ICON_SVG(className) {
+        return `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>`;
+      }
+      function SORT_ARROW_SVG() {
+        const rotated = sortDirection === 'desc' ? ' style="transform:rotate(180deg);"' : '';
+        return `<svg class="th-filter-icon active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"${rotated}><path d="M12 5v14M6 11l6-6 6 6"/></svg>`;
+      }
+
       function renderTable() {
         const filtered = filteredInvoices();
         const wrap = document.getElementById('revenueTableWrap');
@@ -424,9 +500,21 @@
         const start = (currentPage - 1) * PAGE_SIZE;
         const pageItems = filtered.slice(start, start + PAGE_SIZE);
 
+        const doctorIconClass = doctorFilterIds.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
+        const typeIconClass = typeFilterValues.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
+        const paymentIconClass = paymentModeFilterValues.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
+
         wrap.innerHTML = `
+          ${outstandingOnly ? `<div class="active-filter-chip">Showing: outstanding balance only <button type="button" id="clearOutstandingFilter" aria-label="Clear filter">×</button></div>` : ''}
           <table class="qtable">
-            <thead><tr><th>Patient</th><th>Visit date</th><th>Doctor</th><th>Type</th><th>Payment mode</th><th>Payment collected</th></tr></thead>
+            <thead><tr>
+              <th>Patient</th><th>Phone</th>
+              <th class="th-filterable"><span class="th-filter-trigger" id="dateSortTrigger">Visit date ${SORT_ARROW_SVG()}</span></th>
+              <th class="th-filterable"><span class="th-filter-trigger" id="doctorFilterTrigger">Doctor ${FILTER_ICON_SVG(doctorIconClass)}</span></th>
+              <th class="th-filterable"><span class="th-filter-trigger" id="typeFilterTrigger">Type ${FILTER_ICON_SVG(typeIconClass)}</span></th>
+              <th class="th-filterable"><span class="th-filter-trigger" id="paymentFilterTrigger">Payment mode ${FILTER_ICON_SVG(paymentIconClass)}</span></th>
+              <th>Payment collected</th>
+            </tr></thead>
             <tbody>
               ${pageItems.map((inv) => {
                 const balance = inv.amount - inv.amountReceived;
@@ -438,6 +526,7 @@
                     <div>${Qlinic.escapeHtml(inv.patientName)}</div>
                     ${subInfo ? `<div class="sub-line">${subInfo}</div>` : ''}
                   </td>
+                  <td>${Qlinic.escapeHtml(inv.patientPhone || '—')}</td>
                   <td>${Qlinic.formatDateLabel(inv.invoiceDate)}</td>
                   <td>${doctor ? Qlinic.escapeHtml(doctor.name) : '—'}</td>
                   <td>${FEE_TYPE_LABELS[inv.feeType] || inv.feeType}</td>
@@ -449,6 +538,30 @@
             </tbody>
           </table>
         `;
+        document.getElementById('dateSortTrigger').addEventListener('click', () => {
+          sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+          renderTable();
+        });
+        document.getElementById('doctorFilterTrigger').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openColumnFilter('doctor', e.currentTarget.closest('th'), doctorFilterOptions(), doctorFilterIds);
+        });
+        document.getElementById('typeFilterTrigger').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openColumnFilter('type', e.currentTarget.closest('th'), typeFilterOptions(), typeFilterValues);
+        });
+        document.getElementById('paymentFilterTrigger').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openColumnFilter('payment', e.currentTarget.closest('th'), paymentModeFilterOptions(), paymentModeFilterValues);
+        });
+        if (outstandingOnly) {
+          document.getElementById('clearOutstandingFilter').addEventListener('click', () => {
+            outstandingOnly = false;
+            currentPage = 1;
+            renderSummary();
+            renderTable();
+          });
+        }
         renderPager(filtered.length);
       }
 
@@ -572,16 +685,6 @@
         document.getElementById('rangePresetField').style.display = viewMode === 'range' ? 'flex' : 'none';
         document.getElementById('customRangeFilters').style.display = (viewMode === 'range' && rangePreset === 'custom') ? 'flex' : 'none';
         loadInvoices();
-      });
-      document.getElementById('typeFilter').addEventListener('change', () => {
-        currentPage = 1;
-        renderSummary();
-        renderTable();
-      });
-      document.getElementById('doctorFilter').addEventListener('change', () => {
-        currentPage = 1;
-        renderSummary();
-        renderTable();
       });
       document.getElementById('patientSearch').addEventListener('input', () => {
         currentPage = 1;

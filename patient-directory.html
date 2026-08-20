@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=114" />
+<link rel="stylesheet" href="styles.css?v=115" />
 </head>
 <body>
   <div class="app-shell">
@@ -61,9 +61,6 @@
           <label class="pill-label">Period</label>
           <select id="periodPresetSelect" class="pill-select"></select>
         </div>
-        <select id="directoryDoctorFilter" class="pill-select">
-          <option value="">All doctors</option>
-        </select>
       </div>
 
       <div style="display:none;gap:24px;flex-wrap:wrap;margin-bottom:14px;" id="customPeriodFilters">
@@ -117,8 +114,12 @@
       let doctorById = {};
       let currentPage = 1;
       let periodPreset = 'all';
-      let doctorFilterId = '';
+      let doctorFilterIds = new Set();
+      let genderFilterValues = new Set();
       let customPeriodRange = null;
+      const GENDER_LABELS = { male: 'Male', female: 'Female', other: 'Other' };
+      function genderKey(g) { return g || '__unspecified__'; }
+      function genderLabel(g) { return g ? (GENDER_LABELS[g] || g) : 'Not specified'; }
 
       function pad2(n) { return String(n).padStart(2, '0'); }
       function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
@@ -210,6 +211,10 @@
         URL.revokeObjectURL(url);
       }
 
+      function FILTER_ICON_SVG(className) {
+        return `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>`;
+      }
+
       function doctorNames(doctorIds) {
         return doctorIds.map((id) => (doctorById[id] ? Qlinic.escapeHtml(doctorById[id].name) : null)).filter(Boolean).join(', ') || '—';
       }
@@ -218,7 +223,13 @@
         return document.getElementById('directorySearch').value.trim().toLowerCase();
       }
 
-      function filteredEntries() {
+      // Search + period only — the base set every column-filter checklist
+      // counts against, so "Doctors seen" and "Gender" show how many
+      // patients each option would match given the current search/period,
+      // not zeroed out by whatever's already selected in that same
+      // checklist (and not narrowed by the other checklist either, which
+      // would make the two column filters interact in a confusing way).
+      function searchAndPeriodEntries() {
         const term = searchTerm();
         const range = periodRange(periodPreset);
         return allEntries.filter((e) => {
@@ -228,9 +239,72 @@
             (e.address || '').toLowerCase().includes(term)
           )) return false;
           if (range && !(e.lastVisitDate >= range.start && e.lastVisitDate <= range.end)) return false;
-          if (doctorFilterId && !e.doctorIds.includes(doctorFilterId)) return false;
           return true;
         });
+      }
+
+      function filteredEntries() {
+        return searchAndPeriodEntries().filter((e) => {
+          if (doctorFilterIds.size > 0 && !e.doctorIds.some((id) => doctorFilterIds.has(id))) return false;
+          if (genderFilterValues.size > 0 && !genderFilterValues.has(genderKey(e.gender))) return false;
+          return true;
+        });
+      }
+
+      // ---------------- Excel-style column-header filter dropdowns ----------------
+      let openFilterColumn = null;
+      function closeColumnFilter() {
+        openFilterColumn = null;
+        document.querySelectorAll('.filter-dropdown').forEach((el) => el.remove());
+      }
+      // options: [{ value, label, count }]. selectedSet is mutated directly
+      // (Clear empties it, Apply replaces its contents) since it's the
+      // same Set object the rest of the page already reads from.
+      function openColumnFilter(column, anchorTh, options, selectedSet) {
+        if (openFilterColumn === column) { closeColumnFilter(); return; }
+        closeColumnFilter();
+        openFilterColumn = column;
+        const dropdown = document.createElement('div');
+        dropdown.className = 'filter-dropdown';
+        dropdown.innerHTML = options.map((o) => `
+          <label><input type="checkbox" value="${Qlinic.escapeHtml(o.value)}" ${selectedSet.has(o.value) ? 'checked' : ''} /> ${Qlinic.escapeHtml(o.label)}<span class="fd-count">${o.count}</span></label>
+        `).join('') + `
+          <div class="fd-actions"><button type="button" class="fd-clear">Clear</button><button type="button" class="fd-apply">Apply</button></div>
+        `;
+        dropdown.addEventListener('click', (e) => e.stopPropagation());
+        dropdown.querySelector('.fd-clear').addEventListener('click', () => {
+          selectedSet.clear();
+          closeColumnFilter();
+          currentPage = 1;
+          renderTable();
+        });
+        dropdown.querySelector('.fd-apply').addEventListener('click', () => {
+          const checked = Array.from(dropdown.querySelectorAll('input:checked')).map((i) => i.value);
+          selectedSet.clear();
+          checked.forEach((v) => selectedSet.add(v));
+          closeColumnFilter();
+          currentPage = 1;
+          renderTable();
+        });
+        anchorTh.appendChild(dropdown);
+      }
+      document.addEventListener('click', () => closeColumnFilter());
+
+      function doctorFilterOptions() {
+        const counting = searchAndPeriodEntries();
+        return Object.values(doctorById)
+          .map((d) => ({ value: d.id, label: d.name, count: counting.filter((e) => e.doctorIds.includes(d.id)).length }))
+          .filter((o) => o.count > 0)
+          .sort((a, b) => b.count - a.count);
+      }
+      function genderFilterOptions() {
+        const counting = searchAndPeriodEntries();
+        const keys = Array.from(new Set(counting.map((e) => genderKey(e.gender))));
+        return keys.map((k) => ({
+          value: k,
+          label: genderLabel(k === '__unspecified__' ? null : k),
+          count: counting.filter((e) => genderKey(e.gender) === k).length,
+        })).sort((a, b) => b.count - a.count);
       }
 
       function renderPager(total) {
@@ -259,7 +333,14 @@
       function renderTable() {
         const filtered = filteredEntries();
         const wrap = document.getElementById('directoryTableWrap');
-        document.getElementById('directorySummary').textContent = `${allEntries.length} patient${allEntries.length === 1 ? '' : 's'} on file`;
+        // CSV export already respects the active filters (filteredEntries()
+        // below) — this count is the only place that was still quoting the
+        // unfiltered total, which read as "82 patients" even with a doctor
+        // selected and only a handful actually shown.
+        const isFiltered = filtered.length !== allEntries.length;
+        document.getElementById('directorySummary').textContent = isFiltered
+          ? `${filtered.length} of ${allEntries.length} patients`
+          : `${allEntries.length} patient${allEntries.length === 1 ? '' : 's'} on file`;
 
         if (allEntries.length === 0) {
           wrap.innerHTML = '<div class="empty-state">No patients on file yet.</div>';
@@ -277,16 +358,23 @@
         const start = (currentPage - 1) * PAGE_SIZE;
         const pageItems = filtered.slice(start, start + PAGE_SIZE);
 
+        const genderIconClass = genderFilterValues.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
+        const doctorIconClass = doctorFilterIds.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
         wrap.innerHTML = `
           <table class="qtable">
-            <thead><tr><th>Name</th><th>Phone</th><th>Age</th><th>Gender</th><th>Address</th><th>Total visits</th><th>First visit</th><th>Last visit</th><th>Doctors seen</th></tr></thead>
+            <thead><tr>
+              <th>Name</th><th>Phone</th><th>Age</th>
+              <th class="th-filterable"><span class="th-filter-trigger" id="genderFilterTrigger">Gender ${FILTER_ICON_SVG(genderIconClass)}</span></th>
+              <th>Address</th><th>Total visits</th><th>First visit</th><th>Last visit</th>
+              <th class="th-filterable"><span class="th-filter-trigger" id="doctorFilterTrigger">Doctors seen ${FILTER_ICON_SVG(doctorIconClass)}</span></th>
+            </tr></thead>
             <tbody>
               ${pageItems.map((e) => `
                 <tr>
                   <td>${Qlinic.escapeHtml(e.name)}</td>
                   <td>${Qlinic.escapeHtml(e.phone)}</td>
                   <td>${e.age || '—'}</td>
-                  <td>${e.gender || '—'}</td>
+                  <td>${genderLabel(e.gender)}</td>
                   <td>${e.address ? Qlinic.escapeHtml(e.address) : '—'}</td>
                   <td>${e.totalVisits}</td>
                   <td>${Qlinic.formatDateLabel(e.firstVisitDate)}</td>
@@ -297,6 +385,14 @@
             </tbody>
           </table>
         `;
+        document.getElementById('genderFilterTrigger').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openColumnFilter('gender', e.currentTarget.closest('th'), genderFilterOptions(), genderFilterValues);
+        });
+        document.getElementById('doctorFilterTrigger').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openColumnFilter('doctor', e.currentTarget.closest('th'), doctorFilterOptions(), doctorFilterIds);
+        });
         renderPager(filtered.length);
       }
 
@@ -329,12 +425,6 @@
         document.getElementById(id).addEventListener('change', updateCustomPeriodFromInputs);
       });
 
-      document.getElementById('directoryDoctorFilter').addEventListener('change', (e) => {
-        doctorFilterId = e.target.value;
-        currentPage = 1;
-        renderTable();
-      });
-
       document.getElementById('exportCsvBtn').addEventListener('click', () => {
         const rows = [['Name', 'Phone', 'Age', 'Gender', 'Address', 'Total visits', 'First visit', 'Last visit', 'Doctors seen']];
         filteredEntries().forEach((e) => {
@@ -359,8 +449,6 @@
 
       const doctors = await Qlinic.getDoctors({ includeInactive: true });
       doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
-      document.getElementById('directoryDoctorFilter').innerHTML = '<option value="">All doctors</option>' +
-        doctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}</option>`).join('');
       allEntries = await Qlinic.getPatientDirectory();
       // Most recently active patients first — the ones most likely to be
       // relevant to whatever admin is looking this page up for.
