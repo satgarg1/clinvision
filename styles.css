@@ -1581,27 +1581,27 @@ button.trend-bar-link:hover { background: var(--grey-100); }
   background: var(--black);
   color: var(--white);
   min-height: 100vh;
-  padding: 44px 56px 56px;
+  padding: 34px 44px 44px;
   font-family: var(--font);
 }
 .display-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 34px;
-  padding-bottom: 22px;
+  margin-bottom: 26px;
+  padding-bottom: 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
-.display-header .brand { display: flex; align-items: center; gap: 14px; font-size: 28px; font-weight: 800; letter-spacing: -0.01em; }
+.display-header .brand { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
 .brand-mark {
-  width: 42px; height: 42px; border-radius: 12px;
+  width: 34px; height: 34px; border-radius: 10px;
   background: linear-gradient(135deg, var(--mkt-teal), var(--mkt-blue));
   display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 19px; color: var(--black);
+  font-weight: 800; font-size: 16px; color: var(--black);
   flex-shrink: 0;
 }
-.display-header .clock { font-size: 38px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--white); display: flex; align-items: center; }
-.clock-date { font-size: 14px; color: var(--grey-500); text-align: right; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
+.display-header .clock { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--white); display: flex; align-items: center; }
+.clock-date { font-size: 12px; color: var(--grey-500); text-align: right; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
 
 .live-dot {
   display: inline-block;
@@ -1621,8 +1621,8 @@ button.trend-bar-link:hover { background: var(--grey-100); }
 }
 
 .section-label {
-  font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-  color: var(--grey-500); margin: 0 0 16px; display: flex; align-items: center; gap: 12px;
+  font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--grey-500); margin: 0 0 12px; display: flex; align-items: center; gap: 12px;
 }
 .section-label .count { font-weight: 600; text-transform: none; letter-spacing: 0; opacity: 0.75; }
 
@@ -1630,15 +1630,15 @@ button.trend-bar-link:hover { background: var(--grey-100); }
    what actually got redesigned. Row order/content is exactly what
    renderDoctorStrip in display.html computes; this is purely the visual
    layer, none of the underlying refresh/fade/sort logic changed. */
-.display-strip { border-radius: 18px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 40px; }
+.display-strip { border-radius: 14px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 28px; }
 .dboard-row {
   display: grid;
-  grid-template-columns: minmax(220px, 0.9fr) 180px 260px 110px 1fr;
+  grid-template-columns: minmax(190px, 0.9fr) 150px 220px 90px 1fr;
   align-items: center;
   background: var(--grey-900);
-  padding: 22px 28px;
-  gap: 24px;
-  border-left: 5px solid transparent;
+  padding: 16px 20px;
+  gap: 18px;
+  border-left: 4px solid transparent;
 }
 .dboard-row + .dboard-row { border-top: 1px solid rgba(255, 255, 255, 0.08); }
 .dboard-row.accent-teal { border-left-color: var(--mkt-teal); }
@@ -1647,38 +1647,38 @@ button.trend-bar-link:hover { background: var(--grey-100); }
 .dboard-row.accent-coral { border-left-color: var(--mkt-coral); }
 .dboard-row.accent-pink { border-left-color: var(--mkt-pink); }
 
-.dboard-doc-name { font-size: 26px; font-weight: 800; letter-spacing: -0.01em; }
-.dboard-doc-spec { font-size: 16px; color: var(--grey-500); margin-top: 3px; }
+.dboard-doc-name { font-size: 21px; font-weight: 800; letter-spacing: -0.01em; }
+.dboard-doc-spec { font-size: 13px; color: var(--grey-500); margin-top: 2px; }
 
 .dboard-pill {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
-  padding: 9px 16px; border-radius: 999px; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 6px 12px; border-radius: 999px; white-space: nowrap;
 }
-.dboard-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.dboard-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .dboard-pill-ok { background: rgba(52, 199, 89, 0.16); color: #34c759; }
 .dboard-pill-warn { background: rgba(255, 159, 10, 0.18); color: #ff9f0a; }
 
 /* Now Serving: token above, full patient name below it on its own line
    (wraps rather than truncates — a name is the one thing a waiting
    patient is actually scanning for), call time last. */
-.dboard-serving-label { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--grey-500); margin-bottom: 4px; }
-.dboard-serving-token { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: -0.02em; }
-.dboard-serving-name { font-size: 19px; font-weight: 700; color: var(--white); line-height: 1.25; margin-top: 3px; overflow-wrap: break-word; }
-.dboard-serving-idle { font-size: 24px; color: var(--grey-500); font-weight: 700; }
-.dboard-serving-called { font-size: 14px; color: var(--grey-500); margin-top: 4px; }
+.dboard-serving-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--grey-500); margin-bottom: 3px; }
+.dboard-serving-token { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: -0.02em; }
+.dboard-serving-name { font-size: 15px; font-weight: 700; color: var(--white); line-height: 1.25; margin-top: 2px; overflow-wrap: break-word; }
+.dboard-serving-idle { font-size: 18px; color: var(--grey-500); font-weight: 700; }
+.dboard-serving-called { font-size: 12px; color: var(--grey-500); margin-top: 3px; }
 
 .dboard-waiting { text-align: center; }
-.dboard-waiting-num { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
-.dboard-waiting-lbl { font-size: 12px; color: var(--grey-500); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
+.dboard-waiting-num { font-size: 23px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+.dboard-waiting-lbl { font-size: 11px; color: var(--grey-500); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
 
 .dboard-detail { min-width: 0; }
-.dboard-detail-line { font-size: 17px; font-weight: 600; color: #ff9f0a; line-height: 1.4; }
+.dboard-detail-line { font-size: 14px; font-weight: 600; color: #ff9f0a; line-height: 1.4; }
 .dboard-detail-line.dboard-detail-muted { color: var(--grey-500); font-weight: 500; }
 .dboard-detail-reason { color: var(--grey-300); font-weight: 500; }
-.dboard-next { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.dboard-next-label { font-size: 13px; color: var(--grey-500); text-transform: uppercase; letter-spacing: 0.06em; margin-right: 2px; }
-.dboard-next-chip { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; background: rgba(255, 255, 255, 0.06); color: var(--grey-300); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 4px 11px; }
+.dboard-next { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.dboard-next-label { font-size: 11px; color: var(--grey-500); text-transform: uppercase; letter-spacing: 0.06em; margin-right: 2px; }
+.dboard-next-chip { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; background: rgba(255, 255, 255, 0.06); color: var(--grey-300); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 3px 9px; }
 .dboard-next-chip.more { color: var(--grey-500); border-style: dashed; }
 
 /* Airport-departures-style rotating board */
@@ -1691,18 +1691,18 @@ button.trend-bar-link:hover { background: var(--grey-100); }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 28px 16px;
+  padding: 14px 20px 10px;
 }
-.board-page-indicator { display: flex; gap: 7px; }
-.board-page-indicator .dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); transition: background 0.2s ease, width 0.2s ease; }
-.board-page-indicator .dot.active { background: var(--mkt-teal); width: 22px; border-radius: 4px; }
+.board-page-indicator { display: flex; gap: 6px; }
+.board-page-indicator .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); transition: background 0.2s ease, width 0.2s ease; }
+.board-page-indicator .dot.active { background: var(--mkt-teal); width: 18px; border-radius: 4px; }
 
 .board-cols {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 12px;
-  padding: 12px 28px;
-  font-size: 13px;
+  gap: 10px;
+  padding: 8px 20px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1712,7 +1712,7 @@ button.trend-bar-link:hover { background: var(--grey-100); }
 }
 
 .board-rows {
-  min-height: 360px;
+  min-height: 300px;
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 .board-rows.flip-out { opacity: 0; transform: translateY(-8px); }
@@ -1720,19 +1720,19 @@ button.trend-bar-link:hover { background: var(--grey-100); }
 .board-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  padding: 18px 28px;
+  padding: 13px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   font-variant-numeric: tabular-nums;
 }
 .board-row:last-child { border-bottom: none; }
-.board-pos { font-size: 22px; font-weight: 800; color: var(--grey-500); }
-.board-name { font-size: 22px; font-weight: 600; display: flex; flex-direction: column; }
-.board-sub { font-size: 14px; font-weight: 400; color: var(--grey-500); margin-top: 2px; }
-.board-doc { font-size: 17px; color: var(--grey-300); }
-.board-type { font-size: 16px; color: var(--grey-500); }
-.board-empty { padding: 60px 0; text-align: center; color: var(--grey-500); font-size: 19px; }
+.board-pos { font-size: 17px; font-weight: 800; color: var(--grey-500); }
+.board-name { font-size: 17px; font-weight: 600; display: flex; flex-direction: column; }
+.board-sub { font-size: 12px; font-weight: 400; color: var(--grey-500); margin-top: 2px; }
+.board-doc { font-size: 14px; color: var(--grey-300); }
+.board-type { font-size: 13px; color: var(--grey-500); }
+.board-empty { padding: 44px 0; text-align: center; color: var(--grey-500); font-size: 16px; }
 
 /* Replaces the doctor strip + waiting board entirely once every doctor
    has closed for the day — a passerby glancing at an otherwise-quiet TV
@@ -1742,13 +1742,13 @@ button.trend-bar-link:hover { background: var(--grey-100); }
    a waiting room, not up close. */
 .display-all-closed {
   background: var(--grey-900);
-  border-radius: 24px;
-  padding: 110px 40px;
+  border-radius: 20px;
+  padding: 80px 40px;
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
-.display-all-closed-title { font-size: 48px; font-weight: 700; color: var(--white); margin-bottom: 14px; }
-.display-all-closed-sub { font-size: 19px; color: var(--grey-300); }
+.display-all-closed-title { font-size: 38px; font-weight: 700; color: var(--white); margin-bottom: 12px; }
+.display-all-closed-sub { font-size: 16px; color: var(--grey-300); }
 
 @media (max-width: 720px) {
   .app-shell { flex-direction: column; }
