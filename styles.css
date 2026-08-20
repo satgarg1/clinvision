@@ -611,6 +611,34 @@ a { color: inherit; }
 }
 .field input:focus, .field select:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 
+/* Inline "ghost text" autocomplete: the real input sits on top with a
+   transparent background so the suggestion (rendered by a second,
+   identically-padded/sized element positioned directly underneath)
+   shows through in the space after what's actually been typed. The
+   typed-so-far portion of the ghost text is present but invisible —
+   it's there only to push the suggestion to line up exactly where the
+   real caret is, not to be seen. */
+.autocomplete-wrap { position: relative; }
+.autocomplete-wrap input {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+.autocomplete-ghost {
+  position: absolute;
+  inset: 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-md);
+  font-family: var(--font);
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  white-space: pre;
+  overflow: hidden;
+  pointer-events: none;
+}
+.autocomplete-ghost .typed { visibility: hidden; }
+.autocomplete-ghost .suggestion { color: var(--grey-500); }
+
 /* A bare .field select (not inside .inline-form/.form-grid, which
    already style their own selects) previously fell through to only
    background/color above and rendered with the browser's default select
@@ -668,6 +696,8 @@ input[type="number"] { -moz-appearance: textfield; }
   padding: 12px 14px;
   line-height: 1.5;
 }
+.login-hint a { color: var(--accent); font-weight: 700; text-decoration: underline; }
+.login-hint a:hover { color: var(--accent-dark); }
 
 .login-error {
   color: var(--danger);
@@ -1729,6 +1759,12 @@ button.trend-bar-link:hover { background: var(--grey-100); }
 .board-row:last-child { border-bottom: none; }
 .board-pos { font-size: 17px; font-weight: 800; color: var(--grey-500); }
 .board-name { font-size: 17px; font-weight: 600; display: flex; flex-direction: column; }
+.board-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.board-priority {
+  font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+  color: #ff3b30; background: rgba(255, 59, 48, 0.18);
+  border-radius: 999px; padding: 3px 9px; white-space: nowrap;
+}
 .board-sub { font-size: 12px; font-weight: 400; color: var(--grey-500); margin-top: 2px; }
 .board-doc { font-size: 14px; color: var(--grey-300); }
 .board-type { font-size: 13px; color: var(--grey-500); }

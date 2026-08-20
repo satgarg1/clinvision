@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=113" />
+<link rel="stylesheet" href="styles.css?v=114" />
 </head>
 <body>
   <div class="app-shell">
@@ -121,14 +121,20 @@
             </div>
             <div class="field mode-only mode-only-walkin" style="display:none;">
               <label>Preferred time (optional)</label>
-              <input type="time" id="pWalkinTime" />
+              <div class="time-picker" id="pWalkinTimePicker">
+                <button type="button" class="time-picker-trigger placeholder" id="pWalkinTimeTrigger">
+                  <span id="pWalkinTimeTriggerText">As soon as possible</span><span class="time-picker-caret">▾</span>
+                </button>
+                <input type="hidden" id="pWalkinTime" />
+                <div class="time-picker-panel" id="pWalkinTimePanel" style="display:none;"></div>
+              </div>
             </div>
-            <div class="field mode-only mode-only-walkin" style="display:none;flex:0;min-width:220px;">
-              <label>&nbsp;</label>
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;padding:9px 0;">
-                <input type="checkbox" id="pWalkinPriority" style="width:auto;" />
-                This is an emergency
-              </label>
+            <div class="field mode-only mode-only-walkin" style="display:none;">
+              <label>Walk-in type</label>
+              <select id="pWalkinType">
+                <option value="standard">Standard</option>
+                <option value="emergency">Emergency — see first</option>
+              </select>
             </div>
             <div class="field">
               <label>Reason (optional)</label>
@@ -172,7 +178,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=40"></script>
+  <script src="clinic-data.js?v=41"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -415,6 +421,72 @@
         document.getElementById('pTimeTrigger').classList.add('placeholder');
         closeTimePanel();
       }
+
+      // Same picker component and interaction as the appointment time
+      // field above, kept as its own instance (not a shared function)
+      // since it's simpler in one real way: always today (walk-ins are
+      // same-day only, no date field to read), and selecting a time
+      // here doesn't touch updateSlotHint, which is appointment-slot-
+      // capacity specific and doesn't apply to a walk-in's preferred time.
+      let walkinTimePickerOptions = [];
+      function buildWalkinTimePickerOptions() {
+        const now = new Date();
+        const nowMin = Math.ceil((now.getHours() * 60 + now.getMinutes()) / 5) * 5;
+        const startMin = Math.max(clinicOpenMin, nowMin);
+        const opts = [];
+        for (let m = startMin; m < clinicCloseMin; m += 5) {
+          const hh = String(Math.floor(m / 60)).padStart(2, '0');
+          const mm = String(m % 60).padStart(2, '0');
+          opts.push({ value: `${hh}:${mm}`, label: Qlinic.formatTime(m) });
+        }
+        walkinTimePickerOptions = opts;
+      }
+      function renderWalkinTimePanel() {
+        const panel = document.getElementById('pWalkinTimePanel');
+        const currentVal = document.getElementById('pWalkinTime').value;
+        if (walkinTimePickerOptions.length === 0) {
+          panel.innerHTML = '<div class="time-picker-empty">No times left today.</div>';
+          return;
+        }
+        panel.innerHTML = walkinTimePickerOptions.map((o) => `
+          <div class="time-picker-option ${o.value === currentVal ? 'selected' : ''}" data-value="${o.value}" data-label="${o.label}">${o.label}</div>
+        `).join('');
+      }
+      function openWalkinTimePanel() {
+        buildWalkinTimePickerOptions();
+        renderWalkinTimePanel();
+        document.getElementById('pWalkinTimePanel').style.display = 'block';
+        const panel = document.getElementById('pWalkinTimePanel');
+        const target = panel.querySelector('.selected') || panel.querySelector('.time-picker-option');
+        if (target) target.scrollIntoView({ block: 'nearest' });
+      }
+      function closeWalkinTimePanel() {
+        document.getElementById('pWalkinTimePanel').style.display = 'none';
+      }
+      function selectWalkinTime(value, label) {
+        document.getElementById('pWalkinTime').value = value;
+        const trigger = document.getElementById('pWalkinTimeTrigger');
+        document.getElementById('pWalkinTimeTriggerText').textContent = label;
+        trigger.classList.remove('placeholder');
+        closeWalkinTimePanel();
+      }
+      function resetWalkinTimePicker() {
+        document.getElementById('pWalkinTime').value = '';
+        document.getElementById('pWalkinTimeTriggerText').textContent = 'As soon as possible';
+        document.getElementById('pWalkinTimeTrigger').classList.add('placeholder');
+        closeWalkinTimePanel();
+      }
+      document.getElementById('pWalkinTimeTrigger').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const panel = document.getElementById('pWalkinTimePanel');
+        if (panel.style.display === 'block') closeWalkinTimePanel();
+        else openWalkinTimePanel();
+      });
+      document.getElementById('pWalkinTimePanel').addEventListener('click', (e) => {
+        const opt = e.target.closest('.time-picker-option');
+        if (!opt) return;
+        selectWalkinTime(opt.getAttribute('data-value'), opt.getAttribute('data-label'));
+      });
 
       document.getElementById('pTimeTrigger').addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1082,10 +1154,10 @@
             const hint = document.getElementById('slotHint');
             hint.className = 'slot-hint error';
             hint.innerHTML = '⛔ That preferred time has already passed.';
-            document.getElementById('pWalkinTime').focus();
+            document.getElementById('pWalkinTimeTrigger').focus();
             return;
           }
-          const isPriority = document.getElementById('pWalkinPriority').checked;
+          const isPriority = document.getElementById('pWalkinType').value === 'emergency';
           await Qlinic.addWalkIn({
             name, phone, age, gender, address, doctorId,
             reason: document.getElementById('pReason').value,
@@ -1148,6 +1220,7 @@
         setPatientMode(patientMode);
         document.getElementById('pDate').value = Qlinic.getTodayDate();
         resetTimePicker();
+        resetWalkinTimePicker();
         clearPatientLookupHint();
         clearFollowUpHint();
         updateClosedDayHint();

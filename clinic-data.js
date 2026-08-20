@@ -1007,9 +1007,9 @@
       await sb.from('patients').update({ status: 'done' }).eq('id', current.id);
     }
     const waiting = mine.filter((p) => p.status === 'waiting').sort((a, b) => compareQueueOrder(a, b, doctor));
-    if (waiting.length > 0) {
-      await sb.from('patients').update({ status: 'in_consult', called_at: new Date().toISOString() }).eq('id', waiting[0].id);
-    }
+    if (waiting.length === 0) return { called: false };
+    await sb.from('patients').update({ status: 'in_consult', called_at: new Date().toISOString() }).eq('id', waiting[0].id);
+    return { called: true };
   }
 
   // Half of callNextPatient, deliberately: marks the current in-consult

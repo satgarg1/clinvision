@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=113" />
+<link rel="stylesheet" href="styles.css?v=114" />
 </head>
 <body>
   <div class="app-shell">
@@ -94,7 +94,10 @@
             </div>
             <div class="field" style="max-width:340px;margin-top:10px;">
               <label>Reason (optional)</label>
-              <input type="text" id="delayReasonInput" placeholder="e.g., in a meeting, at lunch" maxlength="60" />
+              <div class="autocomplete-wrap">
+                <div class="autocomplete-ghost" id="delayReasonGhost" aria-hidden="true"></div>
+                <input type="text" id="delayReasonInput" placeholder="e.g., in a meeting, at lunch" maxlength="60" autocomplete="off" />
+              </div>
             </div>
             <div id="delayHistoryNote" class="field-hint" style="display:none;"></div>
           </div>
@@ -128,7 +131,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=40"></script>
+  <script src="clinic-data.js?v=41"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -295,10 +298,12 @@
         // while the doctor had just said they're unavailable.
         const isAway = doc.status === 'on_break' || doc.status === 'emergency';
         const awayPhrase = doc.status === 'on_break' ? "you're on a break" : "you're in an emergency";
+        const noOneWaiting = q.waiting.length === 0;
         const callNextBtn = document.getElementById('callNextBtn');
-        callNextBtn.disabled = dayIsClosed || isAway;
+        callNextBtn.disabled = dayIsClosed || isAway || noOneWaiting;
         if (dayIsClosed) callNextBtn.title = lockTitle;
         else if (isAway) callNextBtn.title = `Clear your status first — ${awayPhrase} right now.`;
+        else if (noOneWaiting) callNextBtn.title = 'No one is waiting right now.';
         else callNextBtn.removeAttribute('title');
 
         const lockedNote = document.getElementById('statusLockedNote');
@@ -370,6 +375,44 @@
         }
       }
 
+      // Ghost-text autocomplete for the Reason field: type the start of
+      // one of these, see the rest fade in, press Tab to accept — same
+      // "don't retype the same handful of reasons every time" idea as
+      // an email client's subject-line suggestions. Case-insensitive
+      // match against the start of the typed text; the accepted text
+      // always uses the suggestion's own casing, not whatever case was
+      // typed.
+      const COMMON_REASONS = [
+        'Lunch', 'In a meeting', 'On a call', 'Hospital rounds',
+        'Personal emergency', 'Family emergency', 'Traffic delay', 'Stepped out briefly',
+      ];
+      function matchingReason(typed) {
+        if (!typed) return null;
+        const lower = typed.toLowerCase();
+        return COMMON_REASONS.find((r) => r.length > typed.length && r.toLowerCase().startsWith(lower)) || null;
+      }
+      function updateReasonGhost() {
+        const input = document.getElementById('delayReasonInput');
+        const ghost = document.getElementById('delayReasonGhost');
+        const typed = input.value;
+        const match = matchingReason(typed);
+        if (!match) {
+          ghost.innerHTML = '';
+          return;
+        }
+        ghost.innerHTML = `<span class="typed">${Qlinic.escapeHtml(typed)}</span><span class="suggestion">${Qlinic.escapeHtml(match.slice(typed.length))}</span>`;
+      }
+      document.getElementById('delayReasonInput').addEventListener('input', updateReasonGhost);
+      document.getElementById('delayReasonInput').addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+        const input = document.getElementById('delayReasonInput');
+        const match = matchingReason(input.value);
+        if (!match) return;
+        e.preventDefault();
+        input.value = match;
+        updateReasonGhost();
+      });
+
       // Both "Running late" and "On a break" ask for a duration before
       // broadcasting: the doctor picks how it'll show up, then confirms.
       const DURATION_CONFIG = {
@@ -435,6 +478,17 @@
         btn.addEventListener('click', async () => {
           const status = btn.getAttribute('data-status');
 
+          // A misclick on any of these three while actively seeing
+          // someone had no real way back — the only prompt that existed
+          // (below, on_break/emergency only) asked "did you finish with
+          // them," and either answer still went on to change the status.
+          // This one's a genuine full stop: Cancel here means nothing
+          // happens at all, full stop, before anything else is asked.
+          if (currentQueue && currentQueue.nowServing && (status === 'running_late' || status === 'on_break' || status === 'emergency')) {
+            const proceed = confirm(`You're currently seeing ${currentQueue.nowServing.name}. Update your status now?\n\nOK — continue.\nCancel — don't change anything.`);
+            if (!proceed) return;
+          }
+
           // Going on a break or into an emergency while someone's still
           // in consultation is genuinely ambiguous: did the visit just
           // finish and the doctor hasn't called the next patient yet, or
@@ -493,6 +547,7 @@
               historyNote.style.display = 'none';
               reasonInput.value = '';
             }
+            updateReasonGhost();
 
             document.getElementById('delayInputWrap').style.display = 'block';
             return;
@@ -540,9 +595,9 @@
       });
 
       document.getElementById('callNextBtn').addEventListener('click', async () => {
-        await Qlinic.callNextPatient(currentDoctorId());
+        const result = await Qlinic.callNextPatient(currentDoctorId());
         render();
-        showToast('Next patient called in');
+        showToast(result.called ? 'Next patient called in' : 'No one is waiting in the queue');
       });
 
       document.getElementById('doctorSelect').addEventListener('change', render);
