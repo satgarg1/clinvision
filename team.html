@@ -175,6 +175,10 @@
       }
       window.doSetStaffActive = doSetStaffActive;
 
+      document.getElementById('newStaffName').addEventListener('input', function () {
+        this.value = this.value.replace(/[0-9]/g, '');
+      });
+
       document.getElementById('teamList').addEventListener('change', async (e) => {
         if (!e.target.classList.contains('staff-role')) return;
         const id = e.target.getAttribute('data-id');

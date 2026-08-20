@@ -283,6 +283,10 @@
         return /^[0-9]{10}$/.test(value);
       }
 
+      document.getElementById('bName').addEventListener('input', function () {
+        this.value = this.value.replace(/[0-9]/g, '');
+      });
+
       // Direct autofill, not a suggestion card: the receptionist already
       // typed the phone to look the patient up, so there's no extra
       // confirmation step, just editable fields ready to bill from.

@@ -110,6 +110,10 @@
 
     document.getElementById('directWhatsapp').href = waLink("Hi, I'd like to know more about Qlinic.");
 
+    document.getElementById('cName').addEventListener('input', function () {
+      this.value = this.value.replace(/[0-9]/g, '');
+    });
+
     document.getElementById('contactForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const name = document.getElementById('cName').value.trim();

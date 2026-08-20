@@ -830,7 +830,7 @@
         const isToday = queueViewDate === Qlinic.getTodayDate();
         sel.innerHTML = doctors.map((d, i) => {
           const q = queues[i];
-          const countLabel = isToday ? `${q.waiting.length} waiting` : `${q.booked.length} booked`;
+          const countLabel = isToday ? `${q.waiting.length} waiting, ${q.booked.length} booked` : `${q.booked.length} booked`;
           return `<option value="${d.id}" ${d.id === queueDoctorId ? 'selected' : ''}>${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)} (${countLabel})</option>`;
         }).join('');
       }
@@ -1014,6 +1014,9 @@
         if (e.target.classList.contains('search-edit-phone')) {
           e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
         }
+        if (e.target.classList.contains('search-edit-name')) {
+          e.target.value = e.target.value.replace(/[0-9]/g, '');
+        }
       });
 
       // Same 10-digit-only rule as signup's mobile number field: strips
@@ -1025,6 +1028,10 @@
       }
       document.getElementById('pPhone').addEventListener('input', function () {
         this.value = this.value.replace(/\D/g, '').slice(0, 10);
+      });
+
+      document.getElementById('pName').addEventListener('input', function () {
+        this.value = this.value.replace(/[0-9]/g, '');
       });
 
       document.getElementById('patientForm').addEventListener('submit', async (e) => {
