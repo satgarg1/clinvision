@@ -107,8 +107,8 @@
         <div class="panel" id="nowServingPanel">
           <div class="panel-header"><h2>Now serving</h2></div>
           <div id="nowServingBox"></div>
-          <button class="btn-sm" id="finishCurrentBtn" style="margin-top:14px;">Done</button>
-          <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;margin-left:8px;">Call next patient</button>
+          <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;">Call next patient</button>
+          <button class="btn-sm primary" id="finishCurrentBtn" style="margin-top:14px;margin-left:8px;">Done</button>
         </div>
 
         <div class="panel" id="waitingPanel">
@@ -307,13 +307,22 @@
         else if (noOneWaiting) callNextBtn.title = 'No one is waiting right now.';
         else callNextBtn.removeAttribute('title');
 
-        // Call next patient used to double as "mark the current visit
-        // done" whenever it fired — now that it's correctly disabled
-        // with an empty queue, finishing a visit needs its own button
-        // that works independent of whether anyone's waiting.
+        // Deliberately restricted to "nobody's waiting" rather than
+        // "someone's in consultation" (which would make it usable
+        // alongside Call next patient at the same time): with anyone
+        // in the queue, finishing without also calling the next person
+        // in just stalls the queue until a second click happens — Call
+        // next patient already does both in one action. Done exists
+        // specifically for clearing the last patient of a lull, when
+        // there's genuinely no one to call in next. This also means
+        // the two buttons are never both enabled at once — whichever
+        // one makes sense for the current queue state is the one lit up.
         const finishCurrentBtn = document.getElementById('finishCurrentBtn');
-        finishCurrentBtn.disabled = dayIsClosed || !q.nowServing;
-        finishCurrentBtn.title = dayIsClosed ? lockTitle : (!q.nowServing ? 'No one is currently in consultation.' : '');
+        const nothingToFinish = !q.nowServing || q.waiting.length > 0;
+        finishCurrentBtn.disabled = dayIsClosed || nothingToFinish;
+        finishCurrentBtn.title = dayIsClosed ? lockTitle
+          : (!q.nowServing ? 'No one is currently in consultation.'
+          : (q.waiting.length > 0 ? 'Patients are waiting — use "Call next patient" instead.' : ''));
 
         const lockedNote = document.getElementById('statusLockedNote');
         if (dayIsClosed) {
