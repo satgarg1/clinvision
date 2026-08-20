@@ -990,8 +990,13 @@ th.th-filterable { position: relative; }
 .filter-dropdown label:hover { background: var(--grey-100); }
 .filter-dropdown input[type="checkbox"] { width: auto; margin: 0; flex-shrink: 0; }
 .filter-dropdown .fd-count { color: var(--grey-500); margin-left: auto; font-size: 12px; }
-.filter-dropdown .fd-actions { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--grey-100); }
-.filter-dropdown .fd-actions button { font-size: 12px; font-weight: 600; border: none; background: none; color: var(--accent); cursor: pointer; padding: 4px; }
+.filter-dropdown .fd-actions { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--grey-100); }
+.filter-dropdown .fd-reset {
+  width: 100%; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+  border: none; border-radius: var(--radius-sm); background: var(--accent); color: #fff;
+  cursor: pointer; padding: 7px 4px;
+}
+.filter-dropdown .fd-reset:hover { background: var(--accent-dark); }
 
 .stat-card.clickable { cursor: pointer; }
 .stat-card.active-filter { outline: 2px solid var(--danger); outline-offset: 2px; }

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=115" />
+<link rel="stylesheet" href="styles.css?v=116" />
 </head>
 <body>
   <div class="app-shell">
@@ -252,41 +252,64 @@
       }
 
       // ---------------- Excel-style column-header filter dropdowns ----------------
+      // Each checkbox filters the instant it's checked/unchecked — no
+      // separate Apply step. renderTable() rebuilds the whole <thead>
+      // (including whichever dropdown is open) on every change, so
+      // reopenActiveFilter() re-renders just the dropdown back onto the
+      // fresh header afterward — from the user's side it just stays open
+      // while they check several boxes in a row. Reset clears the whole
+      // column back to "no filter" in one click instead of unchecking
+      // each box by hand.
       let openFilterColumn = null;
       function closeColumnFilter() {
         openFilterColumn = null;
         document.querySelectorAll('.filter-dropdown').forEach((el) => el.remove());
       }
-      // options: [{ value, label, count }]. selectedSet is mutated directly
-      // (Clear empties it, Apply replaces its contents) since it's the
-      // same Set object the rest of the page already reads from.
-      function openColumnFilter(column, anchorTh, options, selectedSet) {
-        if (openFilterColumn === column) { closeColumnFilter(); return; }
-        closeColumnFilter();
-        openFilterColumn = column;
+      function renderColumnFilterDropdown(column, anchorTh, options, selectedSet, onChange) {
+        document.querySelectorAll('.filter-dropdown').forEach((el) => el.remove());
         const dropdown = document.createElement('div');
         dropdown.className = 'filter-dropdown';
         dropdown.innerHTML = options.map((o) => `
           <label><input type="checkbox" value="${Qlinic.escapeHtml(o.value)}" ${selectedSet.has(o.value) ? 'checked' : ''} /> ${Qlinic.escapeHtml(o.label)}<span class="fd-count">${o.count}</span></label>
         `).join('') + `
-          <div class="fd-actions"><button type="button" class="fd-clear">Clear</button><button type="button" class="fd-apply">Apply</button></div>
+          <div class="fd-actions"><button type="button" class="fd-reset">Reset</button></div>
         `;
         dropdown.addEventListener('click', (e) => e.stopPropagation());
-        dropdown.querySelector('.fd-clear').addEventListener('click', () => {
-          selectedSet.clear();
-          closeColumnFilter();
-          currentPage = 1;
-          renderTable();
+        dropdown.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+          cb.addEventListener('change', () => {
+            if (cb.checked) selectedSet.add(cb.value); else selectedSet.delete(cb.value);
+            onChange();
+          });
         });
-        dropdown.querySelector('.fd-apply').addEventListener('click', () => {
-          const checked = Array.from(dropdown.querySelectorAll('input:checked')).map((i) => i.value);
+        dropdown.querySelector('.fd-reset').addEventListener('click', () => {
           selectedSet.clear();
-          checked.forEach((v) => selectedSet.add(v));
-          closeColumnFilter();
-          currentPage = 1;
-          renderTable();
+          onChange();
         });
         anchorTh.appendChild(dropdown);
+      }
+      function openColumnFilter(column, anchorTh, options, selectedSet, onChange) {
+        if (openFilterColumn === column) { closeColumnFilter(); return; }
+        openFilterColumn = column;
+        renderColumnFilterDropdown(column, anchorTh, options, selectedSet, onChange);
+      }
+      // Called at the end of every renderTable() so whichever column's
+      // dropdown was open survives the header rebuild that just happened.
+      function reopenActiveFilter() {
+        // The trigger may not exist right now (e.g. the current filters
+        // match zero rows, so the table's replaced by an empty-state
+        // message with no <thead> at all) — nothing to re-anchor to in
+        // that case, so just leave the dropdown closed rather than throw.
+        if (openFilterColumn === 'doctor') {
+          const th = document.getElementById('doctorFilterTrigger');
+          if (th) renderColumnFilterDropdown('doctor', th.closest('th'), doctorFilterOptions(), doctorFilterIds, onDirectoryFilterChange);
+        } else if (openFilterColumn === 'gender') {
+          const th = document.getElementById('genderFilterTrigger');
+          if (th) renderColumnFilterDropdown('gender', th.closest('th'), genderFilterOptions(), genderFilterValues, onDirectoryFilterChange);
+        }
+      }
+      function onDirectoryFilterChange() {
+        currentPage = 1;
+        renderTable();
       }
       document.addEventListener('click', () => closeColumnFilter());
 
@@ -387,12 +410,13 @@
         `;
         document.getElementById('genderFilterTrigger').addEventListener('click', (e) => {
           e.stopPropagation();
-          openColumnFilter('gender', e.currentTarget.closest('th'), genderFilterOptions(), genderFilterValues);
+          openColumnFilter('gender', e.currentTarget.closest('th'), genderFilterOptions(), genderFilterValues, onDirectoryFilterChange);
         });
         document.getElementById('doctorFilterTrigger').addEventListener('click', (e) => {
           e.stopPropagation();
-          openColumnFilter('doctor', e.currentTarget.closest('th'), doctorFilterOptions(), doctorFilterIds);
+          openColumnFilter('doctor', e.currentTarget.closest('th'), doctorFilterOptions(), doctorFilterIds, onDirectoryFilterChange);
         });
+        reopenActiveFilter();
         renderPager(filtered.length);
       }
 
