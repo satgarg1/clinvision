@@ -107,7 +107,8 @@
         <div class="panel" id="nowServingPanel">
           <div class="panel-header"><h2>Now serving</h2></div>
           <div id="nowServingBox"></div>
-          <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;">Call next patient</button>
+          <button class="btn-sm" id="finishCurrentBtn" style="margin-top:14px;">Done</button>
+          <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;margin-left:8px;">Call next patient</button>
         </div>
 
         <div class="panel" id="waitingPanel">
@@ -305,6 +306,14 @@
         else if (isAway) callNextBtn.title = `Clear your status first — ${awayPhrase} right now.`;
         else if (noOneWaiting) callNextBtn.title = 'No one is waiting right now.';
         else callNextBtn.removeAttribute('title');
+
+        // Call next patient used to double as "mark the current visit
+        // done" whenever it fired — now that it's correctly disabled
+        // with an empty queue, finishing a visit needs its own button
+        // that works independent of whether anyone's waiting.
+        const finishCurrentBtn = document.getElementById('finishCurrentBtn');
+        finishCurrentBtn.disabled = dayIsClosed || !q.nowServing;
+        finishCurrentBtn.title = dayIsClosed ? lockTitle : (!q.nowServing ? 'No one is currently in consultation.' : '');
 
         const lockedNote = document.getElementById('statusLockedNote');
         if (dayIsClosed) {
@@ -598,6 +607,16 @@
         const result = await Qlinic.callNextPatient(currentDoctorId());
         render();
         showToast(result.called ? 'Next patient called in' : 'No one is waiting in the queue');
+      });
+
+      document.getElementById('finishCurrentBtn').addEventListener('click', async () => {
+        try {
+          await Qlinic.finishCurrentPatient(currentDoctorId());
+          render();
+          showToast('Visit marked as done');
+        } catch (err) {
+          showToast(err.message || 'Could not update the queue');
+        }
       });
 
       document.getElementById('doctorSelect').addEventListener('change', render);
