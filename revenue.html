@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=117" />
+<link rel="stylesheet" href="styles.css?v=118" />
 </head>
 <body>
   <div class="app-shell">
@@ -60,14 +60,14 @@
         </div>
       </div>
 
-      <div class="inline-form" style="margin-bottom:10px;" id="singleDayFilters">
-        <div class="field" style="min-width:180px;flex:0;">
-          <label>Date</label>
-          <input type="date" id="dateFilter" />
+      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:14px;" id="singleDayFilters">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">Date</label>
+          <input type="date" id="dateFilter" class="pill-input" />
         </div>
-        <div class="field" style="flex:0;">
-          <label>&nbsp;</label>
-          <button type="button" class="btn-sm accent-outline" id="todayBtn">Today</button>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">&nbsp;</label>
+          <button type="button" class="pill-btn" id="todayBtn">Today</button>
         </div>
       </div>
 
@@ -515,8 +515,8 @@
           ${outstandingOnly ? `<div class="active-filter-chip">Showing: outstanding balance only <button type="button" id="clearOutstandingFilter" aria-label="Clear filter">×</button></div>` : ''}
           <table class="qtable qtable-fixed">
             <colgroup>
-              <col style="width:22%;"><col style="width:13%;"><col style="width:13%;">
-              <col style="width:15%;"><col style="width:12%;"><col style="width:13%;"><col style="width:12%;">
+              <col style="width:20%;"><col style="width:11%;"><col style="width:11%;">
+              <col style="width:13%;"><col style="width:10%;"><col style="width:12%;"><col style="width:23%;">
             </colgroup>
             <thead><tr>
               <th>Patient</th><th>Phone</th>

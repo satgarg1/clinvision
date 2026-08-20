@@ -1127,14 +1127,17 @@ th.th-filterable { position: relative; }
   font-family: var(--font);
 }
 
-/* Revenue/Directory's date fields and period dropdown are the primary
-   controls on those pages (not a secondary filter bar like elsewhere
-   inline-form is used), so they get a larger treatment than the
-   standard inline-form sizing above. A subtle shadow lifts them off the
-   page's grey-100 background, since a grey-300 border alone reads as
+/* Directory's date fields and period dropdown are the primary controls
+   on that page (not a secondary filter bar like elsewhere inline-form
+   is used), so they get a larger treatment than the standard
+   inline-form sizing above. A subtle shadow lifts them off the page's
+   grey-100 background, since a grey-300 border alone reads as
    washed-out against it. Applied as a class (not by ID) since the same
-   treatment now covers a growing set of fields: the date input, the
-   period-preset dropdown, and the custom-range month/year selects. */
+   treatment covers a growing set of fields: the period-preset dropdown
+   and the custom-range month/year selects. Revenue's own #dateFilter
+   used to be part of this selector too, but now matches Range mode's
+   .pill-select shape instead (.pill-input, below) per explicit request
+   for the two toggle modes to look consistent. */
 /* Selectors are written as ".field select.big-control" (not just
    ".big-control") on purpose: a big-control select usually sits inside
    ".inline-form .field", and that context's own generic rule below
@@ -1143,20 +1146,49 @@ th.th-filterable { position: relative; }
    it back down — matching that same specificity and relying on this
    block coming later in the file is what actually makes the override
    stick, not the class name by itself. */
-#dateFilter, .field select.big-control {
+.field select.big-control {
   padding: 13px 14px;
   font-size: 17px;
   font-weight: 500;
   border-color: var(--grey-300);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
-/* #dateFilter's own outsized big-control padding/font (above) makes the
-   generic .inline-form .field > .btn-sm rule undersized next to it, so
-   the Today button next to it needs the same bigger tier. */
-#singleDayFilters .btn-sm {
-  padding: 14px 20px;
-  font-size: 17px;
+/* Revenue's Single-day Date input + Today button, sized to match Range
+   mode's .pill-select (Period dropdown) exactly — same box (padding,
+   border, radius) so toggling between the two modes doesn't shift
+   control height. .pill-input omits .pill-select's chevron
+   background-image/right-padding since a date input has no dropdown. */
+.pill-input {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  /* 1px less than .pill-select/.pill-btn's 8px: a native <input
+     type="date">'s built-in calendar-icon chrome adds ~2px of intrinsic
+     height that identical padding/border/font alone doesn't cancel out
+     — confirmed via getBoundingClientRect (37px vs. 35px at 8px/8px). */
+  padding: 7px 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--grey-300);
+  background: var(--white);
+  color: var(--black);
+  transition: border-color 0.15s ease;
 }
+.pill-input:hover { border-color: var(--grey-500); }
+/* Same box as .pill-input/.pill-select, colored like .btn-sm.accent-outline
+   so it still reads as a button, not a field. */
+.pill-btn {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--accent);
+  background: var(--white);
+  color: var(--accent);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.pill-btn:hover { background: var(--accent); color: #ffffff; }
 
 /* Broadcast delay/Cancel sit next to a .time-picker-trigger (10px 12px /
    14px, no bold), not a plain field — they're nested one level deeper
@@ -1255,11 +1287,13 @@ th.th-filterable { position: relative; }
 }
 #patientSearch:focus, #directorySearch:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 
-/* The Today button sits directly on the page's grey-100 background, same
-   as .btn-sm's default fill, so it was invisible except for its text.
-   accent-outline gives it a real border; this just matches its size to
-   the taller date/type fields beside it. */
-#todayBtn, #closeDayBtn, #reopenDayBtn {
+/* End-of-day's Close/Reopen-day buttons sit directly on the page's
+   grey-100 background, same as .btn-sm's default fill, so they were
+   invisible except for their text. accent-outline gives them a real
+   border; this just matches their size to the taller fields beside
+   them. (Revenue's #todayBtn used to share this rule too, but now uses
+   .pill-btn — same box as the Date input beside it — instead.) */
+#closeDayBtn, #reopenDayBtn {
   padding: 13px 20px;
   font-size: 15px;
 }
