@@ -968,6 +968,18 @@ table.qtable th {
 table.qtable td { padding: 12px 10px; border-bottom: 1px solid var(--grey-100); vertical-align: middle; }
 table.qtable tr:last-child td { border-bottom: none; }
 
+/* Plain .qtable auto-sizes each column to whatever's currently in it —
+   fine for a static table, but on a table whose rows change under a
+   filter (Revenue, Patient Directory), that means the columns
+   themselves visibly shift width every time the filtered set changes,
+   since the widest name/address in THIS view isn't the widest one in
+   the last view. qtable-fixed pins column widths via a <colgroup>
+   instead, so the grid itself stays put — only qtable-wrap cells (the
+   ones genuinely likely to run long: names, addresses, doctor lists)
+   wrap onto a second line rather than trying to widen their column. */
+table.qtable.qtable-fixed { table-layout: fixed; }
+table.qtable.qtable-fixed .qtable-wrap { overflow-wrap: break-word; word-break: break-word; }
+
 /* Excel-style column-header filter: a small checklist dropdown anchored
    to a <th>, instead of a separate top-of-page dropdown per filterable
    column. th-filter-sort wraps the header label + icon so the click
@@ -990,13 +1002,6 @@ th.th-filterable { position: relative; }
 .filter-dropdown label:hover { background: var(--grey-100); }
 .filter-dropdown input[type="checkbox"] { width: auto; margin: 0; flex-shrink: 0; }
 .filter-dropdown .fd-count { color: var(--grey-500); margin-left: auto; font-size: 12px; }
-.filter-dropdown .fd-actions { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--grey-100); }
-.filter-dropdown .fd-reset {
-  width: 100%; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
-  border: none; border-radius: var(--radius-sm); background: var(--accent); color: #fff;
-  cursor: pointer; padding: 7px 4px;
-}
-.filter-dropdown .fd-reset:hover { background: var(--accent-dark); }
 
 .stat-card.clickable { cursor: pointer; }
 .stat-card.active-filter { outline: 2px solid var(--danger); outline-offset: 2px; }

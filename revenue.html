@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=116" />
+<link rel="stylesheet" href="styles.css?v=117" />
 </head>
 <body>
   <div class="app-shell">
@@ -96,7 +96,7 @@
       <div class="card-grid" id="summaryCards" style="margin-bottom:14px;"></div>
 
       <div class="panel">
-        <div class="panel-header"><h2>Bills</h2><button type="button" class="btn-sm primary" id="exportCsvBtn">Export CSV</button></div>
+        <div class="panel-header"><h2>Bills</h2><button type="button" class="btn-sm primary" id="exportCsvBtn">Export CSV</button><button type="button" class="btn-sm primary" id="resetFiltersBtn" style="margin-left:auto;">Reset filters</button></div>
         <div id="revenueTableWrap"></div>
         <div class="pager" id="revenuePager"></div>
       </div>
@@ -369,82 +369,64 @@
       }
 
       // ---------------- Excel-style column-header filter dropdowns ----------------
-      // Each checkbox filters the instant it's checked/unchecked — no
-      // separate Apply step. renderTable() rebuilds the whole <thead>
-      // (including whichever dropdown is open) on every change, so
-      // reopenActiveFilter() re-renders just the dropdown back onto the
-      // fresh header afterward — from the user's side it just stays open
-      // while they check several boxes in a row. Reset clears the whole
-      // column back to "no filter" in one click instead of unchecking
-      // each box by hand.
+      // Checking/unchecking a box filters instantly and closes the
+      // dropdown right away, so the filtered table is immediately
+      // visible — picking a second value in the same column means
+      // reopening it (one filter decision at a time), which reads more
+      // predictably than a dropdown that lingers open. Clearing every
+      // active filter at once (across all columns) is the separate
+      // global Reset button next to Export CSV, not a per-dropdown one.
       let openFilterColumn = null;
       function closeColumnFilter() {
         openFilterColumn = null;
         document.querySelectorAll('.filter-dropdown').forEach((el) => el.remove());
       }
-      function renderColumnFilterDropdown(column, anchorTh, options, selectedSet, onChange) {
-        document.querySelectorAll('.filter-dropdown').forEach((el) => el.remove());
+      function openColumnFilter(column, anchorTh, options, selectedSet, onChange) {
+        if (openFilterColumn === column) { closeColumnFilter(); return; }
+        closeColumnFilter();
+        openFilterColumn = column;
         const dropdown = document.createElement('div');
         dropdown.className = 'filter-dropdown';
         dropdown.innerHTML = options.map((o) => `
           <label><input type="checkbox" value="${Qlinic.escapeHtml(o.value)}" ${selectedSet.has(o.value) ? 'checked' : ''} /> ${Qlinic.escapeHtml(o.label)}<span class="fd-count">${o.count}</span></label>
-        `).join('') + `
-          <div class="fd-actions"><button type="button" class="fd-reset">Reset</button></div>
-        `;
+        `).join('');
         dropdown.addEventListener('click', (e) => e.stopPropagation());
         dropdown.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
           cb.addEventListener('change', () => {
             if (cb.checked) selectedSet.add(cb.value); else selectedSet.delete(cb.value);
+            closeColumnFilter();
             onChange();
           });
         });
-        dropdown.querySelector('.fd-reset').addEventListener('click', () => {
-          selectedSet.clear();
-          onChange();
-        });
         anchorTh.appendChild(dropdown);
-      }
-      function openColumnFilter(column, anchorTh, options, selectedSet, onChange) {
-        if (openFilterColumn === column) { closeColumnFilter(); return; }
-        openFilterColumn = column;
-        renderColumnFilterDropdown(column, anchorTh, options, selectedSet, onChange);
-      }
-      // Called at the end of every renderTable() so whichever column's
-      // dropdown was open survives the header rebuild that just happened.
-      // Trigger elements may not exist (zero rows match, so the table's
-      // replaced by an empty-state message with no <thead> at all) —
-      // nothing to re-anchor to in that case, so just leave it closed.
-      function reopenActiveFilter() {
-        const map = {
-          doctor: () => [document.getElementById('doctorFilterTrigger'), doctorFilterOptions(), doctorFilterIds],
-          type: () => [document.getElementById('typeFilterTrigger'), typeFilterOptions(), typeFilterValues],
-          payment: () => [document.getElementById('paymentFilterTrigger'), paymentModeFilterOptions(), paymentModeFilterValues],
-        };
-        if (!openFilterColumn || !map[openFilterColumn]) return;
-        const [trigger, options, selectedSet] = map[openFilterColumn]();
-        if (trigger) renderColumnFilterDropdown(openFilterColumn, trigger.closest('th'), options, selectedSet, onRevenueFilterChange);
       }
       function onRevenueFilterChange() {
         currentPage = 1;
         renderSummary();
         renderTable();
       }
+      function resetAllFilters() {
+        doctorFilterIds.clear();
+        typeFilterValues.clear();
+        paymentModeFilterValues.clear();
+        outstandingOnly = false;
+        onRevenueFilterChange();
+      }
       document.addEventListener('click', () => closeColumnFilter());
 
-      // Total revenue/Outstanding/Patients served track every active
-      // filter exactly (doctor, type, payment mode, search), so a multi-
-      // doctor clinic can narrow down and see that exact slice's numbers.
-      // The three type-breakdown counts deliberately only follow doctor +
-      // search, not the type filter itself — if they respected it too,
-      // picking "Emergency" would zero out the other two counts, defeating
-      // the point of a breakdown. Patients served counts distinct people
+      // Every summary card — Total revenue, Outstanding, Patients served,
+      // and the three type-breakdown counts — tracks every active filter
+      // (doctor, type, payment mode, search) exactly the same way the
+      // Bills table does. Picking Type = Follow up correctly zeroes out
+      // Consultation/Emergency here, rather than only zeroing the Bills
+      // table while the cards kept showing the unfiltered breakdown —
+      // one filtered view, not two disagreeing ones. Patients served
+      // counts distinct people
       // (by patientId), not invoices — one patient can have more than one
       // bill in a range.
       function renderSummary() {
-        const search = searchTerm();
-        const byDoctor = searchAndDateInvoices()
-          .filter((inv) => doctorFilterIds.size === 0 || doctorFilterIds.has(inv.doctorId));
-        const inSummary = byDoctor.filter((inv) =>
+        const inSummary = searchAndDateInvoices().filter((inv) =>
+          (doctorFilterIds.size === 0 || doctorFilterIds.has(inv.doctorId)) &&
           (typeFilterValues.size === 0 || typeFilterValues.has(inv.feeType)) &&
           (paymentModeFilterValues.size === 0 || paymentModeFilterValues.has(inv.paymentMode))
         );
@@ -452,9 +434,9 @@
         const totalCollected = inSummary.reduce((sum, inv) => sum + inv.amountReceived, 0);
         const totalOutstanding = inSummary.reduce((sum, inv) => sum + Math.max(0, inv.amount - inv.amountReceived), 0);
         const patientsServedCount = new Set(inSummary.map((inv) => inv.patientId)).size;
-        const consultationCount = byDoctor.filter((inv) => inv.feeType === 'consultation').length;
-        const emergencyCount = byDoctor.filter((inv) => inv.feeType === 'emergency').length;
-        const followUpCount = byDoctor.filter((inv) => inv.feeType === 'waived').length;
+        const consultationCount = inSummary.filter((inv) => inv.feeType === 'consultation').length;
+        const emergencyCount = inSummary.filter((inv) => inv.feeType === 'emergency').length;
+        const followUpCount = inSummary.filter((inv) => inv.feeType === 'waived').length;
 
         document.getElementById('summaryCards').innerHTML = `
           <div class="stat-card accent-teal"><div class="value value-teal">₹${totalCollected}</div><div class="label">Total revenue</div></div>
@@ -531,7 +513,11 @@
 
         wrap.innerHTML = `
           ${outstandingOnly ? `<div class="active-filter-chip">Showing: outstanding balance only <button type="button" id="clearOutstandingFilter" aria-label="Clear filter">×</button></div>` : ''}
-          <table class="qtable">
+          <table class="qtable qtable-fixed">
+            <colgroup>
+              <col style="width:22%;"><col style="width:13%;"><col style="width:13%;">
+              <col style="width:15%;"><col style="width:12%;"><col style="width:13%;"><col style="width:12%;">
+            </colgroup>
             <thead><tr>
               <th>Patient</th><th>Phone</th>
               <th class="th-filterable"><span class="th-filter-trigger" id="dateSortTrigger">Visit date ${SORT_ARROW_SVG()}</span></th>
@@ -547,7 +533,7 @@
                 const subInfo = [inv.patientAge ? `${inv.patientAge} yrs` : '', inv.patientAddress ? Qlinic.escapeHtml(inv.patientAddress) : ''].filter(Boolean).join(' · ');
                 return `
                 <tr>
-                  <td>
+                  <td class="qtable-wrap">
                     <div>${Qlinic.escapeHtml(inv.patientName)}</div>
                     ${subInfo ? `<div class="sub-line">${subInfo}</div>` : ''}
                   </td>
@@ -587,7 +573,6 @@
             renderTable();
           });
         }
-        reopenActiveFilter();
         renderPager(filtered.length);
       }
 
@@ -717,6 +702,7 @@
         renderSummary();
         renderTable();
       });
+      document.getElementById('resetFiltersBtn').addEventListener('click', resetAllFilters);
       document.getElementById('exportCsvBtn').addEventListener('click', () => {
         const csv = buildRevenueCsv(filteredInvoices());
         let label;

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=116" />
+<link rel="stylesheet" href="styles.css?v=117" />
 </head>
 <body>
   <div class="app-shell">
@@ -81,7 +81,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-header"><h2 id="directorySummary">Loading…</h2><button type="button" class="btn-sm primary" id="exportCsvBtn">Export CSV</button></div>
+        <div class="panel-header"><h2 id="directorySummary">Loading…</h2><button type="button" class="btn-sm primary" id="exportCsvBtn">Export CSV</button><button type="button" class="btn-sm primary" id="resetFiltersBtn" style="margin-left:auto;">Reset filters</button></div>
         <div id="directoryTableWrap"></div>
         <div class="pager" id="directoryPager"></div>
       </div>
@@ -252,64 +252,45 @@
       }
 
       // ---------------- Excel-style column-header filter dropdowns ----------------
-      // Each checkbox filters the instant it's checked/unchecked — no
-      // separate Apply step. renderTable() rebuilds the whole <thead>
-      // (including whichever dropdown is open) on every change, so
-      // reopenActiveFilter() re-renders just the dropdown back onto the
-      // fresh header afterward — from the user's side it just stays open
-      // while they check several boxes in a row. Reset clears the whole
-      // column back to "no filter" in one click instead of unchecking
-      // each box by hand.
+      // Checking/unchecking a box filters instantly and closes the
+      // dropdown right away, so the filtered table is immediately
+      // visible — picking a second value in the same column means
+      // reopening it (one filter decision at a time), which reads more
+      // predictably than a dropdown that lingers open. Clearing every
+      // active filter at once (across all columns) is the separate
+      // global Reset button next to Export CSV, not a per-dropdown one.
       let openFilterColumn = null;
       function closeColumnFilter() {
         openFilterColumn = null;
         document.querySelectorAll('.filter-dropdown').forEach((el) => el.remove());
       }
-      function renderColumnFilterDropdown(column, anchorTh, options, selectedSet, onChange) {
-        document.querySelectorAll('.filter-dropdown').forEach((el) => el.remove());
+      function openColumnFilter(column, anchorTh, options, selectedSet, onChange) {
+        if (openFilterColumn === column) { closeColumnFilter(); return; }
+        closeColumnFilter();
+        openFilterColumn = column;
         const dropdown = document.createElement('div');
         dropdown.className = 'filter-dropdown';
         dropdown.innerHTML = options.map((o) => `
           <label><input type="checkbox" value="${Qlinic.escapeHtml(o.value)}" ${selectedSet.has(o.value) ? 'checked' : ''} /> ${Qlinic.escapeHtml(o.label)}<span class="fd-count">${o.count}</span></label>
-        `).join('') + `
-          <div class="fd-actions"><button type="button" class="fd-reset">Reset</button></div>
-        `;
+        `).join('');
         dropdown.addEventListener('click', (e) => e.stopPropagation());
         dropdown.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
           cb.addEventListener('change', () => {
             if (cb.checked) selectedSet.add(cb.value); else selectedSet.delete(cb.value);
+            closeColumnFilter();
             onChange();
           });
         });
-        dropdown.querySelector('.fd-reset').addEventListener('click', () => {
-          selectedSet.clear();
-          onChange();
-        });
         anchorTh.appendChild(dropdown);
-      }
-      function openColumnFilter(column, anchorTh, options, selectedSet, onChange) {
-        if (openFilterColumn === column) { closeColumnFilter(); return; }
-        openFilterColumn = column;
-        renderColumnFilterDropdown(column, anchorTh, options, selectedSet, onChange);
-      }
-      // Called at the end of every renderTable() so whichever column's
-      // dropdown was open survives the header rebuild that just happened.
-      function reopenActiveFilter() {
-        // The trigger may not exist right now (e.g. the current filters
-        // match zero rows, so the table's replaced by an empty-state
-        // message with no <thead> at all) — nothing to re-anchor to in
-        // that case, so just leave the dropdown closed rather than throw.
-        if (openFilterColumn === 'doctor') {
-          const th = document.getElementById('doctorFilterTrigger');
-          if (th) renderColumnFilterDropdown('doctor', th.closest('th'), doctorFilterOptions(), doctorFilterIds, onDirectoryFilterChange);
-        } else if (openFilterColumn === 'gender') {
-          const th = document.getElementById('genderFilterTrigger');
-          if (th) renderColumnFilterDropdown('gender', th.closest('th'), genderFilterOptions(), genderFilterValues, onDirectoryFilterChange);
-        }
       }
       function onDirectoryFilterChange() {
         currentPage = 1;
         renderTable();
+      }
+      function resetAllFilters() {
+        doctorFilterIds.clear();
+        genderFilterValues.clear();
+        onDirectoryFilterChange();
       }
       document.addEventListener('click', () => closeColumnFilter());
 
@@ -384,7 +365,12 @@
         const genderIconClass = genderFilterValues.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
         const doctorIconClass = doctorFilterIds.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
         wrap.innerHTML = `
-          <table class="qtable">
+          <table class="qtable qtable-fixed">
+            <colgroup>
+              <col style="width:15%;"><col style="width:11%;"><col style="width:6%;">
+              <col style="width:8%;"><col style="width:17%;"><col style="width:8%;">
+              <col style="width:10%;"><col style="width:10%;"><col style="width:15%;">
+            </colgroup>
             <thead><tr>
               <th>Name</th><th>Phone</th><th>Age</th>
               <th class="th-filterable"><span class="th-filter-trigger" id="genderFilterTrigger">Gender ${FILTER_ICON_SVG(genderIconClass)}</span></th>
@@ -394,15 +380,15 @@
             <tbody>
               ${pageItems.map((e) => `
                 <tr>
-                  <td>${Qlinic.escapeHtml(e.name)}</td>
+                  <td class="qtable-wrap">${Qlinic.escapeHtml(e.name)}</td>
                   <td>${Qlinic.escapeHtml(e.phone)}</td>
                   <td>${e.age || '—'}</td>
                   <td>${genderLabel(e.gender)}</td>
-                  <td>${e.address ? Qlinic.escapeHtml(e.address) : '—'}</td>
+                  <td class="qtable-wrap">${e.address ? Qlinic.escapeHtml(e.address) : '—'}</td>
                   <td>${e.totalVisits}</td>
                   <td>${Qlinic.formatDateLabel(e.firstVisitDate)}</td>
                   <td>${Qlinic.formatDateLabel(e.lastVisitDate)}</td>
-                  <td>${doctorNames(e.doctorIds)}</td>
+                  <td class="qtable-wrap">${doctorNames(e.doctorIds)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -416,7 +402,6 @@
           e.stopPropagation();
           openColumnFilter('doctor', e.currentTarget.closest('th'), doctorFilterOptions(), doctorFilterIds, onDirectoryFilterChange);
         });
-        reopenActiveFilter();
         renderPager(filtered.length);
       }
 
@@ -424,6 +409,7 @@
         currentPage = 1;
         renderTable();
       });
+      document.getElementById('resetFiltersBtn').addEventListener('click', resetAllFilters);
 
       function renderPeriodPresetOptions() {
         document.getElementById('periodPresetSelect').innerHTML = PERIOD_PRESETS.map((p) =>
