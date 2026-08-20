@@ -277,6 +277,17 @@
           if (dayIsClosed) btn.title = lockTitle; else btn.removeAttribute('title');
         });
 
+        // "Clear status" only means something once something's been set
+        // (running late/on a break/emergency) — greyed out rather than a
+        // no-op click when the doctor is already available, so the
+        // button's state itself signals there's nothing to clear.
+        if (!dayIsClosed) {
+          const clearStatusBtn = document.querySelector('[data-status="on_time"]');
+          const nothingToClear = doc.status === 'on_time';
+          clearStatusBtn.disabled = nothingToClear;
+          if (nothingToClear) clearStatusBtn.title = "Already available — nothing to clear.";
+        }
+
         // Call next patient also locks while on a break or in an
         // emergency — not the status buttons themselves, since "Clear
         // status" is exactly how a doctor gets back out of either state.
