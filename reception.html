@@ -119,6 +119,17 @@
                 <div class="time-picker-panel" id="pTimePanel" style="display:none;"></div>
               </div>
             </div>
+            <div class="field mode-only mode-only-walkin" style="display:none;">
+              <label>Preferred time (optional)</label>
+              <input type="time" id="pWalkinTime" />
+            </div>
+            <div class="field mode-only mode-only-walkin" style="display:none;flex:0;min-width:220px;">
+              <label>&nbsp;</label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;padding:9px 0;">
+                <input type="checkbox" id="pWalkinPriority" style="width:auto;" />
+                This is an emergency
+              </label>
+            </div>
             <div class="field">
               <label>Reason (optional)</label>
               <input type="text" id="pReason" />
@@ -161,7 +172,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=39"></script>
+  <script src="clinic-data.js?v=40"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -445,6 +456,7 @@
         document.getElementById('patientPanel').classList.toggle('mode-walkin', mode === 'walkin');
         document.getElementById('patientPanel').classList.toggle('mode-appointment', mode === 'appointment');
         document.querySelectorAll('.mode-only-appointment').forEach((el) => { el.style.display = mode === 'appointment' ? '' : 'none'; });
+        document.querySelectorAll('.mode-only-walkin').forEach((el) => { el.style.display = mode === 'walkin' ? '' : 'none'; });
         document.getElementById('pDate').required = mode === 'appointment';
         document.getElementById('modeHint').textContent = mode === 'walkin'
           ? "They're standing at the desk, this queues them immediately."
@@ -463,7 +475,8 @@
       // line is what actually tells reception (or the doctor) which one is
       // which.
       function nameCell(p) {
-        return `<div>${Qlinic.escapeHtml(p.name)}</div><div class="sub-line">${p.address ? Qlinic.escapeHtml(p.address) : 'No address on file'}</div>`;
+        const priorityBadge = p.isPriority ? ' <span class="badge badge-no-show">Priority</span>' : '';
+        return `<div>${Qlinic.escapeHtml(p.name)}${priorityBadge}</div><div class="sub-line">${p.address ? Qlinic.escapeHtml(p.address) : 'No address on file'}</div>`;
       }
 
       // The Waiting list is sorted by scheduled/effective time, not raw
@@ -640,7 +653,11 @@
             <tbody>
               ${results.map((p) => {
                 const doc = doctorById[p.doctorId];
-                const bookedCell = p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '<span class="badge badge-neutral">Walk-in</span>';
+                // Checks type, not bookedTime truthiness — a walk-in can
+                // now carry a real bookedTime too (a staff-assigned
+                // preferred time), which must still read as "Walk-in"
+                // here, not silently look like a formal appointment.
+                const bookedCell = p.type === 'appointment' ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '<span class="badge badge-neutral">Walk-in</span>';
                 if (editingSearchPatientId === p.id) {
                   const doctorOptions = doctorsCache.map((d) => `<option value="${d.id}" ${d.id === p.doctorId ? 'selected' : ''}>${Qlinic.escapeHtml(d.name)}</option>`).join('');
                   const bookedEditCell = p.type === 'appointment'
@@ -1060,8 +1077,22 @@
         let bookedForToday = true;
 
         if (patientMode === 'walkin') {
-          await Qlinic.addWalkIn({ name, phone, age, gender, address, doctorId, reason: document.getElementById('pReason').value });
-          showToast('Walk-in added to the queue');
+          const walkinTime = document.getElementById('pWalkinTime').value;
+          if (walkinTime && Qlinic.isPastRealDateTime(Qlinic.getTodayDate(), walkinTime)) {
+            const hint = document.getElementById('slotHint');
+            hint.className = 'slot-hint error';
+            hint.innerHTML = '⛔ That preferred time has already passed.';
+            document.getElementById('pWalkinTime').focus();
+            return;
+          }
+          const isPriority = document.getElementById('pWalkinPriority').checked;
+          await Qlinic.addWalkIn({
+            name, phone, age, gender, address, doctorId,
+            reason: document.getElementById('pReason').value,
+            bookedTime: walkinTime || null,
+            isPriority,
+          });
+          showToast(isPriority ? 'Emergency walk-in added — seen first' : 'Walk-in added to the queue');
         } else {
           const date = document.getElementById('pDate').value;
           const time = document.getElementById('pTime').value;

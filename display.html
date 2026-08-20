@@ -48,7 +48,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=39"></script>
+  <script src="clinic-data.js?v=40"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -112,6 +112,7 @@
           emergencyDetail: 'Attending an emergency, please bear with us',
           appointment: 'Appointment',
           walkin: 'Walk-in',
+          priority: 'Priority',
           empty: 'No one waiting right now. The waiting room is clear.',
           acrossAllDoctors: (n) => `(${n} across all doctors)`,
           allClosedTitle: 'No doctor is available right now',
@@ -142,6 +143,7 @@
           emergencyDetail: 'आपातकाल में व्यस्त, कृपया प्रतीक्षा करें',
           appointment: 'अपॉइंटमेंट',
           walkin: 'वॉक-इन',
+          priority: 'प्राथमिकता',
           empty: 'अभी कोई प्रतीक्षा में नहीं है। प्रतीक्षालय खाली है।',
           acrossAllDoctors: (n) => `(सभी डॉक्टरों को मिलाकर ${n})`,
           allClosedTitle: 'अभी कोई डॉक्टर उपलब्ध नहीं है',
@@ -435,16 +437,24 @@
               doctorAccent,
               position: p.position,
               effectiveTime: p.effectiveTime,
+              intendedTime: p.intendedTime,
+              createdAt: p.createdAt,
+              isPriority: p.isPriority,
               tokenNumber: p.tokenNumber,
               tokenDisplay: formatToken(p),
             });
           });
         });
-        // See byMomentThenToken in clinic-data.js for why the tiebreak is
-        // needed: multiple patients tied on the exact same effectiveTime
-        // (e.g. two appointments in the same slot bucket) would otherwise
-        // swap places between refreshes purely by chance of fetch order.
-        rows.sort((a, b) => (a.effectiveTime - b.effectiveTime) || ((a.tokenNumber || 0) - (b.tokenNumber || 0)));
+        // Mirrors compareQueueOrder in clinic-data.js: priority patients
+        // first, then effectiveTime (doctor-availability-aware), then
+        // each patient's own unclamped intendedTime as the tiebreak for
+        // patients bunched at the same delay floor, then createdAt as a
+        // purely technical last resort for a genuine coincidence — never
+        // token number, which only reflects booking order.
+        rows.sort((a, b) => {
+          if (!!a.isPriority !== !!b.isPriority) return a.isPriority ? -1 : 1;
+          return (a.effectiveTime - b.effectiveTime) || (a.intendedTime - b.intendedTime) || (new Date(a.createdAt) - new Date(b.createdAt));
+        });
         return rows;
       }
 
@@ -455,7 +465,7 @@
         return pageItems.map((p, i) => `
           <div class="board-row">
             <span class="board-pos">${p.tokenDisplay ? '#' + p.tokenDisplay : '·'}</span>
-            <span class="board-name">${localizeName(p.name)}${p.address ? `<span class="board-sub">${localizeName(p.address)}</span>` : ''}</span>
+            <span class="board-name">${localizeName(p.name)}${p.isPriority ? ' <span class="badge badge-no-show">' + T.priority + '</span>' : ''}${p.address ? `<span class="board-sub">${localizeName(p.address)}</span>` : ''}</span>
             <span class="board-doc"><span class="board-doc-dot dot-${p.doctorAccent}"></span>${localizeName(p.doctorName)}</span>
             <span class="board-type">${p.type === 'appointment' ? T.appointment : T.walkin}</span>
           </div>

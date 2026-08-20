@@ -128,7 +128,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=39"></script>
+  <script src="clinic-data.js?v=40"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -331,7 +331,7 @@
               ${q.waiting.map((p) => `
                 <tr>
                   <td>${formatToken(p, walkinRanks) ? '#' + formatToken(p, walkinRanks) : '·'}</td>
-                  <td><div>${Qlinic.escapeHtml(p.name)}</div><div class="sub-line">${p.address ? Qlinic.escapeHtml(p.address) : 'No address on file'}</div></td>
+                  <td><div>${Qlinic.escapeHtml(p.name)}${p.isPriority ? ' <span class="badge badge-no-show">Priority</span>' : ''}</div><div class="sub-line">${p.address ? Qlinic.escapeHtml(p.address) : 'No address on file'}</div></td>
                   <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
                   <td>${queueTimeCell(p)}</td>
                 </tr>

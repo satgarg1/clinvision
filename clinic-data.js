@@ -111,46 +111,72 @@
     return Math.floor(parseTime(hhmm) / intervalMins) * intervalMins;
   }
 
-  // ---------------- queue-ordering logic (same rule as before: your
-  // position is based on whichever is LATER, your scheduled slot or when
-  // you actually walked in, just expressed in real Date arithmetic now
-  // instead of simulated minutes-since-midnight). ----------------
-  function scheduledMoment(patient, doctor) {
-    if (patient.type === 'walkin' || !patient.bookedDate || !patient.bookedTime) return null;
-    const base = new Date(`${patient.bookedDate}T${patient.bookedTime}`);
-    base.setMinutes(base.getMinutes() + ((doctor && doctor.delayMins) || 0));
-    return base;
+  // ---------------- queue-ordering logic ----------------
+  // Every patient — walk-in or appointment — has an "intended moment":
+  // an appointment's booked slot, or (for walk-ins) either the moment
+  // they checked in, or a later time staff assigned them if the desk
+  // was too busy to see them right away. bookedDate/bookedTime being
+  // present is what distinguishes "has a real intended time" now,
+  // rather than patient.type — a walk-in given an explicit time flows
+  // through the exact same formula as an appointment.
+  function intendedMoment(patient) {
+    if (patient.bookedDate && patient.bookedTime) {
+      return new Date(`${patient.bookedDate}T${patient.bookedTime}`);
+    }
+    return patient.arrivedAt ? new Date(patient.arrivedAt) : new Date();
   }
 
+  // The doctor genuinely cannot see anyone before they're back from a
+  // declared delay — this clamps ANY patient's intended moment forward
+  // to that point, not just appointments, so a walk-in arriving mid-
+  // break can't leapfrog patients who were already due before the
+  // doctor stepped away. Only active while a delay is actually in
+  // effect (delayMins > 0): clearing status or going to emergency
+  // always resets delayMins to 0 (see setDoctorStatus), so this is
+  // naturally inert the rest of the time — no separate on/off branch
+  // needed. The already-arrived floor below is unchanged from before,
+  // now just applied uniformly to both types.
   function effectiveMoment(patient, doctor) {
-    if (patient.type === 'walkin') {
-      return patient.arrivedAt ? new Date(patient.arrivedAt) : new Date();
+    let moment = intendedMoment(patient);
+    if (doctor && doctor.delayMins) {
+      const availableAgain = new Date(doctor.statusUpdatedAt);
+      availableAgain.setMinutes(availableAgain.getMinutes() + doctor.delayMins);
+      if (availableAgain > moment) moment = availableAgain;
     }
-    const scheduled = scheduledMoment(patient, doctor);
     if (patient.arrivedAt) {
       const arrived = new Date(patient.arrivedAt);
-      return arrived > scheduled ? arrived : scheduled;
+      if (arrived > moment) moment = arrived;
     }
-    return scheduled;
+    return moment;
   }
 
-  // Multiple patients can land on the exact same scheduled/effective
-  // moment — e.g. two appointments booked into the same slot bucket, or
-  // two walk-ins that arrived in the same second. Array.sort is stable,
-  // so a tie between them falls back to whatever order the rows happened
-  // to come back from the server in, which Postgres doesn't guarantee
-  // without an explicit ORDER BY — so the visible row order could
-  // silently swap between refreshes even though nothing about the
-  // patients themselves changed. token_number is a stable, already-unique
-  // tiebreaker (assigned once at booking, never reused), so ties always
-  // resolve the same way regardless of fetch order.
-  function byMomentThenToken(momentA, momentB, a, b) {
-    return (momentA - momentB) || ((a.tokenNumber || 0) - (b.tokenNumber || 0));
+  // Priority patients always go first, full stop — a true emergency
+  // bypasses time-based ordering entirely rather than being modeled as
+  // "an early time." Otherwise: the doctor-availability-aware effective
+  // moment governs, with each patient's own unclamped intended moment
+  // as the tiebreak for patients bunched at the same delay floor (so
+  // someone due earlier keeps priority even when a break pins several
+  // patients to the same "available again" instant), and row-creation
+  // order as a purely technical last-resort for a genuine coincidence
+  // (same intended moment, same doctor) — never token number, which
+  // only reflects booking order and has no relationship to when
+  // someone is actually due to be seen.
+  function compareQueueOrder(a, b, doctor) {
+    if (!!a.isPriority !== !!b.isPriority) return a.isPriority ? -1 : 1;
+    const diff = effectiveMoment(a, doctor) - effectiveMoment(b, doctor);
+    if (diff) return diff;
+    const intentDiff = intendedMoment(a) - intendedMoment(b);
+    if (intentDiff) return intentDiff;
+    return new Date(a.createdAt) - new Date(b.createdAt);
   }
 
+  // Booked (not-yet-arrived) appointments have no arrivedAt, so
+  // effectiveMoment naturally reduces to "intended slot, clamped by any
+  // active doctor delay" for them — exactly the delay-aware "when are
+  // they really due" figure a no-show check should use.
   function isLikelyNoShow(patient, doctor, graceWindowMins) {
     if (patient.status !== 'booked' || !belongsToDate(patient, todayDateStr())) return false;
-    const scheduled = scheduledMoment(patient, doctor);
+    const scheduled = effectiveMoment(patient, doctor);
     return Date.now() > scheduled.getTime() + graceWindowMins * 60000;
   }
 
@@ -196,6 +222,8 @@
       reason: row.reason,
       tokenNumber: row.token_number,
       tokenDate: row.token_date,
+      isPriority: row.is_priority,
+      createdAt: row.created_at,
     };
   }
 
@@ -461,15 +489,15 @@
 
     const waiting = mine
       .filter((p) => p.status === 'waiting')
-      .sort((a, b) => byMomentThenToken(effectiveMoment(a, doctor), effectiveMoment(b, doctor), a, b))
-      .map((p, idx) => Object.assign({}, p, { position: idx + 1, effectiveTime: effectiveMoment(p, doctor) }));
+      .sort((a, b) => compareQueueOrder(a, b, doctor))
+      .map((p, idx) => Object.assign({}, p, { position: idx + 1, effectiveTime: effectiveMoment(p, doctor), intendedTime: intendedMoment(p) }));
 
     const booked = mine
       .filter((p) => p.status === 'booked')
-      .sort((a, b) => byMomentThenToken(scheduledMoment(a, doctor), scheduledMoment(b, doctor), a, b))
+      .sort((a, b) => compareQueueOrder(a, b, doctor))
       .map((p) => Object.assign({}, p, {
         likelyNoShow: isLikelyNoShow(p, doctor, clinic.grace_window_mins),
-        effectiveTime: scheduledMoment(p, doctor),
+        effectiveTime: effectiveMoment(p, doctor),
       }));
 
     const done = mine.filter((p) => p.status === 'done');
@@ -506,7 +534,7 @@
     if (error) throw error;
     return data.map(normalizePatient).map((p) => Object.assign({}, p, {
       likelyNoShow: p.status === 'booked' ? isLikelyNoShow(p, doctorById[p.doctorId], clinic.grace_window_mins) : false,
-      effectiveTime: scheduledMoment(p, doctorById[p.doctorId]),
+      effectiveTime: effectiveMoment(p, doctorById[p.doctorId]),
     }));
   }
 
@@ -536,6 +564,13 @@
     if (error) throw error;
   }
 
+  // bookedTime is optional — most walk-ins stay "as soon as possible"
+  // (no bookedDate/bookedTime, exactly as before), but reception can
+  // give a busy-desk walk-in a specific later time instead, so they
+  // flow through the same doctor-availability-aware ordering as an
+  // appointment rather than always racing to the front by raw arrival.
+  // isPriority is the true-emergency override, bypassing time-based
+  // ordering entirely.
   async function addWalkIn(info) {
     const clinicId = await ensureClinicContext();
     const { data, error } = await sb.from('patients').insert({
@@ -551,6 +586,9 @@
       arrived_at: new Date().toISOString(),
       reason: info.reason || '',
       token_date: todayDateStr(),
+      booked_date: info.bookedTime ? todayDateStr() : null,
+      booked_time: info.bookedTime || null,
+      is_priority: !!info.isPriority,
     }).select().single();
     if (error) throw error;
     const message = await queueBookingNotification({
@@ -968,7 +1006,7 @@
     if (current) {
       await sb.from('patients').update({ status: 'done' }).eq('id', current.id);
     }
-    const waiting = mine.filter((p) => p.status === 'waiting').sort((a, b) => byMomentThenToken(effectiveMoment(a, doctor), effectiveMoment(b, doctor), a, b));
+    const waiting = mine.filter((p) => p.status === 'waiting').sort((a, b) => compareQueueOrder(a, b, doctor));
     if (waiting.length > 0) {
       await sb.from('patients').update({ status: 'in_consult', called_at: new Date().toISOString() }).eq('id', waiting[0].id);
     }
