@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=119" />
+<link rel="stylesheet" href="styles.css?v=120" />
 </head>
 <body>
   <div class="app-shell">
@@ -311,6 +311,29 @@
         })).sort((a, b) => b.count - a.count);
       }
 
+      // One removable chip per active column filter, so a filtered
+      // directory is visibly and specifically flagged as filtered
+      // (which column, which values) rather than looking identical to
+      // the unfiltered table.
+      function activeFilterChipsHtml() {
+        const chips = [];
+        if (doctorFilterIds.size > 0) {
+          const labels = Object.values(doctorById).filter((d) => doctorFilterIds.has(d.id)).map((d) => d.name);
+          chips.push({ key: 'doctor', label: `Doctors seen: ${labels.join(', ')}` });
+        }
+        if (genderFilterValues.size > 0) {
+          const labels = [...genderFilterValues].map((v) => genderLabel(v === '__unspecified__' ? null : v));
+          chips.push({ key: 'gender', label: `Gender: ${labels.join(', ')}` });
+        }
+        if (chips.length === 0) return '';
+        return `<div class="active-filter-chips">${chips.map((c) => `<div class="filter-chip">${Qlinic.escapeHtml(c.label)}<button type="button" class="clear-filter-chip" data-key="${c.key}" aria-label="Clear filter">×</button></div>`).join('')}</div>`;
+      }
+      function clearFilterByKey(key) {
+        if (key === 'doctor') doctorFilterIds.clear();
+        else if (key === 'gender') genderFilterValues.clear();
+        onDirectoryFilterChange();
+      }
+
       function renderPager(total) {
         const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
         if (currentPage > totalPages) currentPage = totalPages;
@@ -365,10 +388,11 @@
         const genderIconClass = genderFilterValues.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
         const doctorIconClass = doctorFilterIds.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
         wrap.innerHTML = `
+          ${activeFilterChipsHtml()}
           <table class="qtable qtable-fixed">
             <colgroup>
               <col style="width:15%;"><col style="width:11%;"><col style="width:6%;">
-              <col style="width:8%;"><col style="width:17%;"><col style="width:8%;">
+              <col style="width:10%;"><col style="width:13%;"><col style="width:10%;">
               <col style="width:10%;"><col style="width:10%;"><col style="width:15%;">
             </colgroup>
             <thead><tr>
@@ -401,6 +425,9 @@
         document.getElementById('doctorFilterTrigger').addEventListener('click', (e) => {
           e.stopPropagation();
           openColumnFilter('doctor', e.currentTarget.closest('th'), doctorFilterOptions(), doctorFilterIds, onDirectoryFilterChange);
+        });
+        document.querySelectorAll('.clear-filter-chip').forEach((btn) => {
+          btn.addEventListener('click', () => clearFilterByKey(btn.dataset.key));
         });
         renderPager(filtered.length);
       }

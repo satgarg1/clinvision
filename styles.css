@@ -964,6 +964,11 @@ table.qtable th {
   color: var(--grey-500);
   padding: 8px 10px;
   border-bottom: 1px solid var(--grey-300);
+  /* Header labels are short by design — wrapping one to two lines (e.g.
+     "Total visits" in a narrow fixed-width column) misaligns it against
+     single-line neighbors more than it saves space; body cells still
+     wrap normally via .qtable-wrap. */
+  white-space: nowrap;
 }
 table.qtable td { padding: 12px 10px; border-bottom: 1px solid var(--grey-100); vertical-align: middle; }
 table.qtable tr:last-child td { border-bottom: none; }
@@ -1011,6 +1016,22 @@ th.th-filterable { position: relative; }
   padding: 6px 14px; margin-bottom: 14px;
 }
 .active-filter-chip button { border: none; background: none; color: inherit; font-weight: 700; cursor: pointer; font-size: 15px; padding: 0; line-height: 1; }
+/* A row of chips, one per active column filter (Doctor/Type/Payment
+   mode on Revenue, Doctor/Gender on Directory), so a filtered view is
+   visibly and specifically flagged as filtered rather than looking
+   identical to the unfiltered table. .filter-chip reuses
+   .active-filter-chip's shape but in accent blue, not danger red —
+   red stays reserved for the Outstanding-only chip's warning meaning
+   (it already pairs with the Outstanding card's red outline), so a
+   plain "you filtered by Doctor" chip doesn't read as an alert. */
+.active-filter-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.active-filter-chips .active-filter-chip, .active-filter-chips .filter-chip { margin-bottom: 0; }
+.filter-chip {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;
+  color: var(--accent-dark); background: rgba(0, 113, 227, 0.1); border-radius: var(--radius-pill);
+  padding: 6px 14px;
+}
+.filter-chip button { border: none; background: none; color: inherit; font-weight: 700; cursor: pointer; font-size: 15px; padding: 0; line-height: 1; }
 
 .badge {
   display: inline-block;

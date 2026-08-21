@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=119" />
+<link rel="stylesheet" href="styles.css?v=120" />
 </head>
 <body>
   <div class="app-shell">
@@ -481,6 +481,39 @@
         document.getElementById('pagerNext').addEventListener('click', () => { currentPage += 1; renderTable(); document.getElementById('revenueTableWrap').scrollIntoView({ block: 'start', behavior: 'smooth' }); });
       }
 
+      // One removable chip per active column filter, so a filtered Bills
+      // table is visibly and specifically flagged as filtered (which
+      // column, which values) rather than looking identical to the
+      // unfiltered table. Outstanding-only keeps its own red chip (an
+      // alert, not just a filter); the rest render in .filter-chip's
+      // neutral accent-blue.
+      function activeFilterChipsHtml() {
+        const chips = [];
+        if (doctorFilterIds.size > 0) {
+          const labels = Object.values(doctorById).filter((d) => doctorFilterIds.has(d.id)).map((d) => d.name);
+          chips.push({ key: 'doctor', label: `Doctor: ${labels.join(', ')}` });
+        }
+        if (typeFilterValues.size > 0) {
+          const labels = [...typeFilterValues].map((v) => FEE_TYPE_LABELS[v] || v);
+          chips.push({ key: 'type', label: `Type: ${labels.join(', ')}` });
+        }
+        if (paymentModeFilterValues.size > 0) {
+          const labels = [...paymentModeFilterValues].map((v) => PAYMENT_MODE_LABELS[v] || v);
+          chips.push({ key: 'payment', label: `Payment mode: ${labels.join(', ')}` });
+        }
+        const chipsHtml = chips.map((c) => `<div class="filter-chip">${Qlinic.escapeHtml(c.label)}<button type="button" class="clear-filter-chip" data-key="${c.key}" aria-label="Clear filter">×</button></div>`).join('');
+        const outstandingHtml = outstandingOnly ? `<div class="active-filter-chip">Showing: outstanding balance only <button type="button" class="clear-filter-chip" data-key="outstanding" aria-label="Clear filter">×</button></div>` : '';
+        if (!chipsHtml && !outstandingHtml) return '';
+        return `<div class="active-filter-chips">${chipsHtml}${outstandingHtml}</div>`;
+      }
+      function clearFilterByKey(key) {
+        if (key === 'doctor') doctorFilterIds.clear();
+        else if (key === 'type') typeFilterValues.clear();
+        else if (key === 'payment') paymentModeFilterValues.clear();
+        else if (key === 'outstanding') outstandingOnly = false;
+        onRevenueFilterChange();
+      }
+
       function FILTER_ICON_SVG(className) {
         return `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>`;
       }
@@ -512,7 +545,7 @@
         const paymentIconClass = paymentModeFilterValues.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
 
         wrap.innerHTML = `
-          ${outstandingOnly ? `<div class="active-filter-chip">Showing: outstanding balance only <button type="button" id="clearOutstandingFilter" aria-label="Clear filter">×</button></div>` : ''}
+          ${activeFilterChipsHtml()}
           <table class="qtable qtable-fixed">
             <colgroup>
               <col style="width:20%;"><col style="width:10%;"><col style="width:10%;">
@@ -565,14 +598,9 @@
           e.stopPropagation();
           openColumnFilter('payment', e.currentTarget.closest('th'), paymentModeFilterOptions(), paymentModeFilterValues, onRevenueFilterChange);
         });
-        if (outstandingOnly) {
-          document.getElementById('clearOutstandingFilter').addEventListener('click', () => {
-            outstandingOnly = false;
-            currentPage = 1;
-            renderSummary();
-            renderTable();
-          });
-        }
+        document.querySelectorAll('.clear-filter-chip').forEach((btn) => {
+          btn.addEventListener('click', () => clearFilterByKey(btn.dataset.key));
+        });
         renderPager(filtered.length);
       }
 
