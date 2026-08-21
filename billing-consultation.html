@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=124" />
+<link rel="stylesheet" href="styles.css?v=125" />
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -152,7 +152,10 @@
       </div>
     </div>
     <div class="receipt-meta-row">
-      <span id="rDateTime"></span>
+      <div>
+        <div id="rBilledOn"></div>
+        <div id="rVisitDate"></div>
+      </div>
       <span id="rBilledBy"></span>
     </div>
     <table class="receipt-info-grid">
@@ -186,6 +189,7 @@
       </div>
     </div>
     <div class="receipt-signature-wrap">
+      <div class="receipt-generated-note">This is a computer-generated receipt and does not require a signature.</div>
       <div class="receipt-signature-line">Stamp &amp; signature</div>
     </div>
     <div class="receipt-footer">Thank you for visiting <span id="rClinicName2"></span></div>
@@ -367,19 +371,18 @@
         document.getElementById('rInvoiceNumber').textContent = `#RC-${String(invoice.invoiceNumber).padStart(4, '0')}`;
         // invoiceDate (the consultation date, editable on the form) and
         // createdAt (the honest audit timestamp of when this receipt was
-        // actually printed) usually fall on the same day and there's
-        // nothing extra to say — but a backdated bill needs the receipt
-        // itself to say so, or the patient's own record of which day
-        // they were actually seen is wrong. Local calendar date, not
-        // toISOString's UTC date — those disagree in the early-morning
-        // hours in timezones ahead of UTC (e.g. IST), which would
-        // otherwise show a spurious "Visit:" note on an ordinary same-day
-        // bill printed after midnight.
-        const printedAt = new Date(invoice.createdAt);
-        const printedDateStr = `${printedAt.getFullYear()}-${String(printedAt.getMonth() + 1).padStart(2, '0')}-${String(printedAt.getDate()).padStart(2, '0')}`;
-        document.getElementById('rDateTime').textContent = invoice.invoiceDate && invoice.invoiceDate !== printedDateStr
-          ? `${Qlinic.formatDateTime(invoice.createdAt)} · Visit: ${Qlinic.formatDateLabel(invoice.invoiceDate)}`
-          : Qlinic.formatDateTime(invoice.createdAt);
+        // actually printed) can differ for a backdated bill, so both are
+        // always shown, labeled, rather than collapsing to one line only
+        // when they disagree — a receipt is a permanent record, so it
+        // states both plainly instead of making the reader infer which
+        // date is which. Visit date uses a plain day/month/year (no
+        // "Today"/weekday label) for the same reason: those relative
+        // labels are only meaningful the day they're read, not on a
+        // record someone might look at again next month.
+        document.getElementById('rBilledOn').textContent = `Billed on: ${Qlinic.formatDateTime(invoice.createdAt)}`;
+        const [vy, vm, vd] = invoice.invoiceDate.split('-').map(Number);
+        const visitDateLabel = new Date(vy, vm - 1, vd).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+        document.getElementById('rVisitDate').textContent = `Patient Visit date: ${visitDateLabel}`;
         document.getElementById('rBilledBy').textContent = `Billed by: ${(myProfile && myProfile.fullName) || 'Reception'}`;
         document.getElementById('rPatientName').textContent = invoice.patientName;
         document.getElementById('rPatientPhone').textContent = invoice.patientPhone || '—';
@@ -437,7 +440,6 @@
           });
           renderReceipt(invoice);
           window.print();
-          showToast(`Receipt #${invoice.invoiceNumber} printed`);
           resetForm();
         } catch (err) {
           showToast(err.message || 'Could not create the bill.');

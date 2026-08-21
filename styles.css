@@ -2171,7 +2171,8 @@ table.qtable tbody tr:hover { background: var(--grey-100); }
   border-radius: 999px;
 }
 
-.receipt-signature-wrap { display: flex; justify-content: flex-end; margin-top: 90px; }
+.receipt-signature-wrap { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 90px; }
+.receipt-generated-note { font-size: 12px; color: var(--grey-500); max-width: 260px; }
 .receipt-signature-line {
   width: 220px;
   text-align: center;
