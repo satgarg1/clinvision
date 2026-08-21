@@ -895,6 +895,28 @@
     };
   }
 
+  // Consultation billing's manual form (unlike the auto-billed-on-arrival
+  // path in 016, which always links straight to a real patients row) has
+  // no built-in tie to an actual visit — it's just typed fields, so
+  // nothing stopped a bill being created for a phone number that never
+  // showed up in the queue at all on that date. token_date already
+  // mirrors "which day this patient belongs to" for both walk-ins and
+  // appointments (see getPatientsInRange), so it's the same field to
+  // check here: does ANY patient row for this clinic have this phone and
+  // this token_date, regardless of status (a no-show or already-finished
+  // visit still proves the appointment existed).
+  async function hasAppointmentOnDate(phone, dateStr) {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId || !phone) return false;
+    const { data, error } = await sb.from('patients').select('id')
+      .eq('clinic_id', clinicId)
+      .eq('phone', phone)
+      .eq('token_date', dateStr)
+      .limit(1);
+    if (error) throw error;
+    return data.length > 0;
+  }
+
   async function createInvoice({ doctorId, feeType, patientName, patientPhone, patientAddress, patientAge, patientGender, paymentMode, amountReceived, invoiceDate }) {
     const { data, error } = await sb.rpc('create_invoice', {
       p_doctor_id: doctorId,
@@ -1487,6 +1509,7 @@
     getInvoicesForDate,
     getInvoicesForDateRange,
     getPatientsInRange,
+    hasAppointmentOnDate,
     getInvoiceById,
     updateInvoicePayment,
     markArrived,

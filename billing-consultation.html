@@ -199,7 +199,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=43"></script>
+  <script src="clinic-data.js?v=44"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -422,6 +422,28 @@
           document.getElementById('bPhone').focus();
           return;
         }
+        const invoiceDate = document.getElementById('bDate').value || Qlinic.getTodayDate();
+
+        // This form has no built-in tie to a real visit — unlike the
+        // auto-billed-on-arrival path (Reception's queue), which always
+        // links straight to a patient row, this is just typed fields, so
+        // nothing stopped billing a phone number that never actually
+        // showed up in the queue that day. Warn (but still allow an
+        // override) rather than hard-block, since a legitimate edge case
+        // — a patient billed without ever being added to the digital
+        // queue — does exist.
+        const hasAppointment = await Qlinic.hasAppointmentOnDate(phone, invoiceDate);
+        if (!hasAppointment) {
+          const proceed = await Qlinic.confirmDialog({
+            title: 'No appointment found',
+            message: `No appointment or walk-in was found for this phone number on ${Qlinic.formatDateLabel(invoiceDate)}.`,
+            confirmLabel: 'Bill anyway',
+            cancelLabel: 'Cancel',
+            danger: true,
+          });
+          if (!proceed) return;
+        }
+
         const btn = document.getElementById('billingSubmitBtn');
         btn.disabled = true;
         btn.textContent = 'Printing…';
@@ -436,7 +458,7 @@
             patientGender: document.getElementById('bGender').value,
             paymentMode: document.getElementById('bPaymentMode').value,
             amountReceived: Number(document.getElementById('bAmountReceived').value) || 0,
-            invoiceDate: document.getElementById('bDate').value || Qlinic.getTodayDate(),
+            invoiceDate,
           });
           renderReceipt(invoice);
           window.print();
