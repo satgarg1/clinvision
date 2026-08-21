@@ -42,6 +42,53 @@
     return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  // Every confirmation in the app used to be window.confirm() — a native
+  // browser dialog with no styling hook at all (unlike everything else
+  // here, it's drawn by the browser itself, outside the page's DOM).
+  // This is the shared replacement: one dynamically-injected modal that
+  // every page calls the same way. Resolves true/false instead of
+  // returning synchronously, so every call site becomes
+  // `if (await Qlinic.confirmDialog({...}))` in place of `if (confirm(...))`.
+  // Real confirm/cancel labels (not a fixed "OK"/"Cancel") let a call site
+  // spell out exactly what each button does, which matters most for the
+  // handful of dialogs where OK/Cancel used to carry specific, opposite
+  // meanings spelled out awkwardly inside the message text itself.
+  function confirmDialog({ title, message, confirmLabel = 'Continue', cancelLabel = 'Cancel', danger = false } = {}) {
+    return new Promise((resolve) => {
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop';
+      backdrop.innerHTML = `
+        <div class="modal-card" role="alertdialog" aria-modal="true">
+          ${title ? `<h2 class="modal-title">${escapeHtml(title)}</h2>` : ''}
+          <p class="modal-message">${escapeHtml(message)}</p>
+          <div class="modal-actions">
+            <button type="button" class="btn-sm" id="modalCancelBtn">${escapeHtml(cancelLabel)}</button>
+            <button type="button" class="btn-sm ${danger ? 'danger-solid' : 'primary'}" id="modalConfirmBtn">${escapeHtml(confirmLabel)}</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(backdrop);
+
+      function cleanup(result) {
+        backdrop.remove();
+        document.removeEventListener('keydown', onKeydown);
+        resolve(result);
+      }
+      function onKeydown(e) {
+        if (e.key === 'Escape') cleanup(false);
+      }
+      document.addEventListener('keydown', onKeydown);
+      backdrop.addEventListener('click', (e) => { if (e.target === backdrop) cleanup(false); });
+      backdrop.querySelector('#modalCancelBtn').addEventListener('click', () => cleanup(false));
+      backdrop.querySelector('#modalConfirmBtn').addEventListener('click', () => cleanup(true));
+      // A destructive action's Cancel gets focus, not its Confirm — so
+      // hitting Enter/Space right after the dialog opens (a reflexive
+      // dismiss, or focus arriving from whatever was just clicked)
+      // backs out instead of completing the destructive action.
+      backdrop.querySelector(danger ? '#modalCancelBtn' : '#modalConfirmBtn').focus();
+    });
+  }
+
   // ---------------- time-of-day helpers (unchanged from the old data.js:
   // these operate on "HH:MM" strings like <input type="time"> values, not
   // on real timestamps, so they don't need to change just because the
@@ -1458,6 +1505,7 @@
     isDoctorClosedToday,
     isRealStatusReason,
     escapeHtml,
+    confirmDialog,
     isLikelyNoShow,
     getQueueStatus,
 

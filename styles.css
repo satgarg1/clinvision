@@ -1039,6 +1039,32 @@ th.th-filterable { position: relative; }
 }
 .filter-chip button { border: none; background: none; color: inherit; font-weight: 700; cursor: pointer; font-size: 15px; padding: 0; line-height: 1; }
 
+/* Qlinic.confirmDialog()'s modal — replaces every window.confirm() in
+   the app. --white/--black/--grey-700 already flip under dark mode
+   (redefined at the token level, not hardcoded here), so this needs no
+   separate dark-theme block of its own. */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.modal-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-hover);
+  padding: 28px;
+  max-width: 440px;
+  width: 100%;
+}
+.modal-title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--black); margin: 0 0 10px; }
+.modal-message { font-size: 14px; color: var(--grey-700); line-height: 1.5; margin: 0 0 24px; white-space: pre-line; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
 .badge {
   display: inline-block;
   white-space: nowrap;
