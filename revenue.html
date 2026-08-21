@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=121" />
+<link rel="stylesheet" href="styles.css?v=122" />
 </head>
 <body>
   <div class="app-shell">
@@ -47,33 +47,33 @@
     </aside>
 
     <main class="app-main">
-      <div class="app-topbar">
+      <div class="app-topbar" style="margin-bottom:16px;">
         <h1>Revenue</h1>
       </div>
 
       <input type="text" id="patientSearch" placeholder="Search by patient name..." />
 
-      <div style="display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
         <div class="period-pills" id="viewModeToggle" style="margin-bottom:0;">
           <button type="button" class="period-pill active" data-mode="single">Single day</button>
           <button type="button" class="period-pill" data-mode="range">Range</button>
         </div>
+      </div>
 
-        <div style="display:flex;gap:24px;flex-wrap:wrap;" id="singleDayFilters">
-          <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
-            <label class="pill-label">Date</label>
-            <input type="date" id="dateFilter" class="pill-input" />
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
-            <label class="pill-label">&nbsp;</label>
-            <button type="button" class="pill-btn" id="todayBtn">Today</button>
-          </div>
+      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:10px;" id="singleDayFilters">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">Date</label>
+          <input type="date" id="dateFilter" class="pill-input" />
         </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">&nbsp;</label>
+          <button type="button" class="pill-btn" id="todayBtn">Today</button>
+        </div>
+      </div>
 
-        <div style="display:none;flex-direction:column;align-items:flex-start;gap:6px;" id="rangePresetField">
-          <label class="pill-label">Period</label>
-          <select id="rangePresetSelect" class="pill-select"></select>
-        </div>
+      <div style="display:none;flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:10px;" id="rangePresetField">
+        <label class="pill-label">Period</label>
+        <select id="rangePresetSelect" class="pill-select"></select>
       </div>
 
       <div style="display:none;gap:24px;flex-wrap:wrap;margin-bottom:10px;" id="customRangeFilters">

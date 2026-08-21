@@ -1013,10 +1013,14 @@ th.th-filterable { position: relative; }
 
 .stat-card.clickable { cursor: pointer; }
 .stat-card.active-filter { outline: 2px solid var(--danger); outline-offset: 2px; }
+/* Both chip variants sit inline in a .panel-header next to .btn-sm
+   buttons (Export CSV/Reset filters) — same padding/font/radius as
+   .btn-sm so they read as one consistent row of controls instead of a
+   different-shaped pill dropped in among rectangular buttons. */
 .active-filter-chip {
   display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;
-  color: var(--danger); background: var(--danger-bg); border-radius: var(--radius-pill);
-  padding: 6px 14px; margin-bottom: 14px;
+  color: var(--danger); background: var(--danger-bg); border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-4); border: 1px solid transparent;
 }
 .active-filter-chip button { border: none; background: none; color: inherit; font-weight: 700; cursor: pointer; font-size: 15px; padding: 0; line-height: 1; }
 /* A row of chips, one per active column filter (Doctor/Type/Payment
@@ -1027,12 +1031,11 @@ th.th-filterable { position: relative; }
    red stays reserved for the Outstanding-only chip's warning meaning
    (it already pairs with the Outstanding card's red outline), so a
    plain "you filtered by Doctor" chip doesn't read as an alert. */
-.active-filter-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-.active-filter-chips .active-filter-chip, .active-filter-chips .filter-chip { margin-bottom: 0; }
+.active-filter-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .filter-chip {
   display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;
-  color: var(--accent-dark); background: rgba(0, 113, 227, 0.1); border-radius: var(--radius-pill);
-  padding: 6px 14px;
+  color: var(--accent-dark); background: rgba(0, 113, 227, 0.1); border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-4); border: 1px solid transparent;
 }
 .filter-chip button { border: none; background: none; color: inherit; font-weight: 700; cursor: pointer; font-size: 15px; padding: 0; line-height: 1; }
 
