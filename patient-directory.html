@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=120" />
+<link rel="stylesheet" href="styles.css?v=121" />
 </head>
 <body>
   <div class="app-shell">
@@ -56,14 +56,14 @@
 
       <input type="text" id="directorySearch" placeholder="Search by name, phone, or address..." />
 
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+      <div style="display:flex;align-items:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
           <label class="pill-label">Period</label>
           <select id="periodPresetSelect" class="pill-select"></select>
         </div>
       </div>
 
-      <div style="display:none;gap:24px;flex-wrap:wrap;margin-bottom:14px;" id="customPeriodFilters">
+      <div style="display:none;gap:24px;flex-wrap:wrap;margin-bottom:10px;" id="customPeriodFilters">
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
           <label class="pill-label">From</label>
           <div style="display:flex;gap:8px;">
@@ -81,7 +81,12 @@
       </div>
 
       <div class="panel">
-        <div class="panel-header"><h2 id="directorySummary">Loading…</h2><button type="button" class="btn-sm primary" id="exportCsvBtn">Export CSV</button><button type="button" class="btn-sm primary" id="resetFiltersBtn" style="margin-left:auto;">Reset filters</button></div>
+        <div class="panel-header">
+          <h2 id="directorySummary">Loading…</h2>
+          <button type="button" class="btn-sm primary" id="exportCsvBtn">Export CSV</button>
+          <div id="activeFilterChipsRow" class="active-filter-chips" style="margin-bottom:0;"></div>
+          <button type="button" class="btn-sm primary" id="resetFiltersBtn" style="margin-left:auto;">Reset filters</button>
+        </div>
         <div id="directoryTableWrap"></div>
         <div class="pager" id="directoryPager"></div>
       </div>
@@ -369,6 +374,16 @@
           ? `${filtered.length} of ${allEntries.length} patients`
           : `${allEntries.length} patient${allEntries.length === 1 ? '' : 's'} on file`;
 
+        // Rendered into the panel-header row (next to Export CSV/Reset
+        // filters) rather than as its own block above the table, so
+        // filtering doesn't shift the table down or move it back up when
+        // cleared — and it stays visible even when a filter zeroes out
+        // every row, so there's still something to clear.
+        document.getElementById('activeFilterChipsRow').innerHTML = activeFilterChipsHtml();
+        document.querySelectorAll('#activeFilterChipsRow .clear-filter-chip').forEach((btn) => {
+          btn.addEventListener('click', () => clearFilterByKey(btn.dataset.key));
+        });
+
         if (allEntries.length === 0) {
           wrap.innerHTML = '<div class="empty-state">No patients on file yet.</div>';
           document.getElementById('directoryPager').innerHTML = '';
@@ -388,7 +403,6 @@
         const genderIconClass = genderFilterValues.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
         const doctorIconClass = doctorFilterIds.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
         wrap.innerHTML = `
-          ${activeFilterChipsHtml()}
           <table class="qtable qtable-fixed">
             <colgroup>
               <col style="width:15%;"><col style="width:11%;"><col style="width:6%;">
@@ -425,9 +439,6 @@
         document.getElementById('doctorFilterTrigger').addEventListener('click', (e) => {
           e.stopPropagation();
           openColumnFilter('doctor', e.currentTarget.closest('th'), doctorFilterOptions(), doctorFilterIds, onDirectoryFilterChange);
-        });
-        document.querySelectorAll('.clear-filter-chip').forEach((btn) => {
-          btn.addEventListener('click', () => clearFilterByKey(btn.dataset.key));
         });
         renderPager(filtered.length);
       }

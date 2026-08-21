@@ -457,7 +457,10 @@ a { color: inherit; }
 .value-pink { color: var(--mkt-pink); }
 .value-danger { color: var(--danger); }
 
-.panel-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+/* flex-wrap so a panel-header that grows a variable-width middle item
+   (Revenue/Directory's active-filter-chips row) wraps to a second line
+   on a narrow viewport instead of forcing Reset filters off-screen. */
+.panel-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .panel .panel-header h2 { margin: 0; }
 
 .board-doc-dot {
@@ -1304,7 +1307,7 @@ th.th-filterable { position: relative; }
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   background: var(--white);
   color: var(--black);
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 #patientSearch:focus, #directorySearch:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 
