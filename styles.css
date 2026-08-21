@@ -986,7 +986,7 @@ table.qtable.qtable-fixed .qtable-wrap { overflow-wrap: break-word; word-break: 
    target and dropdown-anchor are unambiguous; the icon itself just
    flags whether a filter is currently narrowing this column. */
 th.th-filterable { position: relative; }
-.th-filter-trigger { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
+.th-filter-trigger { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; white-space: nowrap; }
 .th-filter-icon { width: 12px; height: 12px; flex-shrink: 0; opacity: 0.55; }
 .th-filter-icon.active { opacity: 1; color: var(--accent); }
 .filter-dropdown {
