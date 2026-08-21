@@ -1087,7 +1087,10 @@ th.th-filterable { position: relative; }
 .btn-sm:hover { background: var(--grey-300); color: var(--black); }
 .btn-sm.primary { background: var(--accent); color: #ffffff; }
 .btn-sm.primary:hover { background: var(--accent-dark); }
-.btn-sm.danger { background: transparent; color: var(--danger); }
+/* A real outlined rounded-rect (matching .accent-outline/.success-outline's
+   shape) instead of bare colored text with no border — reads as a proper
+   button (Delete/Deactivate/No-show/Remove) rather than a text link. */
+.btn-sm.danger { background: transparent; color: var(--danger); border-color: var(--danger); }
 .btn-sm.danger:hover { background: var(--danger-bg); }
 .btn-sm.danger-solid { background: var(--danger); color: #ffffff; }
 .btn-sm.danger-solid:hover { background: #a01b18; }
@@ -1297,22 +1300,26 @@ th.th-filterable { position: relative; }
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
-#patientSearch, #directorySearch {
+/* Full pill shape (not the 10px-rounded rect this used to be) — the
+   search bar is the primary, first-touched control on these three
+   pages, so it gets a distinct, more confident shape than a regular
+   text field, closer to a familiar rounded search-bar treatment. */
+#searchBox, #patientSearch, #directorySearch {
   display: block;
   width: 100%;
   box-sizing: border-box;
-  padding: 13px 16px;
+  padding: 14px 24px;
   font-size: 17px;
   font-weight: 500;
   font-family: var(--font);
   border: 1px solid var(--grey-300);
-  border-radius: 10px;
+  border-radius: var(--radius-pill);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   background: var(--white);
   color: var(--black);
   margin-bottom: 10px;
 }
-#patientSearch:focus, #directorySearch:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+#searchBox:focus, #patientSearch:focus, #directorySearch:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 
 /* End-of-day's Close/Reopen-day buttons sit directly on the page's
    grey-100 background, same as .btn-sm's default fill, so they were

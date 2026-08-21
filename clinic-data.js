@@ -1298,12 +1298,28 @@
     };
   }
 
+  // Memoized per page load: isAdmin()/canAccessBilling() (and any other
+  // caller) each used to trigger their own independent auth+profile
+  // round-trip. Two back-to-back fetches for the same profile on the
+  // same page occasionally disagreed under a transient network hiccup —
+  // one would resolve normally while the other briefly came back null —
+  // which is what made the sidebar's Trends/End of day/Billing/Revenue
+  // links flicker in and out depending only on which page happened to
+  // hit the glitch, not on the user's actual role. Sharing one in-flight
+  // promise across every caller collapses that into a single fetch, so
+  // every check on a given page sees the same answer.
+  let myProfilePromise = null;
   async function getMyProfile() {
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session) return null;
-    const { data, error } = await sb.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
-    if (error) throw error;
-    return data ? normalizeProfile(data) : null;
+    if (!myProfilePromise) {
+      myProfilePromise = (async () => {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) return null;
+        const { data, error } = await sb.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+        if (error) throw error;
+        return data ? normalizeProfile(data) : null;
+      })();
+    }
+    return myProfilePromise;
   }
 
   async function isAdmin() {
