@@ -1262,8 +1262,15 @@ th.th-filterable { position: relative; }
    row alongside the picker/buttons), so it falls outside every existing
    sizing rule and would default to the bare .field input tier (12px 16px
    / 15px) — visibly bigger than its neighbors above. Matched to the same
-   10px 12px / 14px as the rest of this panel instead. */
-#delayInputWrap input[type="text"] {
+   10px 12px / 14px as the rest of this panel instead.
+   .autocomplete-ghost has to get the identical padding/font-size, not
+   just the real input — the ghost overlay renders the same string
+   ("typed" text made invisible, then the suggestion) on top of the real
+   input, so any difference between the two boxes shifts the ghost text
+   away from wherever the real caret actually is, which is exactly what
+   makes a hint like "unch" (completing "l" to "Lunch") land nowhere
+   near the "l" that's actually been typed. */
+#delayInputWrap input[type="text"], #delayInputWrap .autocomplete-ghost {
   padding: 10px 12px;
   font-size: 14px;
 }
