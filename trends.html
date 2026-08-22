@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=128" />
+<link rel="stylesheet" href="styles.css?v=129" />
 </head>
 <body>
   <div class="app-shell">
@@ -94,6 +94,16 @@
         <div id="noShowByWeekday"></div>
         <div id="noShowBreakdown"></div>
       </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>Peak hours</h2></div>
+        <div id="peakHours"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2 id="consultDurationHeading">Average consult duration</h2></div>
+        <div id="consultDuration"></div>
+      </div>
     </main>
   </div>
 
@@ -101,7 +111,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=45"></script>
+  <script src="clinic-data.js?v=46"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -639,6 +649,90 @@
         `;
       }
 
+      function formatHourLabel(hour) {
+        const period = hour < 12 ? 'AM' : 'PM';
+        const h12 = hour % 12 === 0 ? 12 : hour % 12;
+        return `${h12} ${period}`;
+      }
+
+      // Same footfall definition as getDailySummary/renderVisitsPerDoctor
+      // (waiting/in_consult/done = actually arrived). Bucketed by hour of
+      // day in local time, aggregated across every day in the selected
+      // period — only hours that actually saw an arrival get a bar, so
+      // clinic-closed hours don't pad the chart with empty columns.
+      function renderPeakHours(patients) {
+        const el = document.getElementById('peakHours');
+        const visited = patients.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status) && p.arrivedAt);
+        if (visited.length === 0) {
+          el.innerHTML = '<div class="empty-state">No arrivals in this period.</div>';
+          return;
+        }
+        const byHour = {};
+        visited.forEach((p) => {
+          const hour = new Date(p.arrivedAt).getHours();
+          byHour[hour] = (byHour[hour] || 0) + 1;
+        });
+        const hours = Object.keys(byHour).map(Number).sort((a, b) => a - b);
+        const maxVal = Math.max(...hours.map((h) => byHour[h]), 1);
+        el.innerHTML = `
+          <div class="trend-bars">
+            ${hours.map((h) => {
+              const val = byHour[h];
+              return `
+                <div class="trend-bar-col trend-bar-hoverable" title="${val} arrival${val === 1 ? '' : 's'} at ${formatHourLabel(h)}">
+                  <div class="trend-bar-value">${val}</div>
+                  <div class="trend-bar-track"><div class="trend-bar-fill" style="height:${Math.round((val / maxVal) * 100)}%;"></div></div>
+                  <div class="trend-bar-label">${formatHourLabel(h)}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+
+      // done_at (migration 030) only exists on visits marked done AFTER
+      // it shipped — a doctor never explicitly "marks done" per patient
+      // (see clinic-data.js's callNextPatient/finishCurrentPatient), so
+      // there's no way to backfill older rows. Periods entirely before
+      // that ship date will show the empty state below until new timed
+      // visits accumulate. Doctors with no timed visits yet are left out
+      // of the chart rather than shown as a misleading 0-minute bar.
+      function renderConsultDuration(patients, doctors) {
+        const el = document.getElementById('consultDuration');
+        if (doctors.length === 0) {
+          el.innerHTML = '<div class="empty-state">No doctors added yet.</div>';
+          return;
+        }
+        const timed = patients.filter((p) => p.status === 'done' && p.calledAt && p.doneAt && new Date(p.doneAt) >= new Date(p.calledAt));
+        if (timed.length === 0) {
+          el.innerHTML = '<div class="empty-state">No completed-consultation timing data in this period yet.</div>';
+          return;
+        }
+        const sums = {};
+        timed.forEach((p) => {
+          const mins = (new Date(p.doneAt) - new Date(p.calledAt)) / 60000;
+          if (!sums[p.doctorId]) sums[p.doctorId] = { total: 0, count: 0 };
+          sums[p.doctorId].total += mins;
+          sums[p.doctorId].count++;
+        });
+        const rows = doctors
+          .filter((d) => sums[d.id])
+          .map((d) => ({ name: Qlinic.escapeHtml(d.name), avg: Math.round(sums[d.id].total / sums[d.id].count), count: sums[d.id].count }))
+          .sort((a, b) => b.avg - a.avg);
+        const maxVal = Math.max(...rows.map((r) => r.avg), 1);
+        el.innerHTML = `
+          <div class="trend-bars">
+            ${rows.map((r) => `
+              <div class="trend-bar-col trend-bar-hoverable" title="Average of ${r.count} consultation${r.count === 1 ? '' : 's'}">
+                <div class="trend-bar-value">${r.avg} min</div>
+                <div class="trend-bar-track"><div class="trend-bar-fill" style="height:${Math.round((r.avg / maxVal) * 100)}%;"></div></div>
+                <div class="trend-bar-label">${r.name}</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
       let rangePreset = 'currentmonth';
       let customRange = null; // exact {start,end} for the 'custom' preset
       let doctorByIdCache = {};
@@ -664,6 +758,8 @@
         renderVisitsPerDoctor(patients, doctors, invoices);
         renderRevenueByDoctor(invoices, doctors);
         renderNoShowOverTime(patients, granularity, doctorByIdCache);
+        renderPeakHours(patients);
+        renderConsultDuration(patients, doctors);
       }
 
       function renderPeriodOptions() {

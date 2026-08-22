@@ -248,6 +248,7 @@
       status: row.status,
       arrivedAt: row.arrived_at,
       calledAt: row.called_at,
+      doneAt: row.done_at,
       reason: row.reason,
       tokenNumber: row.token_number,
       tokenDate: row.token_date,
@@ -1078,7 +1079,7 @@
     const mine = await fetchPatientsForDoctorAndDate(doctorId, today);
     const current = mine.find((p) => p.status === 'in_consult');
     if (current) {
-      await sb.from('patients').update({ status: 'done' }).eq('id', current.id);
+      await sb.from('patients').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', current.id);
     }
     const waiting = mine.filter((p) => p.status === 'waiting').sort((a, b) => compareQueueOrder(a, b, doctor));
     if (waiting.length === 0) return { called: false };
@@ -1098,7 +1099,7 @@
     const mine = await fetchPatientsForDoctorAndDate(doctorId, today);
     const current = mine.find((p) => p.status === 'in_consult');
     if (current) {
-      await sb.from('patients').update({ status: 'done' }).eq('id', current.id);
+      await sb.from('patients').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', current.id);
     }
   }
 

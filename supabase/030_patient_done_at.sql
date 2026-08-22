@@ -1,0 +1,21 @@
+-- ============================================================
+-- Qlinic — migration 030: record when a consultation actually finished.
+--
+-- Why: called_at (migration 026) marks when a patient was called in, but
+-- nothing recorded when that consultation ended — a doctor never clicks
+-- a per-patient "mark done" button. A patient becomes 'done' only as a
+-- side effect of one of two actions: callNextPatient (pulling the next
+-- waiting patient in implicitly finishes the current one) or
+-- finishCurrentPatient (used for the last patient of a lull, or when a
+-- doctor goes on a break/emergency right after finishing someone). Both
+-- now stamp done_at at that moment, which makes average consult
+-- duration (done_at - called_at) computable for Trends.
+--
+-- Purely additive: a new nullable column, no trigger, no backfill.
+-- Existing 'done' rows have no done_at and simply won't contribute to
+-- consult-duration figures until they're superseded by new visits.
+--
+-- Run this once in the Supabase SQL Editor, after 029_priority_and_unified_ordering.sql.
+-- ============================================================
+
+alter table public.patients add column if not exists done_at timestamptz;

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=128" />
+<link rel="stylesheet" href="styles.css?v=129" />
 </head>
 <body>
   <div class="app-shell">
@@ -67,7 +67,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=45"></script>
+  <script src="clinic-data.js?v=46"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -129,7 +129,9 @@
           document.getElementById('clinicLogoThumb').style.display = 'none';
         }
 
-        const summary = await Qlinic.getDailySummary();
+        const [summary, doctors] = await Promise.all([Qlinic.getDailySummary(), Qlinic.getDoctors()]);
+        const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id)));
+
         const cards = [
           { label: 'Footfall so far', value: summary.footfallSoFar, accent: 'teal' },
           { label: 'Waiting now', value: summary.waitingNow, accent: 'coral' },
@@ -137,19 +139,63 @@
           { label: 'No-shows', value: summary.noShowCount, accent: 'purple' },
           { label: 'Booked today', value: summary.totalAppointments, accent: 'teal' },
         ];
+
+        // The queue-health cards below all read from the SAME waiting
+        // lists (and doctor statuses) the "Doctor status" panel further
+        // down already fetches — computed here once and reused, rather
+        // than a second round-trip.
+        if (doctors.length > 0) {
+          const allWaiting = queues.flatMap((q) => q.waiting);
+          const nowMs = Date.now();
+          const waitMinsFor = (p) => Math.max(0, Math.round((nowMs - new Date(p.arrivedAt).getTime()) / 60000));
+
+          const avgWaitMins = allWaiting.length
+            ? Math.round(allWaiting.reduce((sum, p) => sum + waitMinsFor(p), 0) / allWaiting.length)
+            : null;
+          cards.push({ label: 'Avg wait now (min)', value: avgWaitMins === null ? '—' : avgWaitMins, accent: 'coral' });
+
+          const longestWaiting = allWaiting.length
+            ? allWaiting.reduce((longest, p) => (waitMinsFor(p) > waitMinsFor(longest) ? p : longest))
+            : null;
+          cards.push({
+            label: 'Longest wait (min)',
+            value: longestWaiting ? waitMinsFor(longestWaiting) : '—',
+            sub: longestWaiting ? longestWaiting.name : 'No one waiting',
+            accent: 'pink',
+          });
+
+          const doctorsAway = doctors.filter((d) => d.status === 'on_break' || d.status === 'emergency').length;
+          cards.push({ label: 'Doctors away', value: `${doctorsAway}/${doctors.length}`, accent: 'purple' });
+
+          let busiestDoctor = null;
+          queues.forEach((q, i) => {
+            if (q.waiting.length > 0 && (!busiestDoctor || q.waiting.length > busiestDoctor.count)) {
+              busiestDoctor = { name: doctors[i].name, count: q.waiting.length };
+            }
+          });
+          cards.push({
+            label: 'Busiest queue',
+            value: busiestDoctor ? busiestDoctor.count : '—',
+            sub: busiestDoctor ? busiestDoctor.name : 'All clear',
+            accent: 'blue',
+          });
+
+          const priorityWaitingCount = allWaiting.filter((p) => p.isPriority).length;
+          cards.push({ label: 'Priority waiting', value: priorityWaitingCount, accent: 'teal' });
+        }
+
         document.getElementById('statCards').innerHTML = cards.map((c) => `
           <div class="stat-card accent-${c.accent}">
             <div class="value value-${c.accent}">${c.value}</div>
             <div class="label">${c.label}</div>
+            ${c.sub ? `<div class="stat-sub">${Qlinic.escapeHtml(c.sub)}</div>` : ''}
           </div>
         `).join('');
 
-        const doctors = await Qlinic.getDoctors();
         if (doctors.length === 0) {
           document.getElementById('doctorStatusList').innerHTML = '<div class="empty-state">No doctors yet, add one from <a href="settings.html">Settings</a>.</div>';
           return;
         }
-        const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id)));
         document.getElementById('doctorStatusList').innerHTML = doctors.map((d, i) => {
           const q = queues[i];
           // dayClosedAt is a separate field from status (a doctor can close
