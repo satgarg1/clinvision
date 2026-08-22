@@ -411,30 +411,48 @@
         'Yoga break', 'Urgent call', 'Ward round', 'Emergency surgery', 'Reviewing reports',
         'Clinic rounds',
       ];
-      function matchingReason(typed) {
-        if (!typed) return null;
-        const lower = typed.toLowerCase();
-        return COMMON_REASONS.find((r) => r.length > typed.length && r.toLowerCase().startsWith(lower)) || null;
+      function matchingReason(word) {
+        if (!word) return null;
+        const lower = word.toLowerCase();
+        return COMMON_REASONS.find((r) => r.length > word.length && r.toLowerCase().startsWith(lower)) || null;
+      }
+      // Matching restarts at the last word, not the whole field, so a
+      // reason that doesn't fit what's already been typed doesn't
+      // permanently rule out every reason for the rest of the entry —
+      // typing "Went to l" still picks up "unch" for the trailing "l",
+      // same as typing "l" alone would. The invisible "typed" span in
+      // the ghost still covers the FULL value (not just the trailing
+      // word), since that's what keeps the suggestion's horizontal
+      // position lined up with the real caret.
+      function currentWordStart(text) {
+        const idx = text.lastIndexOf(' ');
+        return idx === -1 ? 0 : idx + 1;
       }
       function updateReasonGhost() {
         const input = document.getElementById('delayReasonInput');
         const ghost = document.getElementById('delayReasonGhost');
         const typed = input.value;
-        const match = matchingReason(typed);
+        const currentWord = typed.slice(currentWordStart(typed));
+        const match = matchingReason(currentWord);
         if (!match) {
           ghost.innerHTML = '';
           return;
         }
-        ghost.innerHTML = `<span class="typed">${Qlinic.escapeHtml(typed)}</span><span class="suggestion">${Qlinic.escapeHtml(match.slice(typed.length))}</span>`;
+        ghost.innerHTML = `<span class="typed">${Qlinic.escapeHtml(typed)}</span><span class="suggestion">${Qlinic.escapeHtml(match.slice(currentWord.length))}</span>`;
       }
       document.getElementById('delayReasonInput').addEventListener('input', updateReasonGhost);
       document.getElementById('delayReasonInput').addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
         const input = document.getElementById('delayReasonInput');
-        const match = matchingReason(input.value);
+        const typed = input.value;
+        const wordStart = currentWordStart(typed);
+        const match = matchingReason(typed.slice(wordStart));
         if (!match) return;
         e.preventDefault();
-        input.value = match;
+        // Only the word being completed gets replaced — whatever the
+        // doctor already typed before it (their own custom text) stays
+        // exactly as they wrote it.
+        input.value = typed.slice(0, wordStart) + match;
         updateReasonGhost();
       });
 
