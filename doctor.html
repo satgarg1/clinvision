@@ -397,10 +397,19 @@
       // an email client's subject-line suggestions. Case-insensitive
       // match against the start of the typed text; the accepted text
       // always uses the suggestion's own casing, not whatever case was
-      // typed.
+      // typed. Deliberately one entry per starting letter (matchingReason
+      // takes the first array match for a given prefix, so two reasons
+      // sharing a first letter would make the second permanently
+      // unreachable) — chosen to cover the letters a doctor's own
+      // shorthand is actually likely to start with, not just what
+      // happened to get added first.
       const COMMON_REASONS = [
         'Lunch', 'In a meeting', 'On a call', 'Hospital rounds',
         'Personal emergency', 'Family emergency', 'Traffic delay', 'Stepped out briefly',
+        'Admin work', 'Video call', 'Bathroom break', 'Newborn delivery', 'Meeting',
+        'Discharge rounds', 'Gone to another clinic', 'Joint consultation', "Kids' emergency",
+        'Yoga break', 'Urgent call', 'Ward round', 'Emergency surgery', 'Reviewing reports',
+        'Clinic rounds',
       ];
       function matchingReason(typed) {
         if (!typed) return null;
