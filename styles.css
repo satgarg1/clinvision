@@ -443,12 +443,22 @@ a { color: inherit; }
    Semantic status colors (success/warning/danger badges, status pills) are
    untouched — this palette is identity/category color, not meaning. */
 
-.panel.accent-teal, .stat-card.accent-teal { border-top: 4px solid var(--mkt-teal); }
-.panel.accent-blue, .stat-card.accent-blue { border-top: 4px solid var(--mkt-blue); }
-.panel.accent-purple, .stat-card.accent-purple { border-top: 4px solid var(--mkt-purple); }
-.panel.accent-coral, .stat-card.accent-coral { border-top: 4px solid var(--mkt-coral); }
-.panel.accent-pink, .stat-card.accent-pink { border-top: 4px solid var(--mkt-pink); }
-.panel.accent-danger, .stat-card.accent-danger { border-top: 4px solid var(--danger); }
+.panel.accent-teal { border-top: 4px solid var(--mkt-teal); }
+.panel.accent-blue { border-top: 4px solid var(--mkt-blue); }
+.panel.accent-purple { border-top: 4px solid var(--mkt-purple); }
+.panel.accent-coral { border-top: 4px solid var(--mkt-coral); }
+.panel.accent-pink { border-top: 4px solid var(--mkt-pink); }
+.panel.accent-danger { border-top: 4px solid var(--danger); }
+
+/* Stat cards use a left bar instead of a top stripe — same per-metric
+   color mapping, just moved to the reading edge so it reads as a clear
+   marker rather than a thin line easy to miss above the number. */
+.stat-card.accent-teal { border-left: 4px solid var(--mkt-teal); }
+.stat-card.accent-blue { border-left: 4px solid var(--mkt-blue); }
+.stat-card.accent-purple { border-left: 4px solid var(--mkt-purple); }
+.stat-card.accent-coral { border-left: 4px solid var(--mkt-coral); }
+.stat-card.accent-pink { border-left: 4px solid var(--mkt-pink); }
+.stat-card.accent-danger { border-left: 4px solid var(--danger); }
 
 .value-teal { color: var(--mkt-teal); }
 .value-blue { color: var(--mkt-blue); }
@@ -912,6 +922,14 @@ input[type="number"] { -moz-appearance: textfield; }
 .stat-card .value { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
 .stat-card .label { font-size: 13px; color: var(--grey-500); margin-top: 4px; }
 .stat-card .stat-sub { font-size: 12px; color: var(--grey-500); margin-top: 4px; }
+.stat-card .top-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+/* Semantic (good/bad), not tied to the card's own accent color — a rise
+   in footfall and a drop in wait time are both "good" even though one
+   trends up and the other down, so the color follows meaning, not arrow
+   direction. */
+.trend-chip { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: var(--radius-pill); white-space: nowrap; margin-top: 3px; }
+.trend-chip.good { background: var(--mkt-teal-bg); color: var(--mkt-teal); }
+.trend-chip.bad { background: var(--danger-bg); color: var(--danger); }
 
 .panel {
   background: var(--white);

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=129" />
+<link rel="stylesheet" href="styles.css?v=130" />
 </head>
 <body>
   <div class="app-shell">
@@ -117,6 +117,31 @@
         return ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
       }
 
+      function pad2(n) { return String(n).padStart(2, '0'); }
+      function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
+
+      // Percent change vs. yesterday's count AT THE SAME CLOCK TIME — not
+      // yesterday's full-day total, which would always read as "behind"
+      // until today is actually over and say nothing real. No chip when
+      // yesterday's comparable count was 0 (nothing to divide by) or the
+      // change rounds to 0% (not worth a chip). higherIsGood decides which
+      // direction of change counts as good vs. bad for THIS metric — more
+      // footfall is good, but more wait time is not.
+      function percentChip(todayVal, yesterdayVal, higherIsGood) {
+        if (!yesterdayVal || todayVal == null) return null;
+        const pct = Math.round(((todayVal - yesterdayVal) / yesterdayVal) * 100);
+        if (pct === 0) return null;
+        const isIncrease = pct > 0;
+        return { text: `${Math.abs(pct)}%`, arrow: isIncrease ? '▲' : '▼', good: isIncrease === higherIsGood };
+      }
+      function minuteChip(todayVal, yesterdayVal, higherIsGood) {
+        if (todayVal == null || yesterdayVal == null) return null;
+        const diff = Math.round(todayVal - yesterdayVal);
+        if (diff === 0) return null;
+        const isIncrease = diff > 0;
+        return { text: `${Math.abs(diff)} min`, arrow: isIncrease ? '▲' : '▼', good: isIncrease === higherIsGood };
+      }
+
       async function render() {
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
 
@@ -129,11 +154,30 @@
           document.getElementById('clinicLogoThumb').style.display = 'none';
         }
 
-        const [summary, doctors] = await Promise.all([Qlinic.getDailySummary(), Qlinic.getDoctors()]);
+        // Exactly 24 hours ago, not just "yesterday's date" — the cutoff
+        // itself is what makes the trend chips below a fair comparison
+        // (same point in the day on both sides), not just a per-day total.
+        const cutoffYesterday = new Date(Date.now() - 24 * 3600000);
+        const yesterdayStr = toDateStr(cutoffYesterday);
+
+        const [summary, doctors, yesterdayPatients] = await Promise.all([
+          Qlinic.getDailySummary(),
+          Qlinic.getDoctors(),
+          Qlinic.getPatientsInRange(yesterdayStr, yesterdayStr),
+        ]);
         const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id)));
 
+        const yesterdayFootfallAtCutoff = yesterdayPatients.filter((p) =>
+          ['waiting', 'in_consult', 'done'].includes(p.status) && p.arrivedAt && new Date(p.arrivedAt) <= cutoffYesterday
+        ).length;
+
         const cards = [
-          { label: 'Footfall so far', value: summary.footfallSoFar, accent: 'teal' },
+          {
+            label: 'Footfall so far',
+            value: summary.footfallSoFar,
+            accent: 'teal',
+            chip: percentChip(summary.footfallSoFar, yesterdayFootfallAtCutoff, true),
+          },
           { label: 'Waiting now', value: summary.waitingNow, accent: 'coral' },
           { label: 'Seen (done)', value: summary.doneCount, accent: 'blue' },
           { label: 'No-shows', value: summary.noShowCount, accent: 'purple' },
@@ -152,7 +196,22 @@
           const avgWaitMins = allWaiting.length
             ? Math.round(allWaiting.reduce((sum, p) => sum + waitMinsFor(p), 0) / allWaiting.length)
             : null;
-          cards.push({ label: 'Avg wait now (min)', value: avgWaitMins === null ? '—' : avgWaitMins, accent: 'coral' });
+
+          // Reconstructs "who was still waiting" at yesterday's cutoff
+          // moment from the same fields used for everyone else: arrived by
+          // then, and not yet called in by then (or never called at all).
+          const yesterdayWaitingAtCutoff = yesterdayPatients.filter((p) =>
+            p.arrivedAt && new Date(p.arrivedAt) <= cutoffYesterday && (!p.calledAt || new Date(p.calledAt) > cutoffYesterday)
+          );
+          const yesterdayAvgWaitAtCutoff = yesterdayWaitingAtCutoff.length
+            ? Math.round(yesterdayWaitingAtCutoff.reduce((sum, p) => sum + Math.max(0, Math.round((cutoffYesterday - new Date(p.arrivedAt)) / 60000)), 0) / yesterdayWaitingAtCutoff.length)
+            : null;
+          cards.push({
+            label: 'Avg wait now (min)',
+            value: avgWaitMins === null ? '—' : avgWaitMins,
+            accent: 'coral',
+            chip: minuteChip(avgWaitMins, yesterdayAvgWaitAtCutoff, false),
+          });
 
           const longestWaiting = allWaiting.length
             ? allWaiting.reduce((longest, p) => (waitMinsFor(p) > waitMinsFor(longest) ? p : longest))
@@ -160,7 +219,9 @@
           cards.push({
             label: 'Longest wait (min)',
             value: longestWaiting ? waitMinsFor(longestWaiting) : '—',
-            sub: longestWaiting ? longestWaiting.name : 'No one waiting',
+            // Patient names don't belong on a dashboard this visible — the
+            // time alone is enough to flag that something needs attention.
+            sub: longestWaiting ? null : 'No one waiting',
             accent: 'pink',
           });
 
@@ -202,7 +263,10 @@
 
         document.getElementById('statCards').innerHTML = cards.map((c) => `
           <div class="stat-card accent-${c.accent}">
-            <div class="value value-${c.accent}">${c.value}</div>
+            <div class="top-row">
+              <div class="value value-${c.accent}">${c.value}</div>
+              ${c.chip ? `<span class="trend-chip ${c.chip.good ? 'good' : 'bad'}">${c.chip.arrow} ${c.chip.text}</span>` : ''}
+            </div>
             <div class="label">${c.label}</div>
             ${c.sub ? `<div class="stat-sub">${Qlinic.escapeHtml(c.sub)}</div>` : ''}
           </div>
