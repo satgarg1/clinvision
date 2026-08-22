@@ -164,7 +164,12 @@
             accent: 'pink',
           });
 
-          const doctorsAway = doctors.filter((d) => d.status === 'on_break' || d.status === 'emergency').length;
+          // dayClosedAt is a separate field from status (see the Doctor
+          // status row rendering below) — a doctor can close their day
+          // while their last status is still 'on_time', so that has to be
+          // checked on its own via the same same-calendar-day helper the
+          // Doctor status panel already relies on.
+          const doctorsAway = doctors.filter((d) => d.status === 'on_break' || d.status === 'emergency' || Qlinic.isDoctorClosedToday(d)).length;
           cards.push({ label: 'Doctors away', value: `${doctorsAway}/${doctors.length}`, accent: 'purple' });
 
           let busiestDoctor = null;
