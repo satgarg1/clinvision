@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=134" />
+<link rel="stylesheet" href="styles.css?v=135" />
 </head>
 <body>
   <div class="app-shell">
@@ -488,9 +488,10 @@
       // the tooltip right on top of the center total — no cursor-tracking
       // positioner avoids that, since the collision is with the ring's
       // own geometry, not the cursor's path. Instead this pins one fixed
-      // tooltip to whichever side of the box is empty (opposite the
-      // hovered half of the ring), so it never has a reason to cross into
-      // the center at all.
+      // tooltip flush against the ring's own edge (using the arc's real
+      // pixel radius, not a guess), on whichever side is opposite the
+      // hovered half — close enough to read as part of the chart, not a
+      // banner stranded at the edge of a wide, mostly-empty box.
       function donutTooltipHandler(canvasId, formatter) {
         return (context) => {
           const { chart, tooltip } = context;
@@ -502,9 +503,16 @@
           const color = dp.dataset.backgroundColor[dp.dataIndex];
           const value = formatter ? formatter(dp.raw) : dp.raw;
           el.innerHTML = `<span class="donut-tooltip-dot" style="background:${color};"></span><span>${Qlinic.escapeHtml(dp.label)}</span><strong>${value}</strong>`;
-          const onRight = tooltip.caretX > chart.width / 2;
-          el.classList.toggle('left', onRight);
-          el.classList.toggle('right', !onRight);
+          const arc = chart.getDatasetMeta(0).data[0];
+          const gap = 12;
+          el.style.top = arc.y + 'px';
+          if (tooltip.caretX > arc.x) {
+            el.style.left = 'auto';
+            el.style.right = (chart.width - (arc.x - arc.outerRadius) + gap) + 'px';
+          } else {
+            el.style.right = 'auto';
+            el.style.left = (arc.x + arc.outerRadius + gap) + 'px';
+          }
           el.style.opacity = 1;
         };
       }

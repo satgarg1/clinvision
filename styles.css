@@ -1686,11 +1686,13 @@ th.th-filterable { position: relative; }
 
 /* A donut's own hover tooltip has nowhere safe to float: the ring is
    thin enough that a hover anywhere near its inner edge sits right on
-   top of the center total. Pinned to whichever side of the box is
-   empty (opposite the hovered half of the ring) instead of following
-   the cursor, so it never has to cross into the center at all. */
+   top of the center total. Pinned flush against the ring's own edge
+   instead of following the cursor (top/left/right set from the arc's
+   real pixel radius in JS, per hover), on whichever side is opposite
+   the hovered half, so it reads as part of the chart rather than a
+   banner stranded out at the edge of the box. */
 .donut-tooltip {
-  position: absolute; top: 50%; transform: translateY(-50%);
+  position: absolute; transform: translateY(-50%);
   display: flex; align-items: center; gap: 8px;
   background: var(--black); color: var(--white);
   border: 1px solid var(--grey-300); border-radius: var(--radius-sm);
@@ -1698,8 +1700,6 @@ th.th-filterable { position: relative; }
   white-space: nowrap; pointer-events: none; z-index: 5;
   opacity: 0; transition: opacity 0.1s ease;
 }
-.donut-tooltip.left { left: 8px; }
-.donut-tooltip.right { right: 8px; }
 .donut-tooltip strong { font-weight: 700; }
 .donut-tooltip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
