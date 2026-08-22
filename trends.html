@@ -488,10 +488,10 @@
       // the tooltip right on top of the center total — no cursor-tracking
       // positioner avoids that, since the collision is with the ring's
       // own geometry, not the cursor's path. Instead this pins one fixed
-      // tooltip flush against the ring's own edge (using the arc's real
-      // pixel radius, not a guess), on whichever side is opposite the
-      // hovered half — close enough to read as part of the chart, not a
-      // banner stranded at the edge of a wide, mostly-empty box.
+      // tooltip flush against the ring's edge, beside the hovered slice's
+      // own midpoint angle — same side as the slice, same rough height —
+      // rather than the ring's fixed center or wherever the cursor
+      // happens to sit inside a wide slice.
       function donutTooltipHandler(canvasId, formatter) {
         return (context) => {
           const { chart, tooltip } = context;
@@ -503,15 +503,17 @@
           const color = dp.dataset.backgroundColor[dp.dataIndex];
           const value = formatter ? formatter(dp.raw) : dp.raw;
           el.innerHTML = `<span class="donut-tooltip-dot" style="background:${color};"></span><span>${Qlinic.escapeHtml(dp.label)}</span><strong>${value}</strong>`;
-          const arc = chart.getDatasetMeta(0).data[0];
+          const arc = dp.element;
+          const midAngle = (arc.startAngle + arc.endAngle) / 2;
+          const dx = Math.cos(midAngle), dy = Math.sin(midAngle);
           const gap = 12;
-          el.style.top = arc.y + 'px';
-          if (tooltip.caretX > arc.x) {
-            el.style.left = 'auto';
-            el.style.right = (chart.width - (arc.x - arc.outerRadius) + gap) + 'px';
-          } else {
+          el.style.top = (arc.y + dy * arc.outerRadius) + 'px';
+          if (dx >= 0) {
             el.style.right = 'auto';
             el.style.left = (arc.x + arc.outerRadius + gap) + 'px';
+          } else {
+            el.style.left = 'auto';
+            el.style.right = (chart.width - (arc.x - arc.outerRadius) + gap) + 'px';
           }
           el.style.opacity = 1;
         };
