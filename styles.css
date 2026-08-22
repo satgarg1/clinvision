@@ -57,6 +57,14 @@
   --mkt-coral-bg: #ffedd5;
   --mkt-pink: #db2777;
   --mkt-pink-bg: #fce7f3;
+  /* Five more, added for the Dashboard's stat-card row once it grew past
+     five cards — distinct enough from the original five (and from each
+     other) that a 10-card grid never has to repeat a color. */
+  --mkt-indigo: #4f46e5;
+  --mkt-amber: #b45309;
+  --mkt-green: #15803d;
+  --mkt-cyan: #0e7490;
+  --mkt-rose: #be123c;
 }
 
 /* Day/Night toggle (Settings page) — a personal, local-device preference
@@ -459,6 +467,11 @@ a { color: inherit; }
 .stat-card.accent-coral { border-left: 4px solid var(--mkt-coral); }
 .stat-card.accent-pink { border-left: 4px solid var(--mkt-pink); }
 .stat-card.accent-danger { border-left: 4px solid var(--danger); }
+.stat-card.accent-indigo { border-left: 4px solid var(--mkt-indigo); }
+.stat-card.accent-amber { border-left: 4px solid var(--mkt-amber); }
+.stat-card.accent-green { border-left: 4px solid var(--mkt-green); }
+.stat-card.accent-cyan { border-left: 4px solid var(--mkt-cyan); }
+.stat-card.accent-rose { border-left: 4px solid var(--mkt-rose); }
 
 .value-teal { color: var(--mkt-teal); }
 .value-blue { color: var(--mkt-blue); }
