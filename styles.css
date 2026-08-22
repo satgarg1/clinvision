@@ -1327,10 +1327,10 @@ th.th-filterable { position: relative; }
 }
 
 /* Full pill shape (not the 10px-rounded rect this used to be) — the
-   search bar is the primary, first-touched control on these three
-   pages, so it gets a distinct, more confident shape than a regular
-   text field, closer to a familiar rounded search-bar treatment. */
-#searchBox, #patientSearch, #directorySearch {
+   search bar is the primary, first-touched control on these pages, so
+   it gets a distinct, more confident shape than a regular text field,
+   closer to a familiar rounded search-bar treatment. */
+#searchBox, #patientSearch, #directorySearch, #noShowSearch {
   display: block;
   width: 100%;
   box-sizing: border-box;
@@ -1345,7 +1345,7 @@ th.th-filterable { position: relative; }
   color: var(--black);
   margin-bottom: 10px;
 }
-#searchBox:focus, #patientSearch:focus, #directorySearch:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+#searchBox:focus, #patientSearch:focus, #directorySearch:focus, #noShowSearch:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 
 /* End-of-day's Close/Reopen-day buttons sit directly on the page's
    grey-100 background, same as .btn-sm's default fill, so they were
