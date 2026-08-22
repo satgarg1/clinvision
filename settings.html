@@ -69,6 +69,12 @@
       </div>
 
       <div class="panel">
+        <div class="panel-header"><h2>No-shows</h2></div>
+        <p class="panel-note">Every booked appointment nobody arrived for, with the same doctor/gender/type filtering and single-day/range view as Revenue.</p>
+        <a href="no-shows.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Track no-shows</a>
+      </div>
+
+      <div class="panel">
         <div class="panel-header"><h2>Closed Dates</h2></div>
         <p class="panel-note">Holidays and other one-off dates the clinic is closed, beyond the weekly off days set in Clinic Settings.</p>
         <a href="closed-dates.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage closed dates</a>
@@ -122,7 +128,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=44"></script>
+  <script src="clinic-data.js?v=45"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');

@@ -217,24 +217,6 @@
     return new Date(a.createdAt) - new Date(b.createdAt);
   }
 
-  // Booked (not-yet-arrived) appointments have no arrivedAt, so
-  // effectiveMoment naturally reduces to "intended slot, clamped by any
-  // active doctor delay" for them — exactly the delay-aware "when are
-  // they really due" figure a no-show check should use.
-  function isLikelyNoShow(patient, doctor, graceWindowMins) {
-    if (patient.status !== 'booked' || !belongsToDate(patient, todayDateStr())) return false;
-    const scheduled = effectiveMoment(patient, doctor);
-    return Date.now() > scheduled.getTime() + graceWindowMins * 60000;
-  }
-
-  // token_date is set correctly for both walk-ins and appointments at
-  // booking time (see 007_token_numbers.sql), so it's the one reliable
-  // "which day does this visit belong to" field — unlike bookedDate,
-  // which is always null for walk-ins.
-  function belongsToDate(patient, dateStr) {
-    return patient.tokenDate === dateStr;
-  }
-
   function normalizeDoctor(row) {
     return {
       id: row.id,
@@ -522,13 +504,12 @@
   }
 
   // Returns { nowServing, waiting: [...with .position/.effectiveTime],
-  // booked: [...with .likelyNoShow/.effectiveTime], done, noShow }.
+  // booked: [...with .effectiveTime], done, noShow }.
   // Defaults to today; pass a dateStr to browse a different day.
   async function getQueueForDoctor(doctorId, dateStr) {
     const targetDate = dateStr || todayDateStr();
-    const [doctor, clinic, mine] = await Promise.all([
+    const [doctor, mine] = await Promise.all([
       getDoctor(doctorId),
-      getClinic(),
       fetchPatientsForDoctorAndDate(doctorId, targetDate),
     ]);
 
@@ -543,7 +524,6 @@
       .filter((p) => p.status === 'booked')
       .sort((a, b) => compareQueueOrder(a, b, doctor))
       .map((p) => Object.assign({}, p, {
-        likelyNoShow: isLikelyNoShow(p, doctor, clinic.grace_window_mins),
         effectiveTime: effectiveMoment(p, doctor),
       }));
 
@@ -558,38 +538,43 @@
     return doctors.map((d, i) => ({ doctor: d, queue: queues[i] }));
   }
 
-  // Searches today's queue entries who haven't finished their visit yet:
-  // booked (hasn't arrived — "mark arrived" applies) or waiting (already
-  // checked in — here so a typo in their name/phone can still be fixed).
-  // token_date (not booked_date, which is always null for walk-ins) is
-  // the field that's reliably set for both booking types.
+  // Searches today's queue entries: booked (hasn't arrived — "mark
+  // arrived" applies), waiting (already checked in — here so a typo in
+  // their name/phone can still be fixed), or no_show (finalized by
+  // End of day closing, but still findable so reception can revive a
+  // late arrival — set a real effective time via Edit — without
+  // re-entering them as a brand-new walk-in). token_date (not
+  // booked_date, which is always null for a walk-in that was never
+  // given an intended time) is the field that's reliably set across
+  // every one of these.
   async function searchBookedPatients(query) {
     const clinicId = await ensureClinicContext();
     const q = query.trim();
     if (!q || !clinicId) return [];
     const today = todayDateStr();
-    const clinic = await getClinic();
     const doctors = await getDoctors();
     const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
     const { data, error } = await sb
       .from('patients')
       .select('*')
       .eq('clinic_id', clinicId)
-      .in('status', ['booked', 'waiting'])
+      .in('status', ['booked', 'waiting', 'no_show'])
       .eq('token_date', today)
       .or(`name.ilike.%${q}%,phone.ilike.%${q}%`);
     if (error) throw error;
     return data.map(normalizePatient).map((p) => Object.assign({}, p, {
-      likelyNoShow: p.status === 'booked' ? isLikelyNoShow(p, doctorById[p.doctorId], clinic.grace_window_mins) : false,
       effectiveTime: effectiveMoment(p, doctorById[p.doctorId]),
     }));
   }
 
-  // Fixes a mistake caught after a patient was already added — used from
-  // Reception's search results, not part of the normal add-patient flow.
-  // doctorId can be corrected for any patient; bookedDate/bookedTime only
-  // apply to appointment-type patients, and token_date is kept mirrored to
-  // booked_date since that's the field every other query filters by.
+  // Fixes a mistake caught after a patient was already added, and also
+  // powers Reception's "Edit" time-editor (a walk-in/appointment/no_show
+  // row's bookedTime can be corrected the same way, setting a real
+  // effective queue time for a late arrival or a revived no-show) — used
+  // from Reception's search results, not part of the normal add-patient
+  // flow. doctorId can be corrected for any patient; token_date is kept
+  // mirrored to bookedDate whenever that's given, since token_date is
+  // the field every other query filters by.
   async function updatePatientContact(patientId, { name, phone, doctorId, bookedDate, bookedTime }) {
     const payload = {};
     if (name !== undefined) payload.name = name;
@@ -987,6 +972,26 @@
     return data.map(normalizePatient);
   }
 
+  // Same token_date field, same range-filter shape as getPatientsInRange —
+  // just narrowed to status='no_show', which only ever happens to a
+  // 'booked' appointment closeDayNoShows() never saw arrive by the time
+  // the day was closed (walk-ins go straight to 'waiting' and can't reach
+  // this status at all).
+  async function getNoShowsForDate(dateStr) {
+    return getNoShowsForDateRange(dateStr, dateStr);
+  }
+  async function getNoShowsForDateRange(startDateStr, endDateStr) {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId) return [];
+    const { data, error } = await sb.from('patients').select('*')
+      .eq('clinic_id', clinicId)
+      .eq('status', 'no_show')
+      .gte('token_date', startDateStr)
+      .lte('token_date', endDateStr);
+    if (error) throw error;
+    return data.map(normalizePatient);
+  }
+
   async function getInvoiceById(invoiceId) {
     const { data, error } = await sb.from('invoices').select('*').eq('id', invoiceId).maybeSingle();
     if (error) throw error;
@@ -1166,7 +1171,7 @@
 
   async function getDailySummary(dateStr) {
     const clinicId = await ensureClinicContext();
-    if (!clinicId) return { totalAppointments: 0, totalWalkIns: 0, footfallSoFar: 0, noShowCount: 0, likelyNoShowCount: 0, waitingNow: 0, doneCount: 0 };
+    if (!clinicId) return { totalAppointments: 0, totalWalkIns: 0, footfallSoFar: 0, noShowCount: 0, waitingNow: 0, doneCount: 0 };
     const targetDate = dateStr || todayDateStr();
     const [clinic, doctors, { data, error }] = await Promise.all([
       getClinic(),
@@ -1182,7 +1187,6 @@
       totalWalkIns: todays.filter((p) => p.type === 'walkin').length,
       footfallSoFar: todays.filter((p) => ['waiting', 'in_consult', 'done'].indexOf(p.status) !== -1).length,
       noShowCount: todays.filter((p) => p.status === 'no_show').length,
-      likelyNoShowCount: todays.filter((p) => isLikelyNoShow(p, doctorById[p.doctorId], clinic.grace_window_mins)).length,
       waitingNow: todays.filter((p) => p.status === 'waiting').length,
       doneCount: todays.filter((p) => p.status === 'done').length,
     };
@@ -1509,6 +1513,8 @@
     getInvoicesForDate,
     getInvoicesForDateRange,
     getPatientsInRange,
+    getNoShowsForDate,
+    getNoShowsForDateRange,
     hasAppointmentOnDate,
     getInvoiceById,
     updateInvoicePayment,
@@ -1529,7 +1535,6 @@
     isRealStatusReason,
     escapeHtml,
     confirmDialog,
-    isLikelyNoShow,
     getQueueStatus,
 
     signUp,

@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>No-shows: Qlinic</title>
+<script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css?v=125" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <a href="index.html" class="brand">
+        <span class="brand-top">
+          <span class="brand-clock clock-face" id="navClock">
+            <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;color:var(--black);">
+              <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="5"></circle>
+              <line class="clock-hour" x1="50" y1="50" x2="50" y2="30" stroke="currentColor" stroke-width="6" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <line class="clock-min" x1="50" y1="50" x2="50" y2="18" stroke="currentColor" stroke-width="4" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <line class="clock-sec" x1="50" y1="50" x2="50" y2="14" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <circle cx="50" cy="50" r="3" fill="currentColor"></circle>
+            </svg>
+          </span>
+          Qlinic
+        </span>
+        <span class="brand-tagline">Time is the one asset nobody gets back</span>
+      </a>
+      <div class="clinic-name-row">
+        <img class="clinic-logo-thumb" id="clinicLogoThumb" style="display:none;" alt="" />
+        <div class="clinic-name" id="clinicName">Loading…</div>
+      </div>
+      <nav>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="reception.html" class="nav-link">Reception</a>
+        <a href="doctor.html" class="nav-link">Doctor View</a>
+        <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
+        <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
+        <a href="trends.html" class="nav-link" id="trendsNavLink">Trends</a>
+        <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
+        <a href="display.html" class="nav-link">Display Screen</a>
+        <a href="settings.html" class="nav-link active pinned-bottom">Settings</a>
+      </nav>
+    </aside>
+
+    <main class="app-main">
+      <div class="app-topbar" style="margin-bottom:16px;">
+        <div>
+          <div class="breadcrumb"><a href="settings.html">Settings</a> <span>/</span> No-shows</div>
+          <h1>No-shows</h1>
+        </div>
+      </div>
+
+      <input type="text" id="noShowSearch" placeholder="Search by patient name, phone, or address..." />
+
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+        <div class="period-pills" id="viewModeToggle" style="margin-bottom:0;">
+          <button type="button" class="period-pill active" data-mode="single">Single day</button>
+          <button type="button" class="period-pill" data-mode="range">Range</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:10px;" id="singleDayFilters">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">Date</label>
+          <input type="date" id="dateFilter" class="pill-input" />
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">&nbsp;</label>
+          <button type="button" class="pill-btn" id="todayBtn">Today</button>
+        </div>
+      </div>
+
+      <div style="display:none;flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:10px;" id="rangePresetField">
+        <label class="pill-label">Period</label>
+        <select id="rangePresetSelect" class="pill-select"></select>
+      </div>
+
+      <div style="display:none;gap:24px;flex-wrap:wrap;margin-bottom:10px;" id="customRangeFilters">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">From</label>
+          <div style="display:flex;gap:8px;">
+            <select id="rangeStartMonth" class="pill-select"></select>
+            <select id="rangeStartYear" class="pill-select"></select>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">To</label>
+          <div style="display:flex;gap:8px;">
+            <select id="rangeEndMonth" class="pill-select"></select>
+            <select id="rangeEndYear" class="pill-select"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2 id="noShowSummary">Loading…</h2>
+          <button type="button" class="btn-sm primary" id="exportCsvBtn">Export CSV</button>
+          <div id="activeFilterChipsRow" class="active-filter-chips" style="margin-bottom:0;"></div>
+          <button type="button" class="btn-sm primary" id="resetFiltersBtn" style="margin-left:auto;">Reset filters</button>
+        </div>
+        <div id="noShowTableWrap"></div>
+        <div class="pager" id="noShowPager"></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=45"></script>
+  <script>
+    (async function () {
+      await Qlinic.requireLogin('login.html');
+
+      document.querySelector('a.brand').addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (await Qlinic.confirmDialog({ message: "Going to the homepage will end your session here, you'll need to log in again to get back in." })) {
+          window.location.href = 'index.html';
+        }
+      });
+
+      if (!(await Qlinic.isAdmin())) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+
+      const PAGE_SIZE = 25;
+      const GENDER_LABELS = { male: 'Male', female: 'Female', other: 'Other' };
+      const TYPE_LABELS = { appointment: 'Appointment', walkin: 'Walk-in' };
+      function genderKey(g) { return g || '__unspecified__'; }
+      function genderLabel(g) { return g ? (GENDER_LABELS[g] || g) : 'Not specified'; }
+
+      let allNoShows = [];
+      let currentPage = 1;
+      let doctorById = {};
+      let viewMode = 'single'; // 'single' | 'range'
+      let rangePreset = 'lastweek';
+      let customRange = null; // exact {start,end} for the 'custom' preset
+      let doctorFilterIds = new Set();
+      let genderFilterValues = new Set();
+      let typeFilterValues = new Set();
+
+      function pad2(n) { return String(n).padStart(2, '0'); }
+      function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
+
+      // Same preset family and date math as Revenue (kept as a per-page
+      // copy, matching this codebase's no-build-step convention), so
+      // "Period" here answers the same question the same way everywhere.
+      function computeLastWeekRange() {
+        const today = new Date();
+        const day = today.getDay();
+        const diffToMonday = day === 0 ? 6 : day - 1;
+        const thisMonday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - diffToMonday);
+        const lastMonday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - 7);
+        const lastSunday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - 1);
+        return { start: toDateStr(lastMonday), end: toDateStr(lastSunday) };
+      }
+      function computeCurrentWeekRange() {
+        const today = new Date();
+        const day = today.getDay();
+        const diffToMonday = day === 0 ? 6 : day - 1;
+        const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - diffToMonday);
+        const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+        const todayStr = toDateStr(today);
+        const sundayStr = toDateStr(sunday);
+        return { start: toDateStr(monday), end: sundayStr > todayStr ? todayStr : sundayStr };
+      }
+      function computeCurrentMonthRange() {
+        const today = new Date();
+        const first = new Date(today.getFullYear(), today.getMonth(), 1);
+        const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const todayStr = toDateStr(today);
+        const lastStr = toDateStr(last);
+        return { start: toDateStr(first), end: lastStr > todayStr ? todayStr : lastStr };
+      }
+      function computeLastMonthRange() {
+        const today = new Date();
+        const firstOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastOfLastMonth = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth(), 0);
+        const firstOfLastMonth = new Date(lastOfLastMonth.getFullYear(), lastOfLastMonth.getMonth(), 1);
+        return { start: toDateStr(firstOfLastMonth), end: toDateStr(lastOfLastMonth) };
+      }
+      function computeLastNMonthsRange(n) {
+        const today = new Date();
+        const firstOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const end = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth(), 0);
+        const start = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth() - n, 1);
+        return { start: toDateStr(start), end: toDateStr(end) };
+      }
+      function monthYearToRange(fromMonth, fromYear, toMonth, toYear) {
+        if (!fromMonth || !fromYear || !toMonth || !toYear) return null;
+        const start = new Date(Number(fromYear), Number(fromMonth) - 1, 1);
+        const end = new Date(Number(toYear), Number(toMonth), 0);
+        return { start: toDateStr(start), end: toDateStr(end) };
+      }
+      const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      function populateMonthYearSelects(monthSelectId, yearSelectId) {
+        document.getElementById(monthSelectId).innerHTML = MONTH_NAMES.map((name, i) => `<option value="${pad2(i + 1)}">${name}</option>`).join('');
+        const thisYear = new Date().getFullYear();
+        const years = [];
+        for (let y = thisYear - 10; y <= thisYear + 1; y++) years.push(y);
+        document.getElementById(yearSelectId).innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join('');
+      }
+
+      const RANGE_PRESETS = [
+        { key: 'lastweek', label: 'Last week', compute: computeLastWeekRange },
+        { key: 'currentweek', label: 'Current week', compute: computeCurrentWeekRange },
+        { key: 'currentmonth', label: 'Current month', compute: computeCurrentMonthRange },
+        { key: 'lastmonth', label: 'Last month', compute: computeLastMonthRange },
+        { key: 'last3months', label: 'Last 3 months', compute: () => computeLastNMonthsRange(3) },
+        { key: 'last6months', label: 'Last 6 months', compute: () => computeLastNMonthsRange(6) },
+        { key: 'last12months', label: 'Last 12 months', compute: () => computeLastNMonthsRange(12) },
+        { key: 'custom', label: 'Custom', compute: null },
+      ];
+      function rangeForPreset(preset) {
+        const entry = RANGE_PRESETS.find((p) => p.key === preset);
+        return entry && entry.compute ? entry.compute() : null;
+      }
+
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      function csvCell(value) {
+        const s = String(value == null ? '' : value);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }
+      function downloadCsv(filename, csvText) {
+        const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+      function buildNoShowCsv(rows) {
+        const out = [['Name', 'Phone', 'Age', 'Gender', 'Address', 'Appointment date', 'Scheduled time', 'Doctor', 'Type']];
+        rows.forEach((p) => {
+          const doctor = doctorById[p.doctorId];
+          out.push([
+            p.name,
+            p.phone || '',
+            p.age || '',
+            p.gender || '',
+            p.address || '',
+            p.tokenDate || '',
+            p.bookedTime || '',
+            doctor ? doctor.name : '',
+            TYPE_LABELS[p.type] || p.type,
+          ]);
+        });
+        return out.map((r) => r.map(csvCell).join(',')).join('\r\n');
+      }
+
+      async function loadDoctorFilterOptions() {
+        const doctors = await Qlinic.getDoctors({ includeInactive: true });
+        doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
+      }
+
+      function searchTerm() {
+        return document.getElementById('noShowSearch').value.trim().toLowerCase();
+      }
+
+      // Search only — the date range is already baked into allNoShows by
+      // whichever fetch loaded it (single day or range), same as Revenue's
+      // searchAndDateInvoices. This is the base set every column-filter
+      // checklist counts against, so each option's count reflects the
+      // current search/date scope, not narrowed by the other checklists.
+      function searchAndDateNoShows() {
+        const term = searchTerm();
+        if (!term) return allNoShows;
+        return allNoShows.filter((p) =>
+          p.name.toLowerCase().includes(term) ||
+          (p.phone || '').toLowerCase().includes(term) ||
+          (p.address || '').toLowerCase().includes(term)
+        );
+      }
+
+      function filteredNoShows() {
+        return searchAndDateNoShows().filter((p) => {
+          if (doctorFilterIds.size > 0 && !doctorFilterIds.has(p.doctorId)) return false;
+          if (genderFilterValues.size > 0 && !genderFilterValues.has(genderKey(p.gender))) return false;
+          if (typeFilterValues.size > 0 && !typeFilterValues.has(p.type)) return false;
+          return true;
+        });
+      }
+
+      function doctorFilterOptions() {
+        const counting = searchAndDateNoShows();
+        return Object.values(doctorById)
+          .map((d) => ({ value: d.id, label: d.name, count: counting.filter((p) => p.doctorId === d.id).length }))
+          .filter((o) => o.count > 0)
+          .sort((a, b) => b.count - a.count);
+      }
+      function genderFilterOptions() {
+        const counting = searchAndDateNoShows();
+        const keys = Array.from(new Set(counting.map((p) => genderKey(p.gender))));
+        return keys.map((k) => ({
+          value: k,
+          label: genderLabel(k === '__unspecified__' ? null : k),
+          count: counting.filter((p) => genderKey(p.gender) === k).length,
+        })).sort((a, b) => b.count - a.count);
+      }
+      function typeFilterOptions() {
+        const counting = searchAndDateNoShows();
+        return Object.keys(TYPE_LABELS)
+          .map((key) => ({ value: key, label: TYPE_LABELS[key], count: counting.filter((p) => p.type === key).length }))
+          .filter((o) => o.count > 0);
+      }
+
+      // ---------------- Excel-style column-header filter dropdowns ----------------
+      let openFilterColumn = null;
+      function closeColumnFilter() {
+        openFilterColumn = null;
+        document.querySelectorAll('.filter-dropdown').forEach((el) => el.remove());
+      }
+      function openColumnFilter(column, anchorTh, options, selectedSet, onChange) {
+        if (openFilterColumn === column) { closeColumnFilter(); return; }
+        closeColumnFilter();
+        openFilterColumn = column;
+        const dropdown = document.createElement('div');
+        dropdown.className = 'filter-dropdown';
+        dropdown.innerHTML = options.map((o) => `
+          <label><input type="checkbox" value="${Qlinic.escapeHtml(o.value)}" ${selectedSet.has(o.value) ? 'checked' : ''} /> ${Qlinic.escapeHtml(o.label)}<span class="fd-count">${o.count}</span></label>
+        `).join('');
+        dropdown.addEventListener('click', (e) => e.stopPropagation());
+        dropdown.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+          cb.addEventListener('change', () => {
+            if (cb.checked) selectedSet.add(cb.value); else selectedSet.delete(cb.value);
+            closeColumnFilter();
+            onChange();
+          });
+        });
+        anchorTh.appendChild(dropdown);
+      }
+      function onNoShowFilterChange() {
+        currentPage = 1;
+        renderTable();
+      }
+      function resetAllFilters() {
+        doctorFilterIds.clear();
+        genderFilterValues.clear();
+        typeFilterValues.clear();
+        onNoShowFilterChange();
+      }
+      document.addEventListener('click', () => closeColumnFilter());
+
+      // One removable chip per active column filter, so a filtered view is
+      // visibly and specifically flagged as filtered rather than looking
+      // identical to the unfiltered table.
+      function activeFilterChipsHtml() {
+        const chips = [];
+        if (doctorFilterIds.size > 0) {
+          const labels = Object.values(doctorById).filter((d) => doctorFilterIds.has(d.id)).map((d) => d.name);
+          chips.push({ key: 'doctor', label: `Doctor: ${labels.join(', ')}` });
+        }
+        if (genderFilterValues.size > 0) {
+          const labels = [...genderFilterValues].map((v) => genderLabel(v === '__unspecified__' ? null : v));
+          chips.push({ key: 'gender', label: `Gender: ${labels.join(', ')}` });
+        }
+        if (typeFilterValues.size > 0) {
+          const labels = [...typeFilterValues].map((v) => TYPE_LABELS[v] || v);
+          chips.push({ key: 'type', label: `Type: ${labels.join(', ')}` });
+        }
+        if (chips.length === 0) return '';
+        return `<div class="active-filter-chips">${chips.map((c) => `<div class="filter-chip">${Qlinic.escapeHtml(c.label)}<button type="button" class="clear-filter-chip" data-key="${c.key}" aria-label="Clear filter">×</button></div>`).join('')}</div>`;
+      }
+      function clearFilterByKey(key) {
+        if (key === 'doctor') doctorFilterIds.clear();
+        else if (key === 'gender') genderFilterValues.clear();
+        else if (key === 'type') typeFilterValues.clear();
+        onNoShowFilterChange();
+      }
+
+      function FILTER_ICON_SVG(className) {
+        return `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>`;
+      }
+
+      function renderPager(total) {
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const end = Math.min(start + PAGE_SIZE, total);
+        const summary = `<span class="pager-summary">Showing ${total === 0 ? 0 : start + 1}-${end} of ${total}</span>`;
+        const pager = document.getElementById('noShowPager');
+        if (totalPages <= 1) {
+          pager.innerHTML = summary;
+          return;
+        }
+        pager.innerHTML = `
+          ${summary}
+          <div class="pager-controls">
+            <button class="btn-sm" id="pagerPrev" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+            <span class="pager-label">Page ${currentPage} of ${totalPages}</span>
+            <button class="btn-sm" id="pagerNext" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+          </div>
+        `;
+        document.getElementById('pagerPrev').addEventListener('click', () => { currentPage -= 1; renderTable(); document.getElementById('noShowTableWrap').scrollIntoView({ block: 'start', behavior: 'smooth' }); });
+        document.getElementById('pagerNext').addEventListener('click', () => { currentPage += 1; renderTable(); document.getElementById('noShowTableWrap').scrollIntoView({ block: 'start', behavior: 'smooth' }); });
+      }
+
+      function renderTable() {
+        const filtered = filteredNoShows();
+        const wrap = document.getElementById('noShowTableWrap');
+
+        const isFiltered = filtered.length !== allNoShows.length;
+        document.getElementById('noShowSummary').textContent = isFiltered
+          ? `${filtered.length} of ${allNoShows.length} no-shows`
+          : `${allNoShows.length} no-show${allNoShows.length === 1 ? '' : 's'} for this ${viewMode === 'range' ? 'period' : 'date'}`;
+
+        // Rendered into the panel-header row rather than as its own block
+        // above the table, so filtering doesn't shift the table down or
+        // move it back up when cleared.
+        document.getElementById('activeFilterChipsRow').innerHTML = activeFilterChipsHtml();
+        document.querySelectorAll('#activeFilterChipsRow .clear-filter-chip').forEach((btn) => {
+          btn.addEventListener('click', () => clearFilterByKey(btn.dataset.key));
+        });
+
+        if (allNoShows.length === 0) {
+          wrap.innerHTML = `<div class="empty-state">No no-shows for this ${viewMode === 'range' ? 'period' : 'date'}.</div>`;
+          document.getElementById('noShowPager').innerHTML = '';
+          return;
+        }
+        if (filtered.length === 0) {
+          wrap.innerHTML = '<div class="empty-state">No no-shows match these filters.</div>';
+          document.getElementById('noShowPager').innerHTML = '';
+          return;
+        }
+
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+        if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageItems = filtered.slice(start, start + PAGE_SIZE);
+
+        const doctorIconClass = doctorFilterIds.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
+        const genderIconClass = genderFilterValues.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
+        const typeIconClass = typeFilterValues.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
+
+        wrap.innerHTML = `
+          <table class="qtable qtable-fixed">
+            <colgroup>
+              <col style="width:20%;"><col style="width:12%;"><col style="width:14%;">
+              <col style="width:14%;"><col style="width:15%;"><col style="width:11%;"><col style="width:14%;">
+            </colgroup>
+            <thead><tr>
+              <th>Patient</th><th>Phone</th><th>Appointment date</th><th>Scheduled time</th>
+              <th class="th-filterable"><span class="th-filter-trigger" id="doctorFilterTrigger">Doctor ${FILTER_ICON_SVG(doctorIconClass)}</span></th>
+              <th class="th-filterable"><span class="th-filter-trigger" id="genderFilterTrigger">Gender ${FILTER_ICON_SVG(genderIconClass)}</span></th>
+              <th class="th-filterable"><span class="th-filter-trigger" id="typeFilterTrigger">Type ${FILTER_ICON_SVG(typeIconClass)}</span></th>
+            </tr></thead>
+            <tbody>
+              ${pageItems.map((p) => {
+                const doctor = doctorById[p.doctorId];
+                const subInfo = [p.age ? `${p.age} yrs` : '', p.address ? Qlinic.escapeHtml(p.address) : ''].filter(Boolean).join(' · ');
+                return `
+                <tr>
+                  <td class="qtable-wrap">
+                    <div>${Qlinic.escapeHtml(p.name)}</div>
+                    ${subInfo ? `<div class="sub-line">${subInfo}</div>` : ''}
+                  </td>
+                  <td>${Qlinic.escapeHtml(p.phone || '—')}</td>
+                  <td>${Qlinic.formatDateLabel(p.tokenDate)}</td>
+                  <td>${p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '—'}</td>
+                  <td class="qtable-wrap">${doctor ? Qlinic.escapeHtml(doctor.name) : '—'}</td>
+                  <td>${genderLabel(p.gender)}</td>
+                  <td>${TYPE_LABELS[p.type] || p.type}</td>
+                </tr>
+              `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+        document.getElementById('doctorFilterTrigger').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openColumnFilter('doctor', e.currentTarget.closest('th'), doctorFilterOptions(), doctorFilterIds, onNoShowFilterChange);
+        });
+        document.getElementById('genderFilterTrigger').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openColumnFilter('gender', e.currentTarget.closest('th'), genderFilterOptions(), genderFilterValues, onNoShowFilterChange);
+        });
+        document.getElementById('typeFilterTrigger').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openColumnFilter('type', e.currentTarget.closest('th'), typeFilterOptions(), typeFilterValues, onNoShowFilterChange);
+        });
+        renderPager(filtered.length);
+      }
+
+      function currentRange() {
+        if (viewMode !== 'range') return null;
+        return rangePreset === 'custom' ? customRange : rangeForPreset(rangePreset);
+      }
+
+      async function loadNoShows() {
+        const range = currentRange();
+        allNoShows = viewMode === 'range'
+          ? (range ? await Qlinic.getNoShowsForDateRange(range.start, range.end) : [])
+          : await Qlinic.getNoShowsForDate(document.getElementById('dateFilter').value);
+        currentPage = 1;
+        renderTable();
+      }
+
+      document.getElementById('dateFilter').addEventListener('change', loadNoShows);
+      document.getElementById('todayBtn').addEventListener('click', () => {
+        document.getElementById('dateFilter').value = Qlinic.getTodayDate();
+        loadNoShows();
+      });
+      function updateCustomRangeFromInputs() {
+        customRange = monthYearToRange(
+          document.getElementById('rangeStartMonth').value, document.getElementById('rangeStartYear').value,
+          document.getElementById('rangeEndMonth').value, document.getElementById('rangeEndYear').value
+        );
+        loadNoShows();
+      }
+      ['rangeStartMonth', 'rangeStartYear', 'rangeEndMonth', 'rangeEndYear'].forEach((id) => {
+        document.getElementById(id).addEventListener('change', updateCustomRangeFromInputs);
+      });
+
+      function renderRangePresetOptions() {
+        document.getElementById('rangePresetSelect').innerHTML = RANGE_PRESETS.map((p) =>
+          `<option value="${p.key}" ${p.key === rangePreset ? 'selected' : ''}>${p.label}</option>`
+        ).join('');
+      }
+      document.getElementById('rangePresetSelect').addEventListener('change', (e) => {
+        rangePreset = e.target.value;
+        document.getElementById('customRangeFilters').style.display = rangePreset === 'custom' ? 'flex' : 'none';
+        loadNoShows();
+      });
+      document.getElementById('viewModeToggle').addEventListener('click', (e) => {
+        const btn = e.target.closest('.period-pill');
+        if (!btn) return;
+        viewMode = btn.dataset.mode;
+        document.querySelectorAll('#viewModeToggle .period-pill').forEach((p) => p.classList.toggle('active', p === btn));
+        document.getElementById('singleDayFilters').style.display = viewMode === 'single' ? 'flex' : 'none';
+        document.getElementById('rangePresetField').style.display = viewMode === 'range' ? 'flex' : 'none';
+        document.getElementById('customRangeFilters').style.display = (viewMode === 'range' && rangePreset === 'custom') ? 'flex' : 'none';
+        loadNoShows();
+      });
+      document.getElementById('noShowSearch').addEventListener('input', () => {
+        currentPage = 1;
+        renderTable();
+      });
+      document.getElementById('resetFiltersBtn').addEventListener('click', resetAllFilters);
+      document.getElementById('exportCsvBtn').addEventListener('click', () => {
+        const csv = buildNoShowCsv(filteredNoShows());
+        let label;
+        if (viewMode === 'range') {
+          const range = currentRange();
+          label = range ? `${range.start}_to_${range.end}` : 'range';
+        } else {
+          label = document.getElementById('dateFilter').value;
+        }
+        downloadCsv(`no-shows-${label}.csv`, csv);
+      });
+
+      document.getElementById('dateFilter').value = Qlinic.getTodayDate();
+      populateMonthYearSelects('rangeStartMonth', 'rangeStartYear');
+      populateMonthYearSelects('rangeEndMonth', 'rangeEndYear');
+      renderRangePresetOptions();
+
+      const clinic = await Qlinic.getClinic();
+      document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      if (clinic && clinic.logo_url) {
+        document.getElementById('clinicLogoThumb').src = clinic.logo_url;
+        document.getElementById('clinicLogoThumb').style.display = 'block';
+      } else {
+        document.getElementById('clinicLogoThumb').style.display = 'none';
+      }
+      await loadDoctorFilterOptions();
+      await loadNoShows();
+      Qlinic.onLiveChange(loadNoShows);
+    })();
+  </script>
+  <script>
+    (function () {
+      function applyTime(root) {
+        const now = new Date();
+        const s = now.getSeconds();
+        const m = now.getMinutes();
+        const h = now.getHours() % 12;
+        const sec = root.querySelector(".clock-sec");
+        const min = root.querySelector(".clock-min");
+        const hour = root.querySelector(".clock-hour");
+        if (sec) sec.style.transform = `rotate(${s * 6}deg)`;
+        if (min) min.style.transform = `rotate(${m * 6 + s * 0.1}deg)`;
+        if (hour) hour.style.transform = `rotate(${h * 30 + m * 0.5}deg)`;
+      }
+      function tickAll() {
+        document.querySelectorAll(".clock-face").forEach(applyTime);
+      }
+      tickAll();
+      setInterval(tickAll, 1000);
+    })();
+  </script>
+
+</body>
+</html>

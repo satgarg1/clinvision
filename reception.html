@@ -175,7 +175,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=44"></script>
+  <script src="clinic-data.js?v=45"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -639,7 +639,7 @@
           if (queue.nowServing) pushRow(queue.nowServing, Qlinic.formatTimestamp(queue.nowServing.arrivedAt), 'In consultation');
           queue.waiting.forEach((p) => pushRow(p, Qlinic.formatTimestamp(p.effectiveTime), 'Waiting'));
         }
-        queue.booked.forEach((p) => pushRow(p, Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)), p.likelyNoShow ? 'Likely no-show' : 'Expected'));
+        queue.booked.forEach((p) => pushRow(p, Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)), 'Expected'));
         queue.done.forEach((p) => pushRow(p, Qlinic.formatTimestamp(p.arrivedAt), 'Seen'));
         queue.noShow.forEach((p) => pushRow(p, p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '', 'No-show'));
         return rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
@@ -697,7 +697,8 @@
 
       function searchStatusBadge(p) {
         if (p.status === 'waiting') return '<span class="badge badge-done">Waiting</span>';
-        return p.likelyNoShow ? '<span class="badge badge-likely">Likely no-show</span>' : '<span class="badge badge-booked">Not yet arrived</span>';
+        if (p.status === 'no_show') return '<span class="badge badge-no-show">No-show</span>';
+        return '<span class="badge badge-booked">Not yet arrived</span>';
       }
 
       async function renderSearch() {
@@ -729,18 +730,24 @@
                 const bookedCell = p.type === 'appointment' ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '<span class="badge badge-neutral">Walk-in</span>';
                 if (editingSearchPatientId === p.id) {
                   const doctorOptions = doctorsCache.map((d) => `<option value="${d.id}" ${d.id === p.doctorId ? 'selected' : ''}>${Qlinic.escapeHtml(d.name)}</option>`).join('');
-                  const bookedEditCell = p.type === 'appointment'
-                    ? `<input type="date" class="search-edit-date" value="${p.bookedDate || ''}" />
-                       <div class="time-picker" id="searchEditTimePicker">
-                         <button type="button" class="time-picker-trigger ${p.bookedTime ? '' : 'placeholder'}" id="searchEditTimeTrigger">
-                           <span id="searchEditTimeTriggerText">${p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : 'Select a time'}</span><span class="time-picker-caret">▾</span>
-                         </button>
-                         <input type="hidden" class="search-edit-time" value="${p.bookedTime || ''}" />
-                         <div class="time-picker-panel" id="searchEditTimePanel" style="display:none;"></div>
-                       </div>`
-                    : '<span class="badge badge-neutral">Walk-in</span>';
+                  // Every type gets the time-picker now (setting a real
+                  // effective time is the whole point for a late arrival
+                  // or a revived no-show, not just an appointment
+                  // correction) — only the date field is appointment-only,
+                  // since a walk-in or no-show's effective day is always
+                  // today, exactly like the original walk-in intake form.
+                  const bookedEditCell = `
+                    ${p.type === 'appointment' ? `<input type="date" class="search-edit-date" value="${p.bookedDate || ''}" />` : ''}
+                    <div class="time-picker" id="searchEditTimePicker">
+                      <button type="button" class="time-picker-trigger ${p.bookedTime ? '' : 'placeholder'}" id="searchEditTimeTrigger">
+                        <span id="searchEditTimeTriggerText">${p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : 'Select a time'}</span><span class="time-picker-caret">▾</span>
+                      </button>
+                      <input type="hidden" class="search-edit-time" value="${p.bookedTime || ''}" />
+                      <div class="time-picker-panel" id="searchEditTimePanel" style="display:none;"></div>
+                    </div>
+                  `;
                   return `
-                    <tr class="search-edit-row">
+                    <tr class="search-edit-row" data-status="${p.status}">
                       <td><input type="text" class="search-edit-name" value="${Qlinic.escapeHtml(p.name)}" /></td>
                       <td><input type="text" class="search-edit-phone" value="${Qlinic.escapeHtml(p.phone)}" /></td>
                       <td><select class="search-edit-doctor">${doctorOptions}</select></td>
@@ -771,14 +778,17 @@
           </table>
         `;
         const editingPatient = results.find((p) => p.id === editingSearchPatientId);
-        if (editingPatient && editingPatient.type === 'appointment') wireSearchEditTimePicker();
+        if (editingPatient) wireSearchEditTimePicker();
       }
 
       // Same 5-min-step dropdown as the main Appointment time field, wired
       // fresh each render since the row (and its DOM) is rebuilt every time
-      // — no "now" restriction here, unlike the new-booking picker, since
-      // this is fixing an existing booking's time, not scheduling a new one;
-      // doSaveSearchEdit still hard-blocks saving an actually-past time.
+      // — no "now" restriction here, unlike the new-booking picker: this is
+      // setting a real effective time for someone already at the desk (a
+      // late arrival, or a revived no-show), which is routinely a moment
+      // already in the past by the time reception finishes picking it, not
+      // scheduling a brand-new future slot. doSaveSearchEdit doesn't block
+      // a past time here — that's the point, not a gap.
       function wireSearchEditTimePicker() {
         const trigger = document.getElementById('searchEditTimeTrigger');
         const panel = document.getElementById('searchEditTimePanel');
@@ -829,21 +839,39 @@
         if (!isValidPhone(phone)) { showToast('Enter a valid 10-digit phone number'); return; }
         const doctorSelect = row.querySelector('.search-edit-doctor');
         const update = { name, phone, doctorId: doctorSelect.value };
+        const status = row.getAttribute('data-status');
         const dateInput = row.querySelector('.search-edit-date');
         const timeInput = row.querySelector('.search-edit-time');
-        if (dateInput && timeInput) {
-          const bookedDate = dateInput.value;
+        if (timeInput) {
           const bookedTime = timeInput.value;
-          if (!bookedDate || !bookedTime) { showToast('Appointment date and time are both required'); return; }
-          if (Qlinic.isPastRealDateTime(bookedDate, bookedTime)) { showToast("Can't set an appointment time that's already passed"); return; }
-          const bookedDateReason = closureReason(bookedDate);
+          if (!bookedTime) { showToast('Pick a time'); return; }
+          // Only an appointment carries its own date field — a walk-in or
+          // a revived no-show's effective day is always today.
+          const bookedDate = dateInput ? dateInput.value : Qlinic.getTodayDate();
+          if (dateInput && !bookedDate) { showToast('Appointment date is required'); return; }
+          // No past-time block here on purpose: setting a real effective
+          // time for someone already at the desk — a late arrival, or a
+          // no-show reception is bringing back in — routinely means
+          // picking a time that's already passed by the moment this gets
+          // saved. Full control over exactly when they're queued belongs
+          // to reception's own judgment, not an automatic guess. A
+          // genuinely closed day is still blocked, since rescheduling an
+          // appointment onto one is always a mistake regardless of time.
+          const bookedDateReason = dateInput ? closureReason(bookedDate) : null;
           if (bookedDateReason) { showToast(`${bookedDateReason} — choose a different date`); return; }
           update.bookedDate = bookedDate;
           update.bookedTime = bookedTime;
         }
         await Qlinic.updatePatientContact(id, update);
+        // Setting an effective time is how a late arrival or a revived
+        // no-show actually rejoins today's queue — one action, not a
+        // separate "Mark arrived" click after this one. An already-waiting
+        // patient just gets re-sorted by the new time instead.
+        if (status === 'booked' || status === 'no_show') {
+          await Qlinic.markArrived(id);
+        }
         editingSearchPatientId = null;
-        showToast('Patient details updated');
+        showToast(status === 'booked' || status === 'no_show' ? 'Marked arrived' : 'Patient details updated');
         renderSearch();
         renderQueues();
       }
@@ -991,7 +1019,6 @@
         const totalBookedPages = Math.max(1, Math.ceil(queue.booked.length / BOOKED_PAGE_SIZE));
         if (bookedPage >= totalBookedPages) bookedPage = 0;
         const bookedPageItems = queue.booked.slice(bookedPage * BOOKED_PAGE_SIZE, bookedPage * BOOKED_PAGE_SIZE + BOOKED_PAGE_SIZE);
-        const likelyCount = queue.booked.filter((p) => p.likelyNoShow).length;
         const dateLabel = Qlinic.formatDateLabel(queueViewDate);
 
         panelEl.innerHTML = `
@@ -1031,7 +1058,6 @@
             <div class="booked-section">
               <button type="button" class="booked-toggle" id="bookedToggleBtn" aria-expanded="${bookedExpanded}">
                 <span>${bookedExpanded ? '▾' : '▸'} Booked${isTodayView ? ', not yet arrived' : ''} (${queue.booked.length})</span>
-                ${likelyCount > 0 ? `<span class="badge badge-likely">${likelyCount} likely no-show</span>` : ''}
               </button>
               <div class="booked-body" style="display:${bookedExpanded ? 'block' : 'none'};">
                 ${queue.booked.length === 0 ? `<div class="empty-state">${isTodayView ? 'Everyone booked has arrived.' : 'Nothing booked for ' + dateLabel + '.'}</div>` : `
@@ -1042,7 +1068,7 @@
                         <tr>
                           <td>${nameCell(p)}</td>
                           <td>${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}</td>
-                          <td>${p.likelyNoShow ? '<span class="badge badge-likely">Likely no-show</span>' : '<span class="badge badge-booked">Expected</span>'}</td>
+                          <td><span class="badge badge-booked">Expected</span></td>
                           ${isTodayView ? `
                             <td>
                               <button class="btn-sm primary" onclick="doMarkArrived('${p.id}', this)">Mark arrived</button>

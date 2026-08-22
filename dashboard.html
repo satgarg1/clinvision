@@ -67,7 +67,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=44"></script>
+  <script src="clinic-data.js?v=45"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -135,8 +135,7 @@
           { label: 'Footfall so far', value: summary.footfallSoFar, accent: 'teal' },
           { label: 'Waiting now', value: summary.waitingNow, accent: 'coral' },
           { label: 'Seen (done)', value: summary.doneCount, accent: 'blue' },
-          { label: 'Likely no-shows (flagged)', value: summary.likelyNoShowCount, accent: 'pink' },
-          { label: 'No-shows (closed)', value: summary.noShowCount, accent: 'purple' },
+          { label: 'No-shows', value: summary.noShowCount, accent: 'purple' },
           { label: 'Booked today', value: summary.totalAppointments, accent: 'teal' },
         ];
         document.getElementById('statCards').innerHTML = cards.map((c) => `
