@@ -505,6 +505,13 @@
           .sort((a, b) => b.rate - a.rate);
         const maxDoctorRate = Math.max(...doctorRows.map((r) => r.rate), 1);
 
+        // With a single doctor in the clinic, "By doctor" would show
+        // exactly one bar at exactly the same rate as the bucket bar just
+        // clicked to get here — guaranteed, not computed, since 100% of
+        // the bucket's visits belong to that one doctor. Pure restatement,
+        // so it's dropped entirely rather than shown as a false comparison.
+        const showByDoctor = Object.keys(doctorById).length > 1;
+
         breakdownEl.innerHTML = `
           <p class="panel-note" style="margin:14px 0 12px;">Showing ${periodLabel} · ${items.length} resolved visit${items.length === 1 ? '' : 's'}</p>
           ${isDayBucket ? '' : `
@@ -520,6 +527,7 @@
             </div>
           </div>
           `}
+          ${showByDoctor ? `
           <div style="margin-top:${isDayBucket ? '0' : '36px'};">
             <h3 style="margin:0 0 10px;font-size:14px;color:var(--grey-700);">By doctor</h3>
             <div class="trend-bars trend-bars-compact">
@@ -533,6 +541,7 @@
               `).join('')}
             </div>
           </div>
+          ` : ''}
         `;
       }
 
