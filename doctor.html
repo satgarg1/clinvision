@@ -431,11 +431,14 @@
       // — the doctor has genuinely moved on to their own words — do we
       // restart matching at just the word being typed now, so an
       // earlier mismatch doesn't block suggestions for the rest of the
-      // entry. A single stray letter is too weak a signal once you're
-      // past the first word (e.g. the "t" in "went t" isn't a real cue
-      // for "Traffic delay"), so that fallback requires 2+ characters;
-      // the first word keeps its single-letter shortcut (e.g. "m" ->
-      // Meeting), since that's the common case of starting the field fresh.
+      // entry. A short fragment here is too weak a signal once you're
+      // past the first word (e.g. "t"/"em" reading as a cue for "Traffic
+      // delay"/"Emergency surgery" mid-sentence, even though the doctor
+      // is just writing their own words), so that fallback requires a
+      // longer, more deliberate overlap; the first word keeps its
+      // single-letter shortcut (e.g. "m" -> Meeting), since that's the
+      // common case of starting the field fresh.
+      const FALLBACK_MIN_WORD_LENGTH = 4;
       function suggestionFor(typed) {
         if (!typed) return null;
         const wholeMatch = matchingReason(typed);
@@ -443,7 +446,7 @@
         if (COMMON_REASONS.some((r) => r.toLowerCase() === typed.trim().toLowerCase())) return null;
         const wordStart = currentWordStart(typed);
         const currentWord = typed.slice(wordStart);
-        if (wordStart > 0 && currentWord.length < 2) return null;
+        if (wordStart > 0 && currentWord.length < FALLBACK_MIN_WORD_LENGTH) return null;
         const match = matchingReason(currentWord);
         if (!match) return null;
         return { wordStart, currentWord, match };
