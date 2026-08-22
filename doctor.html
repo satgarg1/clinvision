@@ -419,8 +419,8 @@
       // Matching restarts at the last word, not the whole field, so a
       // reason that doesn't fit what's already been typed doesn't
       // permanently rule out every reason for the rest of the entry —
-      // typing "Went to l" still picks up "unch" for the trailing "l",
-      // same as typing "l" alone would. The invisible "typed" span in
+      // typing "Went to lu" still picks up "nch" for the trailing "lu",
+      // same as typing "lu" alone would. The invisible "typed" span in
       // the ghost still covers the FULL value (not just the trailing
       // word), since that's what keeps the suggestion's horizontal
       // position lined up with the real caret.
@@ -428,31 +428,48 @@
         const idx = text.lastIndexOf(' ');
         return idx === -1 ? 0 : idx + 1;
       }
+      // Two guards keep suggestions from firing on weak or stale signal:
+      // (1) once the typed text already exactly spells out a complete
+      // reason, stop suggesting — otherwise a word like "emergency" or
+      // "clinic" keeps matching as a PREFIX of a different, longer reason
+      // ("Emergency surgery", "Clinic rounds") even after the doctor
+      // finished the one they meant. (2) a single stray letter typed as a
+      // later word (e.g. the "t" in "went t") is too weak a signal once
+      // you're past the first word — require 2+ characters there. The
+      // first word keeps the fast single-letter shortcut (e.g. "m" ->
+      // Meeting), since that's the common case of starting the field fresh.
+      function suggestionFor(typed) {
+        if (COMMON_REASONS.some((r) => r.toLowerCase() === typed.trim().toLowerCase())) return null;
+        const wordStart = currentWordStart(typed);
+        const currentWord = typed.slice(wordStart);
+        if (wordStart > 0 && currentWord.length < 2) return null;
+        const match = matchingReason(currentWord);
+        if (!match) return null;
+        return { wordStart, currentWord, match };
+      }
       function updateReasonGhost() {
         const input = document.getElementById('delayReasonInput');
         const ghost = document.getElementById('delayReasonGhost');
         const typed = input.value;
-        const currentWord = typed.slice(currentWordStart(typed));
-        const match = matchingReason(currentWord);
-        if (!match) {
+        const s = suggestionFor(typed);
+        if (!s) {
           ghost.innerHTML = '';
           return;
         }
-        ghost.innerHTML = `<span class="typed">${Qlinic.escapeHtml(typed)}</span><span class="suggestion">${Qlinic.escapeHtml(match.slice(currentWord.length))}</span>`;
+        ghost.innerHTML = `<span class="typed">${Qlinic.escapeHtml(typed)}</span><span class="suggestion">${Qlinic.escapeHtml(s.match.slice(s.currentWord.length))}</span>`;
       }
       document.getElementById('delayReasonInput').addEventListener('input', updateReasonGhost);
       document.getElementById('delayReasonInput').addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
         const input = document.getElementById('delayReasonInput');
         const typed = input.value;
-        const wordStart = currentWordStart(typed);
-        const match = matchingReason(typed.slice(wordStart));
-        if (!match) return;
+        const s = suggestionFor(typed);
+        if (!s) return;
         e.preventDefault();
         // Only the word being completed gets replaced — whatever the
         // doctor already typed before it (their own custom text) stays
         // exactly as they wrote it.
-        input.value = typed.slice(0, wordStart) + match;
+        input.value = typed.slice(0, s.wordStart) + s.match;
         updateReasonGhost();
       });
 
