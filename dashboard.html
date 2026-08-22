@@ -164,29 +164,37 @@
             accent: 'pink',
           });
 
-          // dayClosedAt is a separate field from status (see the Doctor
-          // status row rendering below) — a doctor can close their day
-          // while their last status is still 'on_time', so that has to be
-          // checked on its own. Deliberately plain truthiness, matching
-          // the "Day closed" badge below exactly (not isDoctorClosedToday,
-          // which excludes a stale prior-day closure the doctor forgot to
-          // clear — that badge stays up indefinitely until "I'm back" is
-          // tapped, so this card should agree with what's actually on screen).
-          const doctorsAway = doctors.filter((d) => d.status === 'on_break' || d.status === 'emergency' || d.dayClosedAt).length;
-          cards.push({ label: 'Doctors away', value: `${doctorsAway}/${doctors.length}`, accent: 'purple' });
+          // Both cards below compare doctors against each other (who's
+          // away out of how many, whose queue is longest) — with a single
+          // doctor there's nothing to compare, and the answer is already
+          // fully visible in the one row of the Doctor status panel below,
+          // so both are dropped rather than shown as a redundant "1/1" or
+          // a "busiest" queue that's trivially the only queue there is.
+          if (doctors.length > 1) {
+            // dayClosedAt is a separate field from status (see the Doctor
+            // status row rendering below) — a doctor can close their day
+            // while their last status is still 'on_time', so that has to be
+            // checked on its own. Deliberately plain truthiness, matching
+            // the "Day closed" badge below exactly (not isDoctorClosedToday,
+            // which excludes a stale prior-day closure the doctor forgot to
+            // clear — that badge stays up indefinitely until "I'm back" is
+            // tapped, so this card should agree with what's actually on screen).
+            const doctorsAway = doctors.filter((d) => d.status === 'on_break' || d.status === 'emergency' || d.dayClosedAt).length;
+            cards.push({ label: 'Doctors away', value: `${doctorsAway}/${doctors.length}`, accent: 'purple' });
 
-          let busiestDoctor = null;
-          queues.forEach((q, i) => {
-            if (q.waiting.length > 0 && (!busiestDoctor || q.waiting.length > busiestDoctor.count)) {
-              busiestDoctor = { name: doctors[i].name, count: q.waiting.length };
-            }
-          });
-          cards.push({
-            label: 'Busiest queue',
-            value: busiestDoctor ? busiestDoctor.count : '—',
-            sub: busiestDoctor ? busiestDoctor.name : 'All clear',
-            accent: 'blue',
-          });
+            let busiestDoctor = null;
+            queues.forEach((q, i) => {
+              if (q.waiting.length > 0 && (!busiestDoctor || q.waiting.length > busiestDoctor.count)) {
+                busiestDoctor = { name: doctors[i].name, count: q.waiting.length };
+              }
+            });
+            cards.push({
+              label: 'Busiest queue',
+              value: busiestDoctor ? busiestDoctor.count : '—',
+              sub: busiestDoctor ? busiestDoctor.name : 'All clear',
+              accent: 'blue',
+            });
+          }
 
           const priorityWaitingCount = allWaiting.filter((p) => p.isPriority).length;
           cards.push({ label: 'Priority waiting', value: priorityWaitingCount, accent: 'teal' });
