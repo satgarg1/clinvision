@@ -1677,8 +1677,31 @@ th.th-filterable { position: relative; }
 .trend-drill-charts.two-up { grid-template-columns: 1fr 1fr; }
 @media (max-width: 620px) { .trend-drill-charts.two-up { grid-template-columns: 1fr; } }
 .trend-drill-chart-box { height: 220px; position: relative; }
+/* The one drill-down that's a donut (Revenue over time's per-doctor
+   split) reads as a downgrade next to Visits per doctor's full-size
+   ring if it's boxed any smaller — matches that height exactly. */
+.trend-drill-chart-box.donut-size { height: 260px; }
 .trend-drill-link { display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
 .trend-drill-link:hover { text-decoration: underline; }
+
+/* A donut's own hover tooltip has nowhere safe to float: the ring is
+   thin enough that a hover anywhere near its inner edge sits right on
+   top of the center total. Pinned to whichever side of the box is
+   empty (opposite the hovered half of the ring) instead of following
+   the cursor, so it never has to cross into the center at all. */
+.donut-tooltip {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; gap: 8px;
+  background: var(--black); color: var(--white);
+  border: 1px solid var(--grey-300); border-radius: var(--radius-sm);
+  padding: 8px 12px; font-size: 12px; font-weight: 500;
+  white-space: nowrap; pointer-events: none; z-index: 5;
+  opacity: 0; transition: opacity 0.1s ease;
+}
+.donut-tooltip.left { left: 8px; }
+.donut-tooltip.right { right: 8px; }
+.donut-tooltip strong { font-weight: 700; }
+.donut-tooltip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
 .trend-doctor-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .trend-doctor-row:last-child { margin-bottom: 0; }

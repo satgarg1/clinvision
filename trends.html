@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=133" />
+<link rel="stylesheet" href="styles.css?v=134" />
 </head>
 <body>
   <div class="app-shell">
@@ -79,7 +79,7 @@
         <div class="trend-drill" id="revenueDrill">
           <p class="trend-drill-label"><span id="revenueDrillLabel"></span><span class="trend-drill-close" data-close="revenue">✕</span></p>
           <p class="trend-drill-note">Revenue split by doctor for this period</p>
-          <div class="trend-drill-charts"><div class="trend-drill-chart-box"><canvas id="revenueDrillChart"></canvas></div></div>
+          <div class="trend-drill-charts"><div class="trend-drill-chart-box donut-size"><canvas id="revenueDrillChart"></canvas></div></div>
           <a class="trend-drill-link" id="revenueDrillLink" href="revenue.html">View invoices for this period →</a>
         </div>
       </div>
@@ -483,7 +483,33 @@
         } };
       }
 
-      function makeDonutChart(canvasId, labels, data, colors, totalLabel, onClickIndex) {
+      // Chart.js's built-in tooltip follows the cursor, which for a ring
+      // this thin means a hover near the inner edge of ANY slice lands
+      // the tooltip right on top of the center total — no cursor-tracking
+      // positioner avoids that, since the collision is with the ring's
+      // own geometry, not the cursor's path. Instead this pins one fixed
+      // tooltip to whichever side of the box is empty (opposite the
+      // hovered half of the ring), so it never has a reason to cross into
+      // the center at all.
+      function donutTooltipHandler(canvasId, formatter) {
+        return (context) => {
+          const { chart, tooltip } = context;
+          const box = document.getElementById(canvasId).parentElement;
+          let el = box.querySelector('.donut-tooltip');
+          if (!el) { el = document.createElement('div'); el.className = 'donut-tooltip'; box.appendChild(el); }
+          if (tooltip.opacity === 0 || !tooltip.dataPoints || !tooltip.dataPoints.length) { el.style.opacity = 0; return; }
+          const dp = tooltip.dataPoints[0];
+          const color = dp.dataset.backgroundColor[dp.dataIndex];
+          const value = formatter ? formatter(dp.raw) : dp.raw;
+          el.innerHTML = `<span class="donut-tooltip-dot" style="background:${color};"></span><span>${Qlinic.escapeHtml(dp.label)}</span><strong>${value}</strong>`;
+          const onRight = tooltip.caretX > chart.width / 2;
+          el.classList.toggle('left', onRight);
+          el.classList.toggle('right', !onRight);
+          el.style.opacity = 1;
+        };
+      }
+
+      function makeDonutChart(canvasId, labels, data, colors, totalLabel, onClickIndex, formatter) {
         return new Chart(document.getElementById(canvasId), {
           type: 'doughnut',
           data: { labels, datasets: [{ data, backgroundColor: colors.slice(), borderColor: cssVar('--white'), borderWidth: 3, hoverOffset: 6 }] },
@@ -499,7 +525,7 @@
               // tall. Bottom keeps the labels hugging the ring directly
               // below it regardless of box width.
               legend: { position: 'bottom', align: 'center', labels: { color: cssVar('--grey-700'), font: chartFont(), boxWidth: 8, boxHeight: 8, usePointStyle: true, padding: 12 } },
-              tooltip: chartTooltipBase(),
+              tooltip: { enabled: false, external: donutTooltipHandler(canvasId, formatter) },
             },
           },
           plugins: [centerTextPlugin('centerText_' + canvasId, totalLabel)],
@@ -586,11 +612,12 @@
         document.getElementById('revenueDrillLink').href = `revenue.html?start=${range.start}&end=${range.end}`;
         const byDoctor = revenueBucketsCache[key].byDoctor;
         const rows = doctorListCache
-          .map((d, i) => ({ name: Qlinic.escapeHtml(d.name), value: Math.round(byDoctor[d.id] || 0), color: colorForDoctorIndex(i) }))
+          .map((d, i) => ({ name: d.name, value: Math.round(byDoctor[d.id] || 0), color: colorForDoctorIndex(i) }))
           .filter((r) => r.value > 0);
         if (trendCharts.revenueDrill) trendCharts.revenueDrill.destroy();
         if (rows.length > 0) {
-          trendCharts.revenueDrill = makeDonutChart('revenueDrillChart', rows.map((r) => r.name), rows.map((r) => r.value), rows.map((r) => r.color), 'TOTAL', null);
+          trendCharts.revenueDrill = makeDonutChart('revenueDrillChart', rows.map((r) => r.name), rows.map((r) => r.value), rows.map((r) => r.color), 'TOTAL', null,
+            (v) => '₹' + Math.round(v).toLocaleString('en-IN'));
         }
         openTrendDrill('revenueDrill');
       }
