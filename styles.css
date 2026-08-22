@@ -1711,7 +1711,6 @@ button.trend-bar-link:hover { background: var(--grey-100); }
   border-radius: var(--radius-pill);
 }
 .status-on_time { background: var(--success-bg); color: var(--success); }
-.status-running_late { background: var(--warning-bg); color: var(--warning); }
 .status-on_break { background: #ece9fc; color: #5b3ec9; }
 .status-emergency { background: var(--danger-bg); color: var(--danger); }
 /* Neutral, not warning/danger-toned — a doctor closing their day is the
@@ -1721,7 +1720,6 @@ button.trend-bar-link:hover { background: var(--grey-100); }
 /* A doctor who isn't on time gets the whole row tinted + a left border
    in the same color as their pill, not just the small pill itself —
    findable at a glance scanning down the list, not only on close read. */
-.doctor-status-row.row-status-running_late { background: var(--warning-bg); border-left: 4px solid var(--warning); padding-left: 8px; }
 .doctor-status-row.row-status-on_break { background: #ece9fc; border-left: 4px solid #5b3ec9; padding-left: 8px; }
 .doctor-status-row.row-status-emergency { background: var(--danger-bg); border-left: 4px solid var(--danger); padding-left: 8px; }
 .doctor-status-row.row-status-closed { background: var(--grey-100); border-left: 4px solid var(--grey-500); padding-left: 8px; }

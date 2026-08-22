@@ -1228,7 +1228,7 @@
   }
 
   // A doctor signaling "I'm done for today," separate from the
-  // on_time/running_late/on_break/emergency status the "Your status"
+  // on_time/on_break/emergency status the "Your status"
   // panel owns. The display screen fades a doctor out 10 minutes after
   // this timestamp.
   async function closeDoctorDay(doctorId) {

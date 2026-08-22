@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=126" />
+<link rel="stylesheet" href="styles.css?v=127" />
 </head>
 <body>
   <div class="app-shell">
@@ -67,7 +67,6 @@
           </p>
           <div class="inline-form" style="margin-bottom:10px;">
             <button class="btn-sm success-outline" data-status="on_time">Clear status</button>
-            <button class="btn-sm accent-outline" data-status="running_late">Running late</button>
             <button class="btn-sm accent-outline" data-status="on_break">On a break</button>
             <button class="btn-sm accent-outline" data-status="emergency">Emergency</button>
           </div>
@@ -175,7 +174,6 @@
       function statusLabel(status) {
         return {
           on_time: 'Available',
-          running_late: 'Running late',
           on_break: 'On a break',
           emergency: 'Emergency',
         }[status] || status;
@@ -264,12 +262,12 @@
           `Currently: <span class="status-pill status-${doc.status}">${statusLabel(doc.status)}${doc.delayMins ? ' · ' + doc.delayMins + ' min' : ''}</span>
            <span style="color:var(--grey-500);"> · updated ${Qlinic.formatTimestamp(doc.statusUpdatedAt)}${statusNoteHtml}</span>`;
 
-        // Once the day is closed, status buttons (Clear status/Running
-        // late/On a break/Emergency) and "Call next patient" are locked —
+        // Once the day is closed, status buttons (Clear status/On a
+        // break/Emergency) and "Call next patient" are locked —
         // broadcasting a new delay, or calling someone in, to patients
         // who've already been told you're done for the day doesn't make
         // sense. "I'm back" is the only way out. A persistent note (not a
-        // hover tooltip: with 4 tightly-packed buttons and only 16px of
+        // hover tooltip: with 3 tightly-packed buttons and only 16px of
         // room above them, a floating tooltip long enough to be
         // descriptive reliably overlapped the paragraph above and spilled
         // past the panel edge) explains why, plus a native title attribute
@@ -431,13 +429,9 @@
         updateReasonGhost();
       });
 
-      // Both "Running late" and "On a break" ask for a duration before
-      // broadcasting: the doctor picks how it'll show up, then confirms.
+      // "On a break" asks for a duration before broadcasting: the doctor
+      // picks how it'll show up, then confirms.
       const DURATION_CONFIG = {
-        running_late: {
-          label: 'How many minutes behind?', button: 'Broadcast delay',
-          historyNote: (l, time, elapsedMin) => `You said ${l} behind at ${time} (${elapsedMin} min ago) — pick again if that's no longer right.`,
-        },
         on_break: {
           label: 'How long is your break?', button: 'Broadcast break',
           historyNote: (l, time, elapsedMin) => `You selected a ${l} break at ${time} (${elapsedMin} min ago) — pick again if you need more time.`,
@@ -496,13 +490,13 @@
         btn.addEventListener('click', async () => {
           const status = btn.getAttribute('data-status');
 
-          // A misclick on any of these three while actively seeing
-          // someone had no real way back — the only prompt that existed
-          // (below, on_break/emergency only) asked "did you finish with
-          // them," and either answer still went on to change the status.
-          // This one's a genuine full stop: Cancel here means nothing
-          // happens at all, full stop, before anything else is asked.
-          if (currentQueue && currentQueue.nowServing && (status === 'running_late' || status === 'on_break' || status === 'emergency')) {
+          // A misclick on either of these while actively seeing someone
+          // had no real way back — the only prompt that existed (below,
+          // same two statuses) asked "did you finish with them," and
+          // either answer still went on to change the status. This one's
+          // a genuine full stop: Cancel here means nothing happens at
+          // all, full stop, before anything else is asked.
+          if (currentQueue && currentQueue.nowServing && (status === 'on_break' || status === 'emergency')) {
             const proceed = await Qlinic.confirmDialog({
               message: `You're currently seeing ${currentQueue.nowServing.name}.`,
               confirmLabel: 'Update status now',
