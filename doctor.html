@@ -416,29 +416,30 @@
         const lower = word.toLowerCase();
         return COMMON_REASONS.find((r) => r.length > word.length && r.toLowerCase().startsWith(lower)) || null;
       }
-      // Matching restarts at the last word, not the whole field, so a
-      // reason that doesn't fit what's already been typed doesn't
-      // permanently rule out every reason for the rest of the entry —
-      // typing "Went to lu" still picks up "nch" for the trailing "lu",
-      // same as typing "lu" alone would. The invisible "typed" span in
-      // the ghost still covers the FULL value (not just the trailing
-      // word), since that's what keeps the suggestion's horizontal
-      // position lined up with the real caret.
       function currentWordStart(text) {
         const idx = text.lastIndexOf(' ');
         return idx === -1 ? 0 : idx + 1;
       }
-      // Two guards keep suggestions from firing on weak or stale signal:
-      // (1) once the typed text already exactly spells out a complete
-      // reason, stop suggesting — otherwise a word like "emergency" or
-      // "clinic" keeps matching as a PREFIX of a different, longer reason
-      // ("Emergency surgery", "Clinic rounds") even after the doctor
-      // finished the one they meant. (2) a single stray letter typed as a
-      // later word (e.g. the "t" in "went t") is too weak a signal once
-      // you're past the first word — require 2+ characters there. The
-      // first word keeps the fast single-letter shortcut (e.g. "m" ->
+      // Keep completing whatever reason the doctor is already a prefix
+      // of — this is what correctly finishes multi-word reasons like
+      // "Personal em" -> "...ergency" instead of restarting mid-phrase
+      // and hijacking into an unrelated reason ("Emergency surgery")
+      // that happens to share that fragment. It also naturally stops
+      // suggesting once the phrase is fully typed (nothing longer left
+      // to match), so no separate "already complete" check is needed.
+      // Only once the WHOLE typed text stops being a prefix of anything
+      // — the doctor has genuinely moved on to their own words — do we
+      // restart matching at just the word being typed now, so an
+      // earlier mismatch doesn't block suggestions for the rest of the
+      // entry. A single stray letter is too weak a signal once you're
+      // past the first word (e.g. the "t" in "went t" isn't a real cue
+      // for "Traffic delay"), so that fallback requires 2+ characters;
+      // the first word keeps its single-letter shortcut (e.g. "m" ->
       // Meeting), since that's the common case of starting the field fresh.
       function suggestionFor(typed) {
+        if (!typed) return null;
+        const wholeMatch = matchingReason(typed);
+        if (wholeMatch) return { wordStart: 0, currentWord: typed, match: wholeMatch };
         if (COMMON_REASONS.some((r) => r.toLowerCase() === typed.trim().toLowerCase())) return null;
         const wordStart = currentWordStart(typed);
         const currentWord = typed.slice(wordStart);
