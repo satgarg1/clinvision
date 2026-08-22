@@ -1660,63 +1660,25 @@ th.th-filterable { position: relative; }
 .period-pill:hover { border-color: var(--accent); }
 .period-pill.active { background: var(--accent); color: #ffffff; border-color: var(--accent); }
 
-/* overflow-x lets a chart with many bars (e.g. a clinic with 20+
-   doctors) scroll instead of squeezing every column down to an
-   illegible sliver — each column has a floor width (see .trend-bar-col)
-   that it won't shrink past, so the chart only starts scrolling once it
-   actually runs out of room, not before. */
-.trend-bars { display: flex; align-items: stretch; gap: 14px; height: 180px; padding: 10px 4px 6px; overflow-x: auto; }
-.trend-bars-compact { height: 160px; gap: 8px; }
-.trend-bar-col { flex: 1 1 60px; min-width: 60px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.trend-bar-value { font-size: 12px; font-weight: 600; color: var(--grey-700); }
-.trend-bar-track { width: 100%; flex: 1; display: flex; align-items: flex-end; }
-.trend-bar-fill { width: 100%; background: var(--accent); border-radius: 6px 6px 0 0; min-height: 2px; transition: height 0.3s ease; }
-.trend-bar-fill-warn { background: var(--danger); }
-/* Stacked variant: same footprint as .trend-bar-fill (same height %,
-   same rounded top), but its own height is divided between segments by
-   flex-grow so each segment's share is proportional to its raw count/
-   amount, independent of the wrapper's own height. overflow:hidden lets
-   only the top segment show the rounded corner. */
-.trend-bar-fill-stack { width: 100%; display: flex; flex-direction: column-reverse; border-radius: 6px 6px 0 0; overflow: hidden; min-height: 2px; transition: height 0.3s ease; }
-.trend-bar-seg { width: 100%; }
-.trend-bar-seg-consultation { background: var(--mkt-blue); }
-.trend-bar-seg-emergency { background: var(--mkt-coral); }
-.trend-bar-seg-waived { background: var(--mkt-purple); }
-.trend-bar-seg-unknown { background: var(--grey-300); }
-.trend-bar-label { font-size: 11px; color: var(--grey-500); }
-/* Used for the day-of-week breakdown's date labels (e.g. "3-Aug") once
-   it's showing 7 specific calendar dates instead of short "Mon"/"Tue"
-   names — horizontal text that wide would crowd/wrap in a narrow bar
-   column, so it reads bottom-to-top instead. */
-.trend-bar-label-vertical { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; margin: 0 auto; }
-
-/* Bars that drill into Revenue: plain <a> styling reset (inherit color,
-   no underline) plus a hover tint so it reads as clickable rather than
-   just decorative. */
-.trend-bar-link { text-decoration: none; color: inherit; cursor: pointer; border-radius: var(--radius-sm); transition: background 0.15s ease; }
-.trend-bar-link:hover { background: var(--grey-100); }
-.trend-bar-link:hover .trend-bar-fill { background: var(--accent-dark); }
-/* Same class also gets used on <button> bars (in-place drill-down, no
-   navigation) — strip the button chrome so it matches the <a> version. */
-button.trend-bar-link { background: none; border: none; padding: 0; margin: 0; font-family: inherit; }
-button.trend-bar-link:hover { background: var(--grey-100); }
-.trend-bar-selected { background: var(--grey-100); }
-.trend-bar-selected .trend-bar-fill { background: var(--accent-dark); }
-/* .trend-bar-fill-warn (1 class) loses to the two rules above (2-3
-   classes) on specificity alone, so a no-show bar would otherwise flip
-   from red back to blue the moment it's hovered or selected — these
-   target the two classes together to win regardless of source order,
-   keeping a no-show bar visibly red through every interaction state. */
-.trend-bar-link:hover .trend-bar-fill.trend-bar-fill-warn { background: #a01b18; }
-.trend-bar-selected .trend-bar-fill.trend-bar-fill-warn { background: var(--danger); }
-
-/* Non-interactive charts (doctor totals, breakdown bars) still get a
-   hover tint for legibility/feedback even though they don't navigate or
-   toggle anything — no pointer cursor, since nothing happens on click. */
-.trend-bar-hoverable { border-radius: var(--radius-sm); transition: background 0.15s ease; }
-.trend-bar-hoverable:hover { background: var(--grey-100); }
-.trend-bar-hoverable:hover .trend-bar-fill { background: var(--accent-dark); }
-.trend-bar-hoverable:hover .trend-bar-fill.trend-bar-fill-warn { background: #a01b18; }
+/* Trends charts: a fixed-height box for a Chart.js canvas
+   (maintainAspectRatio:false relies on the parent having a real height),
+   plus a collapsible drill-down area that expands directly below the
+   chart it belongs to when a bar/segment is clicked. */
+.trend-chart-box { position: relative; height: 260px; }
+.trend-chart-box .empty-state { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0; }
+.trend-drill { display: none; margin-top: 18px; padding-top: 18px; border-top: 1px dashed var(--grey-300); }
+.trend-drill.open { display: block; animation: trendDrillIn 0.2s ease; }
+@keyframes trendDrillIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.trend-drill-label { font-size: 13px; font-weight: 600; color: var(--grey-700); margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
+.trend-drill-close { margin-left: auto; cursor: pointer; color: var(--grey-500); font-size: 16px; line-height: 1; padding: 2px 6px; border-radius: var(--radius-sm); }
+.trend-drill-close:hover { color: var(--grey-700); background: var(--grey-100); }
+.trend-drill-note { font-size: 12px; color: var(--grey-500); margin: 0 0 12px; line-height: 1.5; }
+.trend-drill-charts { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.trend-drill-charts.two-up { grid-template-columns: 1fr 1fr; }
+@media (max-width: 620px) { .trend-drill-charts.two-up { grid-template-columns: 1fr; } }
+.trend-drill-chart-box { height: 170px; position: relative; }
+.trend-drill-link { display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
+.trend-drill-link:hover { text-decoration: underline; }
 
 .trend-doctor-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .trend-doctor-row:last-child { margin-bottom: 0; }

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=131" />
+<link rel="stylesheet" href="styles.css?v=132" />
 </head>
 <body>
   <div class="app-shell">
@@ -75,34 +75,67 @@
 
       <div class="panel">
         <div class="panel-header"><h2 id="revenueOverTimeHeading">Revenue over time</h2></div>
-        <div id="revenueByWeek"></div>
-        <p class="panel-note" style="margin-top:12px;margin-bottom:0;">Click a bar to see who was billed then.</p>
+        <div class="trend-chart-box"><canvas id="revenueChart"></canvas><div class="empty-state" id="revenueEmptyState" style="display:none;">No billed invoices in this period.</div></div>
+        <div class="trend-drill" id="revenueDrill">
+          <p class="trend-drill-label"><span id="revenueDrillLabel"></span><span class="trend-drill-close" data-close="revenue">✕</span></p>
+          <p class="trend-drill-note">Revenue split by doctor for this period</p>
+          <div class="trend-drill-charts"><div class="trend-drill-chart-box"><canvas id="revenueDrillChart"></canvas></div></div>
+          <a class="trend-drill-link" id="revenueDrillLink" href="revenue.html">View invoices for this period →</a>
+        </div>
       </div>
 
       <div class="panel">
         <div class="panel-header"><h2 id="visitsPerDoctorHeading">Visits per doctor</h2></div>
-        <div id="visitsPerDoctor"></div>
+        <div class="trend-chart-box"><canvas id="visitsChart"></canvas></div>
+        <div class="trend-drill" id="visitsDrill">
+          <p class="trend-drill-label"><span id="visitsDrillLabel"></span><span class="trend-drill-close" data-close="visits">✕</span></p>
+          <p class="trend-drill-note">Visits trended across the period</p>
+          <div class="trend-drill-charts"><div class="trend-drill-chart-box"><canvas id="visitsDrillChart"></canvas></div></div>
+        </div>
       </div>
 
       <div class="panel">
         <div class="panel-header"><h2 id="revenueByDoctorHeading">Revenue by doctor</h2></div>
-        <div id="revenueByDoctor"></div>
+        <div class="trend-chart-box"><canvas id="revByDocChart"></canvas></div>
+        <div class="trend-drill" id="revByDocDrill">
+          <p class="trend-drill-label"><span id="revByDocDrillLabel"></span><span class="trend-drill-close" data-close="revByDoc">✕</span></p>
+          <p class="trend-drill-note">Revenue trended across the period</p>
+          <div class="trend-drill-charts"><div class="trend-drill-chart-box"><canvas id="revByDocDrillChart"></canvas></div></div>
+        </div>
       </div>
 
       <div class="panel">
         <div class="panel-header"><h2 id="noShowHeading">No-show rate by week</h2></div>
-        <div id="noShowByWeekday"></div>
-        <div id="noShowBreakdown"></div>
+        <div class="trend-chart-box"><canvas id="noShowChart"></canvas><div class="empty-state" id="noShowEmptyState" style="display:none;">No resolved visits in this period.</div></div>
+        <div class="trend-drill" id="noShowDrill">
+          <p class="trend-drill-label"><span id="noShowDrillLabel"></span><span class="trend-drill-close" data-close="noshow">✕</span></p>
+          <p class="trend-drill-note" id="noShowDrillNote">By day, and by doctor, for this bucket</p>
+          <div class="trend-drill-charts two-up" id="noShowDrillCharts">
+            <div class="trend-drill-chart-box"><canvas id="noShowDayChart"></canvas></div>
+            <div class="trend-drill-chart-box"><canvas id="noShowDocChart"></canvas></div>
+          </div>
+        </div>
       </div>
 
       <div class="panel">
         <div class="panel-header"><h2>Peak hours</h2></div>
-        <div id="peakHours"></div>
+        <p class="panel-note" style="margin-top:0;">Number of patients who arrived in each hour, across the whole period</p>
+        <div class="trend-chart-box"><canvas id="peakChart"></canvas><div class="empty-state" id="peakEmptyState" style="display:none;">No arrivals in this period.</div></div>
+        <div class="trend-drill" id="peakDrill">
+          <p class="trend-drill-label"><span id="peakDrillLabel"></span><span class="trend-drill-close" data-close="peak">✕</span></p>
+          <p class="trend-drill-note">How many of each doctor's patients arrived during this specific hour</p>
+          <div class="trend-drill-charts"><div class="trend-drill-chart-box"><canvas id="peakDrillChart"></canvas></div></div>
+        </div>
       </div>
 
       <div class="panel">
         <div class="panel-header"><h2 id="consultDurationHeading">Average consult duration</h2></div>
-        <div id="consultDuration"></div>
+        <div class="trend-chart-box"><canvas id="consultChart"></canvas><div class="empty-state" id="consultEmptyState" style="display:none;">No completed-consultation timing data in this period yet.</div></div>
+        <div class="trend-drill" id="consultDrill">
+          <p class="trend-drill-label"><span id="consultDrillLabel"></span><span class="trend-drill-close" data-close="consult">✕</span></p>
+          <p class="trend-drill-note">Each bar = how many consultations lasted that long, e.g. "10-15 min" counts every consult that took between 10 and 15 minutes. Shows consistency, not just the average.</p>
+          <div class="trend-drill-charts"><div class="trend-drill-chart-box"><canvas id="consultDrillChart"></canvas></div></div>
+        </div>
       </div>
     </main>
   </div>
@@ -110,6 +143,7 @@
   <div class="toast" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
   <script src="clinic-data.js?v=46"></script>
   <script>
@@ -329,79 +363,235 @@
         setTimeout(() => t.classList.remove('show'), 2200);
       }
 
-      // Buckets every invoice in range by day/week/month (see
-      // bucketGranularity) and sums amountReceived per bucket. Each bar
-      // links straight into Revenue, pre-filtered to that bucket's exact
-      // date range, so "who was billed on this day/week/month" is one
-      // click away instead of a separate lookup.
-      function renderRevenueOverTime(invoices, granularity) {
-        const el = document.getElementById('revenueByWeek');
+      function formatHourLabel(hour) {
+        const period = hour < 12 ? 'AM' : 'PM';
+        const h12 = hour % 12 === 0 ? 12 : hour % 12;
+        return `${h12} ${period}`;
+      }
+      const HIST_LABELS = ['0-5 min', '5-10 min', '10-15 min', '15-20 min', '20+ min'];
+      function histBucketForMinutes(min) { return min < 5 ? 0 : min < 10 ? 1 : min < 15 ? 2 : min < 20 ? 3 : 4; }
+
+      // ============================================================
+      // Chart.js setup: colors are pulled from Qlinic's own CSS custom
+      // properties at render time (not hardcoded), so every chart
+      // automatically matches whichever theme (light/dark) the clinic
+      // has picked in Settings — same source of truth as the rest of
+      // the app, not a separate palette to keep in sync by hand.
+      // ============================================================
+      function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+      // Same 5-color identity cycle used for doctor accents elsewhere in
+      // the app (dashboard.html's ACCENT_COLORS) — a per-page copy,
+      // matching this codebase's no-shared-module convention.
+      const ACCENT_VARS = ['--mkt-teal', '--mkt-blue', '--mkt-purple', '--mkt-coral', '--mkt-pink'];
+      function colorForDoctorIndex(idx) { return cssVar(ACCENT_VARS[idx % ACCENT_VARS.length]); }
+      function hexToRgba(hex, a) {
+        const h = hex.replace('#', '');
+        return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`;
+      }
+      function withSelection(colors, selected) {
+        if (selected === null) return colors.slice();
+        return colors.map((c, i) => (i === selected ? c : hexToRgba(c, 0.25)));
+      }
+
+      function chartFont() { return { family: "'Inter', sans-serif", size: 11, weight: '500' }; }
+      function chartTooltipBase() {
+        return {
+          backgroundColor: cssVar('--black'), borderColor: cssVar('--grey-300'), borderWidth: 1,
+          titleFont: chartFont(), bodyFont: chartFont(), padding: 10, cornerRadius: 8, displayColors: false,
+        };
+      }
+      function axisTitle(text) {
+        return { display: !!text, text: text || '', color: cssVar('--grey-500'), font: { family: "'Inter', sans-serif", size: 11, weight: '700' }, padding: { bottom: 6 } };
+      }
+
+      function makeAreaChart(canvasId, labels, data, color, formatter, onClickIndex, yAxisLabel) {
+        const grid = cssVar('--grey-300');
+        return new Chart(document.getElementById(canvasId), {
+          type: 'line',
+          data: { labels, datasets: [{
+            data, borderColor: color, borderWidth: 3, tension: 0.4, pointRadius: 0, pointHoverRadius: 5,
+            pointBackgroundColor: cssVar('--white'), pointBorderColor: color, pointBorderWidth: 2, fill: true,
+            backgroundColor: (c) => { const { chart } = c; const { chartArea } = chart; if (!chartArea) return null;
+              const g = chart.ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+              g.addColorStop(0, hexToRgba(color, 0.22)); g.addColorStop(1, hexToRgba(color, 0)); return g; },
+          }] },
+          options: {
+            responsive: true, maintainAspectRatio: false, interaction: { mode: 'nearest', intersect: false },
+            onClick: (evt, els) => { if (!els.length || !onClickIndex) return; onClickIndex(els[0].index); },
+            plugins: { legend: { display: false }, tooltip: { ...chartTooltipBase(), callbacks: { label: (c) => (formatter ? formatter(c.parsed.y) : c.parsed.y) } } },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: cssVar('--grey-500'), font: chartFont(), maxRotation: 0, autoSkip: true } },
+              y: { grid: { color: grid }, title: axisTitle(yAxisLabel), ticks: { color: cssVar('--grey-500'), font: chartFont(), precision: 0, callback: (v) => (formatter ? formatter(v) : v) } },
+            },
+          },
+        });
+      }
+
+      function makeBarChart(canvasId, labels, data, colors, formatter, onClickIndex, yAxisLabel) {
+        const grid = cssVar('--grey-300');
+        return new Chart(document.getElementById(canvasId), {
+          type: 'bar',
+          data: { labels, datasets: [{ data, backgroundColor: colors.slice(), borderRadius: 8, borderSkipped: false, maxBarThickness: 46 }] },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            onClick: (evt, els) => { if (!els.length || !onClickIndex) return; onClickIndex(els[0].index); },
+            plugins: { legend: { display: false }, tooltip: { ...chartTooltipBase(), callbacks: { label: (c) => (formatter ? formatter(c.parsed.y) : c.parsed.y) } } },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: cssVar('--grey-500'), font: chartFont() } },
+              y: { grid: { color: grid }, title: axisTitle(yAxisLabel), ticks: { color: cssVar('--grey-500'), font: chartFont(), precision: 0, callback: (v) => (formatter ? formatter(v) : v) } },
+            },
+          },
+        });
+      }
+
+      function makeMiniBarChart(canvasId, labels, data, colors, formatter, yAxisLabel) {
+        const grid = cssVar('--grey-300');
+        const font = { ...chartFont(), size: 10 };
+        return new Chart(document.getElementById(canvasId), {
+          type: 'bar',
+          data: { labels, datasets: [{ data, backgroundColor: colors.slice(), borderRadius: 6, borderSkipped: false, maxBarThickness: 30 }] },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { ...chartTooltipBase(), callbacks: { label: (c) => (formatter ? formatter(c.parsed.y) : c.parsed.y) } } },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: cssVar('--grey-500'), font } },
+              y: { grid: { color: grid }, title: { ...axisTitle(yAxisLabel), font: { ...axisTitle(yAxisLabel).font, size: 10 } }, ticks: { color: cssVar('--grey-500'), font, precision: 0, callback: (v) => (formatter ? formatter(v) : v) } },
+            },
+          },
+        });
+      }
+
+      function centerTextPlugin(id, label) {
+        return { id, afterDraw(chart) {
+          const { ctx, chartArea } = chart;
+          const total = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+          const cx = (chartArea.left + chartArea.right) / 2, cy = (chartArea.top + chartArea.bottom) / 2;
+          ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.font = "700 22px 'Inter', sans-serif"; ctx.fillStyle = cssVar('--black');
+          ctx.fillText(Math.round(total), cx, cy - 8);
+          ctx.font = "700 10px 'Inter', sans-serif"; ctx.fillStyle = cssVar('--grey-500');
+          ctx.fillText(label, cx, cy + 12);
+          ctx.restore();
+        } };
+      }
+
+      function makeDonutChart(canvasId, labels, data, colors, totalLabel, onClickIndex) {
+        return new Chart(document.getElementById(canvasId), {
+          type: 'doughnut',
+          data: { labels, datasets: [{ data, backgroundColor: colors.slice(), borderColor: cssVar('--white'), borderWidth: 3, hoverOffset: 6 }] },
+          options: {
+            responsive: true, maintainAspectRatio: false, cutout: '70%',
+            layout: { padding: { top: 4, bottom: 4 } },
+            onClick: (evt, els) => { if (!els.length || !onClickIndex) return; onClickIndex(els[0].index); },
+            plugins: {
+              legend: { position: 'right', align: 'center', labels: { color: cssVar('--grey-700'), font: chartFont(), boxWidth: 8, boxHeight: 8, usePointStyle: true, padding: 12 } },
+              tooltip: chartTooltipBase(),
+            },
+          },
+          plugins: [centerTextPlugin('centerText_' + canvasId, totalLabel)],
+        });
+      }
+
+      // ---------------- drill-down state ----------------
+      const trendCharts = {};
+      const trendSelected = { revenue: null, visits: null, revByDoc: null, noshow: null, peak: null, consult: null };
+      function openTrendDrill(id) { document.getElementById(id).classList.add('open'); }
+      function closeTrendDrill(id) { document.getElementById(id).classList.remove('open'); }
+      function resetAllTrendDrills() {
+        Object.keys(trendSelected).forEach((k) => { trendSelected[k] = null; });
+        ['revenueDrill', 'visitsDrill', 'revByDocDrill', 'noShowDrill', 'peakDrill', 'consultDrill'].forEach(closeTrendDrill);
+      }
+
+      // ---------------- caches built once per loadAndRender, read by click handlers ----------------
+      let revenueBucketsCache = {}; // key -> { total, byDoctor: {doctorId: sum} }
+      let revenueBucketKeysCache = [];
+      let revenueGranularityCache = 'week';
+      let visitsBucketsByDoctorCache = {}; // key -> {doctorId: count}
+      let noShowBucketsCache = {};
+      let noShowGranularityCache = 'week';
+      let peakByHourByDoctorCache = {}; // hour -> {doctorId: count}
+      let consultDurationsByDoctorCache = {}; // doctorId -> [minutes,...]
+      let doctorListCache = [];
+
+      // Buckets invoices AND visited patients together (same bucket keys
+      // as the main Revenue chart) so the drill-downs for Revenue over
+      // time, Visits per doctor, and Revenue by doctor can all read from
+      // one pass over the already-fetched data instead of three.
+      function renderRevenueOverTime(invoices, patients, granularity, doctorById) {
         document.getElementById('revenueOverTimeHeading').textContent = `Revenue by ${GRANULARITY_NOUN[granularity]}`;
-        if (invoices.length === 0) {
-          el.innerHTML = '<div class="empty-state">No billed invoices in this period.</div>';
-          return;
-        }
-        const byBucket = {};
+        revenueGranularityCache = granularity;
+        revenueBucketsCache = {};
         invoices.forEach((inv) => {
           // invoiceDate (migration 024), not createdAt — a backdated bill
           // belongs in the day it's FOR, same as Revenue's own filtering.
-          // Built via the y/m/d constructor rather than new Date(string):
-          // invoiceDate is a plain "YYYY-MM-DD" with no time component, so
-          // parsing it as a string reads as UTC midnight, which rolls back
-          // to the previous local calendar day in any timezone behind UTC.
           const [y, m, d] = inv.invoiceDate.split('-').map(Number);
           const key = bucketKeyFor(new Date(y, m - 1, d), granularity);
-          byBucket[key] = (byBucket[key] || 0) + inv.amountReceived;
+          if (!revenueBucketsCache[key]) revenueBucketsCache[key] = { total: 0, byDoctor: {} };
+          revenueBucketsCache[key].total += inv.amountReceived;
+          revenueBucketsCache[key].byDoctor[inv.doctorId] = (revenueBucketsCache[key].byDoctor[inv.doctorId] || 0) + inv.amountReceived;
         });
-        const buckets = Object.keys(byBucket).sort();
-        const maxVal = Math.max(...buckets.map((b) => byBucket[b]), 1);
-        el.innerHTML = `
-          <div class="trend-bars">
-            ${buckets.map((key) => {
-              const val = byBucket[key];
-              const heightPct = Math.round((val / maxVal) * 100);
-              const range = bucketRangeFor(key, granularity);
-              const label = bucketLabelFor(key, granularity);
-              return `
-                <a class="trend-bar-col trend-bar-link" href="revenue.html?start=${range.start}&end=${range.end}">
-                  <div class="trend-bar-value">₹${val.toLocaleString('en-IN')}</div>
-                  <div class="trend-bar-track"><div class="trend-bar-fill" style="height:${heightPct}%;"></div></div>
-                  <div class="trend-bar-label">${label}</div>
-                </a>
-              `;
-            }).join('')}
-          </div>
-        `;
+
+        const visited = patients.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status));
+        visitsBucketsByDoctorCache = {};
+        visited.forEach((p) => {
+          const [y, m, d] = p.tokenDate.split('-').map(Number);
+          const key = bucketKeyFor(new Date(y, m - 1, d), granularity);
+          if (!visitsBucketsByDoctorCache[key]) visitsBucketsByDoctorCache[key] = {};
+          visitsBucketsByDoctorCache[key][p.doctorId] = (visitsBucketsByDoctorCache[key][p.doctorId] || 0) + 1;
+        });
+
+        // Union of both bucket sets, not just invoice buckets — a bucket
+        // with visits but no billed revenue yet (e.g. every visit that
+        // day was a waived follow-up) still needs a slot on the shared
+        // timeline, or it silently disappears from the visits-per-doctor
+        // trend drill-down even though real visits happened.
+        revenueBucketKeysCache = Array.from(new Set([...Object.keys(revenueBucketsCache), ...Object.keys(visitsBucketsByDoctorCache)])).sort();
+        revenueBucketKeysCache.forEach((k) => {
+          if (!revenueBucketsCache[k]) revenueBucketsCache[k] = { total: 0, byDoctor: {} };
+          if (!visitsBucketsByDoctorCache[k]) visitsBucketsByDoctorCache[k] = {};
+        });
+
+        if (trendCharts.revenue) trendCharts.revenue.destroy();
+        const revenueHasData = revenueBucketKeysCache.length > 0;
+        document.getElementById('revenueChart').style.display = revenueHasData ? '' : 'none';
+        document.getElementById('revenueEmptyState').style.display = revenueHasData ? 'none' : '';
+        if (!revenueHasData) return;
+        const labels = revenueBucketKeysCache.map((k) => bucketLabelFor(k, granularity));
+        const values = revenueBucketKeysCache.map((k) => Math.round(revenueBucketsCache[k].total));
+        trendCharts.revenue = makeAreaChart('revenueChart', labels, values, cssVar('--mkt-teal'),
+          (v) => '₹' + Math.round(v).toLocaleString('en-IN'), onRevenueDrillClick, 'Revenue (₹)');
       }
 
-      // Which bucket's breakdown is currently expanded, plus the data
-      // needed to redraw it without a network round-trip: click handling
-      // just re-renders from these caches.
-      let selectedNoShowBucket = null;
-      let noShowBucketsCache = {};
-      let noShowGranularityCache = 'week';
+      function onRevenueDrillClick(idx) {
+        const key = revenueBucketKeysCache[idx];
+        if (trendSelected.revenue === idx) { trendSelected.revenue = null; closeTrendDrill('revenueDrill'); return; }
+        trendSelected.revenue = idx;
+        const label = bucketLabelFor(key, revenueGranularityCache);
+        document.getElementById('revenueDrillLabel').textContent = `${GRANULARITY_NOUN[revenueGranularityCache]} of ${label}`;
+        const range = bucketRangeFor(key, revenueGranularityCache);
+        document.getElementById('revenueDrillLink').href = `revenue.html?start=${range.start}&end=${range.end}`;
+        const byDoctor = revenueBucketsCache[key].byDoctor;
+        const rows = doctorListCache
+          .map((d, i) => ({ name: Qlinic.escapeHtml(d.name), value: Math.round(byDoctor[d.id] || 0), color: colorForDoctorIndex(i) }))
+          .filter((r) => r.value > 0);
+        if (trendCharts.revenueDrill) trendCharts.revenueDrill.destroy();
+        if (rows.length > 0) {
+          trendCharts.revenueDrill = makeDonutChart('revenueDrillChart', rows.map((r) => r.name), rows.map((r) => r.value), rows.map((r) => r.color), 'TOTAL', null);
+        }
+        openTrendDrill('revenueDrill');
+      }
 
       // Only counts patients whose visit outcome is actually known (done
       // or no_show) — someone still booked/waiting hasn't resolved yet,
       // so including them would understate the no-show rate. Buckets by
       // day/week/month (same rule as Revenue over time) so a bar always
       // reads as "this specific day/week/month," never an ambiguous mix
-      // of occurrences — clicking a bar expands the per-doctor (and, for
-      // week/month bars, day-level) breakdown for exactly that bucket below.
-      function renderNoShowOverTime(patients, granularity, doctorById) {
-        const el = document.getElementById('noShowByWeekday');
-        const breakdownEl = document.getElementById('noShowBreakdown');
+      // of occurrences.
+      function renderNoShowOverTime(patients, granularity) {
         noShowGranularityCache = granularity;
         document.getElementById('noShowHeading').textContent = `No-show rate by ${GRANULARITY_NOUN[granularity]}`;
 
         const resolved = patients.filter((p) => p.status === 'done' || p.status === 'no_show');
-        if (resolved.length === 0) {
-          el.innerHTML = '<div class="empty-state">No resolved visits in this period.</div>';
-          breakdownEl.innerHTML = '';
-          selectedNoShowBucket = null;
-          return;
-        }
-
         noShowBucketsCache = {};
         resolved.forEach((p) => {
           const [y, m, d] = p.tokenDate.split('-').map(Number);
@@ -409,72 +599,53 @@
           const key = bucketKeyFor(date, granularity);
           (noShowBucketsCache[key] = noShowBucketsCache[key] || []).push(p);
         });
-
         const buckets = Object.keys(noShowBucketsCache).sort();
+
+        if (trendCharts.noshow) trendCharts.noshow.destroy();
+        trendSelected.noshow = null; closeTrendDrill('noShowDrill');
+        const noShowHasData = buckets.length > 0;
+        document.getElementById('noShowChart').style.display = noShowHasData ? '' : 'none';
+        document.getElementById('noShowEmptyState').style.display = noShowHasData ? 'none' : '';
+        if (!noShowHasData) return;
         const bucketStats = buckets.map((key) => {
           const items = noShowBucketsCache[key];
           const noShows = items.filter((p) => p.status === 'no_show').length;
-          return { key, total: items.length, noShows, rate: (noShows / items.length) * 100 };
+          return { key, total: items.length, noShows, rate: Math.round((noShows / items.length) * 100) };
         });
-        const maxRate = Math.max(...bucketStats.map((b) => b.rate), 1);
-
-        el.innerHTML = `
-          <div class="trend-bars">
-            ${bucketStats.map((b) => {
-              const heightPct = Math.round((b.rate / maxRate) * 100);
-              const label = bucketLabelFor(b.key, granularity);
-              return `
-                <button type="button" class="trend-bar-col trend-bar-link ${b.key === selectedNoShowBucket ? 'trend-bar-selected' : ''}" data-bucket="${b.key}" title="${b.noShows} no-show${b.noShows === 1 ? '' : 's'} of ${b.total} resolved visit${b.total === 1 ? '' : 's'}">
-                  <div class="trend-bar-value">${Math.round(b.rate)}%</div>
-                  <div class="trend-bar-track"><div class="trend-bar-fill ${b.noShows > 0 ? 'trend-bar-fill-warn' : ''}" style="height:${heightPct}%;"></div></div>
-                  <div class="trend-bar-label">${label}</div>
-                </button>
-              `;
-            }).join('')}
-          </div>
-        `;
-
-        // A live update or period change can make the previously-selected
-        // bucket disappear (its key no longer exists in the new data) —
-        // collapse rather than render a breakdown for a bucket that's no
-        // longer on the chart.
-        if (selectedNoShowBucket && noShowBucketsCache[selectedNoShowBucket]) {
-          renderNoShowBreakdown(selectedNoShowBucket, doctorById);
-        } else {
-          selectedNoShowBucket = null;
-          breakdownEl.innerHTML = '<p class="panel-note" style="margin:14px 0 0;">Click a bar to see no-shows by day of week and by doctor for that period.</p>';
-        }
+        const colors = bucketStats.map((b) => (b.rate >= 15 ? cssVar('--danger') : b.rate >= 10 ? cssVar('--mkt-coral') : cssVar('--mkt-teal')));
+        trendCharts.noshow = makeBarChart('noShowChart', bucketStats.map((b) => bucketLabelFor(b.key, granularity)), bucketStats.map((b) => b.rate), colors,
+          (v) => v + '%', (idx) => onNoShowDrillClick(bucketStats[idx].key), 'No-show rate (%)');
+        trendCharts.noshow._baseColors = colors;
       }
 
-      function renderNoShowBreakdown(key, doctorById) {
-        const breakdownEl = document.getElementById('noShowBreakdown');
+      function onNoShowDrillClick(key) {
+        const idx = Object.keys(noShowBucketsCache).sort().indexOf(key);
+        if (trendSelected.noshow === idx) { trendSelected.noshow = null; closeTrendDrill('noShowDrill'); recolorTrendMains(); return; }
+        trendSelected.noshow = idx; recolorTrendMains();
+        renderNoShowBreakdown(key);
+        openTrendDrill('noShowDrill');
+      }
+
+      function renderNoShowBreakdown(key) {
         const items = noShowBucketsCache[key] || [];
         const isDayBucket = noShowGranularityCache === 'day';
         const isWeekBucket = noShowGranularityCache === 'week';
         const periodLabel = isDayBucket ? shortDateLabel(key) : isWeekBucket ? `week of ${shortDateLabel(key)}` : monthLabel(key);
+        document.getElementById('noShowDrillLabel').textContent = `${periodLabel} · ${items.length} resolved visit${items.length === 1 ? '' : 's'}`;
 
         // A day bucket already IS a single day, so there's no further
-        // day-level split to show — only "By doctor" renders below. A
-        // week bucket has exactly one occurrence of each weekday, so
-        // showing the actual calendar date is more useful than a generic
-        // "Sat" label. A month bucket has ~4-5 occurrences of each
-        // weekday, so those bars stay an aggregate-by-weekday rate.
+        // day-level split to show. A week bucket has exactly one
+        // occurrence of each weekday, so the actual calendar date is more
+        // useful than a generic "Sat" label. A month bucket aggregates
+        // ~4-5 occurrences of each weekday into one rate.
         let dayLabels;
         const dayTotals = new Array(7).fill(0);
         const dayNoShows = new Array(7).fill(0);
         if (isWeekBucket) {
           const [y, m, d] = key.split('-').map(Number);
           const dates = Array.from({ length: 7 }, (_, i) => toDateStr(new Date(y, m - 1, d + i)));
-          dayLabels = dates.map((ds) => {
-            const [, mm, dd] = ds.split('-').map(Number);
-            return `${dd}-${MONTH_ABBREV[mm - 1]}`;
-          });
-          items.forEach((p) => {
-            const idx = dates.indexOf(p.tokenDate);
-            if (idx === -1) return;
-            dayTotals[idx]++;
-            if (p.status === 'no_show') dayNoShows[idx]++;
-          });
+          dayLabels = dates.map((ds) => { const [, mm, dd] = ds.split('-').map(Number); return `${dd}-${MONTH_ABBREV[mm - 1]}`; });
+          items.forEach((p) => { const idx = dates.indexOf(p.tokenDate); if (idx === -1) return; dayTotals[idx]++; if (p.status === 'no_show') dayNoShows[idx]++; });
         } else if (!isDayBucket) {
           dayLabels = WEEKDAY_LABELS;
           items.forEach((p) => {
@@ -485,9 +656,7 @@
             if (p.status === 'no_show') dayNoShows[idx]++;
           });
         }
-        const dayRates = dayTotals.map((t, i) => (t === 0 ? 0 : (dayNoShows[i] / t) * 100));
-        const maxDayRate = Math.max(...dayRates, 1);
-        const dayLabelClass = isWeekBucket ? 'trend-bar-label trend-bar-label-vertical' : 'trend-bar-label';
+        const dayRates = dayTotals.map((t, i) => (t === 0 ? 0 : Math.round((dayNoShows[i] / t) * 100)));
 
         const byDoctor = {};
         items.forEach((p) => {
@@ -495,252 +664,200 @@
           byDoctor[p.doctorId].total++;
           if (p.status === 'no_show') byDoctor[p.doctorId].noShows++;
         });
-        const doctorRows = Object.entries(byDoctor)
-          .map(([doctorId, s]) => ({
-            name: Qlinic.escapeHtml((doctorById[doctorId] && doctorById[doctorId].name) || 'Unknown'),
-            total: s.total,
-            noShows: s.noShows,
-            rate: (s.noShows / s.total) * 100,
-          }))
-          .sort((a, b) => b.rate - a.rate);
-        const maxDoctorRate = Math.max(...doctorRows.map((r) => r.rate), 1);
+        const doctorRows = doctorListCache
+          .map((d, i) => ({ id: d.id, name: d.name.split(' ')[0], colorIdx: i, stats: byDoctor[d.id] }))
+          .filter((r) => r.stats)
+          .map((r) => ({ ...r, rate: Math.round((r.stats.noShows / r.stats.total) * 100) }));
 
         // With a single doctor in the clinic, "By doctor" would show
         // exactly one bar at exactly the same rate as the bucket bar just
-        // clicked to get here — guaranteed, not computed, since 100% of
-        // the bucket's visits belong to that one doctor. Pure restatement,
-        // so it's dropped entirely rather than shown as a false comparison.
-        const showByDoctor = Object.keys(doctorById).length > 1;
+        // clicked to get here — guaranteed, not computed. Dropped rather
+        // than shown as a false comparison.
+        const showByDoctor = doctorListCache.length > 1;
+        document.getElementById('noShowDrillNote').textContent = isDayBucket
+          ? (showByDoctor ? 'By doctor (a single day has no further day-level split)' : 'A single day has no further breakdown to show')
+          : `${isWeekBucket ? 'By day' : 'By day of week'}${showByDoctor ? ', and by doctor,' : ''} for this bucket`;
+        document.getElementById('noShowDrillCharts').classList.toggle('two-up', !isDayBucket && showByDoctor);
 
-        breakdownEl.innerHTML = `
-          <p class="panel-note" style="margin:14px 0 12px;">Showing ${periodLabel} · ${items.length} resolved visit${items.length === 1 ? '' : 's'}</p>
-          ${isDayBucket ? '' : `
-          <div>
-            <h3 style="margin:0 0 10px;font-size:14px;color:var(--grey-700);">${isWeekBucket ? 'By day' : 'By day of week'}</h3>
-            <div class="trend-bars trend-bars-compact">
-              ${dayLabels.map((label, i) => `
-                <div class="trend-bar-col trend-bar-hoverable" title="${dayNoShows[i]} no-show${dayNoShows[i] === 1 ? '' : 's'} of ${dayTotals[i]} resolved visit${dayTotals[i] === 1 ? '' : 's'}">
-                  <div class="trend-bar-track"><div class="trend-bar-fill ${dayNoShows[i] > 0 ? 'trend-bar-fill-warn' : ''}" style="height:${Math.round((dayRates[i] / maxDayRate) * 100)}%;"></div></div>
-                  <div class="${dayLabelClass}">${label}</div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-          `}
-          ${showByDoctor ? `
-          <div style="margin-top:${isDayBucket ? '0' : '36px'};">
-            <h3 style="margin:0 0 10px;font-size:14px;color:var(--grey-700);">By doctor</h3>
-            <div class="trend-bars trend-bars-compact">
-              ${doctorRows.map((r) => `
-                <div class="trend-bar-col trend-bar-hoverable" title="${r.noShows} no-show${r.noShows === 1 ? '' : 's'} of ${r.total} resolved visit${r.total === 1 ? '' : 's'} (${Math.round(r.rate)}%)">
-                  <div class="trend-bar-value">${Math.round(r.rate)}%</div>
-                  <div class="trend-bar-track"><div class="trend-bar-fill ${r.noShows > 0 ? 'trend-bar-fill-warn' : ''}" style="height:${Math.round((r.rate / maxDoctorRate) * 100)}%;"></div></div>
-                  <div class="trend-bar-label">${r.name}</div>
-                  <div class="sub-line">${r.noShows}/${r.total}</div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-          ` : ''}
-        `;
+        if (trendCharts.noShowDay) { trendCharts.noShowDay.destroy(); trendCharts.noShowDay = null; }
+        document.getElementById('noShowDayChart').style.display = isDayBucket ? 'none' : '';
+        if (!isDayBucket) {
+          trendCharts.noShowDay = makeMiniBarChart('noShowDayChart', dayLabels, dayRates, dayLabels.map(() => cssVar('--mkt-teal')), (v) => v + '%', 'No-show rate');
+        }
+        if (trendCharts.noShowDoc) { trendCharts.noShowDoc.destroy(); trendCharts.noShowDoc = null; }
+        document.getElementById('noShowDocChart').style.display = showByDoctor ? '' : 'none';
+        if (showByDoctor) {
+          trendCharts.noShowDoc = makeMiniBarChart('noShowDocChart', doctorRows.map((r) => r.name), doctorRows.map((r) => r.rate),
+            doctorRows.map((r) => colorForDoctorIndex(r.colorIdx)), (v) => v + '%', 'No-show rate');
+        }
       }
-
-      const FEE_TYPE_LABELS = { consultation: 'Consultation', emergency: 'Emergency', waived: 'Follow up' };
-      const DOCTOR_TYPE_LEGEND = `
-        <p class="panel-note" style="margin:10px 0 0;">
-          <span class="board-doc-dot dot-blue"></span>Consultation
-          <span class="board-doc-dot dot-coral" style="margin-left:14px;"></span>Emergency
-          <span class="board-doc-dot dot-purple" style="margin-left:14px;"></span>Follow up
-        </p>
-      `;
 
       // Matches getDailySummary's footfall definition exactly: waiting/
       // in_consult/done are actual visits, booked (hasn't arrived yet)
-      // and no_show (booked but never arrived) are both excluded.
-      //
-      // Built from the full doctor list, not just Object.entries() of the
-      // counts — a doctor with zero visits in this period would otherwise
-      // never appear as a key at all and silently vanish from the chart,
-      // rather than showing as a real 0 bar.
-      //
-      // Each bar is stacked by visit type (consultation/emergency/follow
-      // up), joined via each patient's auto-billed invoice (patientId ->
-      // invoice) since visit type is recorded on the invoice, not the
-      // patient. A patient with no matching invoice in this period (rare
-      // — only if billing data is missing) still counts toward the total
-      // via an "unknown" segment, so the bar's total height always
-      // matches the visited count even when a segment can't be attributed.
-      function renderVisitsPerDoctor(patients, doctors, invoices) {
-        const el = document.getElementById('visitsPerDoctor');
-        if (doctors.length === 0) {
-          el.innerHTML = '<div class="empty-state">No doctors added yet.</div>';
-          return;
-        }
-        const invoiceByPatientId = {};
-        invoices.forEach((inv) => { if (inv.patientId) invoiceByPatientId[inv.patientId] = inv; });
+      // and no_show (booked but never arrived) are both excluded. Built
+      // from the full doctor list, not just the counts seen — a doctor
+      // with zero visits in this period still shows as a real 0 rather
+      // than silently vanishing.
+      function renderVisitsPerDoctor(patients, doctors) {
+        if (doctors.length === 0) { if (trendCharts.visits) trendCharts.visits.destroy(); return; }
         const visited = patients.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status));
         const counts = {};
-        visited.forEach((p) => {
-          if (!counts[p.doctorId]) counts[p.doctorId] = { consultation: 0, emergency: 0, waived: 0, unknown: 0, total: 0 };
-          const inv = invoiceByPatientId[p.id];
-          const type = inv && FEE_TYPE_LABELS[inv.feeType] ? inv.feeType : 'unknown';
-          counts[p.doctorId][type]++;
-          counts[p.doctorId].total++;
-        });
-        const rows = doctors
-          .map((d) => ({ name: Qlinic.escapeHtml(d.name), ...(counts[d.id] || { consultation: 0, emergency: 0, waived: 0, unknown: 0, total: 0 }) }))
-          .sort((a, b) => b.total - a.total);
-        const maxCount = Math.max(...rows.map((r) => r.total), 1);
-        el.innerHTML = `
-          <div class="trend-bars">
-            ${rows.map((r) => `
-              <div class="trend-bar-col trend-bar-hoverable">
-                <div class="trend-bar-value">${r.total}</div>
-                <div class="trend-bar-track">
-                  <div class="trend-bar-fill-stack" style="height:${Math.round((r.total / maxCount) * 100)}%;">
-                    <div class="trend-bar-seg trend-bar-seg-consultation" style="flex-grow:${r.consultation};" title="Consultation: ${r.consultation}"></div>
-                    <div class="trend-bar-seg trend-bar-seg-emergency" style="flex-grow:${r.emergency};" title="Emergency: ${r.emergency}"></div>
-                    <div class="trend-bar-seg trend-bar-seg-waived" style="flex-grow:${r.waived};" title="Follow up: ${r.waived}"></div>
-                    ${r.unknown > 0 ? `<div class="trend-bar-seg trend-bar-seg-unknown" style="flex-grow:${r.unknown};" title="Unbilled: ${r.unknown}"></div>` : ''}
-                  </div>
-                </div>
-                <div class="trend-bar-label">${r.name}</div>
-              </div>
-            `).join('')}
-          </div>
-          ${DOCTOR_TYPE_LEGEND}
-        `;
+        visited.forEach((p) => { counts[p.doctorId] = (counts[p.doctorId] || 0) + 1; });
+        const rows = doctors.map((d, i) => ({ name: d.name, value: counts[d.id] || 0, color: colorForDoctorIndex(i) }));
+        if (trendCharts.visits) trendCharts.visits.destroy();
+        trendCharts.visits = makeDonutChart('visitsChart', rows.map((r) => r.name), rows.map((r) => r.value), rows.map((r) => r.color), 'TOTAL VISITS', onVisitsDrillClick);
+        trendCharts.visits._baseColors = rows.map((r) => r.color);
       }
 
-      // Same "show every doctor, not just the ones with a matching key"
-      // rule as renderVisitsPerDoctor above. Follow-up visits are always
-      // waived to ₹0 (see updateInvoicePayment's comment in clinic-data.js),
-      // so only consultation and emergency ever contribute real revenue —
-      // the bar is stacked by those two alone.
+      function onVisitsDrillClick(idx) {
+        if (trendSelected.visits === idx) { trendSelected.visits = null; closeTrendDrill('visitsDrill'); recolorTrendMains(); return; }
+        trendSelected.visits = idx; recolorTrendMains();
+        const doctor = doctorListCache[idx];
+        document.getElementById('visitsDrillLabel').textContent = `${doctor.name}'s visits this period`;
+        const perBucket = revenueBucketKeysCache.map((k) => visitsBucketsByDoctorCache[k][doctor.id] || 0);
+        if (trendCharts.visitsDrill) trendCharts.visitsDrill.destroy();
+        trendCharts.visitsDrill = makeAreaChart('visitsDrillChart', revenueBucketKeysCache.map((k) => bucketLabelFor(k, revenueGranularityCache)), perBucket, colorForDoctorIndex(idx), null, null, 'Visits');
+        openTrendDrill('visitsDrill');
+      }
+
+      // Follow-up visits are always waived to ₹0 (see updateInvoicePayment's
+      // comment in clinic-data.js), so only consultation and emergency
+      // ever contribute real revenue.
       function renderRevenueByDoctor(invoices, doctors) {
-        const el = document.getElementById('revenueByDoctor');
-        if (doctors.length === 0) {
-          el.innerHTML = '<div class="empty-state">No doctors added yet.</div>';
-          return;
-        }
+        if (doctors.length === 0) { if (trendCharts.revByDoc) trendCharts.revByDoc.destroy(); return; }
         const sums = {};
         invoices.forEach((inv) => {
           if (inv.feeType !== 'consultation' && inv.feeType !== 'emergency') return;
-          if (!sums[inv.doctorId]) sums[inv.doctorId] = { consultation: 0, emergency: 0 };
-          sums[inv.doctorId][inv.feeType] += inv.amountReceived;
+          sums[inv.doctorId] = (sums[inv.doctorId] || 0) + inv.amountReceived;
         });
-        const rows = doctors
-          .map((d) => {
-            const s = sums[d.id] || { consultation: 0, emergency: 0 };
-            return { name: Qlinic.escapeHtml(d.name), consultation: s.consultation, emergency: s.emergency, total: s.consultation + s.emergency };
-          })
-          .sort((a, b) => b.total - a.total);
-        const maxVal = Math.max(...rows.map((r) => r.total), 1);
-        el.innerHTML = `
-          <div class="trend-bars">
-            ${rows.map((r) => `
-              <div class="trend-bar-col trend-bar-hoverable">
-                <div class="trend-bar-value">₹${r.total.toLocaleString('en-IN')}</div>
-                <div class="trend-bar-track">
-                  <div class="trend-bar-fill-stack" style="height:${Math.round((r.total / maxVal) * 100)}%;">
-                    <div class="trend-bar-seg trend-bar-seg-consultation" style="flex-grow:${r.consultation};" title="Consultation: ₹${r.consultation.toLocaleString('en-IN')}"></div>
-                    <div class="trend-bar-seg trend-bar-seg-emergency" style="flex-grow:${r.emergency};" title="Emergency: ₹${r.emergency.toLocaleString('en-IN')}"></div>
-                  </div>
-                </div>
-                <div class="trend-bar-label">${r.name}</div>
-              </div>
-            `).join('')}
-          </div>
-          <p class="panel-note" style="margin:10px 0 0;">
-            <span class="board-doc-dot dot-blue"></span>Consultation
-            <span class="board-doc-dot dot-coral" style="margin-left:14px;"></span>Emergency
-          </p>
-        `;
+        const rows = doctors.map((d, i) => ({ name: d.name, value: Math.round(sums[d.id] || 0), color: colorForDoctorIndex(i) }));
+        if (trendCharts.revByDoc) trendCharts.revByDoc.destroy();
+        trendCharts.revByDoc = makeBarChart('revByDocChart', rows.map((r) => r.name.split(' ')[0]), rows.map((r) => r.value), rows.map((r) => r.color),
+          (v) => '₹' + Math.round(v).toLocaleString('en-IN'), onRevByDocDrillClick, 'Revenue (₹)');
+        trendCharts.revByDoc._baseColors = rows.map((r) => r.color);
       }
 
-      function formatHourLabel(hour) {
-        const period = hour < 12 ? 'AM' : 'PM';
-        const h12 = hour % 12 === 0 ? 12 : hour % 12;
-        return `${h12} ${period}`;
+      function onRevByDocDrillClick(idx) {
+        if (trendSelected.revByDoc === idx) { trendSelected.revByDoc = null; closeTrendDrill('revByDocDrill'); recolorTrendMains(); return; }
+        trendSelected.revByDoc = idx; recolorTrendMains();
+        const doctor = doctorListCache[idx];
+        document.getElementById('revByDocDrillLabel').textContent = `${doctor.name}'s revenue this period`;
+        const perBucket = revenueBucketKeysCache.map((k) => Math.round((revenueBucketsCache[k].byDoctor[doctor.id]) || 0));
+        if (trendCharts.revByDocDrill) trendCharts.revByDocDrill.destroy();
+        trendCharts.revByDocDrill = makeAreaChart('revByDocDrillChart', revenueBucketKeysCache.map((k) => bucketLabelFor(k, revenueGranularityCache)), perBucket, colorForDoctorIndex(idx),
+          (v) => '₹' + Math.round(v).toLocaleString('en-IN'), null, 'Revenue (₹)');
+        openTrendDrill('revByDocDrill');
       }
 
-      // Same footfall definition as getDailySummary/renderVisitsPerDoctor
-      // (waiting/in_consult/done = actually arrived). Bucketed by hour of
+      // Same footfall definition as getDailySummary. Bucketed by hour of
       // day in local time, aggregated across every day in the selected
-      // period — only hours that actually saw an arrival get a bar, so
-      // clinic-closed hours don't pad the chart with empty columns.
+      // period — only hours that actually saw an arrival get a bar.
       function renderPeakHours(patients) {
-        const el = document.getElementById('peakHours');
         const visited = patients.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status) && p.arrivedAt);
-        if (visited.length === 0) {
-          el.innerHTML = '<div class="empty-state">No arrivals in this period.</div>';
-          return;
-        }
+        peakByHourByDoctorCache = {};
         const byHour = {};
         visited.forEach((p) => {
           const hour = new Date(p.arrivedAt).getHours();
           byHour[hour] = (byHour[hour] || 0) + 1;
+          if (!peakByHourByDoctorCache[hour]) peakByHourByDoctorCache[hour] = {};
+          peakByHourByDoctorCache[hour][p.doctorId] = (peakByHourByDoctorCache[hour][p.doctorId] || 0) + 1;
         });
         const hours = Object.keys(byHour).map(Number).sort((a, b) => a - b);
-        const maxVal = Math.max(...hours.map((h) => byHour[h]), 1);
-        el.innerHTML = `
-          <div class="trend-bars">
-            ${hours.map((h) => {
-              const val = byHour[h];
-              return `
-                <div class="trend-bar-col trend-bar-hoverable" title="${val} arrival${val === 1 ? '' : 's'} at ${formatHourLabel(h)}">
-                  <div class="trend-bar-value">${val}</div>
-                  <div class="trend-bar-track"><div class="trend-bar-fill" style="height:${Math.round((val / maxVal) * 100)}%;"></div></div>
-                  <div class="trend-bar-label">${formatHourLabel(h)}</div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        `;
+        if (trendCharts.peak) trendCharts.peak.destroy();
+        trendSelected.peak = null; closeTrendDrill('peakDrill');
+        const peakHasData = hours.length > 0;
+        document.getElementById('peakChart').style.display = peakHasData ? '' : 'none';
+        document.getElementById('peakEmptyState').style.display = peakHasData ? 'none' : '';
+        if (!peakHasData) return;
+        const colors = hours.map(() => cssVar('--mkt-blue'));
+        trendCharts.peak = makeBarChart('peakChart', hours.map(formatHourLabel), hours.map((h) => byHour[h]), colors,
+          (v) => Math.round(v) + (Math.round(v) === 1 ? ' patient' : ' patients'), (idx) => onPeakDrillClick(hours[idx]), 'Patients arrived');
+        trendCharts.peak._baseColors = colors;
+        trendCharts.peak._hours = hours;
+      }
+
+      function onPeakDrillClick(hour) {
+        const idx = trendCharts.peak._hours.indexOf(hour);
+        if (trendSelected.peak === idx) { trendSelected.peak = null; closeTrendDrill('peakDrill'); recolorTrendMains(); return; }
+        trendSelected.peak = idx; recolorTrendMains();
+        document.getElementById('peakDrillLabel').textContent = `${formatHourLabel(hour)} — by doctor`;
+        const byDoctor = peakByHourByDoctorCache[hour] || {};
+        const rows = doctorListCache
+          .map((d, i) => ({ name: d.name.split(' ')[0], value: byDoctor[d.id] || 0, color: colorForDoctorIndex(i) }))
+          .filter((r) => r.value > 0);
+        if (trendCharts.peakDrill) trendCharts.peakDrill.destroy();
+        if (rows.length > 0) {
+          trendCharts.peakDrill = makeMiniBarChart('peakDrillChart', rows.map((r) => r.name), rows.map((r) => r.value), rows.map((r) => r.color),
+            (v) => Math.round(v) + (Math.round(v) === 1 ? ' patient' : ' patients'), 'Patients arrived');
+        }
+        openTrendDrill('peakDrill');
       }
 
       // done_at (migration 030) only exists on visits marked done AFTER
       // it shipped — a doctor never explicitly "marks done" per patient
       // (see clinic-data.js's callNextPatient/finishCurrentPatient), so
-      // there's no way to backfill older rows. Periods entirely before
-      // that ship date will show the empty state below until new timed
-      // visits accumulate. Doctors with no timed visits yet are left out
-      // of the chart rather than shown as a misleading 0-minute bar.
+      // there's no way to backfill older rows. Doctors with no timed
+      // visits yet are left out rather than shown as a misleading 0.
       function renderConsultDuration(patients, doctors) {
-        const el = document.getElementById('consultDuration');
-        if (doctors.length === 0) {
-          el.innerHTML = '<div class="empty-state">No doctors added yet.</div>';
-          return;
-        }
+        if (doctors.length === 0) { if (trendCharts.consult) trendCharts.consult.destroy(); return; }
         const timed = patients.filter((p) => p.status === 'done' && p.calledAt && p.doneAt && new Date(p.doneAt) >= new Date(p.calledAt));
-        if (timed.length === 0) {
-          el.innerHTML = '<div class="empty-state">No completed-consultation timing data in this period yet.</div>';
-          return;
-        }
-        const sums = {};
+        consultDurationsByDoctorCache = {};
         timed.forEach((p) => {
           const mins = (new Date(p.doneAt) - new Date(p.calledAt)) / 60000;
-          if (!sums[p.doctorId]) sums[p.doctorId] = { total: 0, count: 0 };
-          sums[p.doctorId].total += mins;
-          sums[p.doctorId].count++;
+          (consultDurationsByDoctorCache[p.doctorId] = consultDurationsByDoctorCache[p.doctorId] || []).push(mins);
         });
+        if (trendCharts.consult) trendCharts.consult.destroy();
+        trendSelected.consult = null; closeTrendDrill('consultDrill');
         const rows = doctors
-          .filter((d) => sums[d.id])
-          .map((d) => ({ name: Qlinic.escapeHtml(d.name), avg: Math.round(sums[d.id].total / sums[d.id].count), count: sums[d.id].count }))
-          .sort((a, b) => b.avg - a.avg);
-        const maxVal = Math.max(...rows.map((r) => r.avg), 1);
-        el.innerHTML = `
-          <div class="trend-bars">
-            ${rows.map((r) => `
-              <div class="trend-bar-col trend-bar-hoverable" title="Average of ${r.count} consultation${r.count === 1 ? '' : 's'}">
-                <div class="trend-bar-value">${r.avg} min</div>
-                <div class="trend-bar-track"><div class="trend-bar-fill" style="height:${Math.round((r.avg / maxVal) * 100)}%;"></div></div>
-                <div class="trend-bar-label">${r.name}</div>
-              </div>
-            `).join('')}
-          </div>
-        `;
+          .map((d, i) => ({ id: d.id, name: d.name, list: consultDurationsByDoctorCache[d.id], colorIdx: i }))
+          .filter((r) => r.list && r.list.length > 0);
+        const consultHasData = rows.length > 0;
+        document.getElementById('consultChart').style.display = consultHasData ? '' : 'none';
+        document.getElementById('consultEmptyState').style.display = consultHasData ? 'none' : '';
+        if (!consultHasData) return;
+        const avgs = rows.map((r) => Math.round(r.list.reduce((a, b) => a + b, 0) / r.list.length));
+        const colors = rows.map((r) => colorForDoctorIndex(r.colorIdx));
+        trendCharts.consult = makeBarChart('consultChart', rows.map((r) => r.name.split(' ')[0]), avgs, colors,
+          (v) => v + ' min', (idx) => onConsultDrillClick(rows[idx].id, rows[idx].name, colorForDoctorIndex(rows[idx].colorIdx)), 'Avg. duration (min)');
+        trendCharts.consult._baseColors = colors;
       }
+
+      function onConsultDrillClick(doctorId, doctorName, color) {
+        const idx = doctorListCache.findIndex((d) => d.id === doctorId);
+        if (trendSelected.consult === idx) { trendSelected.consult = null; closeTrendDrill('consultDrill'); recolorTrendMains(); return; }
+        trendSelected.consult = idx; recolorTrendMains();
+        document.getElementById('consultDrillLabel').textContent = `${doctorName} — consult length distribution`;
+        const counts = [0, 0, 0, 0, 0];
+        (consultDurationsByDoctorCache[doctorId] || []).forEach((min) => { counts[histBucketForMinutes(min)]++; });
+        if (trendCharts.consultDrill) trendCharts.consultDrill.destroy();
+        trendCharts.consultDrill = makeMiniBarChart('consultDrillChart', HIST_LABELS, counts, HIST_LABELS.map(() => color),
+          (v) => Math.round(v) + (Math.round(v) === 1 ? ' consultation' : ' consultations'), 'Consultations');
+        openTrendDrill('consultDrill');
+      }
+
+      function recolorTrendMains() {
+        if (trendCharts.visits) { trendCharts.visits.data.datasets[0].backgroundColor = withSelection(trendCharts.visits._baseColors, trendSelected.visits); trendCharts.visits.update(); }
+        if (trendCharts.revByDoc) { trendCharts.revByDoc.data.datasets[0].backgroundColor = withSelection(trendCharts.revByDoc._baseColors, trendSelected.revByDoc); trendCharts.revByDoc.update(); }
+        if (trendCharts.noshow) { trendCharts.noshow.data.datasets[0].backgroundColor = withSelection(trendCharts.noshow._baseColors, trendSelected.noshow); trendCharts.noshow.update(); }
+        if (trendCharts.peak) { trendCharts.peak.data.datasets[0].backgroundColor = withSelection(trendCharts.peak._baseColors, trendSelected.peak); trendCharts.peak.update(); }
+        if (trendCharts.consult) { trendCharts.consult.data.datasets[0].backgroundColor = withSelection(trendCharts.consult._baseColors, trendSelected.consult); trendCharts.consult.update(); }
+      }
+
+      document.querySelectorAll('.trend-drill-close').forEach((el) => {
+        el.addEventListener('click', () => {
+          const key = el.dataset.close;
+          const map = { revenue: () => onRevenueDrillClick(trendSelected.revenue), visits: () => onVisitsDrillClick(trendSelected.visits),
+            revByDoc: () => onRevByDocDrillClick(trendSelected.revByDoc), peak: () => onPeakDrillClick(trendCharts.peak._hours[trendSelected.peak]),
+            consult: () => { const d = doctorListCache[trendSelected.consult]; onConsultDrillClick(d.id, d.name, colorForDoctorIndex(trendSelected.consult)); } };
+          if (trendSelected[key] === null) return;
+          if (key === 'noshow') {
+            const bucketKey = Object.keys(noShowBucketsCache).sort()[trendSelected.noshow];
+            onNoShowDrillClick(bucketKey);
+          } else {
+            map[key]();
+          }
+        });
+      });
 
       let rangePreset = 'currentmonth';
       let customRange = null; // exact {start,end} for the 'custom' preset
@@ -763,10 +880,12 @@
           Qlinic.getDoctors({ includeInactive: true }),
         ]);
         doctorByIdCache = Object.fromEntries(doctors.map((d) => [d.id, d]));
-        renderRevenueOverTime(invoices, granularity);
-        renderVisitsPerDoctor(patients, doctors, invoices);
+        doctorListCache = doctors;
+        resetAllTrendDrills();
+        renderRevenueOverTime(invoices, patients, granularity, doctorByIdCache);
+        renderVisitsPerDoctor(patients, doctors);
         renderRevenueByDoctor(invoices, doctors);
-        renderNoShowOverTime(patients, granularity, doctorByIdCache);
+        renderNoShowOverTime(patients, granularity);
         renderPeakHours(patients);
         renderConsultDuration(patients, doctors);
       }
@@ -803,7 +922,6 @@
           eMonthEl.value = pad2((endIdx % 12) + 1);
         }
         customRange = monthYearToRange(sMonthEl.value, sYearEl.value, eMonthEl.value, eYearEl.value);
-        selectedNoShowBucket = null;
         loadAndRender();
       }
       ['trendsRangeStartMonth', 'trendsRangeStartYear', 'trendsRangeEndMonth', 'trendsRangeEndYear'].forEach((id) => {
@@ -813,30 +931,10 @@
       document.getElementById('trendsPeriodSelect').addEventListener('change', (e) => {
         rangePreset = e.target.value;
         document.getElementById('trendsCustomRangeFilters').style.display = rangePreset === 'custom' ? 'flex' : 'none';
-        selectedNoShowBucket = null;
         if (rangePreset === 'custom') {
           updateCustomRangeFromInputs();
         } else {
           loadAndRender();
-        }
-      });
-
-      // Toggling a bucket is purely a display-state change over data
-      // that's already loaded, so it just re-renders from the caches
-      // built during the last loadAndRender — no network round-trip.
-      document.getElementById('noShowByWeekday').addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-bucket]');
-        if (!btn) return;
-        const key = btn.dataset.bucket;
-        selectedNoShowBucket = selectedNoShowBucket === key ? null : key;
-        document.querySelectorAll('#noShowByWeekday [data-bucket]').forEach((b) => {
-          b.classList.toggle('trend-bar-selected', b.dataset.bucket === selectedNoShowBucket);
-        });
-        if (selectedNoShowBucket) {
-          renderNoShowBreakdown(selectedNoShowBucket, doctorByIdCache);
-        } else {
-          document.getElementById('noShowBreakdown').innerHTML =
-            '<p class="panel-note" style="margin:14px 0 0;">Click a bar to see no-shows by day of week and by doctor for that period.</p>';
         }
       });
 
