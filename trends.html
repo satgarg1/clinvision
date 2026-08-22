@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=132" />
+<link rel="stylesheet" href="styles.css?v=133" />
 </head>
 <body>
   <div class="app-shell">
@@ -395,8 +395,16 @@
 
       function chartFont() { return { family: "'Inter', sans-serif", size: 11, weight: '500' }; }
       function chartTooltipBase() {
+        // backgroundColor rides --black, which deliberately INVERTS between
+        // themes (dark ink on a light page, light ink on a dark page) — so
+        // the text drawn on top of it must invert the same way, via --white,
+        // or dark mode ends up drawing white text on --black's now-light
+        // background (invisible). titleColor/bodyColor aren't optional here:
+        // Chart.js's own default (white) only works for a permanently-dark
+        // tooltip, not this theme-flipping one.
         return {
-          backgroundColor: cssVar('--black'), borderColor: cssVar('--grey-300'), borderWidth: 1,
+          backgroundColor: cssVar('--black'), titleColor: cssVar('--white'), bodyColor: cssVar('--white'),
+          borderColor: cssVar('--grey-300'), borderWidth: 1, position: 'nearest',
           titleFont: chartFont(), bodyFont: chartFont(), padding: 10, cornerRadius: 8, displayColors: false,
         };
       }
@@ -484,7 +492,13 @@
             layout: { padding: { top: 4, bottom: 4 } },
             onClick: (evt, els) => { if (!els.length || !onClickIndex) return; onClickIndex(els[0].index); },
             plugins: {
-              legend: { position: 'right', align: 'center', labels: { color: cssVar('--grey-700'), font: chartFont(), boxWidth: 8, boxHeight: 8, usePointStyle: true, padding: 12 } },
+              // Bottom, not right: a right-side legend reserves a whole
+              // side column the width of its longest label, which pushes
+              // the ring itself off-center and leaves a wide dead gap
+              // between ring and labels on anything wider than it is
+              // tall. Bottom keeps the labels hugging the ring directly
+              // below it regardless of box width.
+              legend: { position: 'bottom', align: 'center', labels: { color: cssVar('--grey-700'), font: chartFont(), boxWidth: 8, boxHeight: 8, usePointStyle: true, padding: 12 } },
               tooltip: chartTooltipBase(),
             },
           },

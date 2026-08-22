@@ -1676,7 +1676,7 @@ th.th-filterable { position: relative; }
 .trend-drill-charts { display: grid; grid-template-columns: 1fr; gap: 16px; }
 .trend-drill-charts.two-up { grid-template-columns: 1fr 1fr; }
 @media (max-width: 620px) { .trend-drill-charts.two-up { grid-template-columns: 1fr; } }
-.trend-drill-chart-box { height: 170px; position: relative; }
+.trend-drill-chart-box { height: 220px; position: relative; }
 .trend-drill-link { display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
 .trend-drill-link:hover { text-decoration: underline; }
 
