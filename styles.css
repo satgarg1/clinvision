@@ -1181,13 +1181,62 @@ th.th-filterable { position: relative; }
    normal captioning rather than a broken layout. */
 #rulesForm, #clinicControlsForm, #displayLanguageForm { gap: 16px; align-items: flex-start; }
 #rulesForm .time-picker-trigger, #clinicControlsForm .time-picker-trigger, #clinicControlsForm select,
-#displayLanguageForm select, #followUpBufferInput, #clinicControlsForm .day-chip {
+#followUpBufferInput, #clinicControlsForm .day-chip {
   padding: var(--space-3) var(--space-4);
   font-size: var(--text-md);
 }
-#rulesForm .btn-sm, #clinicControlsForm .btn-sm, #displayLanguageForm .btn-sm {
+#rulesForm .btn-sm, #clinicControlsForm .btn-sm {
   padding: var(--space-3) var(--space-6);
   font-size: var(--text-md);
+}
+/* Language select, Save, and the Appearance Day/Night toggle sit in the
+   same visual row-height context across two panels — matched to
+   .pill-select's own proven height (8px vertical padding, 13px text,
+   1px border) rather than each control's own generic default, so all
+   three read as one consistent size. Widths stay whatever each
+   control's own content/padding naturally needs. */
+/* .mode-btn.theme-toggle-btn (not .theme-toggle-btn alone): .mode-btn's
+   own padding/font-size rule sits later in this file, and an
+   equal-specificity class selector would lose to it by source order —
+   stacking both classes on the same selector outranks .mode-btn alone
+   regardless of where either rule sits. */
+#displayLanguageForm .btn-sm, .mode-btn.theme-toggle-btn {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  font-size: 13px;
+  line-height: 16px;
+}
+/* line-height alone doesn't work here: the Day/Night labels start with
+   a color-emoji glyph, and browsers size a color emoji's line box off
+   the emoji font's own oversized metrics — measured directly, it
+   ignores an explicit line-height and inflates the button ~16px taller
+   than a plain-text button with identical padding/font-size, no matter
+   what line-height says. A hard height + flex-centering sidesteps the
+   line-box calculation entirely instead of fighting it. */
+.mode-btn.theme-toggle-btn {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* #displayLanguageInput, not .pill-select alone: .inline-form .field
+   select (below) is a compound selector with higher specificity than a
+   single class, so it would otherwise win the padding/font-size/
+   border-radius fight and silently undo .pill-select's sizing and pill
+   shape. Re-asserts the exact same look under an ID, which always
+   outranks it regardless of source order. */
+#displayLanguageInput {
+  padding: 8px 32px 8px 16px;
+  font-size: 13px;
+  line-height: 16px;
+  border-radius: var(--radius-pill);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a4a4c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+}
+:root[data-theme="dark"] #displayLanguageInput {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
 /* An action button sharing an .inline-form/.form-grid row with a real
