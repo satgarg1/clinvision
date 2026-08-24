@@ -126,6 +126,12 @@
           <button type="button" class="mode-btn theme-toggle-btn" data-theme-choice="dark">🌙 Night</button>
         </div>
       </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>Session</h2></div>
+        <p class="panel-note">Signed in on this device. Logging out ends this session everywhere it's open.</p>
+        <a href="#" id="logoutLink" class="btn-sm danger-solid" style="display:inline-block;text-decoration:none;">Log out</a>
+      </div>
     </main>
   </div>
 
@@ -228,6 +234,12 @@
       }
       document.querySelectorAll('[data-theme-choice]').forEach((btn) => {
         btn.addEventListener('click', () => applyTheme(btn.getAttribute('data-theme-choice')));
+      });
+
+      document.getElementById('logoutLink').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await Qlinic.logout();
+        window.location.href = 'login.html';
       });
 
       document.getElementById('currentEmail').textContent = (await Qlinic.getCurrentUserEmail()) || '·';
