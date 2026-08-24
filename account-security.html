@@ -39,7 +39,7 @@
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
-        <a href="trends.html" class="nav-link" id="trendsNavLink">Trends</a>
+        <a href="trends.html" class="nav-link" id="trendsNavLink">Analytics</a>
         <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
         <a href="display.html" class="nav-link">Display Screen</a>
         <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
@@ -53,10 +53,6 @@
           <h1>Account &amp; security</h1>
         </div>
       </div>
-
-      <p class="panel-note" id="staffRestrictedNote" style="display:none;">
-        Only a clinic admin can change your login email or password. Ask your admin if you need either updated.
-      </p>
 
       <div class="panel" id="emailPanel">
         <div class="panel-header"><h2>Email</h2></div>
@@ -124,7 +120,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=46"></script>
+  <script src="clinic-data.js?v=47"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -139,13 +135,13 @@
         }
       });
 
+      // Email and password change the logged-in user's own login — personal
+      // to whoever's signed in, open to every role. Phone is the one panel
+      // here that isn't personal at all: it edits the clinic's own contact
+      // number (Qlinic.updateClinic), so it stays admin-only.
       const admin = await Qlinic.isAdmin();
       if (!admin) {
-        document.getElementById('settingsNavLink').style.display = 'none';
-        document.getElementById('emailPanel').style.display = 'none';
         document.getElementById('phonePanel').style.display = 'none';
-        document.getElementById('passwordPanel').style.display = 'none';
-        document.getElementById('staffRestrictedNote').style.display = 'block';
       }
       if (!(await Qlinic.canAccessBilling())) {
         document.getElementById('billingNavLink').style.display = 'none';

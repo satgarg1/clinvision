@@ -39,7 +39,7 @@
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
-        <a href="trends.html" class="nav-link" id="trendsNavLink">Trends</a>
+        <a href="trends.html" class="nav-link" id="trendsNavLink">Analytics</a>
         <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
         <a href="display.html" class="nav-link">Display Screen</a>
         <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
@@ -175,7 +175,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=46"></script>
+  <script src="clinic-data.js?v=47"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -190,8 +190,9 @@
         }
       });
 
-      if (!(await Qlinic.isAdmin())) {
-        document.getElementById('settingsNavLink').style.display = 'none';
+      if (await Qlinic.isDoctor()) {
+        window.location.href = 'dashboard.html';
+        return;
       }
 
       const canBill = await Qlinic.canAccessBilling();
@@ -209,6 +210,7 @@
       let clinicCloseMin = 1440;
       let clinicWeeklyOffDays = [];
       let clinicClosureByDate = {};
+      let doctorHolidayByKey = {}; // `${doctorId}::${date}` -> note
       let queueDoctorId = null;
       let queueViewDate = null;
       let bookedExpanded = false;
@@ -270,7 +272,7 @@
       // etc. — see Settings > Closed Dates) against a single date, and
       // returns why it's closed so callers can show a specific message
       // instead of a generic "clinic is closed."
-      function closureReason(dateStr) {
+      function closureReason(dateStr, doctorId) {
         if (!dateStr) return null;
         if (clinicWeeklyOffDays.length) {
           const [y, m, d] = dateStr.split('-').map(Number);
@@ -284,6 +286,14 @@
           const note = clinicClosureByDate[dateStr];
           return note ? `Clinic is closed on this date (${note})` : 'Clinic is closed on this date';
         }
+        if (doctorId) {
+          const note = doctorHolidayByKey[`${doctorId}::${dateStr}`];
+          if (note !== undefined) {
+            const doctor = doctorsCache.find((d) => d.id === doctorId);
+            const who = doctor ? Qlinic.escapeHtml(doctor.name) : 'This doctor';
+            return note ? `${who} is on leave on this date (${note})` : `${who} is on leave on this date`;
+          }
+        }
         return null;
       }
       function isClosedDate(dateStr) {
@@ -291,7 +301,7 @@
       }
       function updateClosedDayHint() {
         const hint = document.getElementById('closedDayHint');
-        const reason = closureReason(document.getElementById('pDate').value);
+        const reason = closureReason(document.getElementById('pDate').value, document.getElementById('pDoctor').value);
         if (reason) {
           hint.textContent = `${reason} — choose a different date.`;
           hint.style.display = 'block';
@@ -857,7 +867,7 @@
           // to reception's own judgment, not an automatic guess. A
           // genuinely closed day is still blocked, since rescheduling an
           // appointment onto one is always a mistake regardless of time.
-          const bookedDateReason = dateInput ? closureReason(bookedDate) : null;
+          const bookedDateReason = dateInput ? closureReason(bookedDate, doctorSelect.value) : null;
           if (bookedDateReason) { showToast(`${bookedDateReason} — choose a different date`); return; }
           update.bookedDate = bookedDate;
           update.bookedTime = bookedTime;
@@ -1191,7 +1201,7 @@
         } else {
           const date = document.getElementById('pDate').value;
           const time = document.getElementById('pTime').value;
-          const dateReason = closureReason(date);
+          const dateReason = closureReason(date, doctorId);
           if (dateReason) {
             updateClosedDayHint();
             document.getElementById('pDate').focus();
@@ -1258,6 +1268,7 @@
       document.getElementById('pDoctor').addEventListener('change', () => {
         updateSlotHint();
         updateDoctorClosedHint();
+        updateClosedDayHint();
       });
       document.getElementById('pDate').addEventListener('change', () => {
         resetTimePicker();
@@ -1339,7 +1350,7 @@
       document.getElementById('pDoctor').addEventListener('change', checkFollowUpHint);
       document.getElementById('pDate').addEventListener('change', checkFollowUpHint);
 
-      const [clinic, closures] = await Promise.all([Qlinic.getClinic(), Qlinic.getClinicClosures()]);
+      const [clinic, closures, doctorHolidays] = await Promise.all([Qlinic.getClinic(), Qlinic.getClinicClosures(), Qlinic.getDoctorHolidays()]);
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
       if (clinic && clinic.logo_url) {
         document.getElementById('clinicLogoThumb').src = clinic.logo_url;
@@ -1353,6 +1364,7 @@
         clinicWeeklyOffDays = clinic.weekly_off_days || [];
       }
       clinicClosureByDate = Object.fromEntries(closures.map((c) => [c.date, c.note]));
+      doctorHolidayByKey = Object.fromEntries(doctorHolidays.map((h) => [`${h.doctorId}::${h.date}`, h.note]));
       document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
       // Also re-checks the closed-day banner/hint on this same tick: they're
       // time-bound to midnight (see isDoctorClosedToday), and without a

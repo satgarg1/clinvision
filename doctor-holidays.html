@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Closed Dates: Qlinic</title>
+<title>Doctor Holidays: Qlinic</title>
 <script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,37 +42,45 @@
         <a href="trends.html" class="nav-link" id="trendsNavLink">Analytics</a>
         <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
         <a href="display.html" class="nav-link">Display Screen</a>
-        <a href="settings.html" class="nav-link active pinned-bottom">Settings</a>
+        <a href="settings.html" class="nav-link pinned-bottom">Settings</a>
       </nav>
     </aside>
 
     <main class="app-main">
       <div class="app-topbar">
         <div>
-          <div class="breadcrumb"><a href="settings.html">Settings</a> <span>/</span> Closed Dates</div>
-          <h1>Closed dates</h1>
+          <div class="breadcrumb"><a href="settings.html">Settings</a> <span>/</span> Doctor Holidays</div>
+          <h1 id="pageHeading">Doctor holidays</h1>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-header"><h2>Add a closure</h2></div>
+      <div class="panel" id="unlinkedPanel" style="display:none;">
+        <div class="empty-state">Your account isn't linked to a doctor profile yet — ask your admin to link it from Team settings.</div>
+      </div>
+
+      <div class="panel" id="holidaysPanel" style="display:none;">
+        <div class="panel-header"><h2 id="addHolidayHeading">Add a holiday</h2></div>
         <p class="panel-note">Reception is warned before booking an appointment on any date listed below.</p>
-        <form id="closureForm" class="inline-form">
+        <div class="field" id="doctorPickerField" style="max-width:280px;margin-bottom:16px;display:none;">
+          <label>Doctor</label>
+          <select id="doctorPicker"></select>
+        </div>
+        <form id="holidayForm" class="inline-form">
           <div class="field" style="max-width:200px;">
             <label>Date</label>
-            <input type="date" id="closureDate" required />
+            <input type="date" id="holidayDate" required />
           </div>
           <div class="field" style="flex:1;min-width:220px;">
             <label>Note (optional)</label>
-            <input type="text" id="closureNote" placeholder="e.g. Diwali" />
+            <input type="text" id="holidayNote" placeholder="e.g. Family wedding" />
           </div>
           <div class="field" style="flex:0 0 160px;text-align:center;">
             <label>&nbsp;</label>
-            <button type="submit" class="btn-sm primary">Add closure</button>
+            <button type="submit" class="btn-sm primary">Add holiday</button>
           </div>
         </form>
 
-        <div id="closuresTableWrap" style="margin-top:20px;"></div>
+        <div id="holidaysTableWrap" style="margin-top:20px;"></div>
       </div>
     </main>
   </div>
@@ -93,7 +101,8 @@
         }
       });
 
-      if (await Qlinic.isDoctor()) {
+      const [amAdmin, amDoctor, myProfile] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor(), Qlinic.getMyProfile()]);
+      if (!amAdmin && !amDoctor) {
         window.location.href = 'dashboard.html';
         return;
       }
@@ -105,63 +114,100 @@
         setTimeout(() => t.classList.remove('show'), 2200);
       }
 
-      let closures = [];
+      // A doctor manages only their own holidays (no picker, target is
+      // fixed); an admin can manage any doctor's on their behalf — e.g.
+      // a doctor calling in sick and unable to log in themselves.
+      let doctors = [];
+      let targetDoctorId = amDoctor ? myProfile.doctorId : null;
+      let holidays = [];
 
       function fmtDate(dateStr) {
         const [y, m, d] = dateStr.split('-').map(Number);
         return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
       }
 
-      function renderClosures() {
-        const wrap = document.getElementById('closuresTableWrap');
-        if (closures.length === 0) {
-          wrap.innerHTML = '<div class="empty-state">No closed dates added yet.</div>';
+      function renderHolidays() {
+        const wrap = document.getElementById('holidaysTableWrap');
+        if (holidays.length === 0) {
+          wrap.innerHTML = '<div class="empty-state">No holidays added yet.</div>';
           return;
         }
         wrap.innerHTML = `
           <table class="qtable">
             <thead><tr><th>Date</th><th>Note</th><th style="width:160px;"></th></tr></thead>
             <tbody>
-              ${closures.map((c) => `
+              ${holidays.map((h) => `
                 <tr>
-                  <td>${fmtDate(c.date)}</td>
-                  <td>${c.note ? Qlinic.escapeHtml(c.note) : '<span class="sub-line">No note</span>'}</td>
-                  <td style="width:160px;text-align:center;"><button type="button" class="btn-sm danger" data-id="${c.id}">Delete</button></td>
+                  <td>${fmtDate(h.date)}</td>
+                  <td>${h.note ? Qlinic.escapeHtml(h.note) : '<span class="sub-line">No note</span>'}</td>
+                  <td style="width:160px;text-align:center;"><button type="button" class="btn-sm danger" data-id="${h.id}">Delete</button></td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
         `;
         wrap.querySelectorAll('[data-id]').forEach((btn) => {
-          btn.addEventListener('click', () => doDeleteClosure(btn.getAttribute('data-id')));
+          btn.addEventListener('click', () => doDeleteHoliday(btn.getAttribute('data-id')));
         });
       }
 
-      async function loadClosures() {
-        closures = await Qlinic.getClinicClosures();
-        renderClosures();
+      async function loadHolidays() {
+        if (!targetDoctorId) { holidays = []; renderHolidays(); return; }
+        holidays = await Qlinic.getDoctorHolidays(targetDoctorId);
+        renderHolidays();
       }
 
-      async function doDeleteClosure(id) {
-        if (!(await Qlinic.confirmDialog({ message: 'Remove this closed date?', confirmLabel: 'Remove', danger: true }))) return;
-        await Qlinic.deleteClinicClosure(id);
-        showToast('Closed date removed');
-        loadClosures();
+      async function doDeleteHoliday(id) {
+        if (!(await Qlinic.confirmDialog({ message: 'Remove this holiday?', confirmLabel: 'Remove', danger: true }))) return;
+        await Qlinic.deleteDoctorHoliday(id);
+        showToast('Holiday removed');
+        loadHolidays();
       }
 
-      document.getElementById('closureForm').addEventListener('submit', async (e) => {
+      document.getElementById('holidayForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const dateInput = document.getElementById('closureDate');
-        const noteInput = document.getElementById('closureNote');
+        const dateInput = document.getElementById('holidayDate');
+        const noteInput = document.getElementById('holidayNote');
         const date = dateInput.value;
         if (!date) { showToast('Pick a date first'); return; }
-        if (closures.some((c) => c.date === date)) { showToast('That date is already on the list'); return; }
-        await Qlinic.addClinicClosure({ date, note: noteInput.value.trim() });
+        if (holidays.some((h) => h.date === date)) { showToast('That date is already on the list'); return; }
+        await Qlinic.addDoctorHoliday({ doctorId: targetDoctorId, date, note: noteInput.value.trim() });
         dateInput.value = '';
         noteInput.value = '';
-        showToast('Closed date added');
-        loadClosures();
+        showToast('Holiday added');
+        loadHolidays();
       });
+
+      if (amDoctor) {
+        document.getElementById('pageHeading').textContent = 'Your holidays';
+        document.getElementById('addHolidayHeading').textContent = 'Add a holiday';
+        if (!targetDoctorId) {
+          document.getElementById('unlinkedPanel').style.display = 'block';
+        } else {
+          document.getElementById('holidaysPanel').style.display = 'block';
+        }
+      } else {
+        document.getElementById('pageHeading').textContent = 'Doctor holidays';
+        doctors = await Qlinic.getDoctors({ includeInactive: true });
+        if (doctors.length === 0) {
+          document.getElementById('unlinkedPanel').querySelector('.empty-state').textContent = 'No doctors added yet.';
+          document.getElementById('unlinkedPanel').style.display = 'block';
+        } else {
+          document.getElementById('doctorPickerField').style.display = '';
+          document.getElementById('doctorPicker').innerHTML = doctors.map((d) =>
+            `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}</option>`
+          ).join('');
+          targetDoctorId = doctors[0].id;
+          document.getElementById('addHolidayHeading').textContent = `Add a holiday for ${doctors[0].name}`;
+          document.getElementById('holidaysPanel').style.display = 'block';
+          document.getElementById('doctorPicker').addEventListener('change', (e) => {
+            targetDoctorId = e.target.value;
+            const d = doctors.find((x) => x.id === targetDoctorId);
+            document.getElementById('addHolidayHeading').textContent = `Add a holiday for ${d ? d.name : ''}`;
+            loadHolidays();
+          });
+        }
+      }
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
@@ -171,7 +217,13 @@
       } else {
         document.getElementById('clinicLogoThumb').style.display = 'none';
       }
-      await loadClosures();
+      if (!(await Qlinic.canAccessBilling())) {
+        document.getElementById('billingNavLink').style.display = 'none';
+        document.getElementById('revenueNavLink').style.display = 'none';
+        document.getElementById('trendsNavLink').style.display = 'none';
+        document.getElementById('endOfDayNavLink').style.display = 'none';
+      }
+      await loadHolidays();
     })();
   </script>
   <script>

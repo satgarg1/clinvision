@@ -39,7 +39,7 @@
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
-        <a href="trends.html" class="nav-link" id="trendsNavLink">Trends</a>
+        <a href="trends.html" class="nav-link" id="trendsNavLink">Analytics</a>
         <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
         <a href="display.html" class="nav-link">Display Screen</a>
         <a href="settings.html" class="nav-link active pinned-bottom">Settings</a>
@@ -51,38 +51,44 @@
         <h1>Settings</h1>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="clinicSettingsPanel">
         <div class="panel-header"><h2>Clinic Settings</h2></div>
         <p class="panel-note">Clinic profile, logo, queue rules, and operating hours.</p>
         <a href="clinic-settings.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage clinic settings</a>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="doctorsPanel">
         <div class="panel-header"><h2>Doctors</h2></div>
         <p class="panel-note" id="doctorSummaryNote">Loading…</p>
         <a href="manage-doctors.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage doctors</a>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="patientDirectoryPanel">
         <div class="panel-header"><h2>Patient Directory</h2></div>
         <a href="patient-directory.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Open directory</a>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="noShowsPanel">
         <div class="panel-header"><h2>No-shows</h2></div>
         <a href="no-shows.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Track no-shows</a>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="closedDatesPanel">
         <div class="panel-header"><h2>Closed Dates</h2></div>
         <p class="panel-note">Holidays and other one-off dates the clinic is closed, beyond the weekly off days set in Clinic Settings.</p>
         <a href="closed-dates.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage closed dates</a>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="teamPanel">
         <div class="panel-header"><h2>Team</h2></div>
         <p class="panel-note" id="teamSummaryNote">Loading…</p>
         <a href="team.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage team</a>
+      </div>
+
+      <div class="panel" id="doctorHolidaysPanel">
+        <div class="panel-header"><h2>Doctor Holidays</h2></div>
+        <p class="panel-note" id="doctorHolidaysNote">Days a doctor is away, so reception is warned before booking them.</p>
+        <a href="doctor-holidays.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage holidays</a>
       </div>
 
       <div class="panel">
@@ -91,7 +97,7 @@
         <a href="account-security.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage account &amp; security</a>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="displayScreenPanel">
         <div class="panel-header"><h2>Display screen</h2></div>
         <p class="panel-note">
           Language shown on the waiting-room TV board (queue positions, "now serving," etc). Applies to that shared
@@ -127,7 +133,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=46"></script>
+  <script src="clinic-data.js?v=47"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -142,10 +148,22 @@
         }
       });
 
-      if (!(await Qlinic.isAdmin())) {
-        window.location.href = 'dashboard.html';
-        return;
-      }
+      // No page-wide redirect here: every role reaches this hub now, each
+      // seeing a different subset of panels. The actual access boundary
+      // still lives on each destination page (patient-directory.html,
+      // team.html, etc.) — a hidden link here is convenience, not security.
+      const [amAdmin, amDoctor] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor()]);
+      document.getElementById('clinicSettingsPanel').style.display = amAdmin ? '' : 'none';
+      document.getElementById('doctorsPanel').style.display = amAdmin ? '' : 'none';
+      document.getElementById('teamPanel').style.display = amAdmin ? '' : 'none';
+      document.getElementById('patientDirectoryPanel').style.display = amDoctor ? 'none' : '';
+      document.getElementById('noShowsPanel').style.display = amDoctor ? 'none' : '';
+      document.getElementById('closedDatesPanel').style.display = amDoctor ? 'none' : '';
+      document.getElementById('displayScreenPanel').style.display = amDoctor ? 'none' : '';
+      document.getElementById('doctorHolidaysPanel').style.display = (amAdmin || amDoctor) ? '' : 'none';
+      document.getElementById('doctorHolidaysNote').textContent = amDoctor
+        ? 'Add the days you\'re away, so reception is warned before booking you.'
+        : 'Days a doctor is away, so reception is warned before booking them.';
 
       function showToast(msg) {
         const t = document.getElementById('toast');
@@ -202,10 +220,12 @@
 
       document.getElementById('currentEmail').textContent = (await Qlinic.getCurrentUserEmail()) || '·';
       await loadClinic();
-      await loadDoctorSummary();
-      await loadTeamSummary();
       applyTheme(Qlinic.getTheme());
-      Qlinic.onLiveChange(loadDoctorSummary);
+      if (amAdmin) {
+        await loadDoctorSummary();
+        await loadTeamSummary();
+        Qlinic.onLiveChange(loadDoctorSummary);
+      }
     })();
   </script>
   <script>

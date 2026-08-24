@@ -48,10 +48,15 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=46"></script>
+  <script src="clinic-data.js?v=47"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
+
+      if (await Qlinic.isDoctor()) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
 
       // Every name/address/reason rendered on this board is free text
       // typed by staff (or a patient's own booking reason) — this screen

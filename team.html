@@ -39,7 +39,7 @@
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
-        <a href="trends.html" class="nav-link" id="trendsNavLink">Trends</a>
+        <a href="trends.html" class="nav-link" id="trendsNavLink">Analytics</a>
         <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
         <a href="display.html" class="nav-link">Display Screen</a>
         <a href="settings.html" class="nav-link active pinned-bottom">Settings</a>
@@ -81,6 +81,12 @@
               <option value="admin">Admin</option>
             </select>
           </div>
+          <div class="field" id="newStaffDoctorField" style="display:none;">
+            <label>Which doctor</label>
+            <select id="newStaffDoctorId">
+              <option value="">— link later —</option>
+            </select>
+          </div>
           <div class="field" style="flex:0;min-width:190px;">
             <label>&nbsp;</label>
             <button type="submit" class="btn-sm primary">Add staff member</button>
@@ -100,7 +106,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=46"></script>
+  <script src="clinic-data.js?v=47"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -121,6 +127,7 @@
       }
 
       let myProfileId = null;
+      let doctors = [];
 
       function showToast(msg) {
         const t = document.getElementById('toast');
@@ -135,12 +142,18 @@
         ).join('');
       }
 
+      function doctorOptionsHtml(selectedId) {
+        return '<option value="">— not linked —</option>' + doctors.map((d) =>
+          `<option value="${d.id}" ${d.id === selectedId ? 'selected' : ''}>${Qlinic.escapeHtml(d.name)}</option>`
+        ).join('');
+      }
+
       async function renderTeam() {
         const team = await Qlinic.getTeam();
         const box = document.getElementById('teamList');
         box.innerHTML = `
           <table class="qtable">
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Linked doctor</th><th>Status</th><th></th></tr></thead>
             <tbody>
               ${team.map((p) => {
                 const isSelf = p.id === myProfileId;
@@ -150,6 +163,11 @@
                   <td>${Qlinic.escapeHtml(p.email)}</td>
                   <td>
                     <select class="staff-role" data-id="${p.id}" ${isSelf ? 'disabled' : ''} style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);">${roleOptionsHtml(p.role)}</select>
+                  </td>
+                  <td>
+                    ${p.role === 'doctor'
+                      ? `<select class="staff-doctor-link" data-id="${p.id}" style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);">${doctorOptionsHtml(p.doctorId)}</select>`
+                      : '<span class="sub-line">—</span>'}
                   </td>
                   <td>${p.isActive ? '<span class="badge badge-booked">Active</span>' : '<span class="badge badge-no-show">Deactivated</span>'}</td>
                   <td style="white-space:nowrap;">
@@ -185,11 +203,28 @@
       });
 
       document.getElementById('teamList').addEventListener('change', async (e) => {
+        if (e.target.classList.contains('staff-doctor-link')) {
+          const id = e.target.getAttribute('data-id');
+          try {
+            await Qlinic.updateStaffDoctorLink(id, e.target.value);
+            showToast('Linked doctor updated');
+          } catch (err) {
+            // Most likely the one-login-per-doctor uniqueness constraint —
+            // that doctor is already linked to someone else's account.
+            showToast(err.message || 'Could not update the linked doctor.');
+          }
+          renderTeam();
+          return;
+        }
         if (!e.target.classList.contains('staff-role')) return;
         const id = e.target.getAttribute('data-id');
         await Qlinic.updateStaffRole(id, e.target.value);
         showToast('Role updated');
         renderTeam();
+      });
+
+      document.getElementById('newStaffRole').addEventListener('change', (e) => {
+        document.getElementById('newStaffDoctorField').style.display = e.target.value === 'doctor' ? '' : 'none';
       });
 
       document.getElementById('addStaffForm').addEventListener('submit', async (e) => {
@@ -200,11 +235,13 @@
         const email = document.getElementById('newStaffEmail').value;
         const password = document.getElementById('newStaffPassword').value;
         const role = document.getElementById('newStaffRole').value;
+        const doctorId = document.getElementById('newStaffDoctorId').value;
         try {
-          await Qlinic.createStaffAccount({ email, password, fullName, role });
+          await Qlinic.createStaffAccount({ email, password, fullName, role, doctorId });
           note.style.display = 'block';
           note.textContent = `Added. Share these with ${fullName}: email ${email}, password ${password}.`;
           e.target.reset();
+          document.getElementById('newStaffDoctorField').style.display = 'none';
           showToast('Staff member added');
           renderTeam();
         } catch (err) {
@@ -223,6 +260,10 @@
       }
       const myProfile = await Qlinic.getMyProfile();
       myProfileId = myProfile ? myProfile.id : null;
+      doctors = await Qlinic.getDoctors({ includeInactive: true });
+      document.getElementById('newStaffDoctorId').insertAdjacentHTML('beforeend', doctors.map((d) =>
+        `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}</option>`
+      ).join(''));
       await renderTeam();
     })();
   </script>

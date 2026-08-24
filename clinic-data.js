@@ -441,6 +441,38 @@
     if (error) throw error;
   }
 
+  // ---------------- doctor holidays (per-doctor leave dates) ----------------
+
+  function normalizeDoctorHoliday(row) {
+    return { id: row.id, doctorId: row.doctor_id, date: row.holiday_date, note: row.note || '' };
+  }
+
+  // Omit doctorId for every doctor's holidays clinic-wide (reception's
+  // booking-time lookup); pass it to scope to one doctor's own list.
+  async function getDoctorHolidays(doctorId) {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId) return [];
+    let query = sb.from('doctor_holidays').select('*').eq('clinic_id', clinicId);
+    if (doctorId) query = query.eq('doctor_id', doctorId);
+    const { data, error } = await query.order('holiday_date');
+    if (error) throw error;
+    return data.map(normalizeDoctorHoliday);
+  }
+
+  async function addDoctorHoliday({ doctorId, date, note }) {
+    const clinicId = await ensureClinicContext();
+    const { data, error } = await sb.from('doctor_holidays').insert({
+      clinic_id: clinicId, doctor_id: doctorId, holiday_date: date, note: note || '',
+    }).select().single();
+    if (error) throw error;
+    return normalizeDoctorHoliday(data);
+  }
+
+  async function deleteDoctorHoliday(holidayId) {
+    const { error } = await sb.from('doctor_holidays').delete().eq('id', holidayId);
+    if (error) throw error;
+  }
+
   // Defaults to active doctors only: that's what every operational screen
   // (reception, doctor view, dashboard, display) should ever see. Settings
   // passes { includeInactive: true } since it's the one place that needs to
@@ -962,13 +994,15 @@
   // token_date is a plain date column (not a timestamp), so a range filter
   // here doesn't need the local-time-boundary conversion getInvoicesForDate
   // needs for created_at.
-  async function getPatientsInRange(startDateStr, endDateStr) {
+  async function getPatientsInRange(startDateStr, endDateStr, doctorId) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    const { data, error } = await sb.from('patients').select('*')
+    let query = sb.from('patients').select('*')
       .eq('clinic_id', clinicId)
       .gte('token_date', startDateStr)
       .lte('token_date', endDateStr);
+    if (doctorId) query = query.eq('doctor_id', doctorId);
+    const { data, error } = await query;
     if (error) throw error;
     return data.map(normalizePatient);
   }
@@ -1170,7 +1204,10 @@
 
   // ---------------- daily summary / close day ----------------
 
-  async function getDailySummary(dateStr) {
+  // doctorId is optional and scopes every count to just that doctor's own
+  // patients — used for a doctor's own Dashboard view. Omitted, this stays
+  // the clinic-wide summary every existing caller already relies on.
+  async function getDailySummary(dateStr, doctorId) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return { totalAppointments: 0, totalWalkIns: 0, footfallSoFar: 0, noShowCount: 0, waitingNow: 0, doneCount: 0 };
     const targetDate = dateStr || todayDateStr();
@@ -1181,7 +1218,8 @@
     ]);
     if (error) throw error;
     const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
-    const todays = data.map(normalizePatient);
+    let todays = data.map(normalizePatient);
+    if (doctorId) todays = todays.filter((p) => p.doctorId === doctorId);
 
     return {
       totalAppointments: todays.filter((p) => p.type === 'appointment').length,
@@ -1368,6 +1406,7 @@
       fullName: row.full_name,
       role: row.role,
       isActive: row.is_active,
+      doctorId: row.doctor_id,
       createdAt: row.created_at,
     };
   }
@@ -1408,6 +1447,20 @@
     return !!profile && profile.isActive && (profile.role === 'admin' || profile.role === 'reception');
   }
 
+  async function isDoctor() {
+    const profile = await getMyProfile();
+    return !!profile && profile.role === 'doctor' && profile.isActive;
+  }
+
+  // null for anyone but an active doctor — including a doctor whose
+  // login hasn't been linked to a doctors row yet, which callers need
+  // to distinguish from "not a doctor at all" to show the right
+  // empty-state message.
+  async function getMyDoctorId() {
+    const profile = await getMyProfile();
+    return profile && profile.role === 'doctor' && profile.isActive ? profile.doctorId : null;
+  }
+
   async function getTeam() {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
@@ -1421,7 +1474,7 @@
   // (or overwrites) the admin's own session in this browser's storage;
   // otherwise auth.signUp() would sign the admin's tab in as the new
   // staff member instead.
-  async function createStaffAccount({ email, password, fullName, role }) {
+  async function createStaffAccount({ email, password, fullName, role, doctorId }) {
     const tempClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
@@ -1432,6 +1485,7 @@
       staff_email: email,
       staff_full_name: fullName,
       staff_role: role,
+      staff_doctor_id: role === 'doctor' ? (doctorId || null) : null,
     });
     if (linkError) throw linkError;
   }
@@ -1443,6 +1497,16 @@
 
   async function updateStaffRole(profileId, role) {
     const { error } = await sb.from('profiles').update({ role }).eq('id', profileId);
+    if (error) throw error;
+  }
+
+  // A second, independently-changing control from updateStaffRole above
+  // (Team's per-row "Linked doctor" select, not the role select) — kept
+  // as its own function rather than folded into updateStaffRole since
+  // the two fire from separate UI elements at separate times. Also the
+  // backfill path for doctor-role accounts created before this existed.
+  async function updateStaffDoctorLink(profileId, doctorId) {
+    const { error } = await sb.from('profiles').update({ doctor_id: doctorId || null }).eq('id', profileId);
     if (error) throw error;
   }
 
@@ -1495,6 +1559,9 @@
     getClinicClosures,
     addClinicClosure,
     deleteClinicClosure,
+    getDoctorHolidays,
+    addDoctorHoliday,
+    deleteDoctorHoliday,
     getDoctors,
     getDoctor,
     addDoctor,
@@ -1552,10 +1619,13 @@
     getMyProfile,
     isAdmin,
     canAccessBilling,
+    isDoctor,
+    getMyDoctorId,
     getTeam,
     createStaffAccount,
     setStaffActive,
     updateStaffRole,
+    updateStaffDoctorLink,
 
     getTheme,
     setTheme,
