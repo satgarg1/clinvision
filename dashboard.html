@@ -35,13 +35,13 @@
       </div>
       <nav>
         <a href="dashboard.html" class="nav-link active">Dashboard</a>
-        <a href="reception.html" class="nav-link">Reception</a>
+        <a href="reception.html" class="nav-link" id="receptionNavLink">Reception</a>
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
         <a href="trends.html" class="nav-link" id="trendsNavLink">Analytics</a>
         <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
-        <a href="display.html" class="nav-link">Display Screen</a>
+        <a href="display.html" class="nav-link" id="displayNavLink">Display Screen</a>
         <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
       </nav>
     </aside>
@@ -85,11 +85,21 @@
       const [amAdmin, amDoctor, myProfile] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor(), Qlinic.getMyProfile()]);
       const myDoctorId = amDoctor ? myProfile.doctorId : null;
 
-      if (!(await Qlinic.canAccessBilling())) {
+      // Hidden, not just redirect-blocked: a visible link to a page you
+      // can't open is worse than no link at all — it invites a "why
+      // can't I get in" question to admin for something that was never
+      // meant to be there in the first place.
+      if (amDoctor) {
+        document.getElementById('receptionNavLink').style.display = 'none';
         document.getElementById('billingNavLink').style.display = 'none';
+        document.getElementById('displayNavLink').style.display = 'none';
+      }
+      if (!amAdmin) {
         document.getElementById('revenueNavLink').style.display = 'none';
-        document.getElementById('trendsNavLink').style.display = 'none';
         document.getElementById('endOfDayNavLink').style.display = 'none';
+      }
+      if (!amAdmin && !amDoctor) {
+        document.getElementById('trendsNavLink').style.display = 'none';
       }
 
       function showToast(msg) {

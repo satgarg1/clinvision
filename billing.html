@@ -35,13 +35,13 @@
       </div>
       <nav>
         <a href="dashboard.html" class="nav-link">Dashboard</a>
-        <a href="reception.html" class="nav-link">Reception</a>
+        <a href="reception.html" class="nav-link" id="receptionNavLink">Reception</a>
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="billing.html" class="nav-link active" id="billingNavLink">Billing</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
         <a href="trends.html" class="nav-link" id="trendsNavLink">Analytics</a>
         <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
-        <a href="display.html" class="nav-link">Display Screen</a>
+        <a href="display.html" class="nav-link" id="displayNavLink">Display Screen</a>
         <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
       </nav>
     </aside>
@@ -85,6 +85,11 @@
       if (!(await Qlinic.canAccessBilling())) {
         window.location.href = 'dashboard.html';
         return;
+      }
+      if (!(await Qlinic.isAdmin())) {
+        document.getElementById('revenueNavLink').style.display = 'none';
+        document.getElementById('trendsNavLink').style.display = 'none';
+        document.getElementById('endOfDayNavLink').style.display = 'none';
       }
 
       const clinic = await Qlinic.getClinic();
