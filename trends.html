@@ -73,7 +73,11 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="unlinkedDoctorPanel" style="display:none;">
+        <div class="empty-state">Your account isn't linked to a doctor profile yet — ask your admin to link it from Team settings.</div>
+      </div>
+
+      <div class="panel" id="revenueOverTimePanel">
         <div class="panel-header"><h2 id="revenueOverTimeHeading">Revenue over time</h2></div>
         <div class="trend-chart-box"><canvas id="revenueChart"></canvas><div class="empty-state" id="revenueEmptyState" style="display:none;">No billed invoices in this period.</div></div>
         <div class="trend-drill" id="revenueDrill">
@@ -84,7 +88,7 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="visitsPerDoctorPanel">
         <div class="panel-header"><h2 id="visitsPerDoctorHeading">Visits per doctor</h2></div>
         <div class="trend-chart-box"><canvas id="visitsChart"></canvas></div>
         <div class="trend-drill" id="visitsDrill">
@@ -94,7 +98,7 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="revenueByDoctorPanel">
         <div class="panel-header"><h2 id="revenueByDoctorHeading">Revenue by doctor</h2></div>
         <div class="trend-chart-box"><canvas id="revByDocChart"></canvas></div>
         <div class="trend-drill" id="revByDocDrill">
@@ -104,7 +108,7 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="noShowPanel">
         <div class="panel-header"><h2 id="noShowHeading">No-show rate by week</h2></div>
         <div class="trend-chart-box"><canvas id="noShowChart"></canvas><div class="empty-state" id="noShowEmptyState" style="display:none;">No resolved visits in this period.</div></div>
         <div class="trend-drill" id="noShowDrill">
@@ -117,7 +121,7 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="peakHoursPanel">
         <div class="panel-header"><h2>Peak hours</h2></div>
         <p class="panel-note" style="margin-top:0;">Number of patients who arrived in each hour, across the whole period</p>
         <div class="trend-chart-box"><canvas id="peakChart"></canvas><div class="empty-state" id="peakEmptyState" style="display:none;">No arrivals in this period.</div></div>
@@ -128,7 +132,7 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="consultDurationPanel">
         <div class="panel-header"><h2 id="consultDurationHeading">Average consult duration</h2></div>
         <div class="trend-chart-box"><canvas id="consultChart"></canvas><div class="empty-state" id="consultEmptyState" style="display:none;">No completed-consultation timing data in this period yet.</div></div>
         <div class="trend-drill" id="consultDrill">
@@ -157,9 +161,19 @@
         }
       });
 
-      if (!(await Qlinic.isAdmin())) {
+      const [amAdmin, amDoctor, myProfile] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor(), Qlinic.getMyProfile()]);
+      if (!amAdmin && !amDoctor) {
         window.location.href = 'dashboard.html';
         return;
+      }
+      const myDoctorId = amDoctor ? myProfile.doctorId : null;
+      // Revenue has no point for a doctor's own view — not the amount
+      // (billing is fully admin-only, per canAccessBilling/isAdmin
+      // elsewhere) and not "Revenue by doctor" specifically, which is
+      // just a restated single total once scoped to one doctor anyway.
+      if (amDoctor) {
+        document.getElementById('revenueOverTimePanel').style.display = 'none';
+        document.getElementById('revenueByDoctorPanel').style.display = 'none';
       }
 
       const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -918,21 +932,40 @@
       async function loadAndRender() {
         const range = currentRange();
         if (!range) return;
+
+        // A doctor whose login hasn't been linked to a doctors row yet
+        // has no data to scope to — nothing else here can render
+        // meaningfully until that's fixed (same empty-state pattern as
+        // Dashboard and the Holidays page).
+        if (amDoctor && !myDoctorId) {
+          document.getElementById('unlinkedDoctorPanel').style.display = 'block';
+          ['visitsPerDoctorPanel', 'noShowPanel', 'peakHoursPanel', 'consultDurationPanel'].forEach((id) => {
+            document.getElementById(id).style.display = 'none';
+          });
+          return;
+        }
+
         const granularity = bucketGranularity(range.start, range.end);
         const label = presetLabel();
         document.getElementById('visitsPerDoctorHeading').textContent = `Visits per doctor (${label})`;
         document.getElementById('revenueByDoctorHeading').textContent = `Revenue by doctor (${label})`;
-        const [invoices, patients, doctors] = await Promise.all([
-          Qlinic.getInvoicesForDateRange(range.start, range.end),
-          Qlinic.getPatientsInRange(range.start, range.end),
-          Qlinic.getDoctors({ includeInactive: true }),
+
+        // Revenue is skipped entirely for a doctor's own view (both
+        // panels are hidden above) — no reason to fetch invoices at all.
+        const [invoices, patients, doctorsRaw] = await Promise.all([
+          amDoctor ? Promise.resolve([]) : Qlinic.getInvoicesForDateRange(range.start, range.end),
+          Qlinic.getPatientsInRange(range.start, range.end, myDoctorId || undefined),
+          amDoctor ? Qlinic.getDoctor(myDoctorId) : Qlinic.getDoctors({ includeInactive: true }),
         ]);
+        const doctors = amDoctor ? (doctorsRaw ? [doctorsRaw] : []) : doctorsRaw;
         doctorByIdCache = Object.fromEntries(doctors.map((d) => [d.id, d]));
         doctorListCache = doctors;
         resetAllTrendDrills();
-        renderRevenueOverTime(invoices, patients, granularity, doctorByIdCache);
+        if (!amDoctor) {
+          renderRevenueOverTime(invoices, patients, granularity, doctorByIdCache);
+          renderRevenueByDoctor(invoices, doctors);
+        }
         renderVisitsPerDoctor(patients, doctors);
-        renderRevenueByDoctor(invoices, doctors);
         renderNoShowOverTime(patients, granularity);
         renderPeakHours(patients);
         renderConsultDuration(patients, doctors);
