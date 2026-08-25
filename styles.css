@@ -846,11 +846,14 @@ input[type="number"] { -moz-appearance: textfield; }
    than a repeated file-management task. Same contain-not-cover
    reasoning as .clinic-logo-thumb above: the box caps height and width,
    but the logo itself is never cropped to force it into a square. */
-/* center, not flex-start: the preview box is 64px tall but the
-   buttons+hint column beside it is shorter, so top-aligning them left a
-   lopsided gap under the buttons — the actual "looks unorganized"
-   complaint, not the box or buttons individually. */
+/* .logo-upload-row (signup's compact logo picker) stays side-by-side,
+   button-height preview box. Clinic Settings uses .logo-upload-col
+   instead: the logo gets its own row so it can be shown at a real
+   size, with the actions row and hint stacked underneath it —
+   side-by-side there previously forced either a cramped logo or a
+   lopsided gap next to the shorter button column. */
 .logo-upload-row { display: flex; align-items: center; gap: 18px; }
+.logo-upload-col { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
 .logo-preview {
   height: 64px;
   max-width: 220px;
@@ -864,15 +867,14 @@ input[type="number"] { -moz-appearance: textfield; }
   justify-content: center;
 }
 .logo-preview img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
-/* Empty state matches the Upload button's own height (not the larger
-   64px a real logo gets) — a blank box that size next to a much shorter
-   button is what actually reads as sloppy, not the lack of a preview
-   image itself. No "No logo" label either: at button height there's no
-   room to set it legibly, and the button beside it already makes the
-   empty state obvious. */
 .logo-preview.empty { width: 32px; height: 32px; border-radius: var(--radius-sm); }
+/* Clinic Settings' logo now sits alone on its own row with room to
+   spare, so it gets a bigger footprint than signup's button-height
+   box — dashed border marks the empty state as a placeholder. */
+.logo-upload-col .logo-preview { height: 96px; max-width: 280px; }
+.logo-upload-col .logo-preview.empty { width: 96px; height: 96px; border-style: dashed; }
 .logo-actions { display: flex; gap: 8px; }
-.logo-hint { font-size: 12px; color: var(--grey-500); margin-top: 8px; }
+.logo-hint { font-size: 12px; color: var(--grey-500); }
 
 .app-main {
   flex: 1;

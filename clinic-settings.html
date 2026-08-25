@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=145" />
+<link rel="stylesheet" href="styles.css?v=146" />
 </head>
 <body>
   <div class="app-shell">
@@ -97,16 +97,14 @@
       <div class="panel">
         <div class="panel-header"><h2>Clinic logo</h2></div>
         <p class="panel-note">Shown next to your clinic name in the sidebar, and on printed invoices.</p>
-        <div class="logo-upload-row">
+        <div class="logo-upload-col">
           <div class="logo-preview empty" id="logoPreview"></div>
-          <div>
-            <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" />
-            <div class="logo-actions">
-              <button type="button" class="btn-sm primary" id="chooseLogoBtn">Upload logo</button>
-              <button type="button" class="btn-sm danger" id="removeLogoBtn" style="display:none;">Remove</button>
-            </div>
-            <div class="logo-hint">PNG, JPG or WebP, up to 2 MB. Square images look best.</div>
+          <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" />
+          <div class="logo-actions">
+            <button type="button" class="btn-sm primary" id="chooseLogoBtn">Upload logo</button>
+            <button type="button" class="btn-sm danger" id="removeLogoBtn" style="display:none;">Remove</button>
           </div>
+          <div class="logo-hint">PNG, JPG or WebP, up to 2 MB.</div>
         </div>
       </div>
 
