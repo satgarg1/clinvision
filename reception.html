@@ -176,7 +176,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=53"></script>
+  <script src="clinic-data.js?v=54"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -1349,6 +1349,7 @@
           // Falls back to 30 if migration 036 hasn't run yet — before it,
           // clinic.schedule_interval_mins is simply undefined.
           intervalMins: (clinic && clinic.schedule_interval_mins) || 30,
+          isToday: dateStr === Qlinic.getTodayDate(),
           rows,
         });
       });

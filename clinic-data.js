@@ -1257,16 +1257,22 @@
   // pattern) showing a bucketed count of a doctor's day. intervalMins is
   // the clinic's own configurable schedule_interval_mins (Settings), not
   // the slot_interval_mins that drives the single-slot hint/override flow
-  // elsewhere — the two are intentionally independent.
-  function slotScheduleDialog({ doctorName, dateLabel, openMin, closeMin, intervalMins, rows }) {
+  // elsewhere — the two are intentionally independent. isToday controls
+  // two things: past-elapsed buckets are dimmed (they're no longer a slot
+  // reception could actually offer), and the dialog opens pre-scrolled to
+  // the current bucket instead of the top of a full day's grid.
+  function slotScheduleDialog({ doctorName, dateLabel, openMin, closeMin, intervalMins, rows, isToday }) {
     return new Promise((resolve) => {
+      const nowMin = isToday ? (new Date().getHours() * 60 + new Date().getMinutes()) : null;
       const buckets = [];
       for (let start = openMin; start < closeMin; start += intervalMins) {
         buckets.push({ start, end: Math.min(start + intervalMins, closeMin), count: 0 });
       }
       // A walk-in added "as soon as possible" has no booked_time at all —
-      // it was never assigned a slot to bucket, so it's tallied on its own
-      // line instead of silently vanishing from the total.
+      // it was never assigned a slot to bucket. Surfaced as its own line
+      // ABOVE the (scrollable) time grid, not inside it — a clinic where
+      // most walk-ins go untimed showed an all-zero grid with the real
+      // number buried below a screen's worth of empty rows.
       let noTimeCount = 0;
       rows.forEach((r) => {
         if (!r.booked_time) { noTimeCount += 1; return; }
@@ -1274,24 +1280,28 @@
         const bucket = buckets.find((b) => mins >= b.start && mins < b.end) || buckets[buckets.length - 1];
         if (bucket) bucket.count += 1;
       });
-      const rowsHtml = buckets.map((b) => `
-        <tr>
-          <td style="white-space:nowrap;">${formatTime(b.start)}–${formatTime(b.end)}</td>
+      const rowsHtml = buckets.map((b, i) => {
+        const isPast = nowMin != null && b.end <= nowMin;
+        const isCurrent = nowMin != null && nowMin >= b.start && nowMin < b.end;
+        return `
+        <tr data-bucket-idx="${i}" ${isPast ? 'style="color:var(--grey-500);"' : ''}>
+          <td style="white-space:nowrap;">${formatTime(b.start)}–${formatTime(b.end)}${isCurrent ? ' <span class="badge badge-in-consult" style="font-size:10px;">now</span>' : ''}</td>
           <td style="text-align:center;">${b.count}</td>
         </tr>
-      `).join('') + (noTimeCount > 0 ? `
-        <tr style="font-style:italic;color:var(--grey-500);">
-          <td>No preferred time (walk-ins)</td>
-          <td style="text-align:center;">${noTimeCount}</td>
-        </tr>
-      ` : '');
+      `;
+      }).join('');
+
+      const noTimeHtml = noTimeCount > 0
+        ? `<p class="panel-note" style="margin:4px 0 14px;">+ ${noTimeCount} walk-in${noTimeCount === 1 ? '' : 's'} with no preferred time today, not shown in the grid below.</p>`
+        : '';
 
       const backdrop = document.createElement('div');
       backdrop.className = 'modal-backdrop';
       backdrop.innerHTML = `
         <div class="modal-card" role="dialog" aria-modal="true">
           <h2 class="modal-title">${escapeHtml(doctorName)}'s schedule — ${escapeHtml(dateLabel)}</h2>
-          <div style="max-height:55vh;overflow-y:auto;">
+          ${noTimeHtml}
+          <div id="scheduleGridScroll" style="max-height:45vh;overflow-y:auto;">
             <table class="qtable">
               <thead><tr><th>Time</th><th style="text-align:center;">Count</th></tr></thead>
               <tbody>${rowsHtml}</tbody>
@@ -1303,6 +1313,14 @@
         </div>
       `;
       document.body.appendChild(backdrop);
+
+      if (nowMin != null) {
+        const nowRow = Array.from(backdrop.querySelectorAll('tr[data-bucket-idx]')).find((_, i) => {
+          const b = buckets[i];
+          return nowMin >= b.start && nowMin < b.end;
+        });
+        if (nowRow) nowRow.scrollIntoView({ block: 'center' });
+      }
 
       function cleanup() {
         backdrop.remove();
