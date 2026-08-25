@@ -1668,10 +1668,6 @@ th.th-filterable { position: relative; }
   display: block;
   margin-bottom: 8px;
 }
-/* flex:0 on the .field wrapper (not this rule) is what actually keeps
-   this sized to its own text — .inline-form .field select's width:100%
-   otherwise wins the specificity fight and stretches it to fill
-   whatever's left in the row. */
 .doctor-select {
   padding: 10px 14px;
   border-radius: var(--radius-sm);
@@ -1679,6 +1675,15 @@ th.th-filterable { position: relative; }
   font-size: 14px;
   font-family: var(--font);
 }
+/* .inline-form .field select's width:100% (two classes + a type) beats
+   .doctor-select (one class) in the specificity fight regardless of
+   source order, so a plain override here doesn't stick — asserted by
+   ID instead, which always wins. width:100% of a flex:0 0 auto wrapper
+   isn't "the text's own width," it's a percentage of whatever the
+   wrapper settled on, which itself sinks to a token minimum without
+   this — max-content is what actually ties the box to its own text,
+   long or short, for whatever doctor names a clinic has. */
+#queueDoctorFilter { width: max-content; max-width: 100%; }
 
 /* Height pinned to match #queueDateFilter exactly (44px) rather than
    relying on padding/font-size alone to line up across two very
