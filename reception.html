@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=137" />
+<link rel="stylesheet" href="styles.css?v=138" />
 </head>
 <body>
   <div class="app-shell">
@@ -126,9 +126,9 @@
                 <div class="time-picker-panel" id="pWalkinTimePanel" style="display:none;"></div>
               </div>
             </div>
-            <div class="field" style="align-self:flex-end;">
+            <div class="field">
               <label>&nbsp;</label>
-              <button type="button" class="btn-sm" id="viewDaySlotsBtn">View day's schedule</button>
+              <button type="button" class="btn-sm primary" id="viewDaySlotsBtn">View day's schedule</button>
             </div>
             <div class="field mode-only mode-only-walkin" style="display:none;">
               <label>Walk-in type</label>
@@ -179,7 +179,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=48"></script>
+  <script src="clinic-data.js?v=49"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -441,9 +441,9 @@
       // Same picker component and interaction as the appointment time
       // field above, kept as its own instance (not a shared function)
       // since it's simpler in one real way: always today (walk-ins are
-      // same-day only, no date field to read), and selecting a time
-      // here doesn't touch updateSlotHint, which is appointment-slot-
-      // capacity specific and doesn't apply to a walk-in's preferred time.
+      // same-day only, no date field to read). Selecting a time here does
+      // call updateSlotHint (below) — a walk-in given a preferred time
+      // competes for the same slot as a phoned-in appointment.
       let walkinTimePickerOptions = [];
       function buildWalkinTimePickerOptions() {
         const now = new Date();
@@ -485,12 +485,14 @@
         document.getElementById('pWalkinTimeTriggerText').textContent = label;
         trigger.classList.remove('placeholder');
         closeWalkinTimePanel();
+        updateSlotHint();
       }
       function resetWalkinTimePicker() {
         document.getElementById('pWalkinTime').value = '';
         document.getElementById('pWalkinTimeTriggerText').textContent = 'As soon as possible';
         document.getElementById('pWalkinTimeTrigger').classList.add('placeholder');
         closeWalkinTimePanel();
+        updateSlotHint();
       }
       document.getElementById('pWalkinTimeTrigger').addEventListener('click', (e) => {
         e.stopPropagation();
@@ -676,17 +678,23 @@
         URL.revokeObjectURL(url);
       }
 
+      // Runs for both modes now — a walk-in given a preferred time competes
+      // for the same slot as a phoned-in appointment (see countActiveAtSlot
+      // in clinic-data.js), so reception needs the same capacity feedback
+      // either way. Walk-in is always today, with no isPastRealDateTime
+      // check since buildWalkinTimePickerOptions already excludes past
+      // times from the picker itself.
       async function updateSlotHint() {
         const myToken = ++slotHintToken;
         const hint = document.getElementById('slotHint');
-        if (patientMode !== 'appointment') { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
+        const isAppt = patientMode === 'appointment';
         const doctorId = document.getElementById('pDoctor').value;
-        const date = document.getElementById('pDate').value;
-        const time = document.getElementById('pTime').value;
+        const date = isAppt ? document.getElementById('pDate').value : Qlinic.getTodayDate();
+        const time = isAppt ? document.getElementById('pTime').value : document.getElementById('pWalkinTime').value;
         if (!doctorId || !date || !time) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
         // Checked against the REAL device clock: a phone call happens in
         // real time. Hard block, nothing to override.
-        if (Qlinic.isPastRealDateTime(date, time)) {
+        if (isAppt && Qlinic.isPastRealDateTime(date, time)) {
           hint.className = 'slot-hint error';
           hint.innerHTML = `⛔ That date and time has already passed. Pick a later time.`;
           return;
@@ -704,7 +712,9 @@
           hint.className = 'slot-hint warn';
           hint.innerHTML = `⚠ ${avail.count} patients already booked between <strong>${windowLabel}</strong> (max ${avail.capacity} per slot). Next open slot: <strong>${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}</strong> <button type="button" class="btn-sm" id="useSuggestedTimeBtn">Use this time</button>`;
           document.getElementById('useSuggestedTimeBtn').addEventListener('click', () => {
-            selectTime(avail.suggestion, Qlinic.formatTime(Qlinic.parseTime(avail.suggestion)));
+            const label = Qlinic.formatTime(Qlinic.parseTime(avail.suggestion));
+            if (isAppt) selectTime(avail.suggestion, label);
+            else selectWalkinTime(avail.suggestion, label);
           });
         } else {
           hint.className = 'slot-hint ok';
@@ -1299,6 +1309,9 @@
           dateLabel: Qlinic.formatDateLabel(dateStr),
           openMin: clinicOpenMin,
           closeMin: clinicCloseMin,
+          // Falls back to 30 if migration 036 hasn't run yet — before it,
+          // clinic.schedule_interval_mins is simply undefined.
+          intervalMins: (clinic && clinic.schedule_interval_mins) || 30,
           rows,
         });
       });

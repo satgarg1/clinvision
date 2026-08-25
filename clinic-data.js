@@ -361,6 +361,7 @@
     if (fields.graceWindowMins !== undefined) payload.grace_window_mins = Number(fields.graceWindowMins);
     if (fields.slotIntervalMins !== undefined) payload.slot_interval_mins = Number(fields.slotIntervalMins);
     if (fields.slotCapacity !== undefined) payload.slot_capacity = Number(fields.slotCapacity);
+    if (fields.scheduleIntervalMins !== undefined) payload.schedule_interval_mins = Number(fields.scheduleIntervalMins);
     if (fields.followUpBufferDays !== undefined) payload.follow_up_buffer_days = Number(fields.followUpBufferDays);
     if (fields.openingTime !== undefined) payload.opening_time = fields.openingTime;
     if (fields.closingTime !== undefined) payload.closing_time = fields.closingTime;
@@ -1149,6 +1150,12 @@
 
   // ---------------- slot capacity ----------------
 
+  // No type filter — a walk-in given a preferred time now competes for the
+  // same slot as a phoned-in appointment, so it has to count against the
+  // same capacity or reception could unknowingly double-book a slot that
+  // only looked open because walk-ins were invisible to this check. A
+  // walk-in with no preferred time has booked_time null and is correctly
+  // excluded below (it was never assigned a slot to begin with).
   async function countActiveAtSlot(doctorId, dateStr, timeStr, excludePatientId) {
     const clinicId = await ensureClinicContext();
     const clinic = await getClinic();
@@ -1158,8 +1165,8 @@
       .select('id, booked_time')
       .eq('clinic_id', clinicId)
       .eq('doctor_id', doctorId)
-      .eq('type', 'appointment')
       .eq('booked_date', dateStr)
+      .not('booked_time', 'is', null)
       .in('status', ['booked', 'waiting', 'in_consult']);
     if (error) throw error;
     return data.filter((p) =>
@@ -1210,12 +1217,13 @@
   // staff wants both counted. A walk-in with no preferred time has
   // booked_time null and is correctly left out — it was never assigned a
   // slot to be counted against. status excludes done/no_show, same as
-  // countActiveAtSlot, so this reflects who's still actually expected.
+  // countActiveAtSlot, so this reflects who's still actually expected. Only
+  // booked_time is selected — the popup shows counts only, not names.
   async function getDaySlotSchedule(doctorId, dateStr) {
     const clinicId = await ensureClinicContext();
     const { data, error } = await sb
       .from('patients')
-      .select('name, type, booked_time')
+      .select('booked_time')
       .eq('clinic_id', clinicId)
       .eq('doctor_id', doctorId)
       .eq('booked_date', dateStr)
@@ -1227,37 +1235,36 @@
   }
 
   // A read-only sibling of confirmDialog (same backdrop/card/cleanup
-  // pattern) showing a fixed 30-minute-bucketed table of a doctor's day —
-  // deliberately a different granularity from the clinic's own configurable
-  // slot_interval_mins, which drives the single-slot hint/override flow
-  // elsewhere and is untouched by this.
-  function slotScheduleDialog({ doctorName, dateLabel, openMin, closeMin, rows }) {
+  // pattern) showing a bucketed count of a doctor's day. intervalMins is
+  // the clinic's own configurable schedule_interval_mins (Settings), not
+  // the slot_interval_mins that drives the single-slot hint/override flow
+  // elsewhere — the two are intentionally independent.
+  function slotScheduleDialog({ doctorName, dateLabel, openMin, closeMin, intervalMins, rows }) {
     return new Promise((resolve) => {
       const buckets = [];
-      for (let start = openMin; start < closeMin; start += 30) {
-        buckets.push({ start, end: Math.min(start + 30, closeMin), patients: [] });
+      for (let start = openMin; start < closeMin; start += intervalMins) {
+        buckets.push({ start, end: Math.min(start + intervalMins, closeMin), count: 0 });
       }
       rows.forEach((r) => {
         const mins = parseTime(r.booked_time.slice(0, 5));
         const bucket = buckets.find((b) => mins >= b.start && mins < b.end) || buckets[buckets.length - 1];
-        if (bucket) bucket.patients.push(r);
+        if (bucket) bucket.count += 1;
       });
       const rowsHtml = buckets.map((b) => `
         <tr>
           <td style="white-space:nowrap;">${formatTime(b.start)}–${formatTime(b.end)}</td>
-          <td>${b.patients.map((p) => `${escapeHtml(p.name)} <span class="badge ${p.type === 'appointment' ? 'badge-in-consult' : 'badge-waiting'}" style="font-size:11px;">${p.type === 'appointment' ? 'Appt' : 'Walk-in'}</span>`).join(', ')}</td>
-          <td style="text-align:center;">${b.patients.length}</td>
+          <td style="text-align:center;">${b.count}</td>
         </tr>
       `).join('');
 
       const backdrop = document.createElement('div');
       backdrop.className = 'modal-backdrop';
       backdrop.innerHTML = `
-        <div class="modal-card wide" role="dialog" aria-modal="true">
+        <div class="modal-card" role="dialog" aria-modal="true">
           <h2 class="modal-title">${escapeHtml(doctorName)}'s schedule — ${escapeHtml(dateLabel)}</h2>
           <div style="max-height:55vh;overflow-y:auto;">
             <table class="qtable">
-              <thead><tr><th>Time</th><th>Patients</th><th style="text-align:center;">Count</th></tr></thead>
+              <thead><tr><th>Time</th><th style="text-align:center;">Count</th></tr></thead>
               <tbody>${rowsHtml}</tbody>
             </table>
           </div>

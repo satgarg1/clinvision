@@ -1093,9 +1093,6 @@ th.th-filterable { position: relative; }
   max-width: 440px;
   width: 100%;
 }
-/* Wider variant for content-heavy dialogs (e.g. a schedule table) that
-   the standard message-box width would cramp. */
-.modal-card.wide { max-width: 640px; }
 .modal-title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--black); margin: 0 0 10px; }
 .modal-message { font-size: 14px; color: var(--grey-700); line-height: 1.5; margin: 0 0 24px; white-space: pre-line; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
@@ -1227,8 +1224,30 @@ th.th-filterable { position: relative; }
    single class, so it would otherwise win the padding/font-size/
    border-radius fight and silently undo .pill-select's sizing and pill
    shape. Re-asserts the exact same look under an ID, which always
-   outranks it regardless of source order. */
+   outranks it regardless of source order.
+   line-height is taller than the other pill-selects on this page (20px
+   vs 16px): Devanagari conjuncts/matras in "हिन्दी" sit taller than Latin
+   text at the same font-size, and a 16px line-height was clipping the
+   top of the script when Hindi was selected. */
 #displayLanguageInput {
+  padding: 8px 32px 8px 16px;
+  font-size: 13px;
+  line-height: 20px;
+  border-radius: var(--radius-pill);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a4a4c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+}
+:root[data-theme="dark"] #displayLanguageInput {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+/* Same ID-override reasoning as #displayLanguageInput above, but plain
+   digit/text content only, so it keeps the original 16px line-height —
+   matches the Save button beside it; only the Hindi-glyph select above
+   needed the taller box. */
+#scheduleIntervalInput {
   padding: 8px 32px 8px 16px;
   font-size: 13px;
   line-height: 16px;
@@ -1238,7 +1257,7 @@ th.th-filterable { position: relative; }
   background-position: right 12px center;
   background-size: 12px;
 }
-:root[data-theme="dark"] #displayLanguageInput {
+:root[data-theme="dark"] #scheduleIntervalInput {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
@@ -1486,9 +1505,12 @@ th.th-filterable { position: relative; }
    control over both: past times are excluded entirely for today's date,
    and opening the list starts at a useful position instead of midnight. */
 .time-picker { position: relative; }
+/* Vertical padding matches .form-grid/.inline-form's real <input>/<select>
+   fields (var(--space-3) = 12px) — this used to be 10px, rendering visibly
+   shorter than the date input or doctor select sharing its row. */
 .time-picker-trigger {
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px 12px;
   font-size: 14px;
   font-family: var(--font);
   border: 1px solid var(--grey-300);
