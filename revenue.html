@@ -242,7 +242,7 @@
         document.getElementById(monthSelectId).innerHTML = MONTH_NAMES.map((name, i) => `<option value="${pad2(i + 1)}">${name}</option>`).join('');
         const thisYear = new Date().getFullYear();
         const years = [];
-        for (let y = thisYear - 10; y <= thisYear + 1; y++) years.push(y);
+        for (let y = thisYear; y <= thisYear + 1; y++) years.push(y);
         document.getElementById(yearSelectId).innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join('');
       }
 
