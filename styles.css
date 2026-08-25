@@ -1673,14 +1673,22 @@ th.th-filterable { position: relative; }
   border-radius: var(--radius-sm);
   border: 1px solid var(--grey-300);
   font-size: 14px;
-  min-width: 270px;
+  min-width: 400px;
   width: 100%;
   font-family: var(--font);
+  text-align: center;
+  text-align-last: center;
 }
 
-/* Matches the Date/Doctor fields it sits beside in the same row; the
-   default .btn-sm padding is shorter, so unadorned it looked visibly
-   squatter than its neighbors. */
+/* Height pinned to match #queueDateFilter exactly (44px) rather than
+   relying on padding/font-size alone to line up across two very
+   different elements (a native date input vs a button) — the two
+   families of padding/line-height maths just didn't land on the same
+   pixel reliably. */
+#queueDateFilter, #queueTodayBtn {
+  height: 44px;
+  box-sizing: border-box;
+}
 #queueTodayBtn {
   padding: 10px 14px;
   font-size: 14px;

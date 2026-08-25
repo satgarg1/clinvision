@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=148" />
+<link rel="stylesheet" href="styles.css?v=149" />
 </head>
 <body>
   <div class="app-shell">
@@ -153,21 +153,17 @@
       <div class="panel">
         <div class="panel-header"><h2>Viewing queue for</h2></div>
         <div class="inline-form">
-          <div class="field" style="min-width:270px;">
+          <div class="field" style="min-width:400px;">
             <label>Doctor</label>
             <select id="queueDoctorFilter" class="doctor-select"></select>
           </div>
-          <div class="field" style="min-width:180px;flex:0;">
+          <div class="field" style="min-width:180px;flex:0;margin-left:auto;">
             <label>Date</label>
             <input type="date" id="queueDateFilter" />
           </div>
           <div class="field" style="flex:0;">
             <label>&nbsp;</label>
-            <button type="button" class="btn-sm" id="queueTodayBtn">Today</button>
-          </div>
-          <div class="field" style="min-width:220px;">
-            <label>Filter this list</label>
-            <input type="text" id="queueFilterInput" placeholder="Name or phone" />
+            <button type="button" class="btn-sm primary" id="queueTodayBtn">Today</button>
           </div>
         </div>
       </div>
@@ -226,13 +222,6 @@
       let bookedExpanded = false;
       let bookedPage = 0;
       let waitingPage = 0;
-      // Client-side only — both lists are already fully loaded for this
-      // doctor/date, so a name/phone filter here is a pure re-render, not
-      // a new query (same reasoning as renderQueuePanel splitting off
-      // from renderQueues below). Scoped to whichever doctor/date is
-      // currently selected, unlike the global search box above which
-      // queries the whole clinic regardless of doctor.
-      let queueFilterText = '';
       // The last data renderQueues() actually fetched — expand/collapse and
       // pagination re-render from this instead of re-fetching, since none
       // of them change which patients exist. Re-fetching on every click of
@@ -1025,17 +1014,8 @@
         sel.innerHTML = doctors.map((d, i) => {
           const q = queues[i];
           const countLabel = isToday ? `${q.waiting.length} waiting, ${q.booked.length} booked` : `${q.booked.length} booked`;
-          return `<option value="${d.id}" ${d.id === queueDoctorId ? 'selected' : ''}>${Qlinic.escapeHtml(d.name)} (${countLabel})</option>`;
+          return `<option value="${d.id}" ${d.id === queueDoctorId ? 'selected' : ''}>${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)} (${countLabel})</option>`;
         }).join('');
-      }
-
-      // A filter typed for one doctor/date rarely applies to the next one
-      // switched to — clearing it on every switch avoids the confusing
-      // "why is this list empty" moment of a stale filter silently still
-      // being applied.
-      function resetQueueFilter() {
-        queueFilterText = '';
-        document.getElementById('queueFilterInput').value = '';
       }
 
       document.getElementById('queueDoctorFilter').addEventListener('change', (e) => {
@@ -1043,7 +1023,6 @@
         bookedExpanded = false;
         bookedPage = 0;
         waitingPage = 0;
-        resetQueueFilter();
         renderQueues();
       });
 
@@ -1052,7 +1031,6 @@
         bookedExpanded = false;
         bookedPage = 0;
         waitingPage = 0;
-        resetQueueFilter();
         renderQueues();
       });
 
@@ -1062,20 +1040,7 @@
         bookedExpanded = false;
         bookedPage = 0;
         waitingPage = 0;
-        resetQueueFilter();
         renderQueues();
-      });
-
-      // Lives outside #queuePanel (never itself re-rendered), so typing
-      // never loses focus the way it would if the input were rebuilt
-      // from panelEl.innerHTML on every keystroke. Pure re-render, no
-      // fetch — same reasoning as renderQueuePanel's split from
-      // renderQueues above.
-      document.getElementById('queueFilterInput').addEventListener('input', (e) => {
-        queueFilterText = e.target.value;
-        bookedPage = 0;
-        waitingPage = 0;
-        renderQueuePanel();
       });
 
       async function renderQueues() {
@@ -1118,12 +1083,6 @@
       // calls, so expand/collapse and pagination (which never change which
       // patients exist, only how they're sliced/shown) can call this
       // directly instead of re-running the whole fetch above.
-      function matchesQueueFilter(p) {
-        if (!queueFilterText) return true;
-        const q = queueFilterText.trim().toLowerCase();
-        return p.name.toLowerCase().includes(q) || (p.phone || '').includes(q);
-      }
-
       function renderQueuePanel() {
         if (!lastQueueData) return;
         const { doctor, queue, invoiceByPatientId, isTodayView } = lastQueueData;
@@ -1133,24 +1092,17 @@
         // can run just as long as Booked once appointments pile up, and
         // an unbounded table here was the same problem in a list
         // reception is actively working from minute to minute, not just
-        // scanning. Once a clinic is routinely booking 100+ patients a
-        // day, paging through 10+ screens to find one name isn't
-        // realistic either — queueFilterInput (always visible above,
-        // never re-rendered so it never loses focus while typing) filters
-        // both lists by name/phone before they're paged. Global search
-        // (renderSearch, above) is unaffected either way: it queries the
-        // whole clinic directly, not this doctor+date's already-loaded
-        // slice.
-        const filteredWaiting = queue.waiting.filter(matchesQueueFilter);
-        const filteredBooked = queue.booked.filter(matchesQueueFilter);
+        // scanning.
+        const waitingList = queue.waiting;
+        const bookedList = queue.booked;
 
-        const totalWaitingPages = Math.max(1, Math.ceil(filteredWaiting.length / WAITING_PAGE_SIZE));
+        const totalWaitingPages = Math.max(1, Math.ceil(waitingList.length / WAITING_PAGE_SIZE));
         if (waitingPage >= totalWaitingPages) waitingPage = 0;
-        const waitingPageItems = filteredWaiting.slice(waitingPage * WAITING_PAGE_SIZE, waitingPage * WAITING_PAGE_SIZE + WAITING_PAGE_SIZE);
+        const waitingPageItems = waitingList.slice(waitingPage * WAITING_PAGE_SIZE, waitingPage * WAITING_PAGE_SIZE + WAITING_PAGE_SIZE);
 
-        const totalBookedPages = Math.max(1, Math.ceil(filteredBooked.length / BOOKED_PAGE_SIZE));
+        const totalBookedPages = Math.max(1, Math.ceil(bookedList.length / BOOKED_PAGE_SIZE));
         if (bookedPage >= totalBookedPages) bookedPage = 0;
-        const bookedPageItems = filteredBooked.slice(bookedPage * BOOKED_PAGE_SIZE, bookedPage * BOOKED_PAGE_SIZE + BOOKED_PAGE_SIZE);
+        const bookedPageItems = bookedList.slice(bookedPage * BOOKED_PAGE_SIZE, bookedPage * BOOKED_PAGE_SIZE + BOOKED_PAGE_SIZE);
         const dateLabel = Qlinic.formatDateLabel(queueViewDate);
 
         panelEl.innerHTML = `
@@ -1159,8 +1111,8 @@
             ${isTodayView ? `
               ${queue.nowServing ? `<p style="font-size:14px;margin:0 0 14px;"><strong>Now with:</strong> ${Qlinic.escapeHtml(queue.nowServing.name)}</p>` : '<p style="font-size:14px;color:var(--grey-500);margin:0 0 14px;">No one in consultation right now.</p>'}
 
-              <h3 style="font-size:14px;margin:0 0 8px;color:var(--grey-700);">Waiting (${filteredWaiting.length}) <span class="order-note">· ordered by scheduled time, not arrival order</span></h3>
-              ${filteredWaiting.length === 0 ? `<div class="empty-state">${queueFilterText ? 'No match in Waiting.' : 'No one waiting.'}</div>` : `
+              <h3 style="font-size:14px;margin:0 0 8px;color:var(--grey-700);">Waiting (${waitingList.length}) <span class="order-note">· ordered by scheduled time, not arrival order</span></h3>
+              ${waitingList.length === 0 ? `<div class="empty-state">No one waiting.</div>` : `
                 <table class="qtable">
                   <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Queue time</th>${canBill ? '<th>Billing</th>' : ''}</tr></thead>
                   <tbody>
@@ -1189,10 +1141,10 @@
 
             <div class="booked-section">
               <button type="button" class="booked-toggle" id="bookedToggleBtn" aria-expanded="${bookedExpanded}">
-                <span>${bookedExpanded ? '▾' : '▸'} Booked${isTodayView ? ', not yet arrived' : ''} (${filteredBooked.length})</span>
+                <span>${bookedExpanded ? '▾' : '▸'} Booked${isTodayView ? ', not yet arrived' : ''} (${bookedList.length})</span>
               </button>
               <div class="booked-body" style="display:${bookedExpanded ? 'block' : 'none'};">
-                ${filteredBooked.length === 0 ? `<div class="empty-state">${queueFilterText ? 'No match in Booked.' : (isTodayView ? 'Everyone booked has arrived.' : 'Nothing booked for ' + dateLabel + '.')}</div>` : `
+                ${bookedList.length === 0 ? `<div class="empty-state">${isTodayView ? 'Everyone booked has arrived.' : 'Nothing booked for ' + dateLabel + '.'}</div>` : `
                   <table class="qtable">
                     <thead><tr><th>Name</th><th>Booked</th><th>Status</th>${isTodayView ? '<th></th>' : ''}</tr></thead>
                     <tbody>
