@@ -1668,16 +1668,16 @@ th.th-filterable { position: relative; }
   display: block;
   margin-bottom: 8px;
 }
+/* flex:0 on the .field wrapper (not this rule) is what actually keeps
+   this sized to its own text — .inline-form .field select's width:100%
+   otherwise wins the specificity fight and stretches it to fill
+   whatever's left in the row. */
 .doctor-select {
   padding: 10px 14px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--grey-300);
   font-size: 14px;
-  min-width: 400px;
-  width: 100%;
   font-family: var(--font);
-  text-align: center;
-  text-align-last: center;
 }
 
 /* Height pinned to match #queueDateFilter exactly (44px) rather than
