@@ -2285,7 +2285,7 @@ table.qtable tbody tr.breakdown-row-link:hover { background: var(--mkt-blue-bg);
   border-radius: 999px;
 }
 
-.receipt-signature-wrap { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 46px; page-break-inside: avoid; }
+.receipt-signature-wrap { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 32px; page-break-inside: avoid; }
 .receipt-generated-note { font-size: 12px; color: var(--grey-500); max-width: 260px; }
 .receipt-signature-line {
   width: 220px;
@@ -2303,13 +2303,17 @@ table.qtable tbody tr.breakdown-row-link:hover { background: var(--mkt-blue-bg);
   gap: 12px;
   text-align: left;
   color: var(--grey-500);
-  margin-top: 24px;
-  padding-top: 16px;
+  margin-top: 16px;
+  padding-top: 12px;
   border-top: 1px solid var(--grey-100);
   font-size: 13px;
   page-break-inside: avoid;
 }
-.receipt-footer-logo { max-height: 32px; max-width: 100px; width: auto; height: auto; object-fit: contain; }
+/* Big enough to actually read as the clinic's mark (not a favicon-sized
+   afterthought) while staying well inside the space reclaimed above from
+   .receipt-signature-wrap/.receipt-footer's own trimmed margins, so a
+   normal-length receipt still prints on a single page. */
+.receipt-footer-logo { max-height: 56px; max-width: 160px; width: auto; height: auto; object-fit: contain; }
 .receipt-footer-address { font-size: 12px; margin-top: 2px; }
 
 @media print {

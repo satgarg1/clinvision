@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=146" />
+<link rel="stylesheet" href="styles.css?v=147" />
 </head>
 <body>
   <div class="app-shell">
@@ -55,6 +55,10 @@
       </div>
 
       <div class="panel">
+        <div class="panel-header" id="filterHeader" style="display:none;">
+          <div id="activeFilterChipsRow" class="active-filter-chips"></div>
+          <button type="button" class="btn-sm primary" id="resetFiltersBtn" style="margin-left:auto;">Reset filters</button>
+        </div>
         <p class="panel-note" id="summaryNote"></p>
         <div id="tableWrap"></div>
       </div>
@@ -65,7 +69,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=58"></script>
+  <script src="clinic-data.js?v=59"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -105,12 +109,15 @@
       const dateStr = params.get('date') || Qlinic.getTodayDate();
       const requestedDoctorId = params.get('doctor') || null;
 
+      const TYPE_LABELS = { appointment: 'Appointment', walkin: 'Walk-in' };
+
       const METRICS = {
         footfall: {
           title: 'Footfall so far',
           filter: (p) => ['waiting', 'in_consult', 'done'].includes(p.status),
           columns: ['Name', 'Phone', 'Doctor', 'Type', 'Status'],
           row: (p, doctorName) => [p.name, p.phone, doctorName, p.type === 'appointment' ? 'Appointment' : 'Walk-in', statusLabel(p.status)],
+          filters: ['doctor', 'type'],
         },
         waiting: {
           title: 'Waiting now',
@@ -129,18 +136,21 @@
           filter: (p) => p.status === 'done',
           columns: ['Name', 'Phone', 'Doctor', 'Seen at'],
           row: (p, doctorName) => [p.name, p.phone, doctorName, p.calledAt ? Qlinic.formatTimestamp(p.calledAt) : '—'],
+          filters: ['doctor'],
         },
         noShow: {
           title: 'No-shows',
           filter: (p) => p.status === 'no_show',
           columns: ['Name', 'Phone', 'Doctor', 'Was booked for'],
           row: (p, doctorName) => [p.name, p.phone, doctorName, p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '—'],
+          filters: ['doctor'],
         },
         bookedToday: {
           title: 'Booked today',
           filter: () => true,
           columns: ['Name', 'Phone', 'Doctor', 'Type', 'Status'],
           row: (p, doctorName) => [p.name, p.phone, doctorName, p.type === 'appointment' ? 'Appointment' : 'Walk-in', statusLabel(p.status)],
+          filters: ['type', 'doctor'],
         },
         priorityWaiting: {
           title: 'Priority waiting',
@@ -148,6 +158,7 @@
           columns: ['Name', 'Phone', 'Doctor', 'Arrived'],
           row: (p, doctorName) => [p.name, p.phone, doctorName, p.arrivedAt ? Qlinic.formatTimestamp(p.arrivedAt) : '—'],
           ignoreDoctor: true,
+          filters: ['doctor'],
         },
         avgWait: {
           title: 'Average wait, by patient',
@@ -155,14 +166,18 @@
           columns: ['Name', 'Phone', 'Doctor', 'Status', 'Wait (min)'],
           row: (p, doctorName, waitMins) => [p.name, p.phone, doctorName, statusLabel(p.status), waitMins],
           needsWait: true,
+          filters: ['doctor'],
         },
+        // One row per doctor (their single longest wait today), not every
+        // patient — showing every patient here duplicated Average wait's
+        // own drill-down page with nothing to tell them apart.
         longestWait: {
           title: 'Longest wait today, by patient',
           filter: (p) => ['waiting', 'in_consult', 'done'].includes(p.status),
           columns: ['Name', 'Phone', 'Doctor', 'Status', 'Wait (min)'],
           row: (p, doctorName, waitMins) => [p.name, p.phone, doctorName, statusLabel(p.status), waitMins],
           needsWait: true,
-          sortDesc: true,
+          perDoctorTop: true,
         },
       };
 
@@ -177,17 +192,30 @@
         return;
       }
 
-      // priorityWaiting is explicitly clinic-wide (an emergency is an
-      // emergency regardless of doctor), so it ignores any doctor param
-      // even if one somehow ended up in the URL.
-      const doctorId = config.ignoreDoctor ? null : (myDoctorId || requestedDoctorId);
+      const supportsDoctorFilter = !!(config.filters && config.filters.includes('doctor'));
+      const supportsTypeFilter = !!(config.filters && config.filters.includes('type'));
+      // A doctor's own view stays locked to their own patients (nothing to
+      // filter), except priorityWaiting: that one is explicitly clinic-wide
+      // for everyone — an emergency is an emergency regardless of doctor —
+      // so its doctor filter still makes sense even for a doctor viewer.
+      const showDoctorFilter = supportsDoctorFilter && (config.ignoreDoctor || !amDoctor);
+      const showTypeFilter = supportsTypeFilter;
+
+      // priorityWaiting ignores any doctor param unconditionally, same as
+      // before. Otherwise a doctor is always locked to their own data; for
+      // admin/reception, a metric that offers a doctor filter fetches
+      // clinic-wide so the filter actually has more than one option —
+      // narrowing then happens client-side, same as Revenue's own columns.
+      const fetchDoctorId = config.ignoreDoctor
+        ? null
+        : (myDoctorId || (supportsDoctorFilter ? null : requestedDoctorId));
 
       document.getElementById('breadcrumbMetric').textContent = config.title;
       document.getElementById('pageTitle').textContent = `${config.title} — ${Qlinic.formatDateLabel(dateStr)}`;
 
       const [doctors, patients] = await Promise.all([
-        Qlinic.getDoctors(),
-        Qlinic.getPatientsInRange(dateStr, dateStr, doctorId || undefined),
+        Qlinic.getDoctors({ includeInactive: true }),
+        Qlinic.getPatientsInRange(dateStr, dateStr, fetchDoctorId || undefined),
       ]);
       const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
       const nowMs = Date.now();
@@ -198,38 +226,169 @@
         return Math.max(0, Math.round((end - start) / 60000));
       }
 
-      let rows = patients.filter(config.filter);
-      if (config.needsWait) {
-        rows = rows.map((p) => ({ patient: p, waitMins: waitMinsFor(p) }));
-        if (config.sortDesc) rows.sort((a, b) => b.waitMins - a.waitMins);
+      // ---------------- Column-header filters (same pattern as Revenue) ----------------
+      let doctorFilterIds = new Set();
+      let typeFilterValues = new Set();
+      // Arriving from one doctor's row on the Dashboard modal still opens
+      // scoped to that doctor; Reset (or clearing the chip) broadens back
+      // to every doctor without navigating back and picking "view all."
+      if (showDoctorFilter && requestedDoctorId && !amDoctor) doctorFilterIds.add(requestedDoctorId);
+
+      function baseRows() {
+        return patients.filter(config.filter);
+      }
+      function doctorFilterOptions() {
+        const counting = baseRows();
+        return doctors
+          .map((d) => ({ value: d.id, label: d.name, count: counting.filter((p) => p.doctorId === d.id).length }))
+          .filter((o) => o.count > 0)
+          .sort((a, b) => b.count - a.count);
+      }
+      function typeFilterOptions() {
+        const counting = baseRows();
+        return Object.keys(TYPE_LABELS)
+          .map((key) => ({ value: key, label: TYPE_LABELS[key], count: counting.filter((p) => p.type === key).length }))
+          .filter((o) => o.count > 0);
+      }
+      function filteredRows() {
+        return baseRows().filter((p) =>
+          (doctorFilterIds.size === 0 || doctorFilterIds.has(p.doctorId)) &&
+          (typeFilterValues.size === 0 || typeFilterValues.has(p.type))
+        );
       }
 
-      document.getElementById('summaryNote').textContent = config.needsWait
-        ? (rows.length
-            ? (config.sortDesc
-                ? `Longest: ${rows[0].waitMins} min (${rows[0].patient.name}). ${rows.length} patient${rows.length === 1 ? '' : 's'} counted.`
-                : `Average: ${Math.round(rows.reduce((sum, r) => sum + r.waitMins, 0) / rows.length)} min across ${rows.length} patient${rows.length === 1 ? '' : 's'}.`)
-            : 'No patients to measure.')
-        : `${rows.length} patient${rows.length === 1 ? '' : 's'}.`;
-
-      const wrap = document.getElementById('tableWrap');
-      if (rows.length === 0) {
-        wrap.innerHTML = '<div class="empty-state">Nothing here.</div>';
-        return;
+      let openFilterColumn = null;
+      function closeColumnFilter() {
+        openFilterColumn = null;
+        document.querySelectorAll('.filter-dropdown').forEach((el) => el.remove());
       }
-      wrap.innerHTML = `
-        <table class="qtable">
-          <thead><tr>${config.columns.map((c) => `<th>${Qlinic.escapeHtml(c)}</th>`).join('')}</tr></thead>
-          <tbody>
-            ${rows.map((r) => {
-              const p = config.needsWait ? r.patient : r;
-              const doctorName = doctorById[p.doctorId] ? doctorById[p.doctorId].name : '—';
-              const cells = config.needsWait ? config.row(p, doctorName, r.waitMins) : config.row(p, doctorName);
-              return `<tr>${cells.map((c) => `<td>${Qlinic.escapeHtml(String(c))}</td>`).join('')}</tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      `;
+      function openColumnFilter(column, anchorTh, options, selectedSet, onChange) {
+        if (openFilterColumn === column) { closeColumnFilter(); return; }
+        closeColumnFilter();
+        openFilterColumn = column;
+        const dropdown = document.createElement('div');
+        dropdown.className = 'filter-dropdown';
+        dropdown.innerHTML = options.map((o) => `
+          <label><input type="checkbox" value="${Qlinic.escapeHtml(o.value)}" ${selectedSet.has(o.value) ? 'checked' : ''} /> ${Qlinic.escapeHtml(o.label)}<span class="fd-count">${o.count}</span></label>
+        `).join('');
+        dropdown.addEventListener('click', (e) => e.stopPropagation());
+        dropdown.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+          cb.addEventListener('change', () => {
+            if (cb.checked) selectedSet.add(cb.value); else selectedSet.delete(cb.value);
+            closeColumnFilter();
+            onChange();
+          });
+        });
+        anchorTh.appendChild(dropdown);
+      }
+      document.addEventListener('click', () => closeColumnFilter());
+
+      function FILTER_ICON_SVG(className) {
+        return `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>`;
+      }
+
+      function activeFilterChipsHtml() {
+        const chips = [];
+        if (doctorFilterIds.size > 0) {
+          const labels = doctors.filter((d) => doctorFilterIds.has(d.id)).map((d) => d.name);
+          chips.push({ key: 'doctor', label: `Doctor: ${labels.join(', ')}` });
+        }
+        if (typeFilterValues.size > 0) {
+          const labels = [...typeFilterValues].map((v) => TYPE_LABELS[v] || v);
+          chips.push({ key: 'type', label: `Type: ${labels.join(', ')}` });
+        }
+        return chips.map((c) => `<div class="filter-chip">${Qlinic.escapeHtml(c.label)}<button type="button" class="clear-filter-chip" data-key="${c.key}" aria-label="Clear filter">×</button></div>`).join('');
+      }
+      function clearFilterByKey(key) {
+        if (key === 'doctor') doctorFilterIds.clear();
+        else if (key === 'type') typeFilterValues.clear();
+        render();
+      }
+      function resetAllFilters() {
+        doctorFilterIds.clear();
+        typeFilterValues.clear();
+        render();
+      }
+
+      if (showDoctorFilter || showTypeFilter) {
+        document.getElementById('filterHeader').style.display = '';
+        document.getElementById('resetFiltersBtn').addEventListener('click', resetAllFilters);
+      }
+
+      function render() {
+        let rows = filteredRows();
+        if (config.needsWait) {
+          rows = rows.map((p) => ({ patient: p, waitMins: waitMinsFor(p) }));
+          if (config.perDoctorTop) {
+            const byDoctor = {};
+            rows.forEach((r) => {
+              const id = r.patient.doctorId;
+              if (!byDoctor[id] || r.waitMins > byDoctor[id].waitMins) byDoctor[id] = r;
+            });
+            rows = Object.values(byDoctor).sort((a, b) => b.waitMins - a.waitMins);
+          } else if (config.sortDesc) {
+            rows.sort((a, b) => b.waitMins - a.waitMins);
+          }
+        }
+
+        document.getElementById('summaryNote').textContent = config.needsWait
+          ? (rows.length
+              ? (config.perDoctorTop
+                  ? `Longest: ${rows[0].waitMins} min (${rows[0].patient.name}). ${rows.length} doctor${rows.length === 1 ? '' : 's'} counted.`
+                  : config.sortDesc
+                    ? `Longest: ${rows[0].waitMins} min (${rows[0].patient.name}). ${rows.length} patient${rows.length === 1 ? '' : 's'} counted.`
+                    : `Average: ${Math.round(rows.reduce((sum, r) => sum + r.waitMins, 0) / rows.length)} min across ${rows.length} patient${rows.length === 1 ? '' : 's'}.`)
+              : 'No patients to measure.')
+          : `${rows.length} patient${rows.length === 1 ? '' : 's'}.`;
+
+        if (showDoctorFilter || showTypeFilter) {
+          document.getElementById('activeFilterChipsRow').innerHTML = activeFilterChipsHtml();
+          document.querySelectorAll('#activeFilterChipsRow .clear-filter-chip').forEach((btn) => {
+            btn.addEventListener('click', () => clearFilterByKey(btn.dataset.key));
+          });
+        }
+
+        const wrap = document.getElementById('tableWrap');
+        if (rows.length === 0) {
+          wrap.innerHTML = '<div class="empty-state">Nothing here.</div>';
+          return;
+        }
+
+        const doctorIconClass = doctorFilterIds.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
+        const typeIconClass = typeFilterValues.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
+
+        wrap.innerHTML = `
+          <table class="qtable">
+            <thead><tr>${config.columns.map((c) => {
+              if (c === 'Doctor' && showDoctorFilter) return `<th class="th-filterable"><span class="th-filter-trigger" id="doctorFilterTrigger">Doctor ${FILTER_ICON_SVG(doctorIconClass)}</span></th>`;
+              if (c === 'Type' && showTypeFilter) return `<th class="th-filterable"><span class="th-filter-trigger" id="typeFilterTrigger">Type ${FILTER_ICON_SVG(typeIconClass)}</span></th>`;
+              return `<th>${Qlinic.escapeHtml(c)}</th>`;
+            }).join('')}</tr></thead>
+            <tbody>
+              ${rows.map((r) => {
+                const p = config.needsWait ? r.patient : r;
+                const doctorName = doctorById[p.doctorId] ? doctorById[p.doctorId].name : '—';
+                const cells = config.needsWait ? config.row(p, doctorName, r.waitMins) : config.row(p, doctorName);
+                return `<tr>${cells.map((c) => `<td>${Qlinic.escapeHtml(String(c))}</td>`).join('')}</tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+        if (showDoctorFilter) {
+          document.getElementById('doctorFilterTrigger').addEventListener('click', (e) => {
+            e.stopPropagation();
+            openColumnFilter('doctor', e.currentTarget.closest('th'), doctorFilterOptions(), doctorFilterIds, render);
+          });
+        }
+        if (showTypeFilter) {
+          document.getElementById('typeFilterTrigger').addEventListener('click', (e) => {
+            e.stopPropagation();
+            openColumnFilter('type', e.currentTarget.closest('th'), typeFilterOptions(), typeFilterValues, render);
+          });
+        }
+      }
+
+      render();
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';

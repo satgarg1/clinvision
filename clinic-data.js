@@ -1392,7 +1392,7 @@
         : `<tr><td colspan="${columns.length}" class="empty-state">Nothing to show right now.</td></tr>`;
 
       const viewAllHtml = viewAllHref
-        ? `<a href="${escapeHtml(viewAllHref)}" class="panel-note" style="display:block;margin-bottom:10px;">View every patient behind this number &rarr;</a>`
+        ? `<a href="${escapeHtml(viewAllHref)}" style="display:block;margin-bottom:10px;color:var(--accent);font-weight:600;">View every patient behind this number</a>`
         : '';
 
       const backdrop = document.createElement('div');
