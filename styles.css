@@ -1450,16 +1450,6 @@ th.th-filterable { position: relative; }
 }
 #searchBox:focus, #patientSearch:focus, #directorySearch:focus, #noShowSearch:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 
-/* End-of-day's Close/Reopen-day buttons sit directly on the page's
-   grey-100 background, same as .btn-sm's default fill, so they were
-   invisible except for their text. accent-outline gives them a real
-   border; this just matches their size to the taller fields beside
-   them. (Revenue's #todayBtn used to share this rule too, but now uses
-   .pill-btn — same box as the Date input beside it — instead.) */
-#closeDayBtn, #reopenDayBtn {
-  padding: 13px 20px;
-  font-size: 15px;
-}
 
 /* Add-patient form: a grid (not flex-wrap) so a field that grows taller than
    its neighbors — e.g. the slot-availability hint — can never shove the other
