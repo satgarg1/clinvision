@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=138" />
+<link rel="stylesheet" href="styles.css?v=139" />
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -199,7 +199,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=49"></script>
+  <script src="clinic-data.js?v=50"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -232,6 +232,12 @@
       let myProfile = null;
       let allDoctors = [];
       let currentAmount = 0;
+      // Set whenever checkPhoneLookup finds an invoice already billed for
+      // this phone+date (most often the auto-invoice-on-arrival trigger) —
+      // submit then corrects THAT invoice instead of creating a second one
+      // for the same visit. Cleared on phone/date changes that find no
+      // match, and after a successful submit.
+      let currentInvoiceId = null;
 
       function updateFeeTypeOptions() {
         const doctorId = document.getElementById('bDoctor').value;
@@ -299,6 +305,7 @@
       async function checkPhoneLookup() {
         const phone = document.getElementById('bPhone').value.trim();
         const hint = document.getElementById('lookupHint');
+        currentInvoiceId = null;
         if (!phone) { hint.textContent = ''; hint.className = 'slot-hint'; return; }
         if (!isValidPhone(phone)) {
           hint.textContent = 'Enter a valid 10-digit phone number to look up their visit.';
@@ -335,12 +342,28 @@
           }
         }
 
+        // An invoice already exists for this visit — most often auto-
+        // billed the moment they arrived. Submitting now corrects THAT
+        // invoice (fee type, payment mode, amount) instead of creating a
+        // second one, so its actual payment mode/amount are what should
+        // be shown here, not a freshly-recomputed default.
+        if (match.todayInvoiceId) {
+          currentInvoiceId = match.todayInvoiceId;
+          if (match.todayPaymentMode) document.getElementById('bPaymentMode').value = match.todayPaymentMode;
+          updateTotal();
+          if (match.todayAmountReceived != null) document.getElementById('bAmountReceived').value = match.todayAmountReceived;
+          updateBalance();
+        } else {
+          updateTotal();
+        }
+
         const dateLabel = Qlinic.formatDateLabel(billingDate);
-        hint.textContent = match.todayDoctorId
+        hint.textContent = match.todayInvoiceId
+          ? `Found ${match.name} — already billed for ${dateLabel}, changes here correct that bill rather than adding a new one.`
+          : match.todayDoctorId
           ? `Found ${match.name} — ${dateLabel}'s consultation details filled in, double-check before printing.`
           : `Found ${match.name}, details filled in, edit anything that's changed.`;
         hint.className = 'slot-hint ok';
-        updateTotal();
       }
       document.getElementById('bDate').addEventListener('change', checkPhoneLookup);
       document.getElementById('bPhone').addEventListener('blur', checkPhoneLookup);
@@ -411,6 +434,7 @@
         document.getElementById('bDate').value = Qlinic.getTodayDate();
         document.getElementById('lookupHint').textContent = '';
         document.getElementById('lookupHint').className = 'slot-hint';
+        currentInvoiceId = null;
         updateFeeTypeOptions();
       }
 
@@ -450,18 +474,33 @@
         btn.disabled = true;
         btn.textContent = 'Printing…';
         try {
-          const invoice = await Qlinic.createInvoice({
-            doctorId: document.getElementById('bDoctor').value,
-            feeType: document.getElementById('bFeeType').value,
-            patientName: document.getElementById('bName').value,
-            patientPhone: document.getElementById('bPhone').value,
-            patientAddress: document.getElementById('bAddress').value,
-            patientAge: document.getElementById('bAge').value ? Number(document.getElementById('bAge').value) : null,
-            patientGender: document.getElementById('bGender').value,
-            paymentMode: document.getElementById('bPaymentMode').value,
-            amountReceived: Number(document.getElementById('bAmountReceived').value) || 0,
-            invoiceDate,
-          });
+          // currentInvoiceId is set whenever the phone lookup found this
+          // visit already billed (almost always the auto-invoice-on-
+          // arrival trigger) — correcting fee type/payment mode/amount
+          // here has to update THAT invoice, not create a second one for
+          // the same visit. Name/address/age/gender/doctor on an
+          // already-billed invoice aren't editable from this path, same
+          // as Reception's own inline "Adjust" correction.
+          const invoice = currentInvoiceId
+            ? await Qlinic.updateInvoicePayment({
+                invoiceId: currentInvoiceId,
+                feeType: document.getElementById('bFeeType').value,
+                paymentMode: document.getElementById('bPaymentMode').value,
+                amountReceived: Number(document.getElementById('bAmountReceived').value) || 0,
+              })
+            : await Qlinic.createInvoice({
+                doctorId: document.getElementById('bDoctor').value,
+                feeType: document.getElementById('bFeeType').value,
+                patientName: document.getElementById('bName').value,
+                patientPhone: document.getElementById('bPhone').value,
+                patientAddress: document.getElementById('bAddress').value,
+                patientAge: document.getElementById('bAge').value ? Number(document.getElementById('bAge').value) : null,
+                patientGender: document.getElementById('bGender').value,
+                paymentMode: document.getElementById('bPaymentMode').value,
+                amountReceived: Number(document.getElementById('bAmountReceived').value) || 0,
+                invoiceDate,
+              });
+          if (currentInvoiceId) showToast('Existing bill corrected, not duplicated');
           renderReceipt(invoice);
           window.print();
           resetForm();

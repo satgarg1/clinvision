@@ -861,6 +861,9 @@
     // trying to disambiguate it here.
     let todayDoctorId = null;
     let todayFeeType = null;
+    let todayInvoiceId = null;
+    let todayPaymentMode = null;
+    let todayAmountReceived = null;
     try {
       const targetDateStr = dateStr || todayDateStr();
       const { data: todayPatient, error: patientErr } = await sb.from('patients')
@@ -873,13 +876,21 @@
         // Fee type only exists once they're actually billed (e.g. the
         // auto-invoice-on-arrival trigger already ran); a booked-but-not-
         // arrived visit has a doctor but no fee type yet, left for
-        // reception to pick.
+        // reception to pick. todayInvoiceId is what lets the caller
+        // correct THIS invoice (fee type, payment mode, amount) instead of
+        // creating a second one for the same visit — see
+        // billing-consultation.html's submit handler.
         const { data: todayInvoice, error: invoiceErr } = await sb.from('invoices')
-          .select('fee_type')
+          .select('id, fee_type, payment_mode, amount_received')
           .eq('clinic_id', clinicId).eq('patient_id', todayPatient.id)
           .order('created_at', { ascending: false }).limit(1).maybeSingle();
         if (invoiceErr) throw invoiceErr;
-        todayFeeType = todayInvoice ? todayInvoice.fee_type : null;
+        if (todayInvoice) {
+          todayFeeType = todayInvoice.fee_type;
+          todayInvoiceId = todayInvoice.id;
+          todayPaymentMode = todayInvoice.payment_mode;
+          todayAmountReceived = todayInvoice.amount_received;
+        }
       }
     } catch (e) { /* best-effort */ }
 
@@ -891,6 +902,9 @@
       age: (patient && patient.age) || (invoice && invoice.patient_age) || null,
       todayDoctorId,
       todayFeeType,
+      todayInvoiceId,
+      todayPaymentMode,
+      todayAmountReceived,
     };
   }
 

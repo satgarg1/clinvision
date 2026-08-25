@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=138" />
+<link rel="stylesheet" href="styles.css?v=139" />
 </head>
 <body>
   <div class="app-shell">
@@ -108,27 +108,29 @@
             </div>
             <div class="field mode-only mode-only-appointment">
               <label>Appointment time</label>
-              <div class="time-picker" id="pTimePicker">
-                <button type="button" class="time-picker-trigger placeholder" id="pTimeTrigger">
-                  <span id="pTimeTriggerText">Select a time</span><span class="time-picker-caret">▾</span>
-                </button>
-                <input type="hidden" id="pTime" />
-                <div class="time-picker-panel" id="pTimePanel" style="display:none;"></div>
+              <div style="display:flex;gap:8px;align-items:stretch;">
+                <div class="time-picker" id="pTimePicker" style="flex:1;">
+                  <button type="button" class="time-picker-trigger placeholder" id="pTimeTrigger">
+                    <span id="pTimeTriggerText">Select a time</span><span class="time-picker-caret">▾</span>
+                  </button>
+                  <input type="hidden" id="pTime" />
+                  <div class="time-picker-panel" id="pTimePanel" style="display:none;"></div>
+                </div>
+                <button type="button" class="btn-sm primary" id="viewDaySlotsBtnAppt" style="white-space:nowrap;">View day's schedule</button>
               </div>
             </div>
             <div class="field mode-only mode-only-walkin" style="display:none;">
               <label>Preferred time (optional)</label>
-              <div class="time-picker" id="pWalkinTimePicker">
-                <button type="button" class="time-picker-trigger placeholder" id="pWalkinTimeTrigger">
-                  <span id="pWalkinTimeTriggerText">As soon as possible</span><span class="time-picker-caret">▾</span>
-                </button>
-                <input type="hidden" id="pWalkinTime" />
-                <div class="time-picker-panel" id="pWalkinTimePanel" style="display:none;"></div>
+              <div style="display:flex;gap:8px;align-items:stretch;">
+                <div class="time-picker" id="pWalkinTimePicker" style="flex:1;">
+                  <button type="button" class="time-picker-trigger placeholder" id="pWalkinTimeTrigger">
+                    <span id="pWalkinTimeTriggerText">As soon as possible</span><span class="time-picker-caret">▾</span>
+                  </button>
+                  <input type="hidden" id="pWalkinTime" />
+                  <div class="time-picker-panel" id="pWalkinTimePanel" style="display:none;"></div>
+                </div>
+                <button type="button" class="btn-sm primary" id="viewDaySlotsBtnWalkin" style="white-space:nowrap;">View day's schedule</button>
               </div>
-            </div>
-            <div class="field">
-              <label>&nbsp;</label>
-              <button type="button" class="btn-sm primary" id="viewDaySlotsBtn">View day's schedule</button>
             </div>
             <div class="field mode-only mode-only-walkin" style="display:none;">
               <label>Walk-in type</label>
@@ -179,7 +181,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=49"></script>
+  <script src="clinic-data.js?v=50"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -1332,7 +1334,13 @@
         updateDoctorClosedHint();
       });
 
-      document.getElementById('viewDaySlotsBtn').addEventListener('click', async () => {
+      // One handler, two trigger buttons (one embedded next to each mode's
+      // own time picker) — a single button field between the two mode-only
+      // fields used to rely on the .form-grid's auto-fit column wrapping
+      // to land next to whichever time picker was visible, which wasn't
+      // guaranteed at every viewport width. Living inside each field's own
+      // flex row instead is unconditionally inline, in both modes.
+      async function openDaySlotsDialog() {
         const doctorId = document.getElementById('pDoctor').value;
         if (!doctorId) { showToast('Pick a doctor first'); return; }
         const dateStr = patientMode === 'appointment'
@@ -1350,7 +1358,9 @@
           intervalMins: (clinic && clinic.schedule_interval_mins) || 30,
           rows,
         });
-      });
+      }
+      document.getElementById('viewDaySlotsBtnAppt').addEventListener('click', openDaySlotsDialog);
+      document.getElementById('viewDaySlotsBtnWalkin').addEventListener('click', openDaySlotsDialog);
 
       // Looking up the phone number on blur (not every keystroke) is a
       // passive heads-up, not a gate: it never blocks or auto-fills
