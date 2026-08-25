@@ -812,9 +812,20 @@ input[type="number"] { -moz-appearance: textfield; }
   padding: 0 10px;
   margin-bottom: 18px;
 }
+/* Was a 12px grey caption — read as an afterthought once the logo
+   beside it grew to its real size (see .clinic-logo-thumb below). A
+   clinic's own name is identity, not a footnote, so it gets real
+   weight now. flex/min-width/ellipsis keep a long name from ever
+   overflowing the fixed-width sidebar now that it's bigger. */
 .app-sidebar .clinic-name {
-  font-size: 12px;
-  color: var(--grey-500);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--black);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 /* Height-capped, width-flexible instead of a forced square with
    object-fit:cover — a real clinic logo is rarely square (a wide
@@ -835,7 +846,11 @@ input[type="number"] { -moz-appearance: textfield; }
    than a repeated file-management task. Same contain-not-cover
    reasoning as .clinic-logo-thumb above: the box caps height and width,
    but the logo itself is never cropped to force it into a square. */
-.logo-upload-row { display: flex; align-items: flex-start; gap: 18px; }
+/* center, not flex-start: the preview box is 64px tall but the
+   buttons+hint column beside it is shorter, so top-aligning them left a
+   lopsided gap under the buttons — the actual "looks unorganized"
+   complaint, not the box or buttons individually. */
+.logo-upload-row { display: flex; align-items: center; gap: 18px; }
 .logo-preview {
   height: 64px;
   max-width: 220px;
