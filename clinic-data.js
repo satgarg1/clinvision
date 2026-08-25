@@ -1232,13 +1232,21 @@
   // check one proposed time against capacity, this pulls the whole day so
   // reception can see the full picture before choosing a time at all. No
   // type filter — both formal appointments and walk-ins that were given a
-  // preferred time share the same booked_date/booked_time columns, and
-  // staff wants both counted. status excludes done/no_show, same as
-  // countActiveAtSlot, so this reflects who's still actually expected.
-  // Rows with a null booked_time (a walk-in added "as soon as possible")
-  // ARE included here — slotScheduleDialog tallies them separately, since
-  // silently dropping them made a clinic's whole day of untimed walk-ins
-  // look like an empty, all-zero schedule.
+  // preferred time share the same booked_time column, and staff wants both
+  // counted. status excludes done/no_show, same as countActiveAtSlot, so
+  // this reflects who's still actually expected.
+  //
+  // Filters on token_date, not booked_date: addWalkIn only sets booked_date
+  // when a preferred time was given (clinic-data.js:~660) — a walk-in added
+  // "as soon as possible" has booked_date AND booked_time both null. An
+  // earlier version of this filtered on booked_date and silently excluded
+  // every untimed walk-in from the query entirely (not just from a bucket —
+  // they never reached the client at all), which is why a day of mostly
+  // untimed walk-ins showed an all-zero grid with no explanation. token_date
+  // is set unconditionally for every patient regardless of type, and
+  // equals booked_date for anyone it isn't null for — the same field
+  // getPatientsInRange/getDailySummary/getPatientDirectory already use as
+  // "which day this patient belongs to."
   async function getDaySlotSchedule(doctorId, dateStr) {
     const clinicId = await ensureClinicContext();
     const { data, error } = await sb
@@ -1246,7 +1254,7 @@
       .select('booked_time')
       .eq('clinic_id', clinicId)
       .eq('doctor_id', doctorId)
-      .eq('booked_date', dateStr)
+      .eq('token_date', dateStr)
       .in('status', ['booked', 'waiting', 'in_consult'])
       .order('booked_time');
     if (error) throw error;
