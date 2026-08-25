@@ -1673,7 +1673,8 @@ th.th-filterable { position: relative; }
   border-radius: var(--radius-sm);
   border: 1px solid var(--grey-300);
   font-size: 14px;
-  min-width: 240px;
+  min-width: 270px;
+  width: 100%;
   font-family: var(--font);
 }
 
