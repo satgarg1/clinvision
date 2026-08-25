@@ -816,30 +816,39 @@ input[type="number"] { -moz-appearance: textfield; }
   font-size: 12px;
   color: var(--grey-500);
 }
+/* Height-capped, width-flexible instead of a forced square with
+   object-fit:cover — a real clinic logo is rarely square (a wide
+   icon+wordmark lockup is the common case), and cover was cropping most
+   of it away to force-fit a square box. contain keeps the whole logo
+   visible, just scaled to fit the same nav-row height as before. */
 .clinic-logo-thumb {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  object-fit: cover;
+  height: 28px;
+  width: auto;
+  max-width: 130px;
+  object-fit: contain;
   flex-shrink: 0;
-  border: 1px solid var(--grey-300);
 }
 
 /* Settings' upload/change/remove row and the matching field at
-   registration (signup.html) share this look — a small square preview
-   plus a button, not a full dropzone, since this is a one-off logo pick
-   rather than a repeated file-management task. */
+   registration (signup.html) share this look — a small preview plus a
+   button, not a full dropzone, since this is a one-off logo pick rather
+   than a repeated file-management task. Same contain-not-cover
+   reasoning as .clinic-logo-thumb above: the box caps height and width,
+   but the logo itself is never cropped to force it into a square. */
 .logo-upload-row { display: flex; align-items: flex-start; gap: 18px; }
 .logo-preview {
-  width: 64px;
   height: 64px;
+  max-width: 220px;
   border-radius: var(--radius-md);
   border: 1px solid var(--grey-300);
   overflow: hidden;
   flex-shrink: 0;
   background: var(--grey-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.logo-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.logo-preview img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
 /* Empty state matches the Upload button's own height (not the larger
    64px a real logo gets) — a blank box that size next to a much shorter
    button is what actually reads as sloppy, not the lack of a preview
@@ -2122,6 +2131,8 @@ th.th-filterable { position: relative; }
 
 table.qtable tbody tr { transition: background 0.12s ease; }
 table.qtable tbody tr:hover { background: var(--grey-100); }
+table.qtable tbody tr.breakdown-row-link { cursor: pointer; }
+table.qtable tbody tr.breakdown-row-link:hover { background: var(--mkt-blue-bg); }
 
 .stat-card .value {
   transition: color 0.2s ease;
@@ -2220,7 +2231,7 @@ table.qtable tbody tr:hover { background: var(--grey-100); }
 .receipt-items th:last-child, .receipt-items td:last-child { text-align: right; }
 .receipt-items td { padding: 16px 0; border-bottom: 1px solid var(--grey-300); font-size: 15px; }
 
-.receipt-totals-wrap { display: flex; justify-content: flex-end; margin-top: 20px; margin-bottom: 48px; }
+.receipt-totals-wrap { display: flex; justify-content: flex-end; margin-top: 20px; margin-bottom: 24px; }
 .receipt-totals { width: 280px; }
 .receipt-totals-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 15px; }
 .receipt-totals-row span:first-child { color: var(--grey-700); }
@@ -2257,7 +2268,7 @@ table.qtable tbody tr:hover { background: var(--grey-100); }
   border-radius: 999px;
 }
 
-.receipt-signature-wrap { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 90px; }
+.receipt-signature-wrap { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 46px; page-break-inside: avoid; }
 .receipt-generated-note { font-size: 12px; color: var(--grey-500); max-width: 260px; }
 .receipt-signature-line {
   width: 220px;
@@ -2275,10 +2286,11 @@ table.qtable tbody tr:hover { background: var(--grey-100); }
   gap: 12px;
   text-align: left;
   color: var(--grey-500);
-  margin-top: 40px;
-  padding-top: 20px;
+  margin-top: 24px;
+  padding-top: 16px;
   border-top: 1px solid var(--grey-100);
   font-size: 13px;
+  page-break-inside: avoid;
 }
 .receipt-footer-logo { max-height: 32px; max-width: 100px; width: auto; height: auto; object-fit: contain; }
 .receipt-footer-address { font-size: 12px; margin-top: 2px; }

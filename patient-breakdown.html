@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Patient breakdown: Qlinic</title>
+<script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css?v=144" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <a href="index.html" class="brand">
+        <span class="brand-top">
+          <span class="brand-clock clock-face" id="navClock">
+            <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;color:var(--black);">
+              <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="5"></circle>
+              <line class="clock-hour" x1="50" y1="50" x2="50" y2="30" stroke="currentColor" stroke-width="6" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <line class="clock-min" x1="50" y1="50" x2="50" y2="18" stroke="currentColor" stroke-width="4" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <line class="clock-sec" x1="50" y1="50" x2="50" y2="14" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+              <circle cx="50" cy="50" r="3" fill="currentColor"></circle>
+            </svg>
+          </span>
+          Qlinic
+        </span>
+        <span class="brand-tagline">Time is the one asset nobody gets back</span>
+      </a>
+      <div class="clinic-name-row">
+        <img class="clinic-logo-thumb" id="clinicLogoThumb" style="display:none;" alt="" />
+        <div class="clinic-name" id="clinicName">Loading…</div>
+      </div>
+      <nav>
+        <a href="dashboard.html" class="nav-link active">Dashboard</a>
+        <a href="reception.html" class="nav-link" id="receptionNavLink">Reception</a>
+        <a href="doctor.html" class="nav-link">Doctor View</a>
+        <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
+        <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
+        <a href="trends.html" class="nav-link" id="trendsNavLink">Analytics</a>
+        <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
+        <a href="display.html" class="nav-link" id="displayNavLink">Display Screen</a>
+        <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
+      </nav>
+    </aside>
+
+    <main class="app-main">
+      <div class="app-topbar" style="margin-bottom:16px;">
+        <div>
+          <div class="breadcrumb"><a href="dashboard.html">Dashboard</a> <span>/</span> <span id="breadcrumbMetric">Breakdown</span></div>
+          <h1 id="pageTitle">Loading…</h1>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="panel-note" id="summaryNote"></p>
+        <div id="tableWrap"></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=58"></script>
+  <script>
+    (async function () {
+      await Qlinic.requireLogin('login.html');
+
+      document.querySelector('a.brand').addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (await Qlinic.confirmDialog({ message: "Going to the homepage will end your session here, you'll need to log in again to get back in." })) {
+          window.location.href = 'index.html';
+        }
+      });
+
+      const [amAdmin, amDoctor, myProfile] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor(), Qlinic.getMyProfile()]);
+      const myDoctorId = amDoctor ? myProfile.doctorId : null;
+
+      if (amDoctor) {
+        document.getElementById('receptionNavLink').style.display = 'none';
+        document.getElementById('billingNavLink').style.display = 'none';
+        document.getElementById('displayNavLink').style.display = 'none';
+      }
+      if (!amAdmin) {
+        document.getElementById('revenueNavLink').style.display = 'none';
+        document.getElementById('endOfDayNavLink').style.display = 'none';
+      }
+      if (!amAdmin && !amDoctor) {
+        document.getElementById('trendsNavLink').style.display = 'none';
+      }
+
+      // Every dashboard stat card links here instead of each getting its
+      // own near-identical page — metric picks the filter/columns, doctor
+      // and date (both optional query params) narrow it further. A
+      // doctor viewing their own dashboard is scoped the same way
+      // dashboard.html itself is: the doctor param is forced to their own
+      // id regardless of what's in the URL, so they can't page-hop into
+      // another doctor's patient list.
+      const params = new URLSearchParams(window.location.search);
+      const metric = params.get('metric');
+      const dateStr = params.get('date') || Qlinic.getTodayDate();
+      const requestedDoctorId = params.get('doctor') || null;
+
+      const METRICS = {
+        footfall: {
+          title: 'Footfall so far',
+          filter: (p) => ['waiting', 'in_consult', 'done'].includes(p.status),
+          columns: ['Name', 'Phone', 'Doctor', 'Type', 'Status'],
+          row: (p, doctorName) => [p.name, p.phone, doctorName, p.type === 'appointment' ? 'Appointment' : 'Walk-in', statusLabel(p.status)],
+        },
+        waiting: {
+          title: 'Waiting now',
+          filter: (p) => p.status === 'waiting',
+          columns: ['Name', 'Phone', 'Doctor', 'Type', 'Arrived'],
+          row: (p, doctorName) => [p.name, p.phone, doctorName, p.type === 'appointment' ? 'Appointment' : 'Walk-in', p.arrivedAt ? Qlinic.formatTimestamp(p.arrivedAt) : '—'],
+        },
+        inConsult: {
+          title: 'In consultation',
+          filter: (p) => p.status === 'in_consult',
+          columns: ['Name', 'Phone', 'Doctor', 'Called in'],
+          row: (p, doctorName) => [p.name, p.phone, doctorName, p.calledAt ? Qlinic.formatTimestamp(p.calledAt) : '—'],
+        },
+        done: {
+          title: 'Seen (done)',
+          filter: (p) => p.status === 'done',
+          columns: ['Name', 'Phone', 'Doctor', 'Seen at'],
+          row: (p, doctorName) => [p.name, p.phone, doctorName, p.calledAt ? Qlinic.formatTimestamp(p.calledAt) : '—'],
+        },
+        noShow: {
+          title: 'No-shows',
+          filter: (p) => p.status === 'no_show',
+          columns: ['Name', 'Phone', 'Doctor', 'Was booked for'],
+          row: (p, doctorName) => [p.name, p.phone, doctorName, p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '—'],
+        },
+        bookedToday: {
+          title: 'Booked today',
+          filter: () => true,
+          columns: ['Name', 'Phone', 'Doctor', 'Type', 'Status'],
+          row: (p, doctorName) => [p.name, p.phone, doctorName, p.type === 'appointment' ? 'Appointment' : 'Walk-in', statusLabel(p.status)],
+        },
+        priorityWaiting: {
+          title: 'Priority waiting',
+          filter: (p) => p.status === 'waiting' && p.isPriority,
+          columns: ['Name', 'Phone', 'Doctor', 'Arrived'],
+          row: (p, doctorName) => [p.name, p.phone, doctorName, p.arrivedAt ? Qlinic.formatTimestamp(p.arrivedAt) : '—'],
+          ignoreDoctor: true,
+        },
+        avgWait: {
+          title: 'Average wait, by patient',
+          filter: (p) => ['waiting', 'in_consult', 'done'].includes(p.status),
+          columns: ['Name', 'Phone', 'Doctor', 'Status', 'Wait (min)'],
+          row: (p, doctorName, waitMins) => [p.name, p.phone, doctorName, statusLabel(p.status), waitMins],
+          needsWait: true,
+        },
+        longestWait: {
+          title: 'Longest wait today, by patient',
+          filter: (p) => ['waiting', 'in_consult', 'done'].includes(p.status),
+          columns: ['Name', 'Phone', 'Doctor', 'Status', 'Wait (min)'],
+          row: (p, doctorName, waitMins) => [p.name, p.phone, doctorName, statusLabel(p.status), waitMins],
+          needsWait: true,
+          sortDesc: true,
+        },
+      };
+
+      function statusLabel(status) {
+        return { booked: 'Booked', waiting: 'Waiting', in_consult: 'In consultation', done: 'Done', no_show: 'No-show' }[status] || status;
+      }
+
+      const config = METRICS[metric];
+      if (!config) {
+        document.getElementById('pageTitle').textContent = 'Unknown breakdown';
+        document.getElementById('summaryNote').textContent = 'This link is missing or has an invalid metric.';
+        return;
+      }
+
+      // priorityWaiting is explicitly clinic-wide (an emergency is an
+      // emergency regardless of doctor), so it ignores any doctor param
+      // even if one somehow ended up in the URL.
+      const doctorId = config.ignoreDoctor ? null : (myDoctorId || requestedDoctorId);
+
+      document.getElementById('breadcrumbMetric').textContent = config.title;
+      document.getElementById('pageTitle').textContent = `${config.title} — ${Qlinic.formatDateLabel(dateStr)}`;
+
+      const [doctors, patients] = await Promise.all([
+        Qlinic.getDoctors(),
+        Qlinic.getPatientsInRange(dateStr, dateStr, doctorId || undefined),
+      ]);
+      const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
+      const nowMs = Date.now();
+
+      function waitMinsFor(p) {
+        const start = Qlinic.effectiveMoment(p, doctorById[p.doctorId]).getTime();
+        const end = p.status === 'waiting' ? nowMs : (p.calledAt ? new Date(p.calledAt).getTime() : nowMs);
+        return Math.max(0, Math.round((end - start) / 60000));
+      }
+
+      let rows = patients.filter(config.filter);
+      if (config.needsWait) {
+        rows = rows.map((p) => ({ patient: p, waitMins: waitMinsFor(p) }));
+        if (config.sortDesc) rows.sort((a, b) => b.waitMins - a.waitMins);
+      }
+
+      document.getElementById('summaryNote').textContent = config.needsWait
+        ? (rows.length
+            ? (config.sortDesc
+                ? `Longest: ${rows[0].waitMins} min (${rows[0].patient.name}). ${rows.length} patient${rows.length === 1 ? '' : 's'} counted.`
+                : `Average: ${Math.round(rows.reduce((sum, r) => sum + r.waitMins, 0) / rows.length)} min across ${rows.length} patient${rows.length === 1 ? '' : 's'}.`)
+            : 'No patients to measure.')
+        : `${rows.length} patient${rows.length === 1 ? '' : 's'}.`;
+
+      const wrap = document.getElementById('tableWrap');
+      if (rows.length === 0) {
+        wrap.innerHTML = '<div class="empty-state">Nothing here.</div>';
+        return;
+      }
+      wrap.innerHTML = `
+        <table class="qtable">
+          <thead><tr>${config.columns.map((c) => `<th>${Qlinic.escapeHtml(c)}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${rows.map((r) => {
+              const p = config.needsWait ? r.patient : r;
+              const doctorName = doctorById[p.doctorId] ? doctorById[p.doctorId].name : '—';
+              const cells = config.needsWait ? config.row(p, doctorName, r.waitMins) : config.row(p, doctorName);
+              return `<tr>${cells.map((c) => `<td>${Qlinic.escapeHtml(String(c))}</td>`).join('')}</tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+
+      const clinic = await Qlinic.getClinic();
+      document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      if (clinic && clinic.logo_url) {
+        document.getElementById('clinicLogoThumb').src = clinic.logo_url;
+        document.getElementById('clinicLogoThumb').style.display = 'block';
+      } else {
+        document.getElementById('clinicLogoThumb').style.display = 'none';
+      }
+    })();
+  </script>
+  <script>
+    (function () {
+      function applyTime(root) {
+        const now = new Date();
+        const s = now.getSeconds();
+        const m = now.getMinutes();
+        const h = now.getHours() % 12;
+        const sec = root.querySelector(".clock-sec");
+        const min = root.querySelector(".clock-min");
+        const hour = root.querySelector(".clock-hour");
+        if (sec) sec.style.transform = `rotate(${s * 6}deg)`;
+        if (min) min.style.transform = `rotate(${m * 6 + s * 0.1}deg)`;
+        if (hour) hour.style.transform = `rotate(${h * 30 + m * 0.5}deg)`;
+      }
+      function tickAll() {
+        document.querySelectorAll(".clock-face").forEach(applyTime);
+      }
+      tickAll();
+      setInterval(tickAll, 1000);
+    })();
+  </script>
+
+</body>
+</html>

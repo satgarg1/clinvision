@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=143" />
+<link rel="stylesheet" href="styles.css?v=144" />
 </head>
 <body>
   <div class="app-shell">
@@ -67,7 +67,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=57"></script>
+  <script src="clinic-data.js?v=58"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -202,14 +202,20 @@
         const cutoffYesterday = new Date(Date.now() - 24 * 3600000);
         const yesterdayStr = toDateStr(cutoffYesterday);
 
-        const [summary, doctorsRaw, yesterdayPatients] = await Promise.all([
+        const [summary, doctorsRaw, yesterdayPatients, todayPatients] = await Promise.all([
           Qlinic.getDailySummary(undefined, myDoctorId || undefined),
           amDoctor ? Qlinic.getDoctor(myDoctorId) : Qlinic.getDoctors(),
           Qlinic.getPatientsInRange(yesterdayStr, yesterdayStr, myDoctorId || undefined),
+          // Every one of today's patients regardless of current status —
+          // what "today's peak wait" (below) is computed from, since a
+          // patient's own wait time doesn't stop being real just because
+          // they've since been called in or finished.
+          Qlinic.getPatientsInRange(Qlinic.getTodayDate(), Qlinic.getTodayDate(), myDoctorId || undefined),
         ]);
         // getDoctor() (the doctor's own view) returns one row or null;
         // getDoctors() (everyone else's view) already returns an array.
         const doctors = amDoctor ? (doctorsRaw ? [doctorsRaw] : []) : doctorsRaw;
+        const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
         const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id)));
 
         const yesterdayFootfallAtCutoff = yesterdayPatients.filter((p) =>
@@ -220,11 +226,25 @@
         // silently drops a doctor who just happens to have nothing in
         // that particular bucket today.
         const perDoctorById = Object.fromEntries(summary.perDoctor.map((p) => [p.doctorId, p]));
-        function perDoctorDialog(title, column, pickFn) {
+
+        // Every dashboard card links into the SAME shared page
+        // (patient-breakdown.html) instead of nine near-identical pages —
+        // metric picks which filter/columns it shows, doctor/date narrow
+        // it further. Row-level links in the popup are doctor-scoped;
+        // viewAllHref (shown once, above the table) drops the doctor
+        // filter entirely.
+        function breakdownUrl(metric, doctorId) {
+          const qs = new URLSearchParams({ metric, date: Qlinic.getTodayDate() });
+          if (doctorId) qs.set('doctor', doctorId);
+          return `patient-breakdown.html?${qs.toString()}`;
+        }
+        function perDoctorDialog(title, column, pickFn, metric) {
           return () => Qlinic.statBreakdownDialog({
             title,
             columns: ['Doctor', column],
             rows: doctors.map((d) => [d.name, pickFn(perDoctorById[d.id])]),
+            rowHrefs: doctors.map((d) => breakdownUrl(metric, d.id)),
+            viewAllHref: breakdownUrl(metric),
           });
         }
 
@@ -234,31 +254,31 @@
             value: summary.footfallSoFar,
             accent: 'teal',
             chip: percentChip(summary.footfallSoFar, yesterdayFootfallAtCutoff, true),
-            onClick: perDoctorDialog('Footfall so far, by doctor', 'Footfall', (p) => (p ? p.footfall : 0)),
+            onClick: perDoctorDialog('Footfall so far, by doctor', 'Footfall', (p) => (p ? p.footfall : 0), 'footfall'),
           },
           {
             label: 'Waiting now',
             value: summary.waitingNow,
             accent: 'coral',
-            onClick: perDoctorDialog('Waiting now, by doctor', 'Waiting', (p) => (p ? p.waiting : 0)),
+            onClick: perDoctorDialog('Waiting now, by doctor', 'Waiting', (p) => (p ? p.waiting : 0), 'waiting'),
           },
           {
             label: 'In consultation',
             value: summary.inConsultCount,
             accent: 'sky',
-            onClick: perDoctorDialog('In consultation, by doctor', 'In consultation', (p) => (p ? p.inConsult : 0)),
+            onClick: perDoctorDialog('In consultation, by doctor', 'In consultation', (p) => (p ? p.inConsult : 0), 'inConsult'),
           },
           {
             label: 'Seen (done)',
             value: summary.doneCount,
             accent: 'blue',
-            onClick: perDoctorDialog('Seen (done), by doctor', 'Seen', (p) => (p ? p.done : 0)),
+            onClick: perDoctorDialog('Seen (done), by doctor', 'Seen', (p) => (p ? p.done : 0), 'done'),
           },
           {
             label: 'No-shows',
             value: summary.noShowCount,
             accent: 'purple',
-            onClick: perDoctorDialog('No-shows, by doctor', 'No-shows', (p) => (p ? p.noShow : 0)),
+            onClick: perDoctorDialog('No-shows, by doctor', 'No-shows', (p) => (p ? p.noShow : 0), 'noShow'),
           },
           {
             // Everyone added today, phoned-in or walk-in — totalAppointments
@@ -267,7 +287,7 @@
             label: 'Booked today',
             value: summary.totalBookedToday,
             accent: 'indigo',
-            onClick: perDoctorDialog('Booked today, by doctor', 'Booked', (p) => (p ? p.totalBookedToday : 0)),
+            onClick: perDoctorDialog('Booked today, by doctor', 'Booked', (p) => (p ? p.totalBookedToday : 0), 'bookedToday'),
           },
         ];
 
@@ -305,7 +325,7 @@
           // popups break the SAME wait-time math down per doctor, using
           // each doctor's own slice of queues (queues[i].waiting) rather
           // than a second query.
-          function perDoctorWaitDialog(title, pickFn) {
+          function perDoctorWaitDialog(title, pickFn, metric) {
             return () => Qlinic.statBreakdownDialog({
               title,
               columns: ['Doctor', 'Minutes'],
@@ -313,6 +333,8 @@
                 const w = queues[i].waiting;
                 return [d.name, w.length ? pickFn(w) : '—'];
               }),
+              rowHrefs: doctors.map((d) => breakdownUrl(metric, d.id)),
+              viewAllHref: breakdownUrl(metric),
             });
           }
           cards.push({
@@ -321,21 +343,45 @@
             accent: 'amber',
             chip: minuteChip(avgWaitMins, yesterdayAvgWaitAtCutoff, false),
             onClick: perDoctorWaitDialog('Average wait now, by doctor',
-              (w) => Math.round(w.reduce((sum, p) => sum + waitMinsFor(p), 0) / w.length)),
+              (w) => Math.round(w.reduce((sum, p) => sum + waitMinsFor(p), 0) / w.length), 'avgWait'),
           });
 
-          const longestWaiting = allWaiting.length
-            ? allWaiting.reduce((longest, p) => (waitMinsFor(p) > waitMinsFor(longest) ? p : longest))
+          // Today's PEAK wait, not just whoever's currently waiting — the
+          // card used to drop to "—" the instant the slowest patient got
+          // called in, even though that wait genuinely happened and the
+          // queue emptying out doesn't erase it. calledAt freezes an
+          // already-called/done patient's wait at the moment they were
+          // actually seen; a still-waiting patient's keeps counting up
+          // against now. Booked/no-show are excluded — they never
+          // actually waited (booked hasn't arrived yet, no-show never
+          // came), so intendedMoment alone would misrepresent them as
+          // having sat since their appointment time.
+          function peakWaitMinsFor(p) {
+            const start = Qlinic.effectiveMoment(p, doctorById[p.doctorId]).getTime();
+            const end = p.status === 'waiting' ? nowMs : (p.calledAt ? new Date(p.calledAt).getTime() : nowMs);
+            return Math.max(0, Math.round((end - start) / 60000));
+          }
+          const todayWaitCandidates = todayPatients.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status));
+          const longestWaiting = todayWaitCandidates.length
+            ? todayWaitCandidates.reduce((longest, p) => (peakWaitMinsFor(p) > peakWaitMinsFor(longest) ? p : longest))
             : null;
           cards.push({
-            label: 'Longest wait (min)',
-            value: longestWaiting ? waitMinsFor(longestWaiting) : '—',
+            label: 'Longest wait today (min)',
+            value: longestWaiting ? peakWaitMinsFor(longestWaiting) : '—',
             // Patient names don't belong on a dashboard this visible — the
             // time alone is enough to flag that something needs attention.
-            sub: longestWaiting ? null : 'No one waiting',
+            sub: longestWaiting ? null : 'No one has waited today',
             accent: 'pink',
-            onClick: perDoctorWaitDialog('Longest wait, by doctor',
-              (w) => Math.max(...w.map(waitMinsFor))),
+            onClick: () => Qlinic.statBreakdownDialog({
+              title: 'Longest wait today, by doctor',
+              columns: ['Doctor', 'Minutes'],
+              rows: doctors.map((d) => {
+                const mine = todayWaitCandidates.filter((p) => p.doctorId === d.id);
+                return [d.name, mine.length ? Math.max(...mine.map(peakWaitMinsFor)) : '—'];
+              }),
+              rowHrefs: doctors.map((d) => breakdownUrl('longestWait', d.id)),
+              viewAllHref: breakdownUrl('longestWait'),
+            }),
           });
 
           // Both cards below compare doctors against each other (who's
@@ -385,7 +431,16 @@
             label: 'Priority waiting',
             value: priorityWaitingCount,
             accent: 'green',
-            onClick: perDoctorDialog('Priority waiting, by doctor', 'Priority waiting', (p) => (p ? p.priorityWaiting : 0)),
+            // Global by design (an emergency is an emergency regardless of
+            // doctor) — no per-doctor row links here, just one link to the
+            // full list, matching patient-breakdown.html's own
+            // ignoreDoctor handling for this metric.
+            onClick: () => Qlinic.statBreakdownDialog({
+              title: 'Priority waiting, by doctor',
+              columns: ['Doctor', 'Priority waiting'],
+              rows: doctors.map((d) => [d.name, perDoctorById[d.id] ? perDoctorById[d.id].priorityWaiting : 0]),
+              viewAllHref: breakdownUrl('priorityWaiting'),
+            }),
           });
         }
 

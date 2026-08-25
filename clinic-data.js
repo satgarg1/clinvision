@@ -1373,18 +1373,34 @@
   // as slotScheduleDialog/confirmDialog — used by the Dashboard's stat
   // cards to break a clinic-wide number down per doctor. columns/rows are
   // plain strings; escaping happens here, not at each call site.
-  function statBreakdownDialog({ title, columns, rows }) {
+  // rowHrefs (optional): a URL per row (or null for that row), making it
+  // a clickable drill-through into patient-breakdown.html instead of a
+  // dead-end summary number. viewAllHref (optional): a single link
+  // above the table for "every patient behind this metric, regardless
+  // of doctor" — the row-level links stay doctor-scoped.
+  function statBreakdownDialog({ title, columns, rows, rowHrefs, viewAllHref }) {
     return new Promise((resolve) => {
       const headHtml = columns.map((c) => `<th>${escapeHtml(c)}</th>`).join('');
       const rowsHtml = rows.length
-        ? rows.map((r) => `<tr>${r.map((cell) => `<td>${escapeHtml(String(cell))}</td>`).join('')}</tr>`).join('')
+        ? rows.map((r, i) => {
+            const href = rowHrefs && rowHrefs[i];
+            const cellsHtml = r.map((cell) => `<td>${escapeHtml(String(cell))}</td>`).join('');
+            return href
+              ? `<tr class="breakdown-row-link" data-href="${escapeHtml(href)}">${cellsHtml}</tr>`
+              : `<tr>${cellsHtml}</tr>`;
+          }).join('')
         : `<tr><td colspan="${columns.length}" class="empty-state">Nothing to show right now.</td></tr>`;
+
+      const viewAllHtml = viewAllHref
+        ? `<a href="${escapeHtml(viewAllHref)}" class="panel-note" style="display:block;margin-bottom:10px;">View every patient behind this number &rarr;</a>`
+        : '';
 
       const backdrop = document.createElement('div');
       backdrop.className = 'modal-backdrop';
       backdrop.innerHTML = `
         <div class="modal-card" role="dialog" aria-modal="true">
           <h2 class="modal-title">${escapeHtml(title)}</h2>
+          ${viewAllHtml}
           <div style="max-height:55vh;overflow-y:auto;">
             <table class="qtable">
               <thead><tr>${headHtml}</tr></thead>
@@ -1397,6 +1413,12 @@
         </div>
       `;
       document.body.appendChild(backdrop);
+
+      if (rowHrefs) {
+        backdrop.querySelectorAll('tr.breakdown-row-link').forEach((tr) => {
+          tr.addEventListener('click', () => { window.location.href = tr.getAttribute('data-href'); });
+        });
+      }
 
       function cleanup() {
         backdrop.remove();
@@ -1826,6 +1848,8 @@
 
     getQueueForDoctor,
     getAllQueues,
+    intendedMoment,
+    effectiveMoment,
     searchBookedPatients,
     updatePatientContact,
     getPatientLookupByPhone,
