@@ -1202,6 +1202,87 @@
     };
   }
 
+  // Single-query alternative to countActiveAtSlot/getSlotAvailability: those
+  // check one proposed time against capacity, this pulls the whole day so
+  // reception can see the full picture before choosing a time at all. No
+  // type filter — both formal appointments and walk-ins that were given a
+  // preferred time share the same booked_date/booked_time columns, and
+  // staff wants both counted. A walk-in with no preferred time has
+  // booked_time null and is correctly left out — it was never assigned a
+  // slot to be counted against. status excludes done/no_show, same as
+  // countActiveAtSlot, so this reflects who's still actually expected.
+  async function getDaySlotSchedule(doctorId, dateStr) {
+    const clinicId = await ensureClinicContext();
+    const { data, error } = await sb
+      .from('patients')
+      .select('name, type, booked_time')
+      .eq('clinic_id', clinicId)
+      .eq('doctor_id', doctorId)
+      .eq('booked_date', dateStr)
+      .not('booked_time', 'is', null)
+      .in('status', ['booked', 'waiting', 'in_consult'])
+      .order('booked_time');
+    if (error) throw error;
+    return data;
+  }
+
+  // A read-only sibling of confirmDialog (same backdrop/card/cleanup
+  // pattern) showing a fixed 30-minute-bucketed table of a doctor's day —
+  // deliberately a different granularity from the clinic's own configurable
+  // slot_interval_mins, which drives the single-slot hint/override flow
+  // elsewhere and is untouched by this.
+  function slotScheduleDialog({ doctorName, dateLabel, openMin, closeMin, rows }) {
+    return new Promise((resolve) => {
+      const buckets = [];
+      for (let start = openMin; start < closeMin; start += 30) {
+        buckets.push({ start, end: Math.min(start + 30, closeMin), patients: [] });
+      }
+      rows.forEach((r) => {
+        const mins = parseTime(r.booked_time.slice(0, 5));
+        const bucket = buckets.find((b) => mins >= b.start && mins < b.end) || buckets[buckets.length - 1];
+        if (bucket) bucket.patients.push(r);
+      });
+      const rowsHtml = buckets.map((b) => `
+        <tr>
+          <td style="white-space:nowrap;">${formatTime(b.start)}–${formatTime(b.end)}</td>
+          <td>${b.patients.map((p) => `${escapeHtml(p.name)} <span class="badge ${p.type === 'appointment' ? 'badge-in-consult' : 'badge-waiting'}" style="font-size:11px;">${p.type === 'appointment' ? 'Appt' : 'Walk-in'}</span>`).join(', ')}</td>
+          <td style="text-align:center;">${b.patients.length}</td>
+        </tr>
+      `).join('');
+
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop';
+      backdrop.innerHTML = `
+        <div class="modal-card wide" role="dialog" aria-modal="true">
+          <h2 class="modal-title">${escapeHtml(doctorName)}'s schedule — ${escapeHtml(dateLabel)}</h2>
+          <div style="max-height:55vh;overflow-y:auto;">
+            <table class="qtable">
+              <thead><tr><th>Time</th><th>Patients</th><th style="text-align:center;">Count</th></tr></thead>
+              <tbody>${rowsHtml}</tbody>
+            </table>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn-sm primary" id="modalCloseBtn">Close</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(backdrop);
+
+      function cleanup() {
+        backdrop.remove();
+        document.removeEventListener('keydown', onKeydown);
+        resolve();
+      }
+      function onKeydown(e) {
+        if (e.key === 'Escape') cleanup();
+      }
+      document.addEventListener('keydown', onKeydown);
+      backdrop.addEventListener('click', (e) => { if (e.target === backdrop) cleanup(); });
+      backdrop.querySelector('#modalCloseBtn').addEventListener('click', cleanup);
+      backdrop.querySelector('#modalCloseBtn').focus();
+    });
+  }
+
   // ---------------- daily summary / close day ----------------
 
   // doctorId is optional and scopes every count to just that doctor's own
@@ -1594,6 +1675,8 @@
     finishCurrentPatient,
     setDoctorStatus,
     getSlotAvailability,
+    getDaySlotSchedule,
+    slotScheduleDialog,
     getDailySummary,
     closeDayNoShows,
     reopenDay,

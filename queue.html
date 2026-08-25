@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=136" />
+<link rel="stylesheet" href="styles.css?v=137" />
 </head>
 <body>
   <div class="login-wrap">
@@ -32,6 +32,13 @@
         <div style="text-align:center;font-size:18px;font-weight:600;margin:4px 0 20px;" id="closedDoctorName"></div>
         <h1 style="text-align:center;font-size:22px;">Doctor has closed for the day</h1>
         <p class="panel-note" style="text-align:center;">Please check back tomorrow, or contact the clinic directly.</p>
+      </div>
+
+      <div id="notYetState" style="display:none;">
+        <div style="text-align:center;color:var(--grey-500);font-size:13px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;" id="notYetClinicName"></div>
+        <div style="text-align:center;font-size:18px;font-weight:600;margin:4px 0 20px;" id="notYetDoctorName"></div>
+        <h1 style="text-align:center;font-size:22px;" id="notYetHeadline"></h1>
+        <p class="panel-note" style="text-align:center;">This link will show your live queue position on the morning of your appointment.</p>
       </div>
 
       <div id="statusState" style="display:none;">
@@ -71,7 +78,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=47"></script>
+  <script src="clinic-data.js?v=48"></script>
   <script>
     (async function () {
       const params = new URLSearchParams(window.location.search);
@@ -80,6 +87,7 @@
       const loadingEl = document.getElementById('loadingState');
       const errorEl = document.getElementById('errorState');
       const closedEl = document.getElementById('closedState');
+      const notYetEl = document.getElementById('notYetState');
       const statusEl = document.getElementById('statusState');
       const footerEl = document.getElementById('footerNote');
 
@@ -87,6 +95,7 @@
         loadingEl.style.display = 'none';
         statusEl.style.display = 'none';
         closedEl.style.display = 'none';
+        notYetEl.style.display = 'none';
         footerEl.style.display = 'none';
         errorEl.style.display = 'block';
       }
@@ -99,10 +108,29 @@
         loadingEl.style.display = 'none';
         errorEl.style.display = 'none';
         statusEl.style.display = 'none';
+        notYetEl.style.display = 'none';
         footerEl.style.display = 'block';
         closedEl.style.display = 'block';
         document.getElementById('closedClinicName').textContent = data.clinicName;
         document.getElementById('closedDoctorName').textContent = data.doctorName;
+      }
+
+      // An appointment days out shouldn't show today's queue mechanics
+      // (position, now-serving, even "doctor closed today") at all — none
+      // of it is relevant yet, and showing it invites exactly the "why am
+      // I checking this a week early" confusion the message is meant to
+      // head off.
+      function showNotYet(data) {
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'none';
+        statusEl.style.display = 'none';
+        closedEl.style.display = 'none';
+        footerEl.style.display = 'block';
+        notYetEl.style.display = 'block';
+        document.getElementById('notYetClinicName').textContent = data.clinicName;
+        document.getElementById('notYetDoctorName').textContent = data.doctorName;
+        document.getElementById('notYetHeadline').textContent =
+          `Your appointment is ${Qlinic.formatDateLabel(data.bookedDate)}`;
       }
 
       const DOCTOR_STATUS_LABEL = {
@@ -123,6 +151,18 @@
         const data = await Qlinic.getQueueStatus(patientId);
         if (!data || data.error) {
           showError();
+          return;
+        }
+
+        // type==='appointment' is only ever true alongside status==='booked'
+        // as a documenting check anyway — addWalkIn always inserts
+        // status:'waiting', so a walk-in can never reach this branch — but
+        // it keeps the intent explicit instead of leaning on that
+        // invariant silently. Checked before the closed-for-today state
+        // below: a week-out appointment isn't expected today at all, so
+        // "doctor closed today" would be a non sequitur.
+        if (data.status === 'booked' && data.type === 'appointment' && data.bookedDate && data.bookedDate > Qlinic.getTodayDate()) {
+          showNotYet(data);
           return;
         }
 

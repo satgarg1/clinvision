@@ -1093,6 +1093,9 @@ th.th-filterable { position: relative; }
   max-width: 440px;
   width: 100%;
 }
+/* Wider variant for content-heavy dialogs (e.g. a schedule table) that
+   the standard message-box width would cramp. */
+.modal-card.wide { max-width: 640px; }
 .modal-title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--black); margin: 0 0 10px; }
 .modal-message { font-size: 14px; color: var(--grey-700); line-height: 1.5; margin: 0 0 24px; white-space: pre-line; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
