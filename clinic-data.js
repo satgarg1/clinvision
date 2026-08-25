@@ -1088,7 +1088,12 @@
     try {
       const clinicId = await ensureClinicContext();
       const [clinic, doctor] = await Promise.all([getClinic(), getDoctor(doctorId)]);
-      const tokenLine = tokenNumber ? ` Your token number is #${tokenNumber}.` : '';
+      // Appointments and walk-ins are separate token sequences (see
+      // migration 037) — a walk-in's raw number is offset by 100000, so
+      // it needs the same "W"-prefixed display as everywhere else it's
+      // shown, not the raw number.
+      const tokenDisplay = tokenNumber ? (tokenNumber > 100000 ? 'W' + (tokenNumber - 100000) : '#' + tokenNumber) : null;
+      const tokenLine = tokenDisplay ? ` Your token number is ${tokenDisplay}.` : '';
       const link = tokenNumber ? queueLinkFor(patientId) : '';
       const queueLine = link ? ` See the current token being served and the next 5 in line, so you know when to leave home: ${link}` : '';
       const message = kind === 'appointment'
@@ -1355,7 +1360,7 @@
   // the clinic-wide summary every existing caller already relies on.
   async function getDailySummary(dateStr, doctorId) {
     const clinicId = await ensureClinicContext();
-    if (!clinicId) return { totalAppointments: 0, totalWalkIns: 0, footfallSoFar: 0, noShowCount: 0, waitingNow: 0, doneCount: 0, inConsultCount: 0, perDoctor: [] };
+    if (!clinicId) return { totalAppointments: 0, totalWalkIns: 0, totalBookedToday: 0, footfallSoFar: 0, noShowCount: 0, waitingNow: 0, doneCount: 0, inConsultCount: 0, perDoctor: [] };
     const targetDate = dateStr || todayDateStr();
     const [clinic, doctors, { data, error }] = await Promise.all([
       getClinic(),
@@ -1374,10 +1379,16 @@
     // top-line numbers themselves are scoped to one doctor.
     const perDoctor = doctors.map((d) => {
       const mine = allToday.filter((p) => p.doctorId === d.id);
+      const mineAppointments = mine.filter((p) => p.type === 'appointment').length;
+      const mineWalkIns = mine.filter((p) => p.type === 'walkin').length;
       return {
         doctorId: d.id,
         doctorName: d.name,
-        totalAppointments: mine.filter((p) => p.type === 'appointment').length,
+        totalAppointments: mineAppointments,
+        totalWalkIns: mineWalkIns,
+        // "Booked today" means everyone added today, phoned-in or
+        // walk-in — totalAppointments alone undercounts it.
+        totalBookedToday: mineAppointments + mineWalkIns,
         waiting: mine.filter((p) => p.status === 'waiting').length,
         inConsult: mine.filter((p) => p.status === 'in_consult').length,
         done: mine.filter((p) => p.status === 'done').length,
@@ -1387,9 +1398,12 @@
       };
     });
 
+    const totalAppointments = todays.filter((p) => p.type === 'appointment').length;
+    const totalWalkIns = todays.filter((p) => p.type === 'walkin').length;
     return {
-      totalAppointments: todays.filter((p) => p.type === 'appointment').length,
-      totalWalkIns: todays.filter((p) => p.type === 'walkin').length,
+      totalAppointments,
+      totalWalkIns,
+      totalBookedToday: totalAppointments + totalWalkIns,
       footfallSoFar: todays.filter((p) => ['waiting', 'in_consult', 'done'].indexOf(p.status) !== -1).length,
       noShowCount: todays.filter((p) => p.status === 'no_show').length,
       waitingNow: todays.filter((p) => p.status === 'waiting').length,

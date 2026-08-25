@@ -78,7 +78,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=51"></script>
+  <script src="clinic-data.js?v=52"></script>
   <script>
     (async function () {
       const params = new URLSearchParams(window.location.search);
@@ -183,7 +183,10 @@
 
         document.getElementById('clinicName').textContent = data.clinicName;
         document.getElementById('doctorName').textContent = data.doctorName;
-        document.getElementById('tokenNumber').textContent = data.tokenNumber != null ? '#' + data.tokenNumber : '·';
+        // Already prefixed by the RPC ("#12" for an appointment, "W3" for
+        // a walk-in) — token_number itself is no longer a single shared
+        // sequence, so the client can't derive the right prefix on its own.
+        document.getElementById('tokenNumber').textContent = data.tokenDisplay || '·';
 
         let badgeHtml = PATIENT_STATUS_BADGE[data.status] || '';
         if (data.doctorStatus && data.doctorStatus !== 'on_time') {
@@ -217,7 +220,8 @@
         const nowServingBlock = document.getElementById('nowServingBlock');
         if (data.nowServingToken != null) {
           nowServingBlock.style.display = 'block';
-          document.getElementById('nowServingBadge').textContent = `#${data.nowServingToken}`;
+          // Already prefixed by the RPC — see tokenDisplay above.
+          document.getElementById('nowServingBadge').textContent = data.nowServingToken;
         } else {
           nowServingBlock.style.display = 'none';
         }
@@ -225,8 +229,9 @@
         const nearbyBlock = document.getElementById('nearbyBlock');
         if (data.nearbyTokens && data.nearbyTokens.length) {
           nearbyBlock.style.display = 'block';
+          // Already prefixed by the RPC — see tokenDisplay above.
           document.getElementById('nearbyTokens').innerHTML = data.nearbyTokens
-            .map((t) => `<span class="badge badge-waiting" style="font-size:15px;">#${t}</span>`)
+            .map((t) => `<span class="badge badge-waiting" style="font-size:15px;">${Qlinic.escapeHtml(t)}</span>`)
             .join('');
         } else {
           nearbyBlock.style.display = 'none';
