@@ -531,12 +531,45 @@
         }
       });
 
-      // Walk-in and phoned-appointment used to be two separate, near-identical
-      // forms stacked on the page; easy to fill in the wrong one by habit.
-      // One form with an explicit mode toggle means there's only one place
-      // to type, and the choice of "who is this" has to be made on purpose
-      // first.
+      // Walk-in and phoned-appointment share one form, but each mode keeps
+      // its own copy of the identity fields (name/age/phone/gender/address/
+      // doctor/reason) — switching tabs shouldn't carry half-typed info
+      // from one flow into the other. The two caches are captured/restored
+      // on every setPatientMode call, including the same-mode call after a
+      // successful submit (see the submit handler below), which is what
+      // clears a mode's cache back to blank once its patient is added.
+      const BLANK_COMMON_FIELDS = { name: '', age: '', phone: '', gender: 'male', address: '', doctorId: '', reason: '' };
+      let appointmentFieldsCache = null;
+      let walkinFieldsCache = null;
+      function captureCommonFields() {
+        return {
+          name: document.getElementById('pName').value,
+          age: document.getElementById('pAge').value,
+          phone: document.getElementById('pPhone').value,
+          gender: document.getElementById('pGender').value,
+          address: document.getElementById('pAddress').value,
+          doctorId: document.getElementById('pDoctor').value,
+          reason: document.getElementById('pReason').value,
+        };
+      }
+      function applyCommonFields(f) {
+        document.getElementById('pName').value = f.name;
+        document.getElementById('pAge').value = f.age;
+        document.getElementById('pPhone').value = f.phone;
+        document.getElementById('pGender').value = f.gender;
+        document.getElementById('pAddress').value = f.address;
+        document.getElementById('pDoctor').value = f.doctorId;
+        document.getElementById('pReason').value = f.reason;
+      }
+
       function setPatientMode(mode) {
+        // Stash whatever's currently on screen under the OUTGOING mode
+        // before switching — this also runs for a same-mode call (the
+        // post-submit refresh), which is exactly what re-blanks a mode's
+        // cache right after its form has just been reset.
+        if (patientMode === 'appointment') appointmentFieldsCache = captureCommonFields();
+        else walkinFieldsCache = captureCommonFields();
+
         patientMode = mode;
         document.querySelectorAll('.mode-btn').forEach((btn) => {
           const active = btn.getAttribute('data-mode') === mode;
@@ -552,6 +585,9 @@
           ? "They're standing at the desk, this queues them immediately."
           : 'Booking a call-in appointment ahead of time: pick when they should arrive.';
         document.getElementById('patientSubmitBtn').textContent = mode === 'walkin' ? 'Add walk-in' : 'Add appointment';
+
+        applyCommonFields((mode === 'appointment' ? appointmentFieldsCache : walkinFieldsCache) || BLANK_COMMON_FIELDS);
+
         updateSlotHint();
         checkFollowUpHint();
         updateDoctorClosedHint();
