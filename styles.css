@@ -65,6 +65,7 @@
   --mkt-green: #15803d;
   --mkt-cyan: #0e7490;
   --mkt-rose: #be123c;
+  --mkt-sky: #0369a1;
 }
 
 /* Day/Night toggle (Settings page) — a personal, local-device preference
@@ -472,6 +473,11 @@ a { color: inherit; }
 .stat-card.accent-green { border-left: 4px solid var(--mkt-green); }
 .stat-card.accent-cyan { border-left: 4px solid var(--mkt-cyan); }
 .stat-card.accent-rose { border-left: 4px solid var(--mkt-rose); }
+.stat-card.accent-sky { border-left: 4px solid var(--mkt-sky); }
+/* A unit label inline with a stat card's big number (e.g. "3 patients in
+   queue") — smaller and lighter than .value so it doesn't compete with
+   the number itself. */
+.stat-unit { font-size: 13px; font-weight: 500; color: var(--grey-500); }
 
 .value-teal { color: var(--mkt-teal); }
 .value-blue { color: var(--mkt-blue); }
@@ -932,6 +938,10 @@ input[type="number"] { -moz-appearance: textfield; }
   box-shadow: var(--shadow-resting);
   padding: 20px 22px;
 }
+/* Opens a per-doctor breakdown popup — same hover lift as a real button,
+   so it reads as clickable rather than just decorative. */
+.stat-card.clickable { cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.stat-card.clickable:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
 .stat-card .value { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
 .stat-card .label { font-size: 13px; color: var(--grey-500); margin-top: 4px; }
 .stat-card .stat-sub { font-size: 12px; color: var(--grey-500); margin-top: 4px; }

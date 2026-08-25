@@ -1304,6 +1304,50 @@
     });
   }
 
+  // A generic read-only table dialog, same backdrop/card/cleanup pattern
+  // as slotScheduleDialog/confirmDialog — used by the Dashboard's stat
+  // cards to break a clinic-wide number down per doctor. columns/rows are
+  // plain strings; escaping happens here, not at each call site.
+  function statBreakdownDialog({ title, columns, rows }) {
+    return new Promise((resolve) => {
+      const headHtml = columns.map((c) => `<th>${escapeHtml(c)}</th>`).join('');
+      const rowsHtml = rows.length
+        ? rows.map((r) => `<tr>${r.map((cell) => `<td>${escapeHtml(String(cell))}</td>`).join('')}</tr>`).join('')
+        : `<tr><td colspan="${columns.length}" class="empty-state">Nothing to show right now.</td></tr>`;
+
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop';
+      backdrop.innerHTML = `
+        <div class="modal-card" role="dialog" aria-modal="true">
+          <h2 class="modal-title">${escapeHtml(title)}</h2>
+          <div style="max-height:55vh;overflow-y:auto;">
+            <table class="qtable">
+              <thead><tr>${headHtml}</tr></thead>
+              <tbody>${rowsHtml}</tbody>
+            </table>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn-sm primary" id="modalCloseBtn">Close</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(backdrop);
+
+      function cleanup() {
+        backdrop.remove();
+        document.removeEventListener('keydown', onKeydown);
+        resolve();
+      }
+      function onKeydown(e) {
+        if (e.key === 'Escape') cleanup();
+      }
+      document.addEventListener('keydown', onKeydown);
+      backdrop.addEventListener('click', (e) => { if (e.target === backdrop) cleanup(); });
+      backdrop.querySelector('#modalCloseBtn').addEventListener('click', cleanup);
+      backdrop.querySelector('#modalCloseBtn').focus();
+    });
+  }
+
   // ---------------- daily summary / close day ----------------
 
   // doctorId is optional and scopes every count to just that doctor's own
@@ -1311,7 +1355,7 @@
   // the clinic-wide summary every existing caller already relies on.
   async function getDailySummary(dateStr, doctorId) {
     const clinicId = await ensureClinicContext();
-    if (!clinicId) return { totalAppointments: 0, totalWalkIns: 0, footfallSoFar: 0, noShowCount: 0, waitingNow: 0, doneCount: 0 };
+    if (!clinicId) return { totalAppointments: 0, totalWalkIns: 0, footfallSoFar: 0, noShowCount: 0, waitingNow: 0, doneCount: 0, inConsultCount: 0, perDoctor: [] };
     const targetDate = dateStr || todayDateStr();
     const [clinic, doctors, { data, error }] = await Promise.all([
       getClinic(),
@@ -1320,8 +1364,28 @@
     ]);
     if (error) throw error;
     const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
-    let todays = data.map(normalizePatient);
+    const allToday = data.map(normalizePatient);
+    let todays = allToday;
     if (doctorId) todays = todays.filter((p) => p.doctorId === doctorId);
+
+    // Computed from every doctor's patients regardless of the doctorId
+    // filter above — this is what the dashboard's per-doctor breakdown
+    // popups read, which only make sense clinic-wide even when the
+    // top-line numbers themselves are scoped to one doctor.
+    const perDoctor = doctors.map((d) => {
+      const mine = allToday.filter((p) => p.doctorId === d.id);
+      return {
+        doctorId: d.id,
+        doctorName: d.name,
+        totalAppointments: mine.filter((p) => p.type === 'appointment').length,
+        waiting: mine.filter((p) => p.status === 'waiting').length,
+        inConsult: mine.filter((p) => p.status === 'in_consult').length,
+        done: mine.filter((p) => p.status === 'done').length,
+        noShow: mine.filter((p) => p.status === 'no_show').length,
+        priorityWaiting: mine.filter((p) => p.status === 'waiting' && p.isPriority).length,
+        footfall: mine.filter((p) => ['waiting', 'in_consult', 'done'].indexOf(p.status) !== -1).length,
+      };
+    });
 
     return {
       totalAppointments: todays.filter((p) => p.type === 'appointment').length,
@@ -1330,6 +1394,8 @@
       noShowCount: todays.filter((p) => p.status === 'no_show').length,
       waitingNow: todays.filter((p) => p.status === 'waiting').length,
       doneCount: todays.filter((p) => p.status === 'done').length,
+      inConsultCount: todays.filter((p) => p.status === 'in_consult').length,
+      perDoctor,
     };
   }
 
@@ -1698,6 +1764,7 @@
     getSlotAvailability,
     getDaySlotSchedule,
     slotScheduleDialog,
+    statBreakdownDialog,
     getDailySummary,
     closeDayNoShows,
     reopenDay,

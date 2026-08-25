@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=140" />
+<link rel="stylesheet" href="styles.css?v=141" />
 </head>
 <body>
   <div class="app-shell">
@@ -67,7 +67,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=50"></script>
+  <script src="clinic-data.js?v=51"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -108,6 +108,19 @@
         t.classList.add('show');
         setTimeout(() => t.classList.remove('show'), 2200);
       }
+
+      // #statCards' own innerHTML is fully replaced every render(), but the
+      // container itself persists — one delegated listener here, reading
+      // whichever cards array render() most recently built, rather than
+      // rebinding per-card listeners on every re-render (including the
+      // realtime ones from onLiveChange below).
+      let currentCards = [];
+      document.getElementById('statCards').addEventListener('click', (e) => {
+        const card = e.target.closest('.stat-card');
+        if (!card) return;
+        const c = currentCards[Number(card.getAttribute('data-idx'))];
+        if (c && c.onClick) c.onClick();
+      });
 
       function statusLabel(status) {
         return {
@@ -193,17 +206,56 @@
           ['waiting', 'in_consult', 'done'].includes(p.status) && p.arrivedAt && new Date(p.arrivedAt) <= cutoffYesterday
         ).length;
 
+        // Every doctor gets a row even at 0, so a breakdown popup never
+        // silently drops a doctor who just happens to have nothing in
+        // that particular bucket today.
+        const perDoctorById = Object.fromEntries(summary.perDoctor.map((p) => [p.doctorId, p]));
+        function perDoctorDialog(title, column, pickFn) {
+          return () => Qlinic.statBreakdownDialog({
+            title,
+            columns: ['Doctor', column],
+            rows: doctors.map((d) => [d.name, pickFn(perDoctorById[d.id])]),
+          });
+        }
+
         const cards = [
           {
             label: 'Footfall so far',
             value: summary.footfallSoFar,
             accent: 'teal',
             chip: percentChip(summary.footfallSoFar, yesterdayFootfallAtCutoff, true),
+            onClick: perDoctorDialog('Footfall so far, by doctor', 'Footfall', (p) => (p ? p.footfall : 0)),
           },
-          { label: 'Waiting now', value: summary.waitingNow, accent: 'coral' },
-          { label: 'Seen (done)', value: summary.doneCount, accent: 'blue' },
-          { label: 'No-shows', value: summary.noShowCount, accent: 'purple' },
-          { label: 'Booked today', value: summary.totalAppointments, accent: 'indigo' },
+          {
+            label: 'Waiting now',
+            value: summary.waitingNow,
+            accent: 'coral',
+            onClick: perDoctorDialog('Waiting now, by doctor', 'Waiting', (p) => (p ? p.waiting : 0)),
+          },
+          {
+            label: 'In consultation',
+            value: summary.inConsultCount,
+            accent: 'sky',
+            onClick: perDoctorDialog('In consultation, by doctor', 'In consultation', (p) => (p ? p.inConsult : 0)),
+          },
+          {
+            label: 'Seen (done)',
+            value: summary.doneCount,
+            accent: 'blue',
+            onClick: perDoctorDialog('Seen (done), by doctor', 'Seen', (p) => (p ? p.done : 0)),
+          },
+          {
+            label: 'No-shows',
+            value: summary.noShowCount,
+            accent: 'purple',
+            onClick: perDoctorDialog('No-shows, by doctor', 'No-shows', (p) => (p ? p.noShow : 0)),
+          },
+          {
+            label: 'Booked today',
+            value: summary.totalAppointments,
+            accent: 'indigo',
+            onClick: perDoctorDialog('Booked today, by doctor', 'Booked', (p) => (p ? p.totalAppointments : 0)),
+          },
         ];
 
         // The queue-health cards below all read from the SAME waiting
@@ -228,11 +280,27 @@
           const yesterdayAvgWaitAtCutoff = yesterdayWaitingAtCutoff.length
             ? Math.round(yesterdayWaitingAtCutoff.reduce((sum, p) => sum + Math.max(0, Math.round((cutoffYesterday - new Date(p.arrivedAt)) / 60000)), 0) / yesterdayWaitingAtCutoff.length)
             : null;
+          // The overall Avg/Longest cards above are global numbers; their
+          // popups break the SAME wait-time math down per doctor, using
+          // each doctor's own slice of queues (queues[i].waiting) rather
+          // than a second query.
+          function perDoctorWaitDialog(title, pickFn) {
+            return () => Qlinic.statBreakdownDialog({
+              title,
+              columns: ['Doctor', 'Minutes'],
+              rows: doctors.map((d, i) => {
+                const w = queues[i].waiting;
+                return [d.name, w.length ? pickFn(w) : '—'];
+              }),
+            });
+          }
           cards.push({
             label: 'Avg wait now (min)',
             value: avgWaitMins === null ? '—' : avgWaitMins,
             accent: 'amber',
             chip: minuteChip(avgWaitMins, yesterdayAvgWaitAtCutoff, false),
+            onClick: perDoctorWaitDialog('Average wait now, by doctor',
+              (w) => Math.round(w.reduce((sum, p) => sum + waitMinsFor(p), 0) / w.length)),
           });
 
           const longestWaiting = allWaiting.length
@@ -245,6 +313,8 @@
             // time alone is enough to flag that something needs attention.
             sub: longestWaiting ? null : 'No one waiting',
             accent: 'pink',
+            onClick: perDoctorWaitDialog('Longest wait, by doctor',
+              (w) => Math.max(...w.map(waitMinsFor))),
           });
 
           // Both cards below compare doctors against each other (who's
@@ -262,8 +332,17 @@
             // which excludes a stale prior-day closure the doctor forgot to
             // clear — that badge stays up indefinitely until "I'm back" is
             // tapped, so this card should agree with what's actually on screen).
-            const doctorsAway = doctors.filter((d) => d.status === 'on_break' || d.status === 'emergency' || d.dayClosedAt).length;
-            cards.push({ label: 'Doctors away', value: `${doctorsAway}/${doctors.length}`, accent: 'rose' });
+            const awayDoctors = doctors.filter((d) => d.status === 'on_break' || d.status === 'emergency' || d.dayClosedAt);
+            cards.push({
+              label: 'Doctors away',
+              value: `${awayDoctors.length}/${doctors.length}`,
+              accent: 'rose',
+              onClick: () => Qlinic.statBreakdownDialog({
+                title: 'Doctors away',
+                columns: ['Doctor', 'Status'],
+                rows: awayDoctors.map((d) => [d.name, d.dayClosedAt ? 'Day closed' : statusLabel(d.status)]),
+              }),
+            });
 
             let busiestDoctor = null;
             queues.forEach((q, i) => {
@@ -274,19 +353,26 @@
             cards.push({
               label: 'Busiest queue',
               value: busiestDoctor ? busiestDoctor.count : '—',
+              unit: busiestDoctor ? 'patients in queue' : null,
               sub: busiestDoctor ? busiestDoctor.name : 'All clear',
               accent: 'cyan',
             });
           }
 
           const priorityWaitingCount = allWaiting.filter((p) => p.isPriority).length;
-          cards.push({ label: 'Priority waiting', value: priorityWaitingCount, accent: 'green' });
+          cards.push({
+            label: 'Priority waiting',
+            value: priorityWaitingCount,
+            accent: 'green',
+            onClick: perDoctorDialog('Priority waiting, by doctor', 'Priority waiting', (p) => (p ? p.priorityWaiting : 0)),
+          });
         }
 
-        document.getElementById('statCards').innerHTML = cards.map((c) => `
-          <div class="stat-card accent-${c.accent}">
+        currentCards = cards;
+        document.getElementById('statCards').innerHTML = cards.map((c, i) => `
+          <div class="stat-card accent-${c.accent}${c.onClick ? ' clickable' : ''}" data-idx="${i}">
             <div class="top-row">
-              <div class="value">${c.value}</div>
+              <div class="value">${c.value}${c.unit ? ` <span class="stat-unit">${Qlinic.escapeHtml(c.unit)}</span>` : ''}</div>
               ${c.chip ? `<span class="trend-chip ${c.chip.good ? 'good' : 'bad'}">${c.chip.arrow} ${c.chip.text}</span>` : ''}
             </div>
             <div class="label">${c.label}</div>
