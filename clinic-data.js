@@ -1233,11 +1233,12 @@
   // reception can see the full picture before choosing a time at all. No
   // type filter — both formal appointments and walk-ins that were given a
   // preferred time share the same booked_date/booked_time columns, and
-  // staff wants both counted. A walk-in with no preferred time has
-  // booked_time null and is correctly left out — it was never assigned a
-  // slot to be counted against. status excludes done/no_show, same as
-  // countActiveAtSlot, so this reflects who's still actually expected. Only
-  // booked_time is selected — the popup shows counts only, not names.
+  // staff wants both counted. status excludes done/no_show, same as
+  // countActiveAtSlot, so this reflects who's still actually expected.
+  // Rows with a null booked_time (a walk-in added "as soon as possible")
+  // ARE included here — slotScheduleDialog tallies them separately, since
+  // silently dropping them made a clinic's whole day of untimed walk-ins
+  // look like an empty, all-zero schedule.
   async function getDaySlotSchedule(doctorId, dateStr) {
     const clinicId = await ensureClinicContext();
     const { data, error } = await sb
@@ -1246,7 +1247,6 @@
       .eq('clinic_id', clinicId)
       .eq('doctor_id', doctorId)
       .eq('booked_date', dateStr)
-      .not('booked_time', 'is', null)
       .in('status', ['booked', 'waiting', 'in_consult'])
       .order('booked_time');
     if (error) throw error;
@@ -1264,7 +1264,12 @@
       for (let start = openMin; start < closeMin; start += intervalMins) {
         buckets.push({ start, end: Math.min(start + intervalMins, closeMin), count: 0 });
       }
+      // A walk-in added "as soon as possible" has no booked_time at all —
+      // it was never assigned a slot to bucket, so it's tallied on its own
+      // line instead of silently vanishing from the total.
+      let noTimeCount = 0;
       rows.forEach((r) => {
+        if (!r.booked_time) { noTimeCount += 1; return; }
         const mins = parseTime(r.booked_time.slice(0, 5));
         const bucket = buckets.find((b) => mins >= b.start && mins < b.end) || buckets[buckets.length - 1];
         if (bucket) bucket.count += 1;
@@ -1274,7 +1279,12 @@
           <td style="white-space:nowrap;">${formatTime(b.start)}–${formatTime(b.end)}</td>
           <td style="text-align:center;">${b.count}</td>
         </tr>
-      `).join('');
+      `).join('') + (noTimeCount > 0 ? `
+        <tr style="font-style:italic;color:var(--grey-500);">
+          <td>No preferred time (walk-ins)</td>
+          <td style="text-align:center;">${noTimeCount}</td>
+        </tr>
+      ` : '');
 
       const backdrop = document.createElement('div');
       backdrop.className = 'modal-backdrop';
