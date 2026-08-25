@@ -864,6 +864,14 @@
     let todayInvoiceId = null;
     let todayPaymentMode = null;
     let todayAmountReceived = null;
+    // Populated only when there's no visit on the selected date at all —
+    // the fallback that lets a returning patient's most recent doctor/fee
+    // type/date autofill instead of leaving reception to pick everything
+    // from scratch just because the billing date field doesn't happen to
+    // match their last visit. Always freely editable afterward either way.
+    let mostRecentDoctorId = null;
+    let mostRecentFeeType = null;
+    let mostRecentVisitDate = null;
     try {
       const targetDateStr = dateStr || todayDateStr();
       const { data: todayPatient, error: patientErr } = await sb.from('patients')
@@ -891,15 +899,34 @@
           todayPaymentMode = todayInvoice.payment_mode;
           todayAmountReceived = todayInvoice.amount_received;
         }
+      } else {
+        const { data: recentPatient, error: recentErr } = await sb.from('patients')
+          .select('id, doctor_id, token_date')
+          .eq('clinic_id', clinicId).eq('phone', cleanPhone)
+          .order('token_date', { ascending: false }).limit(1).maybeSingle();
+        if (recentErr) throw recentErr;
+        if (recentPatient) {
+          mostRecentDoctorId = recentPatient.doctor_id;
+          mostRecentVisitDate = recentPatient.token_date;
+          const { data: recentInvoice, error: recentInvErr } = await sb.from('invoices')
+            .select('fee_type')
+            .eq('clinic_id', clinicId).eq('patient_id', recentPatient.id)
+            .order('created_at', { ascending: false }).limit(1).maybeSingle();
+          if (recentInvErr) throw recentInvErr;
+          mostRecentFeeType = recentInvoice ? recentInvoice.fee_type : null;
+        }
       }
     } catch (e) { /* best-effort */ }
 
-    if (!patient && !invoice && !todayDoctorId) return null;
+    if (!patient && !invoice && !todayDoctorId && !mostRecentDoctorId) return null;
     return {
       name: (patient && patient.name) || (invoice && invoice.patient_name) || '',
       address: (patient && patient.address) || (invoice && invoice.patient_address) || '',
       gender: (patient && patient.gender) || (invoice && invoice.patient_gender) || '',
       age: (patient && patient.age) || (invoice && invoice.patient_age) || null,
+      mostRecentDoctorId,
+      mostRecentFeeType,
+      mostRecentVisitDate,
       todayDoctorId,
       todayFeeType,
       todayInvoiceId,
@@ -1747,12 +1774,26 @@
   // Fires `cb` whenever any doctor or patient row in this clinic changes;
   // reception, doctor view, and the display board all use this to stay
   // in sync across genuinely different devices, not just browser tabs.
+  //
+  // Debounced: every action handler already re-renders immediately after
+  // its own write (for instant feedback), and this same write then echoes
+  // back through realtime moments later — without debouncing, that's a
+  // second full re-render stacked right on top of the first, which is
+  // exactly what made buttons like "Call next patient" or "Mark arrived"
+  // look like they visibly double-render/flash. A short quiet window
+  // collapses a burst of events (the echo, plus any other rows the same
+  // write touched) into one render instead of one per event.
   async function onLiveChange(cb) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return;
+    let debounceTimer = null;
+    function debouncedCb(payload) {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => cb(payload), 300);
+    }
     sb.channel('clinic-' + clinicId)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'patients', filter: `clinic_id=eq.${clinicId}` }, cb)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'doctors', filter: `clinic_id=eq.${clinicId}` }, cb)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'patients', filter: `clinic_id=eq.${clinicId}` }, debouncedCb)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'doctors', filter: `clinic_id=eq.${clinicId}` }, debouncedCb)
       .subscribe();
   }
 

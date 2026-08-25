@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=142" />
+<link rel="stylesheet" href="styles.css?v=143" />
 </head>
 <body>
   <div class="app-shell">
@@ -176,7 +176,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=56"></script>
+  <script src="clinic-data.js?v=57"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -222,6 +222,13 @@
       let bookedExpanded = false;
       let bookedPage = 0;
       let waitingPage = 0;
+      // The last data renderQueues() actually fetched — expand/collapse and
+      // pagination re-render from this instead of re-fetching, since none
+      // of them change which patients exist. Re-fetching on every click of
+      // "Booked, not yet arrived" was the actual cause of that arrow
+      // feeling slow: four sequential network round-trips just to toggle
+      // a section that was already fully loaded.
+      let lastQueueData = null;
       // Generation counters for async renders that can overlap (rapid
       // submissions, or a direct call racing Realtime's own onLiveChange
       // firing for the same change): each call captures its own number,
@@ -1068,6 +1075,19 @@
           todayInvoices.forEach((inv) => { if (inv.patientId) invoiceByPatientId[inv.patientId] = inv; });
         }
 
+        lastQueueData = { doctor, queue, invoiceByPatientId, isTodayView };
+        renderQueuePanel();
+      }
+
+      // Pure render from the data renderQueues() last fetched — no network
+      // calls, so expand/collapse and pagination (which never change which
+      // patients exist, only how they're sliced/shown) can call this
+      // directly instead of re-running the whole fetch above.
+      function renderQueuePanel() {
+        if (!lastQueueData) return;
+        const { doctor, queue, invoiceByPatientId, isTodayView } = lastQueueData;
+        const panelEl = document.getElementById('queuePanel');
+
         // Both lists paginate at 10/page now — a busy clinic's Waiting
         // list can run just as long as Booked once appointments pile up,
         // and an unbounded table here was the same problem in a list
@@ -1162,16 +1182,16 @@
 
         document.getElementById('bookedToggleBtn').addEventListener('click', () => {
           bookedExpanded = !bookedExpanded;
-          renderQueues();
+          renderQueuePanel();
         });
         const prevBtn = document.getElementById('bookedPrevBtn');
         const nextBtn = document.getElementById('bookedNextBtn');
-        if (prevBtn) prevBtn.addEventListener('click', () => { bookedPage = Math.max(0, bookedPage - 1); renderQueues(); });
-        if (nextBtn) nextBtn.addEventListener('click', () => { bookedPage = Math.min(totalBookedPages - 1, bookedPage + 1); renderQueues(); });
+        if (prevBtn) prevBtn.addEventListener('click', () => { bookedPage = Math.max(0, bookedPage - 1); renderQueuePanel(); });
+        if (nextBtn) nextBtn.addEventListener('click', () => { bookedPage = Math.min(totalBookedPages - 1, bookedPage + 1); renderQueuePanel(); });
         const waitingPrevBtn = document.getElementById('waitingPrevBtn');
         const waitingNextBtn = document.getElementById('waitingNextBtn');
-        if (waitingPrevBtn) waitingPrevBtn.addEventListener('click', () => { waitingPage = Math.max(0, waitingPage - 1); renderQueues(); });
-        if (waitingNextBtn) waitingNextBtn.addEventListener('click', () => { waitingPage = Math.min(totalWaitingPages - 1, waitingPage + 1); renderQueues(); });
+        if (waitingPrevBtn) waitingPrevBtn.addEventListener('click', () => { waitingPage = Math.max(0, waitingPage - 1); renderQueuePanel(); });
+        if (waitingNextBtn) waitingNextBtn.addEventListener('click', () => { waitingPage = Math.min(totalWaitingPages - 1, waitingPage + 1); renderQueuePanel(); });
       }
 
       document.getElementById('searchBox').addEventListener('input', renderSearch);

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=142" />
+<link rel="stylesheet" href="styles.css?v=143" />
 </head>
 <body>
   <div class="app-shell">
@@ -67,7 +67,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=56"></script>
+  <script src="clinic-data.js?v=57"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -121,6 +121,16 @@
         const c = currentCards[Number(card.getAttribute('data-idx'))];
         if (c && c.onClick) c.onClick();
       });
+
+      // "updated 5:38 PM" reads fine minutes after the fact, but is
+      // useless (or actively misleading) once it's been sitting there
+      // since yesterday or longer — the day it happened matters just as
+      // much as the time.
+      function formatStatusTimestamp(value) {
+        if (!value) return '·';
+        const date = new Date(value);
+        return `${date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} at ${date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+      }
 
       function statusLabel(status) {
         return {
@@ -268,7 +278,15 @@
         if (doctors.length > 0) {
           const allWaiting = queues.flatMap((q) => q.waiting);
           const nowMs = Date.now();
-          const waitMinsFor = (p) => Math.max(0, Math.round((nowMs - new Date(p.arrivedAt).getTime()) / 60000));
+          // effectiveTime (already computed by getQueueForDoctor, same
+          // logic the live queue itself orders by) is the LATER of the
+          // patient's scheduled time and their actual arrival — an
+          // appointment booked for 6pm who arrives at 5pm hasn't been kept
+          // waiting by the clinic at all until 6pm actually arrives. Using
+          // raw arrivedAt here counted that whole early arrival as "wait,"
+          // which is wrong: the clinic's own delay only starts once the
+          // patient's actual slot (or the doctor's turn) has come and gone.
+          const waitMinsFor = (p) => Math.max(0, Math.round((nowMs - p.effectiveTime.getTime()) / 60000));
 
           const avgWaitMins = allWaiting.length
             ? Math.round(allWaiting.reduce((sum, p) => sum + waitMinsFor(p), 0) / allWaiting.length)
@@ -399,11 +417,11 @@
           const rightCol = d.dayClosedAt
             ? `
                 <span class="status-pill status-closed">Day closed</span>
-                <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">closed ${Qlinic.formatTimestamp(d.dayClosedAt)}</div>
+                <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">closed ${formatStatusTimestamp(d.dayClosedAt)}</div>
               `
             : `
                 <span class="status-pill status-${d.status}">${statusLabel(d.status)}${d.delayMins ? ' · ' + d.delayMins + ' min' : ''}</span>
-                <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">updated ${Qlinic.formatTimestamp(d.statusUpdatedAt)}</div>
+                <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">updated ${formatStatusTimestamp(d.statusUpdatedAt)}</div>
               `;
           return `
             <div class="doctor-status-row ${rowClass}">

@@ -2162,17 +2162,24 @@ table.qtable tbody tr:hover { background: var(--grey-100); }
   color: var(--black);
 }
 
+/* Centered, stacked hero block — the clinic's own identity is the first
+   thing on a printed receipt, so it gets the same prominence a real
+   letterhead would, not a small icon squeezed beside the receipt number.
+   The logo is unconstrained (no forced square + object-fit:cover, which
+   was cropping anything wider than it is tall down to an unrecognizable
+   sliver) — max-height/max-width cap its footprint while keeping its
+   real proportions intact. */
 .receipt-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
   border-bottom: 3px solid var(--accent);
   padding-bottom: 20px;
   margin-bottom: 8px;
 }
-.receipt-clinic-block { display: flex; gap: 14px; align-items: flex-start; }
-.receipt-logo { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; border: 1px solid var(--grey-300); flex-shrink: 0; }
-.receipt-clinic-name { font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+.receipt-logo { max-height: 96px; max-width: 320px; width: auto; height: auto; object-fit: contain; margin-bottom: 12px; }
+.receipt-clinic-name { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
 .receipt-clinic-address { color: var(--grey-700); margin-top: 6px; font-size: 13px; }
 .receipt-number-block { text-align: right; }
 .receipt-number-label { font-size: 12px; color: var(--grey-500); }
@@ -2262,13 +2269,19 @@ table.qtable tbody tr:hover { background: var(--grey-100); }
 }
 
 .receipt-footer {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: left;
   color: var(--grey-500);
   margin-top: 40px;
   padding-top: 20px;
   border-top: 1px solid var(--grey-100);
   font-size: 13px;
 }
+.receipt-footer-logo { max-height: 32px; max-width: 100px; width: auto; height: auto; object-fit: contain; }
+.receipt-footer-address { font-size: 12px; margin-top: 2px; }
 
 @media print {
   @page { size: A4; margin: 15mm; }
