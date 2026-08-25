@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=139" />
+<link rel="stylesheet" href="styles.css?v=140" />
 </head>
 <body>
   <div class="app-shell">
@@ -148,6 +148,17 @@
               <div class="time-picker-panel" id="slotCapacityPanel" style="display:none;"></div>
             </div>
             <span class="field-hint">Triggers the overbooking warning</span>
+          </div>
+          <div class="field" style="max-width:160px;">
+            <label>Schedule view interval</label>
+            <div class="time-picker" id="scheduleIntervalPicker">
+              <button type="button" class="time-picker-trigger" id="scheduleIntervalTrigger">
+                <span id="scheduleIntervalTriggerText">Loading…</span><span class="time-picker-caret">▾</span>
+              </button>
+              <input type="hidden" id="scheduleIntervalInput" required />
+              <div class="time-picker-panel" id="scheduleIntervalPanel" style="display:none;"></div>
+            </div>
+            <span class="field-hint">Bucket size for Reception's "View day's schedule" popup</span>
           </div>
           <div class="field" style="flex:0;">
             <label>&nbsp;</label>
@@ -315,6 +326,13 @@
       const CAPACITY_OPTIONS = [];
       for (let n = 1; n <= 10; n += 1) CAPACITY_OPTIONS.push({ value: n, label: `${n}` });
 
+      const SCHEDULE_INTERVAL_OPTIONS = [
+        { value: 15, label: '15 min' },
+        { value: 30, label: '30 min' },
+        { value: 45, label: '45 min' },
+        { value: 60, label: '1 hr' },
+      ];
+
       // 30-min steps, 4:00 AM to 11:30 PM — every realistic opening or
       // closing time a clinic would pick, without the unusable
       // every-single-minute list a native <input type="time"> shows.
@@ -349,6 +367,11 @@
         pickerId: 'closingTimePicker', triggerId: 'closingTimeTrigger', triggerTextId: 'closingTimeTriggerText',
         hiddenId: 'closingTimeInput', panelId: 'closingTimePanel', options: TIME_OF_DAY_OPTIONS,
         fallbackLabel: (v) => Qlinic.formatTime(Qlinic.parseTime(v)),
+      });
+      const scheduleIntervalPicker = setupDropdownPicker({
+        pickerId: 'scheduleIntervalPicker', triggerId: 'scheduleIntervalTrigger', triggerTextId: 'scheduleIntervalTriggerText',
+        hiddenId: 'scheduleIntervalInput', panelId: 'scheduleIntervalPanel', options: SCHEDULE_INTERVAL_OPTIONS,
+        fallbackLabel: (v) => `${v} min`,
       });
 
       // Multiple weekdays can be toggled on at once (some clinics close
@@ -415,6 +438,9 @@
         graceWindowPicker.setValue(clinic.grace_window_mins);
         slotIntervalPicker.setValue(clinic.slot_interval_mins);
         slotCapacityPicker.setValue(clinic.slot_capacity);
+        // Falls back to 30 if migration 036 hasn't run yet — before it,
+        // clinic.schedule_interval_mins is simply undefined.
+        scheduleIntervalPicker.setValue(clinic.schedule_interval_mins || 30);
         document.getElementById('followUpBufferInput').value = clinic.follow_up_buffer_days || 0;
         openingTimePicker.setValue((clinic.opening_time || '09:00').slice(0, 5));
         closingTimePicker.setValue((clinic.closing_time || '18:00').slice(0, 5));
@@ -509,6 +535,7 @@
           graceWindowMins: document.getElementById('graceWindowInput').value,
           slotIntervalMins: document.getElementById('slotIntervalInput').value,
           slotCapacity: document.getElementById('slotCapacityInput').value,
+          scheduleIntervalMins: document.getElementById('scheduleIntervalInput').value,
         });
         showToast('Queue rules updated');
       });

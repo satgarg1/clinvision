@@ -1200,7 +1200,7 @@ th.th-filterable { position: relative; }
    equal-specificity class selector would lose to it by source order —
    stacking both classes on the same selector outranks .mode-btn alone
    regardless of where either rule sits. */
-#displayLanguageForm .btn-sm, #scheduleIntervalForm .btn-sm, .mode-btn.theme-toggle-btn {
+#displayLanguageForm .btn-sm, .mode-btn.theme-toggle-btn {
   padding-top: 8px;
   padding-bottom: 8px;
   font-size: 13px;
@@ -1243,23 +1243,6 @@ th.th-filterable { position: relative; }
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
-/* Same ID-override reasoning as #displayLanguageInput above, but plain
-   digit/text content only, so it keeps the original 16px line-height —
-   matches the Save button beside it; only the Hindi-glyph select above
-   needed the taller box. */
-#scheduleIntervalInput {
-  padding: 8px 32px 8px 16px;
-  font-size: 13px;
-  line-height: 16px;
-  border-radius: var(--radius-pill);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a4a4c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 12px;
-}
-:root[data-theme="dark"] #scheduleIntervalInput {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-}
 
 /* An action button sharing an .inline-form/.form-grid row with a real
    <input>/<select> field (wrapped in its own .field, same as the

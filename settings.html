@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=139" />
+<link rel="stylesheet" href="styles.css?v=140" />
 </head>
 <body>
   <div class="app-shell">
@@ -118,28 +118,6 @@
         </form>
       </div>
 
-      <div class="panel" id="scheduleIntervalPanel">
-        <div class="panel-header"><h2>Reception schedule view</h2></div>
-        <p class="panel-note">
-          How finely "View day's schedule" buckets a doctor's day when reception is checking slot availability.
-        </p>
-        <form id="scheduleIntervalForm" class="inline-form">
-          <div class="field" style="max-width:200px;">
-            <label>Interval</label>
-            <select id="scheduleIntervalInput" class="pill-select" style="width:100%;">
-              <option value="15">15 min</option>
-              <option value="30">30 min</option>
-              <option value="45">45 min</option>
-              <option value="60">1 hr</option>
-            </select>
-          </div>
-          <div class="field" style="flex:0;">
-            <label>&nbsp;</label>
-            <button type="submit" class="btn-sm primary">Save</button>
-          </div>
-        </form>
-      </div>
-
       <div class="panel">
         <div class="panel-header"><h2>Appearance</h2></div>
         <p class="panel-note">Applies on this device, for the Qlinic app screens (not the waiting-room display).</p>
@@ -204,7 +182,6 @@
       // this one is never hidden by role.
       document.getElementById('closedDatesPanel').style.display = '';
       document.getElementById('displayScreenPanel').style.display = amDoctor ? 'none' : '';
-      document.getElementById('scheduleIntervalPanel').style.display = amDoctor ? 'none' : '';
       document.getElementById('doctorHolidaysPanel').style.display = (amAdmin || amDoctor) ? '' : 'none';
       document.getElementById('doctorHolidaysNote').textContent = amDoctor
         ? 'Add the days you\'re away, so reception is warned before booking you.'
@@ -245,19 +222,12 @@
           document.getElementById('clinicLogoThumb').style.display = 'none';
         }
         document.getElementById('displayLanguageInput').value = clinic.display_language;
-        document.getElementById('scheduleIntervalInput').value = clinic.schedule_interval_mins || 30;
       }
 
       document.getElementById('displayLanguageForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         await Qlinic.updateClinic({ displayLanguage: document.getElementById('displayLanguageInput').value });
         showToast('Display screen language updated');
-      });
-
-      document.getElementById('scheduleIntervalForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await Qlinic.updateClinic({ scheduleIntervalMins: document.getElementById('scheduleIntervalInput').value });
-        showToast('Schedule view interval updated');
       });
 
       function applyTheme(theme) {
