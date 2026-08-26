@@ -1734,12 +1734,7 @@ th.th-filterable { position: relative; }
   margin-bottom: 8px;
 }
 .doctor-select {
-  /* Extra right padding, not the usual 14px both sides — a native
-     select's own dropdown arrow sits inside the box's content width,
-     so max-content sizing below left just enough room for the text
-     itself, and the closing bracket of a doctor's counts overlapped
-     the arrow. */
-  padding: 10px 32px 10px 14px;
+  padding: 10px 14px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--grey-300);
   font-size: 14px;
@@ -1748,12 +1743,16 @@ th.th-filterable { position: relative; }
 /* .inline-form .field select's width:100% (two classes + a type) beats
    .doctor-select (one class) in the specificity fight regardless of
    source order, so a plain override here doesn't stick — asserted by
-   ID instead, which always wins. width:100% of a flex:0 0 auto wrapper
-   isn't "the text's own width," it's a percentage of whatever the
-   wrapper settled on, which itself sinks to a token minimum without
-   this — max-content is what actually ties the box to its own text,
-   long or short, for whatever doctor names a clinic has. */
-#queueDoctorFilter { width: max-content; max-width: 100%; }
+   ID instead, which always wins. width:max-content was tried here
+   first and still clipped the closing bracket on a long doctor label —
+   Chrome's intrinsic-sizing pass for a <select> doesn't reliably
+   measure its own rendered option text the same way plain "auto"
+   sizing does. width:auto instead just turns the override off and
+   lets the browser use its own default sizing for a <select> with no
+   CSS width at all — the one path that's never actually clipped its
+   own content, since that would be a glaring bug in completely
+   unstyled selects everywhere on the web. */
+#queueDoctorFilter { width: auto; max-width: 100%; }
 .queue-filter-group { display: flex; align-items: flex-end; gap: 10px; }
 
 /* Height pinned to match #queueDateFilter exactly (44px) rather than
