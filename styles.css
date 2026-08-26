@@ -566,6 +566,10 @@ a { color: inherit; }
 .login-card .login-hint { font-size: 14px; margin-top: 26px; }
 .login-card .login-error { font-size: 14px; }
 
+/* queue.html only — wider than the auth-card default so the merged
+   appointment sentence has room to breathe instead of wrapping tightly. */
+.login-card-wide { max-width: 560px; }
+
 /* queue.html's redesigned status card: clinic identity now leads (big,
    bold) instead of small grey caps, the doctor/appointment context is
    one sentence instead of three stacked lines, and "currently being
@@ -577,11 +581,10 @@ a { color: inherit; }
 .queue-status-msg { text-align: center; font-size: 13.5px; color: var(--grey-700); margin-bottom: 10px; }
 .queue-status-msg.is-waiting { color: var(--warning); font-weight: 700; }
 .queue-advisory {
-  display: flex; align-items: flex-start; gap: 8px;
-  background: var(--mkt-blue-bg); border-radius: var(--radius-sm);
-  padding: 9px 11px; margin-bottom: 16px; text-align: left;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin-top: 10px; text-align: center;
 }
-.queue-advisory .text { font-size: 12px; color: var(--chip-text); line-height: 1.4; font-weight: 600; }
+.queue-advisory .text { font-size: 12px; color: var(--grey-500); line-height: 1.4; font-weight: 400; font-style: italic; }
 .queue-doctor-status {
   text-align: center; font-size: 13.5px; font-weight: 600; color: var(--warning);
   background: var(--warning-bg); border-radius: var(--radius-sm);
