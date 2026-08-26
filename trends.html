@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=161" />
+<link rel="stylesheet" href="styles.css?v=162" />
 </head>
 <body>
   <div class="app-shell">
@@ -136,8 +136,14 @@
         <div class="panel-header"><h2>Patient demographics</h2></div>
         <p class="panel-note" style="margin-top:0;">Who visited during this period, by gender and age</p>
         <div class="trend-drill-charts two-up" id="demographicsCharts">
-          <div class="trend-drill-chart-box donut-size"><canvas id="genderChart"></canvas></div>
-          <div class="trend-drill-chart-box donut-size"><canvas id="ageChart"></canvas></div>
+          <div>
+            <p class="donut-subheading">By gender</p>
+            <div class="trend-drill-chart-box donut-size"><canvas id="genderChart"></canvas></div>
+          </div>
+          <div>
+            <p class="donut-subheading">By age</p>
+            <div class="trend-drill-chart-box donut-size"><canvas id="ageChart"></canvas></div>
+          </div>
         </div>
         <div class="empty-state" id="demographicsEmptyState" style="display:none;">No patients in this period.</div>
       </div>
@@ -532,7 +538,7 @@
           const dp = tooltip.dataPoints[0];
           const color = dp.dataset.backgroundColor[dp.dataIndex];
           const value = formatter ? formatter(dp.raw) : dp.raw;
-          el.innerHTML = `<span class="donut-tooltip-dot" style="background:${color};"></span><span>${Qlinic.escapeHtml(dp.label)}</span><strong>${value}</strong>`;
+          el.innerHTML = `<span class="donut-tooltip-dot" style="background:${color};"></span><span>${Qlinic.escapeHtml(dp.label)}:</span><strong>${value}</strong>`;
           const arc = dp.element;
           const midAngle = (arc.startAngle + arc.endAngle) / 2;
           const dx = Math.cos(midAngle), dy = Math.sin(midAngle);
@@ -888,22 +894,22 @@
           const g = Object.prototype.hasOwnProperty.call(genderCounts, p.gender) ? p.gender : 'other';
           genderCounts[g] += 1;
         });
-        // The count sits right in the legend label (e.g. "18-35 (32)")
-        // instead of only showing on hover — the center number is the
-        // grand total, so leaving each slice's own count to a tooltip
-        // meant the only two numbers visible at a glance were the same
-        // total twice.
+        // Legend stays plain (color + name only) — the count lives in the
+        // hover tooltip instead ("Male: 64 Patients"), not baked into the
+        // legend text, which read as a second, redundant number sitting
+        // right next to the center total.
+        const patientsFormatter = (v) => `${v} Patients`;
         const genderRows = Object.keys(GENDER_LABELS)
-          .map((k, i) => ({ label: `${GENDER_LABELS[k]} (${genderCounts[k]})`, value: genderCounts[k], color: colorForDoctorIndex(i) }))
+          .map((k, i) => ({ label: GENDER_LABELS[k], value: genderCounts[k], color: colorForDoctorIndex(i) }))
           .filter((r) => r.value > 0);
-        trendCharts.gender = makeDonutChart('genderChart', genderRows.map((r) => r.label), genderRows.map((r) => r.value), genderRows.map((r) => r.color), 'PATIENTS', null);
+        trendCharts.gender = makeDonutChart('genderChart', genderRows.map((r) => r.label), genderRows.map((r) => r.value), genderRows.map((r) => r.color), 'PATIENTS', null, patientsFormatter);
 
         const ageCounts = Object.fromEntries(AGE_BUCKETS.map((b) => [b, 0]));
         visited.forEach((p) => { ageCounts[ageBucketFor(p.age)] += 1; });
         const ageRows = AGE_BUCKETS
-          .map((b, i) => ({ label: `${b} (${ageCounts[b]})`, value: ageCounts[b], color: colorForDoctorIndex(i) }))
+          .map((b, i) => ({ label: b, value: ageCounts[b], color: colorForDoctorIndex(i) }))
           .filter((r) => r.value > 0);
-        trendCharts.age = makeDonutChart('ageChart', ageRows.map((r) => r.label), ageRows.map((r) => r.value), ageRows.map((r) => r.color), 'PATIENTS', null);
+        trendCharts.age = makeDonutChart('ageChart', ageRows.map((r) => r.label), ageRows.map((r) => r.value), ageRows.map((r) => r.color), 'PATIENTS', null, patientsFormatter);
       }
 
       function onPeakDrillClick(hour) {

@@ -1839,6 +1839,7 @@ th.th-filterable { position: relative; }
 .trend-drill-close { margin-left: auto; cursor: pointer; color: var(--grey-500); font-size: 16px; line-height: 1; padding: 2px 6px; border-radius: var(--radius-sm); }
 .trend-drill-close:hover { color: var(--grey-700); background: var(--grey-100); }
 .trend-drill-note { font-size: 12px; color: var(--grey-500); margin: 0 0 12px; line-height: 1.5; }
+.donut-subheading { font-size: 13px; font-weight: 600; color: var(--grey-700); text-align: center; margin: 0 0 8px; }
 .trend-drill-charts { display: grid; grid-template-columns: 1fr; gap: 16px; }
 .trend-drill-charts.two-up { grid-template-columns: 1fr 1fr; }
 @media (max-width: 620px) { .trend-drill-charts.two-up { grid-template-columns: 1fr; } }
