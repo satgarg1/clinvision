@@ -996,13 +996,11 @@ input[type="number"] { -moz-appearance: textfield; }
 .next-appt-icon { font-size: 22px; }
 .next-appt-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--accent-dark); }
 .next-appt-line { font-size: 17px; font-weight: 600; }
-.full-schedule-list { max-height: 280px; overflow-y: auto; }
-.full-schedule-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--grey-100); }
-.full-schedule-row:last-child { border-bottom: none; }
-.full-schedule-row.is-past { opacity: 0.55; }
-.full-schedule-row.is-current { background: var(--grey-100); border-radius: var(--radius-sm); padding-left: 8px; padding-right: 8px; }
-.full-schedule-time { font-size: 13px; color: var(--grey-500); width: 84px; flex-shrink: 0; }
-.full-schedule-name { font-size: 14px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doctor-identity { margin-bottom: 14px; }
+.doctor-identity-name { font-size: 15px; font-weight: 700; }
+.doctor-identity-specialty { font-size: 13px; color: var(--grey-500); }
+#statusSummaryLines { font-size: 14px; margin-bottom: 14px; }
+#statusSummaryLines div { margin-bottom: 4px; }
 
 .billing-option-card { transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease; }
 @media (hover: hover) and (pointer: fine) {
@@ -1531,6 +1529,7 @@ th.th-filterable { position: relative; }
    getting a wide-enough flex-basis — see Revenue/Directory's Period and
    custom-range Month/Year selects). */
 .pill-label { display: block; font-size: 13px; font-weight: 600; color: var(--grey-700); margin-bottom: 6px; }
+#trendsPeriodField .pill-label { font-size: 15px; }
 :root[data-theme="dark"] .pill-select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }

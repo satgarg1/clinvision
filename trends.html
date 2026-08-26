@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=163" />
+<link rel="stylesheet" href="styles.css?v=164" />
 </head>
 <body>
   <div class="app-shell">
@@ -604,7 +604,7 @@
       // time, Visits per doctor, and Revenue by doctor can all read from
       // one pass over the already-fetched data instead of three.
       function renderRevenueOverTime(invoices, patients, granularity, doctorById) {
-        document.getElementById('revenueOverTimeHeading').textContent = `Revenue by ${GRANULARITY_NOUN[granularity]}`;
+        document.getElementById('revenueOverTimeHeading').textContent = `Clinic Revenue by ${GRANULARITY_NOUN[granularity]}`;
         revenueGranularityCache = granularity;
         revenueBucketsCache = {};
         invoices.forEach((inv) => {
@@ -792,7 +792,9 @@
         visited.forEach((p) => { counts[p.doctorId] = (counts[p.doctorId] || 0) + 1; });
         const rows = doctors.map((d, i) => ({ name: d.name, value: counts[d.id] || 0, color: colorForDoctorIndex(i) }));
         if (trendCharts.visits) trendCharts.visits.destroy();
-        trendCharts.visits = makeDonutChart('visitsChart', rows.map((r) => r.name), rows.map((r) => r.value), rows.map((r) => r.color), 'TOTAL VISITS', onVisitsDrillClick);
+        const totalVisits = visited.length;
+        const visitsFormatter = (v) => totalVisits > 0 ? `${v} (${Math.round((v / totalVisits) * 100)}%)` : `${v}`;
+        trendCharts.visits = makeDonutChart('visitsChart', rows.map((r) => r.name), rows.map((r) => r.value), rows.map((r) => r.color), 'TOTAL VISITS', onVisitsDrillClick, visitsFormatter);
         trendCharts.visits._baseColors = rows.map((r) => r.color);
       }
 

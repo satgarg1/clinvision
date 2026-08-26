@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=163" />
+<link rel="stylesheet" href="styles.css?v=164" />
 </head>
 <body>
   <div class="app-shell">
@@ -49,8 +49,11 @@
     <main class="app-main">
       <div class="app-topbar">
         <h1>Doctor View</h1>
-        <div class="clock-pill">
-          <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Time: <span class="time" id="clockTime">--</span></span>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="btn-sm primary" id="viewFullScheduleBtn">Today's full schedule</button>
+          <div class="clock-pill">
+            <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Time: <span class="time" id="clockTime">--</span></span>
+          </div>
         </div>
       </div>
 
@@ -68,14 +71,13 @@
           </div>
         </div>
 
-        <div class="panel" id="fullSchedulePanel">
-          <div class="panel-header"><h2>Today's full schedule</h2></div>
-          <p class="panel-note" style="margin-top:0;">Every appointment and walk-in today, not just who's currently waiting</p>
-          <div id="fullScheduleList" class="full-schedule-list"></div>
-        </div>
-
         <div class="panel" id="statusPanel">
           <div class="panel-header"><h2>Your status</h2></div>
+          <div class="doctor-identity">
+            <div class="doctor-identity-name" id="statusDoctorName"></div>
+            <div class="doctor-identity-specialty" id="statusDoctorSpecialty"></div>
+          </div>
+          <div id="statusSummaryLines"></div>
           <p style="font-size:13px;color:var(--grey-500);margin:0 0 16px;">
             One tap updates every waiting patient's estimate and the waiting-room screen, no one needs to interrupt you to ask.
           </p>
@@ -97,20 +99,17 @@
                   <div class="time-picker-panel" id="delayPanel" style="display:none;"></div>
                 </div>
               </div>
-              <div class="field" style="flex:0 0 auto;">
-                <label>&nbsp;</label>
-                <div style="display:flex;gap:8px;">
-                  <button class="btn-sm primary" id="confirmDelayBtn">Broadcast delay</button>
-                  <button type="button" class="btn-sm accent-outline" id="cancelDelayBtn">Cancel</button>
+              <div class="field" style="max-width:340px;">
+                <label>Reason (optional)</label>
+                <div class="autocomplete-wrap">
+                  <div class="autocomplete-ghost" id="delayReasonGhost" aria-hidden="true"></div>
+                  <input type="text" id="delayReasonInput" placeholder="e.g., in a meeting, at lunch" maxlength="60" autocomplete="off" />
                 </div>
               </div>
             </div>
-            <div class="field" style="max-width:340px;margin-top:10px;">
-              <label>Reason (optional)</label>
-              <div class="autocomplete-wrap">
-                <div class="autocomplete-ghost" id="delayReasonGhost" aria-hidden="true"></div>
-                <input type="text" id="delayReasonInput" placeholder="e.g., in a meeting, at lunch" maxlength="60" autocomplete="off" />
-              </div>
+            <div class="inline-form" style="margin-top:10px;">
+              <button class="btn-sm primary" id="confirmDelayBtn">Broadcast delay</button>
+              <button type="button" class="btn-sm accent-outline" id="cancelDelayBtn">Cancel</button>
             </div>
             <div id="delayHistoryNote" class="field-hint" style="display:none;"></div>
           </div>
@@ -160,11 +159,16 @@
         }
       });
 
-      const [amAdmin, amDoctor] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor()]);
+      const [amAdmin, amDoctor, myProfile] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor(), Qlinic.getMyProfile()]);
+      const myDoctorId = amDoctor ? myProfile.doctorId : null;
       if (amDoctor) {
         document.getElementById('receptionNavLink').style.display = 'none';
         document.getElementById('billingNavLink').style.display = 'none';
         document.getElementById('displayNavLink').style.display = 'none';
+        // A doctor only ever sees their own queue — no dropdown, no way
+        // to pick someone else's data, matching the same restriction
+        // already enforced on Dashboard/Analytics for a linked doctor.
+        document.getElementById('viewingPanel').style.display = 'none';
       }
       if (!amAdmin) {
         document.getElementById('revenueNavLink').style.display = 'none';
@@ -303,33 +307,76 @@
           no_show: '<span class="badge badge-no-show">No-show</span>',
         }[status] || status;
       }
+      function formatPatientAge(p) {
+        return p.age != null ? `${p.age}yr` : '—';
+      }
+
       // Same nowServing+waiting+booked+done+noShow combination
       // buildWalkinRanks already uses — the full day's queue was always
-      // being fetched, just never all rendered together in one place.
-      function renderFullSchedule(q) {
+      // being fetched, just never all shown together in one place. Modeled
+      // on reception's "View day's schedule" button+popup flow (same
+      // modal-backdrop/modal-card pattern, same on-demand trigger instead
+      // of an always-visible panel) but with patient-level detail instead
+      // of bucketed slot counts, since a doctor wants to know who, not
+      // just how many.
+      function openFullScheduleModal(q, doc) {
+        const ranks = buildWalkinRanks(q);
         const all = [
           ...(q.nowServing ? [q.nowServing] : []),
           ...q.waiting, ...q.booked, ...q.done, ...q.noShow,
         ].sort((a, b) => scheduleMinutesFor(a) - scheduleMinutesFor(b));
-        const list = document.getElementById('fullScheduleList');
-        if (all.length === 0) {
-          list.innerHTML = '<div class="empty-state">Nothing on the schedule today.</div>';
-          return;
-        }
-        list.innerHTML = all.map((p) => {
-          const rowClass = p.status === 'done' || p.status === 'no_show' ? 'is-past' : p.status === 'in_consult' ? 'is-current' : '';
-          return `
-            <div class="full-schedule-row ${rowClass}">
-              <span class="full-schedule-time">${Qlinic.escapeHtml(scheduleTimeLabel(p))}</span>
-              <span class="full-schedule-name">${Qlinic.escapeHtml(p.name)}</span>
-              ${scheduleStatusBadge(p.status)}
+        const rowsHtml = all.length === 0
+          ? '<tr><td colspan="5" style="text-align:center;color:var(--grey-500);">Nothing on the schedule today.</td></tr>'
+          : all.map((p) => `
+              <tr ${p.status === 'done' || p.status === 'no_show' ? 'style="color:var(--grey-500);"' : ''}>
+                <td style="white-space:nowrap;">${Qlinic.escapeHtml(scheduleTimeLabel(p))}</td>
+                <td>${Qlinic.escapeHtml(p.name)}</td>
+                <td>${Qlinic.escapeHtml(formatToken(p, ranks) || '—')}</td>
+                <td>${formatPatientAge(p)}</td>
+                <td>${scheduleStatusBadge(p.status)}</td>
+              </tr>
+            `).join('');
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop';
+        backdrop.innerHTML = `
+          <div class="modal-card" role="dialog" aria-modal="true" style="max-width:600px;">
+            <h2 class="modal-title">${Qlinic.escapeHtml(doc.name)}'s full schedule — Today</h2>
+            <p class="panel-note" style="margin-top:0;">Every appointment and walk-in today, not just who's currently waiting</p>
+            <div style="max-height:50vh;overflow-y:auto;">
+              <table class="qtable">
+                <thead><tr><th>Time</th><th>Name</th><th>Token</th><th>Age</th><th>Status</th></tr></thead>
+                <tbody>${rowsHtml}</tbody>
+              </table>
             </div>
-          `;
-        }).join('');
+            <div class="modal-actions">
+              <button type="button" class="btn-sm primary" id="fullScheduleModalCloseBtn">Close</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(backdrop);
+        function close() { backdrop.remove(); document.removeEventListener('keydown', onKey); }
+        function onKey(e) { if (e.key === 'Escape') close(); }
+        backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+        backdrop.querySelector('#fullScheduleModalCloseBtn').addEventListener('click', close);
+        document.addEventListener('keydown', onKey);
       }
 
       async function render() {
-        doctors = await Qlinic.getDoctors();
+        // A doctor login not yet linked to a doctors row (Team settings)
+        // has no data to scope to — same guard already used on
+        // Dashboard/Analytics for this exact case.
+        if (amDoctor && !myDoctorId) {
+          document.getElementById('doctorPanels').style.display = 'none';
+          document.getElementById('noDoctorsPanel').style.display = 'block';
+          document.getElementById('noDoctorsPanel').innerHTML =
+            '<div class="empty-state">Your account isn\'t linked to a doctor profile yet — ask your admin to link it from Team settings.</div>';
+          return;
+        }
+        // Fetching only this one doctor, rather than the full clinic
+        // list and hiding the rest in the UI, means a doctor login never
+        // has another doctor's queue in memory to begin with.
+        doctors = amDoctor ? [await Qlinic.getDoctor(myDoctorId)].filter(Boolean) : await Qlinic.getDoctors();
         const sel = document.getElementById('doctorSelect');
         const prevSelected = sel.value;
         sel.innerHTML = doctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)}</option>`).join('');
@@ -351,7 +398,12 @@
         const walkinRanks = buildWalkinRanks(q);
         applyDoctorAccent(doctorId);
         renderNextAppointment(q);
-        renderFullSchedule(q);
+
+        document.getElementById('statusDoctorName').textContent = doc.name;
+        document.getElementById('statusDoctorSpecialty').textContent = doc.specialty;
+        document.getElementById('statusSummaryLines').innerHTML =
+          `<div>Patients Waiting: ${q.waiting.length}</div>` +
+          `<div>${q.nowServing ? 'In consultation with ' + Qlinic.escapeHtml(q.nowServing.name) : 'Not currently in consultation'}</div>`;
 
         const statusNoteHtml = Qlinic.isRealStatusReason(doc.statusNote) ? ' · "' + Qlinic.escapeHtml(doc.statusNote) + '"' : '';
         document.getElementById('currentStatusLine').innerHTML =
@@ -783,6 +835,11 @@
       });
 
       document.getElementById('doctorSelect').addEventListener('change', render);
+
+      document.getElementById('viewFullScheduleBtn').addEventListener('click', () => {
+        if (!currentQueue || !currentDoctor) return;
+        openFullScheduleModal(currentQueue, currentDoctor);
+      });
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
