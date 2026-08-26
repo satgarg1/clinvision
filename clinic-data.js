@@ -477,6 +477,14 @@
     return normalizeDoctorHoliday(data);
   }
 
+  async function updateDoctorHoliday(holidayId, { date, note }) {
+    const { data, error } = await sb.from('doctor_holidays').update({
+      holiday_date: date, note: note || '',
+    }).eq('id', holidayId).select().single();
+    if (error) throw error;
+    return normalizeDoctorHoliday(data);
+  }
+
   async function deleteDoctorHoliday(holidayId) {
     const { error } = await sb.from('doctor_holidays').delete().eq('id', holidayId);
     if (error) throw error;
@@ -1865,6 +1873,7 @@
     deleteClinicClosure,
     getDoctorHolidays,
     addDoctorHoliday,
+    updateDoctorHoliday,
     deleteDoctorHoliday,
     getDoctors,
     getDoctor,

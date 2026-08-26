@@ -106,7 +106,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=61"></script>
+  <script src="clinic-data.js?v=62"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -148,6 +148,10 @@
         ).join('');
       }
 
+      function powerIconSvg() {
+        return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/></svg>';
+      }
+
       async function renderTeam() {
         const team = await Qlinic.getTeam();
         const box = document.getElementById('teamList');
@@ -170,10 +174,8 @@
                       : '<span class="sub-line">—</span>'}
                   </td>
                   <td>${p.isActive ? '<span class="badge badge-booked">Active</span>' : '<span class="badge badge-no-show">Deactivated</span>'}</td>
-                  <td style="white-space:nowrap;">
-                    ${isSelf ? '' : (p.isActive
-                      ? `<button class="btn-sm danger" onclick="doSetStaffActive('${p.id}', false)">Deactivate</button>`
-                      : `<button class="btn-sm" onclick="doSetStaffActive('${p.id}', true)">Reactivate</button>`)}
+                  <td class="row-actions">
+                    ${isSelf ? '' : `<button type="button" class="icon-btn ${p.isActive ? 'danger' : ''}" onclick="doSetStaffActive('${p.id}', ${!p.isActive})" title="${p.isActive ? 'Deactivate' : 'Reactivate'}" aria-label="${p.isActive ? 'Deactivate' : 'Reactivate'} ${p.fullName ? Qlinic.escapeHtml(p.fullName) : ''}">${powerIconSvg()}</button>`}
                   </td>
                 </tr>
               `;

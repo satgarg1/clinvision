@@ -89,7 +89,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=61"></script>
+  <script src="clinic-data.js?v=62"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -135,6 +135,13 @@
         return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
       }
 
+      function pencilIconSvg() {
+        return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+      }
+      function trashIconSvg() {
+        return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
+      }
+
       function renderHolidays() {
         const wrap = document.getElementById('holidaysTableWrap');
         if (holidays.length === 0) {
@@ -143,21 +150,21 @@
         }
         wrap.innerHTML = `
           <table class="qtable">
-            <thead><tr><th>Date</th><th>Note</th><th style="width:160px;"></th></tr></thead>
+            <thead><tr><th>Date</th><th>Note</th><th style="width:90px;"></th></tr></thead>
             <tbody>
               ${holidays.map((h) => `
                 <tr>
                   <td>${fmtDate(h.date)}</td>
                   <td>${h.note ? Qlinic.escapeHtml(h.note) : '<span class="sub-line">No note</span>'}</td>
-                  <td style="width:160px;text-align:center;"><button type="button" class="btn-sm danger" data-id="${h.id}">Delete</button></td>
+                  <td class="row-actions">
+                    <button type="button" class="icon-btn" onclick="doOpenEditHoliday('${h.id}')" title="Edit" aria-label="Edit holiday on ${fmtDate(h.date)}">${pencilIconSvg()}</button>
+                    <button type="button" class="icon-btn danger" onclick="doDeleteHoliday('${h.id}')" title="Delete" aria-label="Delete holiday on ${fmtDate(h.date)}">${trashIconSvg()}</button>
+                  </td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
         `;
-        wrap.querySelectorAll('[data-id]').forEach((btn) => {
-          btn.addEventListener('click', () => doDeleteHoliday(btn.getAttribute('data-id')));
-        });
       }
 
       async function loadHolidays() {
@@ -172,6 +179,62 @@
         showToast('Holiday removed');
         loadHolidays();
       }
+
+      function doOpenEditHoliday(id) {
+        const holiday = holidays.find((h) => h.id === id);
+        if (holiday) openEditHolidayModal(holiday);
+      }
+
+      function openEditHolidayModal(holiday) {
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop';
+        backdrop.innerHTML = `
+          <div class="modal-card" role="dialog" aria-modal="true">
+            <h2 class="modal-title">Edit holiday</h2>
+            <div class="doctor-form-field" style="margin-bottom:14px;">
+              <label>Date</label>
+              <input type="date" id="editHolidayDate" value="${holiday.date}" />
+            </div>
+            <div class="doctor-form-field" style="margin-bottom:14px;">
+              <label>Note (optional)</label>
+              <input type="text" id="editHolidayNote" value="${holiday.note.replace(/"/g, '&quot;')}" placeholder="e.g. Family wedding" />
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="btn-sm primary" id="editHolidaySaveBtn">Save</button>
+              <button type="button" class="btn-sm" id="editHolidayCancelBtn">Cancel</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        function cleanup() {
+          backdrop.remove();
+          document.removeEventListener('keydown', onKeydown);
+        }
+        function onKeydown(e) {
+          if (e.key === 'Escape') cleanup();
+        }
+        document.addEventListener('keydown', onKeydown);
+        backdrop.addEventListener('click', (e) => { if (e.target === backdrop) cleanup(); });
+        backdrop.querySelector('#editHolidayCancelBtn').addEventListener('click', cleanup);
+
+        backdrop.querySelector('#editHolidaySaveBtn').addEventListener('click', async () => {
+          const date = backdrop.querySelector('#editHolidayDate').value;
+          const note = backdrop.querySelector('#editHolidayNote').value.trim();
+          if (!date) { showToast('Pick a date first'); return; }
+          if (holidays.some((h) => h.date === date && h.id !== holiday.id)) { showToast('That date is already on the list'); return; }
+          await Qlinic.updateDoctorHoliday(holiday.id, { date, note });
+          cleanup();
+          showToast('Holiday updated');
+          loadHolidays();
+        });
+
+        // Not the date field: focusing a native date input auto-selects
+        // its first segment (a blue-highlighted day number).
+        backdrop.querySelector('#editHolidayNote').focus();
+      }
+      window.doDeleteHoliday = doDeleteHoliday;
+      window.doOpenEditHoliday = doOpenEditHoliday;
 
       document.getElementById('holidayForm').addEventListener('submit', async (e) => {
         e.preventDefault();
