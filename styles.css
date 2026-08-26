@@ -988,6 +988,22 @@ input[type="number"] { -moz-appearance: textfield; }
   padding: 26px 28px;
   margin-bottom: 20px;
 }
+/* Doctor View: the one thing a doctor shouldn't have to scroll to find
+   is when their next patient is due — same light-blue tint already
+   used for .badge-in-consult, not a new color introduced just for
+   this banner. */
+.next-appt-callout { display: flex; align-items: center; gap: 14px; background: #e8f0fe; }
+.next-appt-icon { font-size: 22px; }
+.next-appt-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--accent-dark); }
+.next-appt-line { font-size: 17px; font-weight: 600; }
+.full-schedule-list { max-height: 280px; overflow-y: auto; }
+.full-schedule-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--grey-100); }
+.full-schedule-row:last-child { border-bottom: none; }
+.full-schedule-row.is-past { opacity: 0.55; }
+.full-schedule-row.is-current { background: var(--grey-100); border-radius: var(--radius-sm); padding-left: 8px; padding-right: 8px; }
+.full-schedule-time { font-size: 13px; color: var(--grey-500); width: 84px; flex-shrink: 0; }
+.full-schedule-name { font-size: 14px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .billing-option-card { transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease; }
 @media (hover: hover) and (pointer: fine) {
   .billing-option-card:hover {
