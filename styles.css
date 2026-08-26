@@ -1743,16 +1743,15 @@ th.th-filterable { position: relative; }
 /* .inline-form .field select's width:100% (two classes + a type) beats
    .doctor-select (one class) in the specificity fight regardless of
    source order, so a plain override here doesn't stick — asserted by
-   ID instead, which always wins. width:max-content was tried here
-   first and still clipped the closing bracket on a long doctor label —
-   Chrome's intrinsic-sizing pass for a <select> doesn't reliably
-   measure its own rendered option text the same way plain "auto"
-   sizing does. width:auto instead just turns the override off and
-   lets the browser use its own default sizing for a <select> with no
-   CSS width at all — the one path that's never actually clipped its
-   own content, since that would be a glaring bug in completely
-   unstyled selects everywhere on the web. */
-#queueDoctorFilter { width: auto; max-width: 100%; }
+   ID instead, which always wins. Both width:max-content and width:auto
+   were tried here first and both still clipped the closing bracket on
+   a long doctor label — Chrome's own intrinsic-sizing pass for a
+   <select> doesn't reliably size to fit its own rendered option text.
+   A fixed width sidesteps that measurement entirely instead of
+   trusting it: comfortably wider than "Name, Specialty (N waiting,
+   N booked)" ever needs to be, at the cost of some empty space for a
+   short name. */
+#queueDoctorFilter { width: 480px; max-width: 100%; }
 .queue-filter-group { display: flex; align-items: flex-end; gap: 10px; }
 
 /* Height pinned to match #queueDateFilter exactly (44px) rather than

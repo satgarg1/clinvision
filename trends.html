@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=160" />
+<link rel="stylesheet" href="styles.css?v=161" />
 </head>
 <body>
   <div class="app-shell">
@@ -888,17 +888,22 @@
           const g = Object.prototype.hasOwnProperty.call(genderCounts, p.gender) ? p.gender : 'other';
           genderCounts[g] += 1;
         });
+        // The count sits right in the legend label (e.g. "18-35 (32)")
+        // instead of only showing on hover — the center number is the
+        // grand total, so leaving each slice's own count to a tooltip
+        // meant the only two numbers visible at a glance were the same
+        // total twice.
         const genderRows = Object.keys(GENDER_LABELS)
-          .map((k, i) => ({ label: GENDER_LABELS[k], value: genderCounts[k], color: colorForDoctorIndex(i) }))
+          .map((k, i) => ({ label: `${GENDER_LABELS[k]} (${genderCounts[k]})`, value: genderCounts[k], color: colorForDoctorIndex(i) }))
           .filter((r) => r.value > 0);
-        trendCharts.gender = makeDonutChart('genderChart', genderRows.map((r) => r.label), genderRows.map((r) => r.value), genderRows.map((r) => r.color), String(visited.length), null);
+        trendCharts.gender = makeDonutChart('genderChart', genderRows.map((r) => r.label), genderRows.map((r) => r.value), genderRows.map((r) => r.color), 'PATIENTS', null);
 
         const ageCounts = Object.fromEntries(AGE_BUCKETS.map((b) => [b, 0]));
         visited.forEach((p) => { ageCounts[ageBucketFor(p.age)] += 1; });
         const ageRows = AGE_BUCKETS
-          .map((b, i) => ({ label: b, value: ageCounts[b], color: colorForDoctorIndex(i) }))
+          .map((b, i) => ({ label: `${b} (${ageCounts[b]})`, value: ageCounts[b], color: colorForDoctorIndex(i) }))
           .filter((r) => r.value > 0);
-        trendCharts.age = makeDonutChart('ageChart', ageRows.map((r) => r.label), ageRows.map((r) => r.value), ageRows.map((r) => r.color), String(visited.length), null);
+        trendCharts.age = makeDonutChart('ageChart', ageRows.map((r) => r.label), ageRows.map((r) => r.value), ageRows.map((r) => r.color), 'PATIENTS', null);
       }
 
       function onPeakDrillClick(hour) {
