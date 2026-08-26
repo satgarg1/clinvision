@@ -1684,10 +1684,6 @@ th.th-filterable { position: relative; }
    this — max-content is what actually ties the box to its own text,
    long or short, for whatever doctor names a clinic has. */
 #queueDoctorFilter { width: max-content; max-width: 100%; }
-/* Doctor reads as its own group; Date+Today read as a second, tighter
-   group right after a divider — instead of Doctor sitting alone on the
-   left with Date/Today stranded off at the far right of the row. */
-.queue-filter-divider { width: 1px; height: 44px; background: var(--grey-300); flex-shrink: 0; }
 .queue-filter-group { display: flex; align-items: flex-end; gap: 10px; }
 
 /* Height pinned to match #queueDateFilter exactly (44px) rather than
