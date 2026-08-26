@@ -437,6 +437,14 @@
     return normalizeClosure(data);
   }
 
+  async function updateClinicClosure(closureId, { date, note }) {
+    const { data, error } = await sb.from('clinic_closures').update({
+      closure_date: date, note: note || '',
+    }).eq('id', closureId).select().single();
+    if (error) throw error;
+    return normalizeClosure(data);
+  }
+
   async function deleteClinicClosure(closureId) {
     const { error } = await sb.from('clinic_closures').delete().eq('id', closureId);
     if (error) throw error;
@@ -1853,6 +1861,7 @@
     removeClinicLogo,
     getClinicClosures,
     addClinicClosure,
+    updateClinicClosure,
     deleteClinicClosure,
     getDoctorHolidays,
     addDoctorHoliday,

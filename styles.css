@@ -1190,7 +1190,10 @@ th.th-filterable { position: relative; }
 .status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .status-dot.active { background: var(--success); }
 .status-dot.inactive { background: var(--grey-500); }
-.doctor-row-actions { display: flex; gap: 4px; justify-content: flex-end; }
+/* .row-actions/.icon-btn: shared by any table row's edit/delete
+   controls (Manage doctors, Closed dates, …), not doctor-specific
+   despite living next to the doctor-only rules above. */
+.row-actions { display: flex; gap: 4px; justify-content: flex-end; }
 .icon-btn {
   width: 30px;
   height: 30px;
