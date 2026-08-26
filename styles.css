@@ -1156,6 +1156,51 @@ th.th-filterable { position: relative; }
 .badge-likely { background: var(--warning-bg); color: var(--warning); }
 .badge-booked { background: var(--grey-100); color: var(--grey-500); }
 
+/* Manage doctors: a self-contained form look (soft grey fill, no
+   border) instead of reusing .field/.inline-form, which would have
+   meant fighting .inline-form .field input's higher-specificity
+   border/background just to turn it off. Shared by the Add-a-doctor
+   form and the Edit-doctor dialog, so both read as the same page. */
+.doctor-form { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+.doctor-form > .btn-sm { height: 38px; box-sizing: border-box; }
+.doctor-form-field { display: flex; flex-direction: column; gap: 6px; }
+.doctor-form-field label { font-size: 12px; font-weight: 600; color: var(--grey-500); }
+.doctor-form-field input, .doctor-form-field select {
+  height: 38px;
+  border: none;
+  background: var(--grey-100);
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  font-size: 14px;
+  font-family: var(--font);
+  width: 100%;
+  box-sizing: border-box;
+}
+.doctor-form-field input:focus, .doctor-form-field select:focus { outline: 2px solid var(--accent); }
+
+/* All doctors: plain text rows (name/specialty/fees/status), never an
+   input box, so the table doesn't look like a giant form — editing
+   happens in the dialog .doctor-form-field opens, not inline. */
+.status-dot-label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--grey-700); }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.active { background: var(--success); }
+.status-dot.inactive { background: var(--grey-500); }
+.doctor-row-actions { display: flex; gap: 4px; justify-content: flex-end; }
+.icon-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--grey-500);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.icon-btn:hover { background: var(--grey-100); color: var(--black); }
+.icon-btn.danger:hover { background: var(--danger-bg); color: var(--danger); }
+
 .btn-sm {
   font-family: var(--font);
   font-size: var(--text-sm);

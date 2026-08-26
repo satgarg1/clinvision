@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=154" />
+<link rel="stylesheet" href="styles.css?v=155" />
 </head>
 <body>
   <div class="app-shell">
@@ -56,31 +56,28 @@
 
       <div class="panel">
         <div class="panel-header"><h2>Add a doctor</h2></div>
-        <form id="addDoctorForm" class="inline-form">
-          <div class="field">
+        <form id="addDoctorForm" class="doctor-form">
+          <div class="doctor-form-field" style="flex:1.4;min-width:160px;">
             <label>Name</label>
             <input type="text" id="newDoctorName" placeholder="Dr. Jane Doe" required />
           </div>
-          <div class="field">
+          <div class="doctor-form-field" style="flex:1;min-width:150px;">
             <label>Specialty</label>
             <select id="newDoctorSpecialty"></select>
           </div>
-          <div class="field" id="newDoctorSpecialtyOtherField" style="display:none;">
+          <div class="doctor-form-field" id="newDoctorSpecialtyOtherField" style="display:none;flex:1;min-width:150px;">
             <label>Specify specialty</label>
             <input type="text" id="newDoctorSpecialtyOther" placeholder="e.g. Podiatrist" />
           </div>
-          <div class="field" style="max-width:140px;">
+          <div class="doctor-form-field" style="width:130px;">
             <label>Consultation fee (&#8377;)</label>
             <input type="number" id="newDoctorFeeNormal" min="0" step="1" />
           </div>
-          <div class="field" style="max-width:140px;">
+          <div class="doctor-form-field" style="width:130px;">
             <label>Emergency fee (&#8377;)</label>
             <input type="number" id="newDoctorFeeEmergency" min="0" step="1" />
           </div>
-          <div class="field" style="flex:0;">
-            <label>&nbsp;</label>
-            <button type="submit" class="btn-sm primary">Add doctor</button>
-          </div>
+          <button type="submit" class="btn-sm primary">Add doctor</button>
         </form>
         <div id="newDoctorFeeHint" class="slot-hint" style="display:none;"></div>
       </div>
@@ -171,6 +168,13 @@
         return `<div style="color:var(--warning);background:var(--warning-bg);padding:8px 12px;border-radius:8px;">&#9888; ${msg}</div>`;
       }
 
+      function pencilIconSvg() {
+        return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+      }
+      function powerIconSvg() {
+        return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/></svg>';
+      }
+
       function specialtyOptionsHtml(selected) {
         const isKnown = SPECIALTIES.includes(selected);
         return SPECIALTIES.map((s) => `<option value="${s}" ${s === selected ? 'selected' : ''}>${s}</option>`).join('')
@@ -231,30 +235,19 @@
           <table class="qtable">
             <thead><tr><th>Name</th><th>Specialty</th><th>Consultation fee (&#8377;)</th><th>Emergency fee (&#8377;)</th><th>Status</th><th></th></tr></thead>
             <tbody>
-              ${pageDoctors.map((d) => {
-                const isKnown = SPECIALTIES.includes(d.specialty);
-                return `
+              ${pageDoctors.map((d) => `
                 <tr style="${d.isActive ? '' : 'opacity:0.5;'}">
-                  <td><input type="text" class="doc-edit-name" data-id="${d.id}" value="${d.name.replace(/"/g, '&quot;')}" style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);" /></td>
-                  <td>
-                    <select class="doc-edit-specialty" data-id="${d.id}" style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);">${specialtyOptionsHtml(d.specialty)}</select>
-                    <input type="text" class="doc-edit-specialty-other" data-id="${d.id}" value="${(!isKnown ? (d.specialty || '') : '').replace(/"/g, '&quot;')}" placeholder="Specify specialty" style="width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);${isKnown ? 'display:none;' : ''}" />
-                  </td>
-                  <td><input type="number" min="0" step="1" class="doc-edit-fee-normal" data-id="${d.id}" value="${d.feeNormal || 0}" style="width:90px;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);" /></td>
-                  <td><input type="number" min="0" step="1" class="doc-edit-fee-emergency" data-id="${d.id}" value="${d.feeEmergency || 0}" style="width:90px;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);" /></td>
-                  <td>${d.isActive ? '<span class="badge badge-booked">Active</span>' : '<span class="badge badge-no-show">Deactivated</span>'}</td>
-                  <td style="white-space:nowrap;">
-                    <button class="btn-sm primary" onclick="doSaveDoctor('${d.id}')">Save</button>
-                    ${d.isActive
-                      ? `<button class="btn-sm danger" onclick="doSetDoctorActive('${d.id}', false)">Deactivate</button>`
-                      : `<button class="btn-sm" onclick="doSetDoctorActive('${d.id}', true)">Reactivate</button>`}
+                  <td>${Qlinic.escapeHtml(d.name)}</td>
+                  <td>${Qlinic.escapeHtml(d.specialty)}</td>
+                  <td>&#8377;${d.feeNormal || 0}</td>
+                  <td>&#8377;${d.feeEmergency || 0}</td>
+                  <td><span class="status-dot-label"><span class="status-dot ${d.isActive ? 'active' : 'inactive'}"></span>${d.isActive ? 'Active' : 'Deactivated'}</span></td>
+                  <td class="doctor-row-actions">
+                    <button type="button" class="icon-btn" onclick="doOpenEditDoctor('${d.id}')" aria-label="Edit ${Qlinic.escapeHtml(d.name)}">${pencilIconSvg()}</button>
+                    <button type="button" class="icon-btn ${d.isActive ? 'danger' : ''}" onclick="doSetDoctorActive('${d.id}', ${!d.isActive})" aria-label="${d.isActive ? 'Deactivate' : 'Reactivate'} ${Qlinic.escapeHtml(d.name)}">${powerIconSvg()}</button>
                   </td>
                 </tr>
-                <tr class="fee-warn-row" data-id="${d.id}" style="display:none;">
-                  <td colspan="6" style="padding-top:0;"><div class="fee-warn-note"></div></td>
-                </tr>
-              `;
-              }).join('')}
+              `).join('')}
             </tbody>
           </table>
         `;
@@ -266,17 +259,99 @@
         renderDoctors();
       }
 
-      async function doSaveDoctor(id) {
-        const name = document.querySelector(`.doc-edit-name[data-id="${id}"]`).value;
-        const specialtySelect = document.querySelector(`.doc-edit-specialty[data-id="${id}"]`).value;
-        const specialty = specialtySelect === OTHER_SPECIALTY
-          ? document.querySelector(`.doc-edit-specialty-other[data-id="${id}"]`).value
-          : specialtySelect;
-        const feeNormal = Number(document.querySelector(`.doc-edit-fee-normal[data-id="${id}"]`).value) || 0;
-        const feeEmergency = Number(document.querySelector(`.doc-edit-fee-emergency[data-id="${id}"]`).value) || 0;
-        await Qlinic.updateDoctor(id, { name, specialty, feeNormal, feeEmergency });
-        showToast('Doctor updated');
-        loadDoctors();
+      function doOpenEditDoctor(id) {
+        const doctor = allDoctors.find((d) => d.id === id);
+        if (doctor) openEditDoctorModal(doctor);
+      }
+
+      // A dialog, not an inline row-edit — keeps the table itself plain
+      // text always, rather than turning into a form the moment you touch
+      // one row (which is the exact "looks cheap" complaint this replaced).
+      function openEditDoctorModal(doctor) {
+        const isKnown = SPECIALTIES.includes(doctor.specialty);
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop';
+        backdrop.innerHTML = `
+          <div class="modal-card" role="dialog" aria-modal="true">
+            <h2 class="modal-title">Edit doctor</h2>
+            <div class="doctor-form-field" style="margin-bottom:14px;">
+              <label>Name</label>
+              <input type="text" id="editDoctorName" value="${doctor.name.replace(/"/g, '&quot;')}" />
+            </div>
+            <div class="doctor-form-field" style="margin-bottom:14px;">
+              <label>Specialty</label>
+              <select id="editDoctorSpecialty">${specialtyOptionsHtml(doctor.specialty)}</select>
+            </div>
+            <div class="doctor-form-field" id="editDoctorSpecialtyOtherField" style="margin-bottom:14px;${isKnown ? 'display:none;' : ''}">
+              <label>Specify specialty</label>
+              <input type="text" id="editDoctorSpecialtyOther" value="${(!isKnown ? (doctor.specialty || '') : '').replace(/"/g, '&quot;')}" placeholder="e.g. Podiatrist" />
+            </div>
+            <div style="display:flex;gap:12px;margin-bottom:14px;">
+              <div class="doctor-form-field" style="flex:1;">
+                <label>Consultation fee (&#8377;)</label>
+                <input type="number" min="0" step="1" id="editDoctorFeeNormal" value="${doctor.feeNormal || 0}" />
+              </div>
+              <div class="doctor-form-field" style="flex:1;">
+                <label>Emergency fee (&#8377;)</label>
+                <input type="number" min="0" step="1" id="editDoctorFeeEmergency" value="${doctor.feeEmergency || 0}" />
+              </div>
+            </div>
+            <div id="editDoctorFeeHint" class="slot-hint" style="display:none;margin-bottom:14px;"></div>
+            <div class="modal-actions">
+              <button type="button" class="btn-sm" id="editDoctorCancelBtn">Cancel</button>
+              <button type="button" class="btn-sm primary" id="editDoctorSaveBtn">Save</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        function cleanup() {
+          backdrop.remove();
+          document.removeEventListener('keydown', onKeydown);
+        }
+        function onKeydown(e) {
+          if (e.key === 'Escape') cleanup();
+        }
+        document.addEventListener('keydown', onKeydown);
+        backdrop.addEventListener('click', (e) => { if (e.target === backdrop) cleanup(); });
+        backdrop.querySelector('#editDoctorCancelBtn').addEventListener('click', cleanup);
+
+        backdrop.querySelector('#editDoctorName').addEventListener('input', function () {
+          this.value = this.value.replace(/[0-9]/g, '');
+        });
+
+        backdrop.querySelector('#editDoctorSpecialty').addEventListener('change', (e) => {
+          backdrop.querySelector('#editDoctorSpecialtyOtherField').style.display = e.target.value === OTHER_SPECIALTY ? 'flex' : 'none';
+        });
+
+        function updateEditFeeHint() {
+          const normal = Number(backdrop.querySelector('#editDoctorFeeNormal').value) || 0;
+          const emergency = Number(backdrop.querySelector('#editDoctorFeeEmergency').value) || 0;
+          const hint = backdrop.querySelector('#editDoctorFeeHint');
+          const msg = feeWarningMessage(normal, emergency);
+          if (!msg) { hint.style.display = 'none'; hint.innerHTML = ''; return; }
+          hint.innerHTML = feeWarningHtml(msg);
+          hint.style.display = 'block';
+        }
+        backdrop.querySelector('#editDoctorFeeNormal').addEventListener('input', updateEditFeeHint);
+        backdrop.querySelector('#editDoctorFeeEmergency').addEventListener('input', updateEditFeeHint);
+        updateEditFeeHint();
+
+        backdrop.querySelector('#editDoctorSaveBtn').addEventListener('click', async () => {
+          const name = backdrop.querySelector('#editDoctorName').value;
+          const specialtySelect = backdrop.querySelector('#editDoctorSpecialty').value;
+          const specialty = specialtySelect === OTHER_SPECIALTY
+            ? backdrop.querySelector('#editDoctorSpecialtyOther').value
+            : specialtySelect;
+          const feeNormal = Number(backdrop.querySelector('#editDoctorFeeNormal').value) || 0;
+          const feeEmergency = Number(backdrop.querySelector('#editDoctorFeeEmergency').value) || 0;
+          await Qlinic.updateDoctor(doctor.id, { name, specialty, feeNormal, feeEmergency });
+          cleanup();
+          showToast('Doctor updated');
+          loadDoctors();
+        });
+
+        backdrop.querySelector('#editDoctorName').focus();
       }
 
       async function doSetDoctorActive(id, isActive) {
@@ -292,31 +367,8 @@
         showToast(isActive ? 'Doctor reactivated' : 'Doctor deactivated');
         loadDoctors();
       }
-      window.doSaveDoctor = doSaveDoctor;
+      window.doOpenEditDoctor = doOpenEditDoctor;
       window.doSetDoctorActive = doSetDoctorActive;
-
-      document.getElementById('doctorList').addEventListener('change', (e) => {
-        if (!e.target.classList.contains('doc-edit-specialty')) return;
-        const id = e.target.getAttribute('data-id');
-        const otherField = document.querySelector(`.doc-edit-specialty-other[data-id="${id}"]`);
-        otherField.style.display = e.target.value === OTHER_SPECIALTY ? 'block' : 'none';
-      });
-
-      document.getElementById('doctorList').addEventListener('input', (e) => {
-        if (e.target.classList.contains('doc-edit-name')) {
-          e.target.value = e.target.value.replace(/[0-9]/g, '');
-        }
-        if (!e.target.classList.contains('doc-edit-fee-normal') && !e.target.classList.contains('doc-edit-fee-emergency')) return;
-        const id = e.target.getAttribute('data-id');
-        const normal = Number(document.querySelector(`.doc-edit-fee-normal[data-id="${id}"]`).value) || 0;
-        const emergency = Number(document.querySelector(`.doc-edit-fee-emergency[data-id="${id}"]`).value) || 0;
-        const warnRow = document.querySelector(`.fee-warn-row[data-id="${id}"]`);
-        const note = warnRow.querySelector('.fee-warn-note');
-        const msg = feeWarningMessage(normal, emergency);
-        if (!msg) { warnRow.style.display = 'none'; note.innerHTML = ''; return; }
-        note.innerHTML = feeWarningHtml(msg);
-        warnRow.style.display = 'table-row';
-      });
 
       document.getElementById('doctorSearch').addEventListener('input', (e) => {
         searchTerm = e.target.value;
@@ -326,7 +378,7 @@
 
       document.getElementById('newDoctorSpecialty').innerHTML = specialtyOptionsHtml(null);
       document.getElementById('newDoctorSpecialty').addEventListener('change', (e) => {
-        document.getElementById('newDoctorSpecialtyOtherField').style.display = e.target.value === OTHER_SPECIALTY ? 'block' : 'none';
+        document.getElementById('newDoctorSpecialtyOtherField').style.display = e.target.value === OTHER_SPECIALTY ? 'flex' : 'none';
       });
 
       function clearNewDoctorFeeHint() {
