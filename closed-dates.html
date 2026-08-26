@@ -221,7 +221,10 @@
           loadClosures();
         });
 
-        backdrop.querySelector('#editClosureDate').focus();
+        // Not the date field: focusing a native date input auto-selects
+        // its first segment (a blue-highlighted "14"), which reads as a
+        // stray selection rather than an intentional focus state.
+        backdrop.querySelector('#editClosureNote').focus();
       }
       window.doDeleteClosure = doDeleteClosure;
       window.doOpenEditClosure = doOpenEditClosure;
