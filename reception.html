@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=167" />
+<link rel="stylesheet" href="styles.css?v=168" />
 </head>
 <body>
   <div class="app-shell">
@@ -150,6 +150,7 @@
           <div id="patientLookupHint" class="slot-hint" style="display:none;"></div>
           <div id="followUpHint" class="slot-hint" style="display:none;"></div>
           <div id="slotHint" class="slot-hint"></div>
+          <div id="patientNotificationPreview" class="dev-notification-preview" style="display:none;"></div>
         </form>
       </div>
 
@@ -260,6 +261,20 @@
         t.textContent = msg;
         t.classList.add('show');
         setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      // TEMPORARY: no SMS provider is wired up yet (see queueBookingNotification
+      // in clinic-data.js — every booking already composes this exact message
+      // and logs it, nothing sends it), so this is the only way to actually
+      // see and click the patient's queue link right now. Surfaced here
+      // specifically so we can test/harden queue.html against real bookings;
+      // remove once real SMS delivery exists.
+      function renderNotificationPreview(message) {
+        const box = document.getElementById('patientNotificationPreview');
+        if (!message) { box.style.display = 'none'; return; }
+        const linked = Qlinic.escapeHtml(message).replace(/(https?:\/\/\S+)/, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+        box.innerHTML = `<div class="dev-notification-eyebrow">Temporary — patient message preview, for testing the queue link</div>${linked}`;
+        box.style.display = 'block';
       }
 
       async function refreshDoctorsCache() {
@@ -1297,8 +1312,9 @@
           // violation) failed completely silently: no toast, no error,
           // "Add walk-in" just did nothing no matter how many times it
           // was clicked. Now it's at least visible when it happens.
+          let addResult;
           try {
-            await Qlinic.addWalkIn({
+            addResult = await Qlinic.addWalkIn({
               name, phone, age, gender, address, doctorId,
               reason: document.getElementById('pReason').value,
               bookedTime: walkinTime || null,
@@ -1309,6 +1325,7 @@
             return;
           }
           showToast(isPriority ? 'Emergency walk-in added — seen first' : 'Walk-in added to the queue');
+          renderNotificationPreview(addResult.message);
         } else {
           const date = document.getElementById('pDate').value;
           const time = document.getElementById('pTime').value;
@@ -1342,14 +1359,16 @@
           }))) {
             return;
           }
+          let addResult;
           try {
-            await Qlinic.addAppointment({ name, phone, age, gender, address, doctorId, bookedDate: date, bookedTime: time, reason: document.getElementById('pReason').value });
+            addResult = await Qlinic.addAppointment({ name, phone, age, gender, address, doctorId, bookedDate: date, bookedTime: time, reason: document.getElementById('pReason').value });
           } catch (err) {
             showToast(err.message || 'Could not add the appointment — please try again.');
             return;
           }
           bookedForToday = date === Qlinic.getTodayDate();
           showToast(bookedForToday ? 'Appointment added' : `Appointment booked for ${Qlinic.formatDateLabel(date)} (${Qlinic.formatTime(Qlinic.parseTime(time))})`);
+          renderNotificationPreview(addResult.message);
         }
 
         // Jump the queue view to whichever doctor this patient was just

@@ -2236,6 +2236,32 @@ th.th-filterable { position: relative; }
 .slot-hint.error { color: var(--danger); font-weight: 600; }
 .slot-hint .btn-sm { margin-left: 4px; padding: 3px 10px; font-size: 12px; }
 
+/* Scaffolding, not a shipped feature: no SMS provider is connected yet
+   (see queueBookingNotification in clinic-data.js), so this is the only
+   way to actually reach a patient's queue link right now, for testing
+   queue.html against real bookings. Dashed border + warning tint on
+   purpose, so it visibly reads as temporary rather than blending in
+   with the rest of the form. */
+.dev-notification-preview {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--warning);
+  background: var(--warning-bg);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--black);
+}
+.dev-notification-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--warning);
+  margin-bottom: 4px;
+}
+.dev-notification-preview a { color: var(--accent); font-weight: 600; word-break: break-all; }
+
 .sub-line {
   font-size: 12px;
   color: var(--grey-500);
