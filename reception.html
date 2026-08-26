@@ -176,7 +176,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=59"></script>
+  <script src="clinic-data.js?v=60"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -1009,7 +1009,7 @@
         if (!queueDoctorId || !doctors.find((d) => d.id === queueDoctorId)) {
           queueDoctorId = doctors.length ? doctors[0].id : null;
         }
-        const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id, queueViewDate)));
+        const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id, queueViewDate, d)));
         const isToday = queueViewDate === Qlinic.getTodayDate();
         sel.innerHTML = doctors.map((d, i) => {
           const q = queues[i];
@@ -1196,8 +1196,17 @@
         if (waitingNextBtn) waitingNextBtn.addEventListener('click', () => { waitingPage = Math.min(totalWaitingPages - 1, waitingPage + 1); renderQueuePanel(); });
       }
 
-      document.getElementById('searchBox').addEventListener('input', renderSearch);
+      // Debounced: renderSearch hits the database (searchBookedPatients),
+      // so firing it on every keystroke meant a query per letter typed.
+      // Clearing still calls renderSearch() directly, below, for instant
+      // feedback on a deliberate single action rather than rapid typing.
+      let searchInputTimer = null;
+      document.getElementById('searchBox').addEventListener('input', () => {
+        clearTimeout(searchInputTimer);
+        searchInputTimer = setTimeout(renderSearch, 300);
+      });
       document.getElementById('clearSearchBtn').addEventListener('click', () => {
+        clearTimeout(searchInputTimer);
         const box = document.getElementById('searchBox');
         box.value = '';
         renderSearch();

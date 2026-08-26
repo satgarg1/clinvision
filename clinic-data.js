@@ -488,9 +488,16 @@
     return data.map(normalizeDoctor);
   }
 
+  // A single targeted row, not the whole table filtered down in JS — this
+  // used to call getDoctors() (every doctor in the clinic) just to find
+  // one by id, which turned any per-doctor loop (getQueueForDoctor across
+  // all doctors, called on every queue render) into that many redundant
+  // full-table fetches.
   async function getDoctor(doctorId) {
-    const doctors = await getDoctors({ includeInactive: true });
-    return doctors.find((d) => d.id === doctorId) || null;
+    if (!doctorId) return null;
+    const { data, error } = await sb.from('doctors').select('*').eq('id', doctorId).maybeSingle();
+    if (error) throw error;
+    return data ? normalizeDoctor(data) : null;
   }
 
   async function addDoctor({ name, specialty, feeNormal, feeEmergency }) {
@@ -540,10 +547,15 @@
   // Returns { nowServing, waiting: [...with .position/.effectiveTime],
   // booked: [...with .effectiveTime], done, noShow }.
   // Defaults to today; pass a dateStr to browse a different day.
-  async function getQueueForDoctor(doctorId, dateStr) {
+  // doctorHint (optional): skips the getDoctor() lookup when the caller
+  // already has the doctor object in hand — e.g. looping every doctor's
+  // queue via Promise.all(doctors.map(...)), where re-fetching each one
+  // individually is a redundant round-trip per doctor for data the caller
+  // already loaded to build that same loop.
+  async function getQueueForDoctor(doctorId, dateStr, doctorHint) {
     const targetDate = dateStr || todayDateStr();
     const [doctor, mine] = await Promise.all([
-      getDoctor(doctorId),
+      doctorHint || getDoctor(doctorId),
       fetchPatientsForDoctorAndDate(doctorId, targetDate),
     ]);
 
@@ -568,7 +580,7 @@
 
   async function getAllQueues(dateStr) {
     const doctors = await getDoctors();
-    const queues = await Promise.all(doctors.map((d) => getQueueForDoctor(d.id, dateStr)));
+    const queues = await Promise.all(doctors.map((d) => getQueueForDoctor(d.id, dateStr, d)));
     return doctors.map((d, i) => ({ doctor: d, queue: queues[i] }));
   }
 
@@ -1155,9 +1167,14 @@
   }
 
   async function callNextPatient(doctorId) {
-    const doctor = await getDoctor(doctorId);
     const today = todayDateStr();
-    const mine = await fetchPatientsForDoctorAndDate(doctorId, today);
+    // Independent fetches (neither needs the other's result) — run in
+    // parallel instead of adding a full extra round-trip in front of the
+    // app's single most-clicked button.
+    const [doctor, mine] = await Promise.all([
+      getDoctor(doctorId),
+      fetchPatientsForDoctorAndDate(doctorId, today),
+    ]);
     const current = mine.find((p) => p.status === 'in_consult');
     if (current) {
       await sb.from('patients').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', current.id);
