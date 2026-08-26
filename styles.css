@@ -566,6 +566,35 @@ a { color: inherit; }
 .login-card .login-hint { font-size: 14px; margin-top: 26px; }
 .login-card .login-error { font-size: 14px; }
 
+/* queue.html's redesigned status card: clinic identity now leads (big,
+   bold) instead of small grey caps, the doctor/appointment context is
+   one sentence instead of three stacked lines, and "currently being
+   served" gets its own bordered, tinted cell — big enough to actually
+   read at a glance, with the time it was called so someone at home has
+   a sense of how long that consult has been running. */
+.queue-clinic-name { text-align: center; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 10px; }
+.queue-appt-line { text-align: center; font-size: 15.5px; font-weight: 600; line-height: 1.45; margin-bottom: 10px; }
+.queue-status-msg { text-align: center; font-size: 13.5px; color: var(--grey-700); margin-bottom: 10px; }
+.queue-status-msg.is-waiting { color: var(--warning); font-weight: 700; }
+.queue-advisory {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: var(--mkt-blue-bg); border-radius: var(--radius-sm);
+  padding: 9px 11px; margin-bottom: 16px; text-align: left;
+}
+.queue-advisory .text { font-size: 12px; color: var(--chip-text); line-height: 1.4; font-weight: 600; }
+.queue-doctor-status {
+  text-align: center; font-size: 13.5px; font-weight: 600; color: var(--warning);
+  background: var(--warning-bg); border-radius: var(--radius-sm);
+  padding: 8px 12px; margin-bottom: 16px; line-height: 1.4;
+}
+.queue-nowserving-cell {
+  border: 1.5px solid var(--accent); background: var(--mkt-blue-bg);
+  border-radius: var(--radius-md); padding: 14px 16px; text-align: center; margin-bottom: 16px;
+}
+.queue-nowserving-eyebrow { font-size: 11px; font-weight: 700; color: var(--chip-text); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+.queue-nowserving-num { font-size: 34px; font-weight: 700; color: var(--chip-text); line-height: 1.1; }
+.queue-nowserving-meta { font-size: 12.5px; color: var(--grey-700); margin-top: 4px; }
+
 /* Registration has 10 fields (address split into 3 rows) where every
    other login-card page has 1-4, so it alone gets a denser tier on top
    of the shared login-card scale — not applied to login/forgot/reset,
