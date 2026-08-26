@@ -41,6 +41,17 @@
         <p class="panel-note" style="text-align:center;">This link will show your live queue position on the morning of your appointment.</p>
       </div>
 
+      <div id="doneState" style="display:none;">
+        <div style="text-align:center;color:var(--grey-500);font-size:13px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;" id="doneClinicName"></div>
+        <div style="text-align:center;font-size:34px;margin-bottom:10px;">✅</div>
+        <h1 style="text-align:center;font-size:20px;margin-bottom:6px;" id="doneHeadline"></h1>
+        <p class="panel-note" style="text-align:center;margin-bottom:4px;" id="doneSubText"></p>
+        <div style="text-align:center;margin:18px 0;">
+          <div style="font-size:12px;color:var(--grey-500);" id="doneTokenLabel"></div>
+          <div style="font-size:30px;font-weight:700;color:var(--grey-300);text-decoration:line-through;" id="doneTokenNumber"></div>
+        </div>
+      </div>
+
       <div id="statusState" style="display:none;">
         <div style="text-align:center;color:var(--grey-500);font-size:13px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;" id="clinicName"></div>
         <div style="text-align:center;font-size:18px;font-weight:600;margin:4px 0 20px;" id="doctorName"></div>
@@ -88,22 +99,55 @@
       const errorEl = document.getElementById('errorState');
       const closedEl = document.getElementById('closedState');
       const notYetEl = document.getElementById('notYetState');
+      const doneEl = document.getElementById('doneState');
       const statusEl = document.getElementById('statusState');
       const footerEl = document.getElementById('footerNote');
+      // Set once the 20s poll starts, below — showDone() clears it, since a
+      // done/no-show visit has nothing left that could ever change.
+      let pollIntervalId = null;
 
       function showError() {
         loadingEl.style.display = 'none';
         statusEl.style.display = 'none';
         closedEl.style.display = 'none';
         notYetEl.style.display = 'none';
+        doneEl.style.display = 'none';
         footerEl.style.display = 'none';
         errorEl.style.display = 'block';
       }
 
-      // Only pre-empts the normal status card for a patient who hasn't
-      // been seen yet — a patient who's already done/no-show gets their
-      // final status either way, and "closed for the day" would just be
-      // a confusing thing to see on an old link at that point.
+      // A visit that's over is over — there's no "link expiring" to do at
+      // the database layer (each booking already has its own unique link,
+      // never shared across patients or visits), just a different, final
+      // screen instead of live queue mechanics that will never update
+      // again. Polling stops here too, since nothing left can change.
+      function showDone(data) {
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'none';
+        closedEl.style.display = 'none';
+        notYetEl.style.display = 'none';
+        statusEl.style.display = 'none';
+        footerEl.style.display = 'none';
+        doneEl.style.display = 'block';
+        document.getElementById('doneClinicName').textContent = data.clinicName;
+        if (data.status === 'no_show') {
+          document.getElementById('doneHeadline').textContent = 'This appointment was marked as a no-show';
+          document.getElementById('doneSubText').textContent =
+            `If this was a mistake, please contact ${data.clinicName} directly.`;
+        } else {
+          document.getElementById('doneHeadline').textContent = 'Your visit is complete';
+          document.getElementById('doneSubText').textContent =
+            `You were seen by ${data.doctorName}. Thank you for visiting.`;
+        }
+        document.getElementById('doneTokenLabel').textContent = 'Your token was';
+        document.getElementById('doneTokenNumber').textContent = data.tokenDisplay || '·';
+        if (pollIntervalId) { clearInterval(pollIntervalId); pollIntervalId = null; }
+      }
+
+      // Only reached for a patient who hasn't been seen yet — done/no-show
+      // is checked earlier in render() and shown via showDone() instead,
+      // since "closed for the day" would be a confusing thing to see on an
+      // old link once the visit is already over.
       function showClosed(data) {
         loadingEl.style.display = 'none';
         errorEl.style.display = 'none';
@@ -143,14 +187,20 @@
         booked: '<span class="badge badge-booked">Booked, not checked in yet</span>',
         waiting: '<span class="badge badge-waiting">Waiting</span>',
         in_consult: '<span class="badge badge-in-consult">With the doctor now</span>',
-        done: '<span class="badge badge-done">Visit complete</span>',
-        no_show: '<span class="badge badge-no-show">Marked as no-show</span>',
       };
 
       async function render() {
         const data = await Qlinic.getQueueStatus(patientId);
         if (!data || data.error) {
           showError();
+          return;
+        }
+
+        // Terminal states, checked first: nothing else here (future-date,
+        // closed-today, live position) is still relevant once a visit is
+        // actually over.
+        if (data.status === 'done' || data.status === 'no_show') {
+          showDone(data);
           return;
         }
 
@@ -253,7 +303,12 @@
         return;
       }
 
-      setInterval(() => { render().catch(showError); }, 20000);
+      // Not started at all if the very first render already landed on the
+      // done/no-show screen — showDone() has nothing to clear in that case,
+      // it just never gets set.
+      if (doneEl.style.display !== 'block') {
+        pollIntervalId = setInterval(() => { render().catch(showError); }, 20000);
+      }
     })();
   </script>
 </body>
