@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=157" />
+<link rel="stylesheet" href="styles.css?v=158" />
 </head>
 <body>
   <div class="app-shell">
@@ -54,58 +54,73 @@
         </div>
       </div>
 
-      <div class="panel" id="emailPanel">
-        <div class="panel-header"><h2>Email</h2></div>
-        <p class="panel-note">Current: <strong id="currentEmail">·</strong></p>
-        <form id="emailForm" class="inline-form">
-          <div class="field">
-            <label>New email</label>
-            <input type="email" id="newEmailInput" required />
+      <div class="panel">
+        <div class="account-section" id="emailPanel">
+          <div class="account-section-header">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+            <h2>Email</h2>
+            <span class="account-section-current" id="currentEmail">·</span>
           </div>
-          <div class="field" style="flex:0;">
-            <label>&nbsp;</label>
-            <button type="submit" class="btn-sm primary">Change email</button>
-          </div>
-        </form>
-        <p class="panel-note" id="emailNote" style="display:none;"></p>
-      </div>
-
-      <div class="panel" id="phonePanel">
-        <div class="panel-header"><h2>Phone</h2></div>
-        <p class="panel-note">Current: <strong id="currentPhone">·</strong></p>
-        <form id="phoneForm" class="inline-form">
-          <div class="field">
-            <label>New phone number</label>
-            <div style="display:flex;gap:8px;">
-              <input type="text" value="+91" disabled style="flex:0 0 60px;text-align:center;" />
-              <input type="tel" id="newPhoneInput" inputmode="numeric" maxlength="10" placeholder="10-digit number" required style="flex:1;min-width:0;" />
+          <form id="emailForm" class="inline-form">
+            <div class="field">
+              <label>New email</label>
+              <input type="email" id="newEmailInput" required />
             </div>
-          </div>
-          <div class="field" style="flex:0;">
-            <label>&nbsp;</label>
-            <button type="submit" class="btn-sm primary">Change phone</button>
-          </div>
-        </form>
-        <p class="panel-note" id="phoneNote" style="display:none;"></p>
-      </div>
+            <div class="field" style="flex:0;">
+              <label>&nbsp;</label>
+              <button type="submit" class="btn-sm primary">Change email</button>
+            </div>
+          </form>
+          <p class="panel-note" id="emailNote" style="display:none;"></p>
+        </div>
 
-      <div class="panel" id="passwordPanel">
-        <div class="panel-header"><h2>Password</h2></div>
-        <form id="passwordForm" class="inline-form">
-          <div class="field">
-            <label>New password</label>
-            <input type="password" id="newPasswordInput" minlength="6" required />
+        <div class="account-section-divider" id="phoneDivider"></div>
+
+        <div class="account-section" id="phonePanel">
+          <div class="account-section-header">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <h2>Phone</h2>
+            <span class="account-section-current" id="currentPhone">·</span>
           </div>
-          <div class="field">
-            <label>Confirm new password</label>
-            <input type="password" id="confirmPasswordInput" minlength="6" required />
+          <form id="phoneForm" class="inline-form">
+            <div class="field">
+              <label>New phone number</label>
+              <div style="display:flex;gap:8px;">
+                <input type="text" value="+91" disabled style="flex:0 0 60px;text-align:center;" />
+                <input type="tel" id="newPhoneInput" inputmode="numeric" maxlength="10" placeholder="10-digit number" required style="flex:1;min-width:0;" />
+              </div>
+            </div>
+            <div class="field" style="flex:0;">
+              <label>&nbsp;</label>
+              <button type="submit" class="btn-sm primary">Change phone</button>
+            </div>
+          </form>
+          <p class="panel-note" id="phoneNote" style="display:none;"></p>
+        </div>
+
+        <div class="account-section-divider"></div>
+
+        <div class="account-section" id="passwordPanel">
+          <div class="account-section-header">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <h2>Password</h2>
           </div>
-          <div class="field" style="flex:0;min-width:180px;">
-            <label>&nbsp;</label>
-            <button type="submit" class="btn-sm primary">Change password</button>
-          </div>
-        </form>
-        <p class="panel-note" id="passwordNote" style="display:none;"></p>
+          <form id="passwordForm" class="inline-form">
+            <div class="field">
+              <label>New password</label>
+              <input type="password" id="newPasswordInput" minlength="6" required />
+            </div>
+            <div class="field">
+              <label>Confirm new password</label>
+              <input type="password" id="confirmPasswordInput" minlength="6" required />
+            </div>
+            <div class="field" style="flex:0;min-width:180px;">
+              <label>&nbsp;</label>
+              <button type="submit" class="btn-sm primary">Change password</button>
+            </div>
+          </form>
+          <p class="panel-note" id="passwordNote" style="display:none;"></p>
+        </div>
       </div>
     </main>
   </div>
@@ -136,6 +151,7 @@
       const [admin, amDoctor] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor()]);
       if (!admin) {
         document.getElementById('phonePanel').style.display = 'none';
+        document.getElementById('phoneDivider').style.display = 'none';
       }
       if (amDoctor) {
         document.getElementById('receptionNavLink').style.display = 'none';

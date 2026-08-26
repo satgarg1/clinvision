@@ -1026,6 +1026,17 @@ input[type="number"] { -moz-appearance: textfield; }
   margin: 0 0 16px;
 }
 
+/* Account & security: one card with icon-led sections instead of three
+   separate white panels repeating the same shadow/border three times
+   for what's really one page. The current value sits in the header
+   itself (next to the section title) rather than its own "Current: "
+   line below it. */
+.account-section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.account-section-header svg { color: var(--grey-500); flex-shrink: 0; }
+.account-section-header h2 { margin: 0; }
+.account-section-current { margin-left: auto; font-size: 13px; color: var(--grey-500); }
+.account-section-divider { border-top: 1px solid var(--grey-100); margin: 24px 0; }
+
 table.qtable { width: 100%; border-collapse: collapse; font-size: 14px; }
 table.qtable th {
   text-align: left;
