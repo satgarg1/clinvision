@@ -71,7 +71,6 @@
         <div class="queue-clinic-name" id="clinicName"></div>
         <div class="queue-appt-line" id="appointmentLine"></div>
         <div class="queue-status-msg" id="statusMsgText"></div>
-        <p class="panel-note" id="statusNoteText" style="display:none;text-align:center;margin-bottom:14px;"></p>
 
         <div style="text-align:center;margin-bottom:16px;">
           <div style="font-size:13px;color:var(--grey-500);">Your token number</div>
@@ -209,7 +208,7 @@
 
       const STATUS_MESSAGE = {
         booked: 'You have not checked in to the clinic yet',
-        waiting: 'Waiting',
+        waiting: 'You are currently waiting in clinic',
         in_consult: 'You are currently with the doctor',
       };
 
@@ -286,23 +285,17 @@
         const doctorStatusBlock = document.getElementById('doctorStatusBlock');
         if (data.doctorStatus && data.doctorStatus !== 'on_time') {
           const base = DOCTOR_STATUS_SENTENCE[data.doctorStatus] || `Doctor status: ${data.doctorStatus}`;
+          // The doctor's own typed reason ("In a meeting") folded into the
+          // same sentence instead of a separate line below "Waiting" — one
+          // fact about the doctor, said once. escapeHtml since this is
+          // free text landing on a public, unauthenticated page.
+          const notePart = Qlinic.isRealStatusReason(data.doctorStatusNote) ? ` (${Qlinic.escapeHtml(data.doctorStatusNote)})` : '';
           const durationPart = data.doctorDelayMins ? ` for ${formatMinutesDuration(data.doctorDelayMins)}` : '';
           const sincePart = data.doctorStatusUpdatedAt ? ` since ${Qlinic.formatTimestamp(data.doctorStatusUpdatedAt)}` : '';
-          doctorStatusBlock.innerHTML = `<div class="queue-doctor-status">${base}${durationPart}${sincePart}</div>`;
+          doctorStatusBlock.innerHTML = `<div class="queue-doctor-status">${base}${notePart}${durationPart}${sincePart}</div>`;
           doctorStatusBlock.style.display = 'block';
         } else {
           doctorStatusBlock.style.display = 'none';
-        }
-
-        // Set via textContent, not innerHTML — this is the doctor's own
-        // typed text landing on a public, unauthenticated page, so it
-        // must never be interpreted as markup.
-        const noteEl = document.getElementById('statusNoteText');
-        if (data.doctorStatus && data.doctorStatus !== 'on_time' && Qlinic.isRealStatusReason(data.doctorStatusNote)) {
-          noteEl.textContent = data.doctorStatusNote;
-          noteEl.style.display = 'block';
-        } else {
-          noteEl.style.display = 'none';
         }
 
         const positionBlock = document.getElementById('positionBlock');
