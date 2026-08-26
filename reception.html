@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=168" />
+<link rel="stylesheet" href="styles.css?v=169" />
 </head>
 <body>
   <div class="app-shell">
@@ -700,41 +700,6 @@
       }
       window.syncAdjustAmount = syncAdjustAmount;
 
-      function csvCell(value) {
-        const s = String(value == null ? '' : value);
-        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-      }
-
-      // Now-serving/waiting are live-queue concepts that only apply to
-      // today; booked/done/no-show are meaningful for any date, so the
-      // export covers the full day, not just what's still in progress.
-      function buildQueueCsv(isTodayView, queue) {
-        const rows = [['Name', 'Phone', 'Type', 'Time', 'Status', 'Address', 'Reason']];
-        function pushRow(p, timeStr, status) {
-          rows.push([p.name, p.phone, p.type === 'appointment' ? 'Appointment' : 'Walk-in', timeStr, status, p.address || '', p.reason || '']);
-        }
-        if (isTodayView) {
-          if (queue.nowServing) pushRow(queue.nowServing, Qlinic.formatTimestamp(queue.nowServing.arrivedAt), 'In consultation');
-          queue.waiting.forEach((p) => pushRow(p, Qlinic.formatTimestamp(p.effectiveTime), 'Waiting'));
-        }
-        queue.booked.forEach((p) => pushRow(p, Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)), 'Expected'));
-        queue.done.forEach((p) => pushRow(p, Qlinic.formatTimestamp(p.arrivedAt), 'Seen'));
-        queue.noShow.forEach((p) => pushRow(p, p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '', 'No-show'));
-        return rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
-      }
-
-      function downloadCsv(filename, csvText) {
-        const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      }
-
       // Runs for both modes now — a walk-in given a preferred time competes
       // for the same slot as a phoned-in appointment (see countActiveAtSlot
       // in clinic-data.js), so reception needs the same capacity feedback
@@ -1124,7 +1089,7 @@
 
         panelEl.innerHTML = `
           <div class="panel accent-${accentForDoctor(queueDoctorId)}">
-            <div class="panel-header"><span class="board-doc-dot dot-${accentForDoctor(queueDoctorId)}"></span><h2>${Qlinic.escapeHtml(doctor.name)}, ${Qlinic.escapeHtml(doctor.specialty)}</h2><span class="date-pill">${dateLabel}</span><button type="button" class="btn-sm primary" id="exportCsvBtn">Export CSV</button></div>
+            <div class="panel-header"><span class="board-doc-dot dot-${accentForDoctor(queueDoctorId)}"></span><h2>${Qlinic.escapeHtml(doctor.name)}, ${Qlinic.escapeHtml(doctor.specialty)}</h2></div>
             ${isTodayView ? `
               ${queue.nowServing ? `<p style="font-size:14px;margin:0 0 14px;"><strong>Now with:</strong> ${Qlinic.escapeHtml(queue.nowServing.name)}</p>` : '<p style="font-size:14px;color:var(--grey-500);margin:0 0 14px;">No one in consultation right now.</p>'}
 
@@ -1192,12 +1157,6 @@
             </div>
           </div>
         `;
-
-        document.getElementById('exportCsvBtn').addEventListener('click', () => {
-          const csv = buildQueueCsv(isTodayView, queue);
-          const safeDoctor = doctor.name.replace(/[^a-z0-9]+/gi, '-');
-          downloadCsv(`${safeDoctor}-${queueViewDate}.csv`, csv);
-        });
 
         document.getElementById('bookedToggleBtn').addEventListener('click', () => {
           bookedExpanded = !bookedExpanded;
