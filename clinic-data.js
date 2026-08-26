@@ -1638,7 +1638,7 @@
 
   async function login(email, password) {
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) return false;
+    if (error) throw error;
     await finishClinicSetupIfNeeded(data.session);
     return true;
   }
