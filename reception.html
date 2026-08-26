@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=165" />
+<link rel="stylesheet" href="styles.css?v=166" />
 </head>
 <body>
   <div class="app-shell">
@@ -106,7 +106,7 @@
             </div>
             <div class="field mode-only mode-only-appointment">
               <label>Appointment date</label>
-              <input type="date" id="pDate" />
+              <input type="date" lang="en-GB" id="pDate" />
             </div>
             <div class="field mode-only mode-only-appointment">
               <label>Appointment time</label>
@@ -159,7 +159,7 @@
           </div>
           <div class="queue-filter-group">
             <div class="field" style="min-width:180px;flex:0;">
-              <input type="date" id="queueDateFilter" />
+              <input type="date" lang="en-GB" id="queueDateFilter" />
             </div>
             <div class="field" style="flex:0;">
               <button type="button" class="btn-sm primary" id="queueTodayBtn">Today</button>
@@ -806,7 +806,7 @@
                   // since a walk-in or no-show's effective day is always
                   // today, exactly like the original walk-in intake form.
                   const bookedEditCell = `
-                    ${p.type === 'appointment' ? `<input type="date" class="search-edit-date" value="${p.bookedDate || ''}" />` : ''}
+                    ${p.type === 'appointment' ? `<input type="date" lang="en-GB" class="search-edit-date" value="${p.bookedDate || ''}" />` : ''}
                     <div class="time-picker" id="searchEditTimePicker">
                       <button type="button" class="time-picker-trigger ${p.bookedTime ? '' : 'placeholder'}" id="searchEditTimeTrigger">
                         <span id="searchEditTimeTriggerText">${p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : 'Select a time'}</span><span class="time-picker-caret">▾</span>

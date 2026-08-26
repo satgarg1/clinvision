@@ -98,6 +98,12 @@
 
 * { box-sizing: border-box; }
 
+/* The browser's own calendar icon on a date input is drawn dark by
+   default — invisible against a dark-mode input background otherwise. */
+:root[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
 html { scroll-behavior: smooth; }
 
 body {
@@ -839,6 +845,15 @@ input[type="number"] { -moz-appearance: textfield; }
   object-fit: contain;
   flex-shrink: 0;
 }
+/* A clinic's uploaded logo is whatever colors they chose — often
+   designed against a white background, so it can vanish against the
+   sidebar's own background once that goes dark. A fixed white chip
+   behind it keeps it visible regardless of the logo's own colors. */
+:root[data-theme="dark"] .clinic-logo-thumb {
+  background: #fff;
+  border-radius: var(--radius-sm);
+  padding: 3px;
+}
 
 /* Settings' upload/change/remove row and the matching field at
    registration (signup.html) share this look — a small preview plus a
@@ -992,7 +1007,7 @@ input[type="number"] { -moz-appearance: textfield; }
    is when their next patient is due — same light-blue tint already
    used for .badge-in-consult, not a new color introduced just for
    this banner. */
-.next-appt-callout { display: flex; align-items: center; gap: 14px; background: #e8f0fe; }
+.next-appt-callout { display: flex; align-items: center; gap: 14px; background: var(--mkt-blue-bg); }
 .next-appt-icon { font-size: 22px; }
 .next-appt-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--accent-dark); }
 .next-appt-line { font-size: 17px; font-weight: 600; }
@@ -1453,7 +1468,7 @@ th.th-filterable { position: relative; }
    so the generic rule can't reach them and they'd otherwise fall back to
    .btn-sm's smaller default padding. */
 #delayInputWrap .btn-sm {
-  padding: 10px 12px;
+  padding: var(--space-2) 12px;
   font-size: 14px;
   white-space: nowrap;
 }
