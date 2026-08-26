@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=158" />
+<link rel="stylesheet" href="styles.css?v=159" />
 </head>
 <body>
   <div class="app-shell">
@@ -82,6 +82,7 @@
             <div class="field">
               <label>Age</label>
               <input type="number" id="pAge" min="0" max="120" />
+              <span class="field-hint error" id="ageError" style="display:none;">Enter a valid age (0-120).</span>
             </div>
             <div class="field">
               <label>Phone</label>
@@ -1234,6 +1235,17 @@
         this.value = this.value.replace(/\D/g, '').slice(0, 10);
       });
 
+      // Optional field — blank is valid (age just wasn't given). Anything
+      // actually entered has to be a whole number 0-120, checked as they
+      // type rather than only discovered after Add is pressed.
+      function isValidAge(value) {
+        if (value === '') return true;
+        return /^[0-9]+$/.test(value) && Number(value) <= 120;
+      }
+      document.getElementById('pAge').addEventListener('input', function () {
+        document.getElementById('ageError').style.display = isValidAge(this.value) ? 'none' : '';
+      });
+
       document.getElementById('pName').addEventListener('input', function () {
         this.value = this.value.replace(/[0-9]/g, '');
       });
@@ -1249,7 +1261,13 @@
           document.getElementById('pPhone').focus();
           return;
         }
-        const age = document.getElementById('pAge').value ? Number(document.getElementById('pAge').value) : null;
+        const ageInput = document.getElementById('pAge');
+        if (!isValidAge(ageInput.value)) {
+          document.getElementById('ageError').style.display = '';
+          ageInput.focus();
+          return;
+        }
+        const age = ageInput.value ? Number(ageInput.value) : null;
         const gender = document.getElementById('pGender').value;
         const address = document.getElementById('pAddress').value;
         const doctorId = document.getElementById('pDoctor').value;

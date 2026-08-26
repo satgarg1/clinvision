@@ -1694,6 +1694,7 @@ th.th-filterable { position: relative; }
    do" hint that used to live as one big paragraph under the whole form —
    attached to the field it explains instead of read separately. */
 .field-hint { display: block; font-size: 12px; color: var(--grey-500); margin-top: 6px; }
+.field-hint.error { color: var(--danger); font-weight: 600; }
 
 /* Reception's "a doctor has closed for the day" notice, sitting above the
    page heading so it's the first thing read, not a corner toast that
@@ -1733,7 +1734,12 @@ th.th-filterable { position: relative; }
   margin-bottom: 8px;
 }
 .doctor-select {
-  padding: 10px 14px;
+  /* Extra right padding, not the usual 14px both sides — a native
+     select's own dropdown arrow sits inside the box's content width,
+     so max-content sizing below left just enough room for the text
+     itself, and the closing bracket of a doctor's counts overlapped
+     the arrow. */
+  padding: 10px 32px 10px 14px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--grey-300);
   font-size: 14px;
