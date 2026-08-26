@@ -132,6 +132,16 @@
         </div>
       </div>
 
+      <div class="panel" id="demographicsPanel">
+        <div class="panel-header"><h2>Patient demographics</h2></div>
+        <p class="panel-note" style="margin-top:0;">Who visited during this period, by gender and age</p>
+        <div class="trend-drill-charts two-up" id="demographicsCharts">
+          <div class="trend-drill-chart-box donut-size"><canvas id="genderChart"></canvas></div>
+          <div class="trend-drill-chart-box donut-size"><canvas id="ageChart"></canvas></div>
+        </div>
+        <div class="empty-state" id="demographicsEmptyState" style="display:none;">No patients in this period.</div>
+      </div>
+
       <div class="panel" id="consultDurationPanel">
         <div class="panel-header"><h2 id="consultDurationHeading">Average consult duration</h2></div>
         <div class="trend-chart-box"><canvas id="consultChart"></canvas><div class="empty-state" id="consultEmptyState" style="display:none;">No completed-consultation timing data in this period yet.</div></div>
@@ -847,6 +857,50 @@
         trendCharts.peak._hours = hours;
       }
 
+      // Counts visits in the period (same convention as every other chart
+      // here, e.g. Visits per doctor), not de-duplicated unique people —
+      // someone who came in three times counts three times. Gender always
+      // has a value (defaults to 'other' at intake); age is optional, so
+      // anyone without one recorded goes in its own "Unknown" slice rather
+      // than being silently dropped from the total.
+      const GENDER_LABELS = { male: 'Male', female: 'Female', other: 'Other' };
+      const AGE_BUCKETS = ['<18', '18-35', '35-55', '>55', 'Unknown'];
+      function ageBucketFor(age) {
+        if (age == null) return 'Unknown';
+        if (age < 18) return '<18';
+        if (age <= 35) return '18-35';
+        if (age <= 55) return '35-55';
+        return '>55';
+      }
+      function renderPatientDemographics(patients) {
+        const visited = patients.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status));
+
+        if (trendCharts.gender) { trendCharts.gender.destroy(); trendCharts.gender = null; }
+        if (trendCharts.age) { trendCharts.age.destroy(); trendCharts.age = null; }
+
+        const hasData = visited.length > 0;
+        document.getElementById('demographicsCharts').style.display = hasData ? '' : 'none';
+        document.getElementById('demographicsEmptyState').style.display = hasData ? 'none' : '';
+        if (!hasData) return;
+
+        const genderCounts = { male: 0, female: 0, other: 0 };
+        visited.forEach((p) => {
+          const g = Object.prototype.hasOwnProperty.call(genderCounts, p.gender) ? p.gender : 'other';
+          genderCounts[g] += 1;
+        });
+        const genderRows = Object.keys(GENDER_LABELS)
+          .map((k, i) => ({ label: GENDER_LABELS[k], value: genderCounts[k], color: colorForDoctorIndex(i) }))
+          .filter((r) => r.value > 0);
+        trendCharts.gender = makeDonutChart('genderChart', genderRows.map((r) => r.label), genderRows.map((r) => r.value), genderRows.map((r) => r.color), String(visited.length), null);
+
+        const ageCounts = Object.fromEntries(AGE_BUCKETS.map((b) => [b, 0]));
+        visited.forEach((p) => { ageCounts[ageBucketFor(p.age)] += 1; });
+        const ageRows = AGE_BUCKETS
+          .map((b, i) => ({ label: b, value: ageCounts[b], color: colorForDoctorIndex(i) }))
+          .filter((r) => r.value > 0);
+        trendCharts.age = makeDonutChart('ageChart', ageRows.map((r) => r.label), ageRows.map((r) => r.value), ageRows.map((r) => r.color), String(visited.length), null);
+      }
+
       function onPeakDrillClick(hour) {
         const idx = trendCharts.peak._hours.indexOf(hour);
         if (trendSelected.peak === idx) { trendSelected.peak = null; closeTrendDrill('peakDrill'); recolorTrendMains(); return; }
@@ -948,7 +1002,7 @@
         // Dashboard and the Holidays page).
         if (amDoctor && !myDoctorId) {
           document.getElementById('unlinkedDoctorPanel').style.display = 'block';
-          ['visitsPerDoctorPanel', 'noShowPanel', 'peakHoursPanel', 'consultDurationPanel'].forEach((id) => {
+          ['visitsPerDoctorPanel', 'noShowPanel', 'peakHoursPanel', 'demographicsPanel', 'consultDurationPanel'].forEach((id) => {
             document.getElementById(id).style.display = 'none';
           });
           return;
@@ -977,6 +1031,7 @@
         renderVisitsPerDoctor(patients, doctors);
         renderNoShowOverTime(patients, granularity);
         renderPeakHours(patients);
+        renderPatientDemographics(patients);
         renderConsultDuration(patients, doctors);
       }
 
