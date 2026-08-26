@@ -74,7 +74,7 @@
           Booking a call-in appointment ahead of time: pick when they should arrive.
         </p>
         <form id="patientForm">
-          <div class="form-grid">
+          <div class="form-grid" style="grid-template-columns:1.3fr 0.55fr 1.1fr 0.65fr 1.8fr;">
             <div class="field">
               <label>Name</label>
               <input type="text" id="pName" required />
@@ -100,6 +100,8 @@
               <label>Address / locality</label>
               <input type="text" id="pAddress" placeholder="e.g., Sector 12, near market" required />
             </div>
+          </div>
+          <div class="form-grid" style="margin-top:14px;">
             <div class="field">
               <label>Doctor</label>
               <select id="pDoctor" required></select>
