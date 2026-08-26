@@ -1032,7 +1032,8 @@ table.qtable th {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: var(--grey-500);
+  font-weight: 700;
+  color: var(--black);
   padding: 8px 10px;
   border-bottom: 1px solid var(--grey-300);
   /* Header labels are short by design — wrapping one to two lines (e.g.
@@ -1167,7 +1168,7 @@ th.th-filterable { position: relative; }
 .doctor-form-field label { font-size: 12px; font-weight: 600; color: var(--grey-500); }
 .doctor-form-field input, .doctor-form-field select {
   height: 38px;
-  border: none;
+  border: 1px solid var(--grey-300);
   background: var(--grey-100);
   border-radius: var(--radius-sm);
   padding: 0 12px;
@@ -1176,7 +1177,11 @@ th.th-filterable { position: relative; }
   width: 100%;
   box-sizing: border-box;
 }
-.doctor-form-field input:focus, .doctor-form-field select:focus { outline: 2px solid var(--accent); }
+.doctor-form-field input:focus, .doctor-form-field select:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+/* Cancel reads as a plain "do nothing" button next to Save's solid
+   fill without its own border — scoped to the edit-doctor dialog, not
+   every dialog's Cancel, since that's a wider change nobody asked for. */
+#editDoctorCancelBtn { border: 1px solid var(--grey-300); background: var(--white); }
 
 /* All doctors: plain text rows (name/specialty/fees/status), never an
    input box, so the table doesn't look like a giant form — editing
