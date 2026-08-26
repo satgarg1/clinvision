@@ -1849,6 +1849,7 @@
     sb.channel('clinic-' + clinicId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'patients', filter: `clinic_id=eq.${clinicId}` }, debouncedCb)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'doctors', filter: `clinic_id=eq.${clinicId}` }, debouncedCb)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'doctor_holidays', filter: `clinic_id=eq.${clinicId}` }, debouncedCb)
       .subscribe();
   }
 

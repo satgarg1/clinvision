@@ -6,6 +6,7 @@
 :root {
   --accent: #0071e3;
   --accent-dark: #0058b0;
+  --chip-text: var(--accent-dark);
   --black: #1d1d1f;
   --grey-900: #2b2b2d;
   --grey-700: #4a4a4c;
@@ -89,6 +90,10 @@
   --mkt-purple-bg: rgba(124, 58, 237, 0.24);
   --mkt-coral-bg: rgba(249, 115, 22, 0.22);
   --mkt-pink-bg: rgba(219, 39, 119, 0.22);
+  /* accent-dark's navy reads fine on the light --mkt-blue-bg chip, but
+     loses too much contrast once that same background goes translucent-
+     dark — needs a lighter blue for any text sitting directly on it. */
+  --chip-text: #8ab4ff;
 
   /* Low-opacity black shadows read as invisible against a dark surface —
      brighter/more-opaque so resting elevation still shows in dark mode. */
@@ -1009,7 +1014,7 @@ input[type="number"] { -moz-appearance: textfield; }
    this banner. */
 .next-appt-callout { display: flex; align-items: center; gap: 14px; background: var(--mkt-blue-bg); }
 .next-appt-icon { font-size: 22px; }
-.next-appt-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--accent-dark); }
+.next-appt-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--chip-text); }
 .next-appt-line { font-size: 17px; font-weight: 600; }
 .doctor-identity { margin-bottom: 14px; }
 .doctor-identity-name { font-size: 15px; font-weight: 700; }
@@ -1925,6 +1930,65 @@ th.th-filterable { position: relative; }
 .doctor-status-row .doc-name { font-weight: 700; font-size: 15px; }
 .doctor-status-row .doc-specialty { font-size: 13px; color: var(--grey-500); }
 .doctor-status-row .doc-status-line { font-size: 13px; color: var(--grey-700); margin-top: 2px; }
+
+/* Dashboard's "upcoming holidays" chip — hidden entirely (in the
+   containing panel-header) whenever there's nothing upcoming, per
+   #holidayChipWrap's default display:none in the markup. */
+.holiday-chip-wrap { position: relative; }
+.holiday-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--chip-text);
+  background: var(--mkt-blue-bg);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.holiday-chip:hover { filter: brightness(0.97); }
+:root[data-theme="dark"] .holiday-chip:hover { filter: brightness(1.2); }
+.holiday-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 300px;
+  background: var(--white);
+  border: 1px solid var(--grey-300);
+  border-radius: 10px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.14);
+  z-index: 50;
+  padding: 6px;
+  display: none;
+}
+.holiday-popover.open { display: block; }
+.holiday-popover-header {
+  font-size: 11px; font-weight: 700; color: var(--grey-500);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 8px 10px 6px;
+}
+.holiday-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-sm); }
+.holiday-row .board-doc-dot { margin-right: 0; }
+.holiday-row:hover { background: var(--grey-100); }
+.holiday-row .info { flex: 1; min-width: 0; }
+.holiday-row .doc-name { font-size: 13px; font-weight: 600; }
+.holiday-row .doc-note { font-size: 12px; color: var(--grey-500); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.holiday-row .date-badge {
+  font-size: 11.5px; font-weight: 700; color: var(--grey-700);
+  background: var(--grey-100); border-radius: 6px; padding: 4px 7px;
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.holiday-row.soonest .date-badge { background: var(--mkt-blue-bg); color: var(--chip-text); }
+.holiday-popover-footer { border-top: 1px solid var(--grey-300); margin-top: 4px; padding-top: 6px; }
+.holiday-popover-footer a {
+  display: block; text-align: center; font-size: 12.5px; font-weight: 600;
+  color: var(--accent); text-decoration: none; padding: 7px; border-radius: var(--radius-sm);
+}
+.holiday-popover-footer a:hover { background: var(--grey-100); }
 
 .status-pill {
   font-size: 13px;

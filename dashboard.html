@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=166" />
+<link rel="stylesheet" href="styles.css?v=167" />
 </head>
 <body>
   <div class="app-shell">
@@ -49,8 +49,17 @@
     <main class="app-main">
       <div class="app-topbar">
         <h1>Dashboard</h1>
-        <div class="clock-pill">
-          <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Clinic time: <span class="time" id="clockTime">--</span></span>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="holiday-chip-wrap" id="holidayChipWrap" style="display:none;">
+            <button type="button" class="holiday-chip" id="holidayChipBtn" aria-expanded="false">
+              <span aria-hidden="true">🗓️</span>
+              <span id="holidayChipText"></span>
+            </button>
+            <div class="holiday-popover" id="holidayPopover"></div>
+          </div>
+          <div class="clock-pill">
+            <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Clinic time: <span class="time" id="clockTime">--</span></span>
+          </div>
         </div>
       </div>
 
@@ -67,7 +76,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=62"></script>
+  <script src="clinic-data.js?v=63"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -149,6 +158,55 @@
         return ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
       }
 
+      // Hidden entirely with nothing upcoming — a chip that's always
+      // there but usually empty just becomes one more thing to ignore.
+      // It only earns its place in the topbar once there's actually
+      // something to check.
+      function renderHolidayChip(upcoming, doctors) {
+        const wrap = document.getElementById('holidayChipWrap');
+        if (upcoming.length === 0) {
+          wrap.style.display = 'none';
+          closeHolidayPopover();
+          return;
+        }
+        wrap.style.display = '';
+        const next = upcoming[0];
+        document.getElementById('holidayChipText').textContent =
+          upcoming.length === 1
+            ? `${Qlinic.formatDateLabel(next.date)} — ${next.doctorName}`
+            : `${upcoming.length} upcoming`;
+        document.getElementById('holidayPopover').innerHTML = `
+          <div class="holiday-popover-header">${upcoming.length} upcoming holiday${upcoming.length === 1 ? '' : 's'}</div>
+          ${upcoming.map((h, i) => `
+            <div class="holiday-row ${i === 0 ? 'soonest' : ''}">
+              <span class="board-doc-dot dot-${accentForDoctor(h.doctorId, doctors)}"></span>
+              <div class="info">
+                <div class="doc-name">${Qlinic.escapeHtml(h.doctorName)}</div>
+                ${h.note ? `<div class="doc-note">${Qlinic.escapeHtml(h.note)}</div>` : ''}
+              </div>
+              <span class="date-badge">${Qlinic.escapeHtml(Qlinic.formatDateLabel(h.date))}</span>
+            </div>
+          `).join('')}
+          <div class="holiday-popover-footer"><a href="doctor-holidays.html">Manage in Doctor Holidays →</a></div>
+        `;
+      }
+      function closeHolidayPopover() {
+        document.getElementById('holidayPopover').classList.remove('open');
+        document.getElementById('holidayChipBtn').setAttribute('aria-expanded', 'false');
+      }
+      document.getElementById('holidayChipBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const popover = document.getElementById('holidayPopover');
+        const isOpen = popover.classList.toggle('open');
+        document.getElementById('holidayChipBtn').setAttribute('aria-expanded', String(isOpen));
+      });
+      document.addEventListener('click', (e) => {
+        if (!document.getElementById('holidayChipWrap').contains(e.target)) closeHolidayPopover();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeHolidayPopover();
+      });
+
       function pad2(n) { return String(n).padStart(2, '0'); }
       function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
 
@@ -217,6 +275,18 @@
         const doctors = amDoctor ? (doctorsRaw ? [doctorsRaw] : []) : doctorsRaw;
         const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
         const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id, undefined, d)));
+
+        // Admin-only: the "how do I keep track of 50 doctors' holidays
+        // without checking Settings" problem is an owner/admin concern,
+        // not something a doctor needs surfaced about their own colleagues.
+        if (amAdmin) {
+          const allHolidays = await Qlinic.getDoctorHolidays();
+          const today = Qlinic.getTodayDate();
+          const upcoming = allHolidays
+            .filter((h) => h.date >= today && doctorById[h.doctorId])
+            .map((h) => Object.assign({}, h, { doctorName: doctorById[h.doctorId].name }));
+          renderHolidayChip(upcoming, doctors);
+        }
 
         const yesterdayFootfallAtCutoff = yesterdayPatients.filter((p) =>
           ['waiting', 'in_consult', 'done'].includes(p.status) && p.arrivedAt && new Date(p.arrivedAt) <= cutoffYesterday
