@@ -1909,6 +1909,7 @@ th.th-filterable { position: relative; }
 .doctor-status-row:last-child { border-bottom: none; margin-bottom: 0; }
 .doctor-status-row .doc-name { font-weight: 700; font-size: 15px; }
 .doctor-status-row .doc-specialty { font-size: 13px; color: var(--grey-500); }
+.doctor-status-row .doc-status-line { font-size: 13px; color: var(--grey-700); margin-top: 2px; }
 
 .status-pill {
   font-size: 13px;
