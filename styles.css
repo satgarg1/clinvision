@@ -598,6 +598,38 @@ a { color: inherit; }
 .queue-nowserving-num { font-size: 34px; font-weight: 700; color: var(--chip-text); line-height: 1.1; }
 .queue-nowserving-meta { font-size: 12.5px; color: var(--grey-700); margin-top: 4px; }
 
+/* queue.html's visit-complete screen: a gradient banner (cancels out
+   .login-card-wide's own padding via negative margins to go full-bleed)
+   instead of a plain white background with a pale, easy-to-miss struck-
+   through token. Same structure doubles for no-show via .is-noshow,
+   just muted (amber, not celebratory green) since that isn't good news. */
+.queue-done-banner {
+  margin: -64px -56px 0; padding: 34px 40px 40px;
+  background: linear-gradient(135deg, var(--mkt-teal), var(--accent));
+  border-radius: 24px 24px 0 0;
+  text-align: center; position: relative;
+}
+.queue-done-banner.is-noshow { background: linear-gradient(135deg, var(--warning), var(--mkt-coral)); }
+.queue-done-clinic { color: rgba(255, 255, 255, 0.85); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.queue-done-check {
+  width: 64px; height: 64px; border-radius: 50%; background: var(--white);
+  display: flex; align-items: center; justify-content: center; font-size: 32px;
+  margin: 16px auto -52px; box-shadow: var(--shadow-resting); position: relative; z-index: 2;
+}
+.queue-done-body { padding-top: 60px; text-align: center; }
+.queue-done-headline { font-size: 24px; font-weight: 700; margin: 0 0 10px; }
+.queue-done-sub { font-size: 15px; color: var(--grey-700); line-height: 1.6; margin: 0; }
+.queue-done-token {
+  margin: 22px auto; display: inline-flex; flex-direction: column; align-items: center; gap: 6px;
+  background: var(--success-bg); border-radius: var(--radius-md); padding: 16px 32px;
+}
+.queue-done-banner.is-noshow ~ .queue-done-body .queue-done-token { background: var(--warning-bg); }
+.queue-done-token .label { font-size: 13px; font-weight: 700; color: var(--success); text-transform: uppercase; letter-spacing: 0.03em; }
+.queue-done-banner.is-noshow ~ .queue-done-body .queue-done-token .label { color: var(--warning); }
+.queue-done-token .num { font-size: 38px; font-weight: 800; color: var(--success); text-decoration: line-through; text-decoration-thickness: 3px; text-decoration-color: var(--danger); }
+.queue-done-banner.is-noshow ~ .queue-done-body .queue-done-token .num { color: var(--warning); }
+.queue-done-footer { text-align: center; font-size: 14px; color: var(--grey-500); margin: 18px 0 0; padding-top: 16px; border-top: 1px solid var(--grey-100); }
+
 /* Registration has 10 fields (address split into 3 rows) where every
    other login-card page has 1-4, so it alone gets a denser tier on top
    of the shared login-card scale — not applied to login/forgot/reset,
