@@ -282,10 +282,16 @@
           closedTitle: 'Doctor has closed for the day',
           closedBody: 'Please check back tomorrow, or contact the clinic directly.',
           notYetNote: (dateLabel) => `This link isn't active yet — please come back and open it again on the morning of ${dateLabel} to see your live position in the queue.`,
-          apptBookedFor: 'Your appointment is booked for',
-          onDate: (d) => `on ${d}`,
-          atTime: (t) => `at ${t}`,
-          inQueueWith: "You're in the queue with",
+          // Full sentences, not fragments — Hindi needs the doctor's
+          // name before the postposition ("X ke saath"), the opposite
+          // order from English's "for X", so each language builds its
+          // own word order instead of both sharing one prefix string.
+          apptLineWithTime: (doctorName, specialty, timeStr) =>
+            `Your appointment is booked for <b>${doctorName}</b><span style="display:block;margin-top:2px;">${specialty} at ${timeStr}</span>`,
+          apptLineFutureDate: (doctorName, specialty, dateLabel) =>
+            `Your appointment is booked for <b>${doctorName}</b>${specialty}<span style="display:block;margin-top:2px;">on ${dateLabel}</span>`,
+          inQueueLine: (doctorName, specialty) =>
+            `You're in the queue with <b>${doctorName}</b>${specialty}`,
           statusMessage: {
             booked: 'You have not checked in to the clinic yet',
             waiting: 'You are currently waiting in clinic',
@@ -338,10 +344,12 @@
           closedTitle: 'डॉक्टर आज के लिए बंद हो चुके हैं',
           closedBody: 'कृपया कल फिर से देखें, या सीधे क्लिनिक से संपर्क करें।',
           notYetNote: (dateLabel) => `यह लिंक अभी सक्रिय नहीं है — कृपया ${dateLabel} की सुबह वापस आकर इसे दोबारा खोलें, ताकि आप कतार में अपनी लाइव स्थिति देख सकें।`,
-          apptBookedFor: 'आपकी अपॉइंटमेंट बुक है',
-          onDate: (d) => `${d} को`,
-          atTime: (t) => `${t} पर`,
-          inQueueWith: 'आप कतार में हैं',
+          apptLineWithTime: (doctorName, specialty, timeStr) =>
+            `आपकी अपॉइंटमेंट <b>${doctorName}</b> के साथ बुक है<span style="display:block;margin-top:2px;">${specialty} ${timeStr} पर</span>`,
+          apptLineFutureDate: (doctorName, specialty, dateLabel) =>
+            `आपकी अपॉइंटमेंट <b>${doctorName}</b>${specialty} के साथ बुक है<span style="display:block;margin-top:2px;">${dateLabel} को</span>`,
+          inQueueLine: (doctorName, specialty) =>
+            `आप <b>${doctorName}</b>${specialty} की कतार में हैं`,
           statusMessage: {
             booked: 'आपने अभी तक क्लिनिक में चेक-इन नहीं किया है',
             waiting: 'आप अभी क्लिनिक में प्रतीक्षा कर रहे हैं',
@@ -513,7 +521,7 @@
         const specialty = data.doctorSpecialty ? ` (${Qlinic.escapeHtml(localizeSpecialty(data.doctorSpecialty))})` : '';
         const dateLabel = Qlinic.formatDateLabel(data.bookedDate);
         document.getElementById('notYetApptLine').innerHTML =
-          `${T.apptBookedFor} <b>${Qlinic.escapeHtml(localizeName(data.doctorName))}</b>${specialty}<span style="display:block;margin-top:2px;">${T.onDate(dateLabel)}</span>`;
+          T.apptLineFutureDate(Qlinic.escapeHtml(localizeName(data.doctorName)), specialty, dateLabel);
         document.getElementById('notYetNote').textContent = T.notYetNote(dateLabel);
       }
 
@@ -532,9 +540,9 @@
           // Specialty + time forced onto their own line — left to wrap
           // wherever the browser happened to break it, this line split
           // mid-parenthetical in a way that read badly.
-          return `${T.apptBookedFor} <b>${doctorName}</b><span style="display:block;margin-top:2px;">${specialty.trim()} ${T.atTime(timeStr)}</span>`;
+          return T.apptLineWithTime(doctorName, specialty.trim(), timeStr);
         }
-        return `${T.inQueueWith} <b>${doctorName}</b>${specialty}`;
+        return T.inQueueLine(doctorName, specialty);
       }
 
       async function render() {
@@ -600,9 +608,15 @@
           // fact about the doctor, said once, set apart in its own color
           // so it reads as the doctor's actual words rather than more
           // templated copy. escapeHtml since this is free text landing on
-          // a public, unauthenticated page.
+          // a public, unauthenticated page. Never run through
+          // localizeName: that's a word-by-word phonetic transliteration
+          // built for proper nouns (names, addresses), not English
+          // sentences — "In a meeting" came out as "इन अ मीटिंग", each
+          // word sounded out on its own with no grammar tying them
+          // together. display.html's own doctor-note line has the same
+          // free-text shape and was never transliterated either.
           const notePart = Qlinic.isRealStatusReason(data.doctorStatusNote)
-            ? ` <span class="doc-note-quote">"${Qlinic.escapeHtml(localizeName(data.doctorStatusNote))}"</span>`
+            ? ` <span class="doc-note-quote">"${Qlinic.escapeHtml(data.doctorStatusNote)}"</span>`
             : '';
           const durationPart = data.doctorDelayMins ? ` ${T.forDuration(T.formatDuration(data.doctorDelayMins))}` : '';
           const sincePart = data.doctorStatusUpdatedAt ? ` ${T.since(Qlinic.formatTimestamp(data.doctorStatusUpdatedAt))}` : '';
