@@ -1889,18 +1889,17 @@ th.th-filterable { position: relative; }
 .field-hint.error { color: var(--danger); font-weight: 600; }
 
 /* Custom date picker (Qlinic.attachDatePicker), replacing the bare
-   native <input type="date"> everywhere. Two variants sharing the same
-   trigger/popover/calendar-grid look: 'chips' (a text trigger + Today/
-   Tomorrow/In-a-week quick picks above a calendar, for a date picked
-   once) and 'strip' (an always-visible week strip + a calendar-icon
-   escape hatch, for a filter reopened all day). See the "Date Picker
-   Options" mockup this was built from for the full rationale. */
+   native <input type="date"> everywhere: a text trigger showing the
+   picked date + Today/Tomorrow/In-a-week quick picks above a calendar.
+   See the "Date Picker Options" mockup this was built from — a
+   second "week strip" variant was tried for the always-reopened
+   filters but didn't land, so every field uses this one shape now. */
 .qdp { position: relative; display: inline-block; width: 100%; font-family: var(--font); }
 .qdp-trigger {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  font-family: var(--font); font-size: 14.5px; font-weight: 600; color: var(--black);
-  background: var(--white); border: 1.5px solid var(--grey-300); border-radius: var(--radius-sm);
-  padding: 10px 13px; cursor: pointer; width: 100%;
+  font-family: var(--font); font-size: 14px; font-weight: 400; color: var(--black);
+  background: var(--white); border: 1px solid var(--grey-300); border-radius: var(--radius-sm);
+  padding: 12px 13px; cursor: pointer; width: 100%;
 }
 .qdp-trigger:hover { border-color: var(--grey-500); }
 .qdp-trigger.open { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12); }
@@ -1925,7 +1924,7 @@ th.th-filterable { position: relative; }
 .qdp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
 .qdp-day {
   aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 600; color: var(--black); border-radius: 50%; cursor: pointer;
+  font-size: 13px; font-weight: 500; color: var(--black); border-radius: 50%; cursor: pointer;
   border: none; background: transparent; font-family: var(--font); position: relative;
 }
 .qdp-day:hover:not(.disabled) { background: var(--grey-100); }
@@ -1936,7 +1935,6 @@ th.th-filterable { position: relative; }
 .qdp-day.selected::after { display: none; }
 .qdp-day.disabled { color: var(--grey-300); cursor: not-allowed; }
 
-/* chips variant only */
 .qdp-quick { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
 .qdp-quick button {
   font-family: var(--font); font-size: 11.5px; font-weight: 700; color: var(--accent-dark);
@@ -1944,31 +1942,6 @@ th.th-filterable { position: relative; }
 }
 .qdp-quick button:hover { background: rgba(0, 113, 227, 0.16); }
 .qdp-quick button.selected { background: var(--accent); color: #fff; }
-
-/* strip variant only */
-.qdp-strip-wrap { display: flex; align-items: center; gap: 6px; }
-.qdp-strip { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; flex: 1; }
-.qdp-strip::-webkit-scrollbar { display: none; }
-.qdp-strip-day {
-  flex: 0 0 auto; width: 46px; padding: 7px 0; border-radius: var(--radius-sm); border: 1.5px solid var(--grey-300);
-  background: var(--white); cursor: pointer; text-align: center; font-family: var(--font);
-}
-.qdp-strip-day .dow { display: block; font-size: 10px; font-weight: 700; color: var(--grey-500); text-transform: uppercase; margin-bottom: 2px; }
-.qdp-strip-day .num { display: block; font-size: 15px; font-weight: 700; color: var(--black); }
-.qdp-strip-day:hover:not(.disabled) { border-color: var(--grey-500); }
-.qdp-strip-day.today { border-color: var(--accent); }
-.qdp-strip-day.today .num { color: var(--accent-dark); }
-.qdp-strip-day.selected { background: var(--accent); border-color: var(--accent); }
-.qdp-strip-day.selected .dow, .qdp-strip-day.selected .num { color: #fff; }
-.qdp-strip-day.disabled { opacity: 0.4; cursor: not-allowed; }
-.qdp-strip-nav { flex-shrink: 0; width: 28px; height: 46px; border-radius: var(--radius-sm); border: none; background: var(--grey-100); color: var(--grey-700); cursor: pointer; font-size: 14px; font-family: var(--font); }
-.qdp-strip-nav:hover { background: var(--grey-300); }
-.qdp-cal-btn {
-  flex-shrink: 0; width: 36px; height: 46px; border-radius: var(--radius-sm); border: 1.5px solid var(--grey-300);
-  background: var(--white); color: var(--grey-700); cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative;
-}
-.qdp-cal-btn:hover, .qdp-cal-btn.open { border-color: var(--accent); color: var(--accent-dark); }
-.qdp-pop-strip { top: calc(100% + 6px); }
 
 /* Reception's "a doctor has closed for the day" notice, sitting above the
    page heading so it's the first thing read, not a corner toast that

@@ -90,13 +90,11 @@
   }
 
   // ---------------- custom date picker, replacing the bare native
-  // <input type="date"> everywhere it shows up. Two variants:
-  // 'chips' (a trigger + Today/Tomorrow/In-a-week quick picks above a
-  // calendar, for a date picked once and moved on from) and 'strip' (an
-  // always-visible week strip with a calendar icon as the escape hatch,
-  // for a filter that gets reopened all day). Mockup + rationale for
-  // which variant fits which field: see the "Date Picker Options"
-  // artifact from this session.
+  // <input type="date"> everywhere it shows up: a trigger showing the
+  // picked date + Today/Tomorrow/In-a-week quick picks above a
+  // calendar. (A second "week strip" variant was mocked up and tried
+  // for the always-reopened filters, but didn't land — every field
+  // uses this one shape now.)
   //
   // Hides the real <input> (kept in the DOM, not removed) rather than
   // replacing it, so every existing call site — .value reads/writes,
@@ -108,7 +106,6 @@
   function attachDatePicker(input, opts) {
     opts = opts || {};
     if (input._qlinicDatePicker) return input._qlinicDatePicker;
-    const variant = opts.variant === 'strip' ? 'strip' : 'chips';
     const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     const DOW_FULL = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
@@ -141,7 +138,7 @@
     }
 
     const wrap = document.createElement('div');
-    wrap.className = 'qdp qdp-' + variant;
+    wrap.className = 'qdp';
     input.insertAdjacentElement('afterend', wrap);
     input.style.display = 'none';
     input.tabIndex = -1;
@@ -175,7 +172,7 @@
     let closeAll = () => {};
     let triggerEl;
 
-    if (variant === 'chips') {
+    {
       wrap.innerHTML = `
         <button type="button" class="qdp-trigger">
           <span class="qdp-trigger-label"></span>
@@ -236,74 +233,11 @@
         });
       }
       var updateLabelFn = updateLabel;
-    } else {
-      wrap.innerHTML = `
-        <div class="qdp-strip-wrap">
-          <button type="button" class="qdp-strip-nav" data-strip-nav="-1">‹</button>
-          <div class="qdp-strip"></div>
-          <button type="button" class="qdp-strip-nav" data-strip-nav="1">›</button>
-          <button type="button" class="qdp-cal-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
-          </button>
-        </div>
-        <div class="qdp-pop qdp-pop-strip">
-          <div class="qdp-head">
-            <span class="qdp-month-label"></span>
-            <div class="qdp-nav"><button type="button" data-nav="-1">‹</button><button type="button" data-nav="1">›</button></div>
-          </div>
-          <div class="qdp-dow"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
-          <div class="qdp-grid"></div>
-        </div>
-      `;
-      const stripEl = wrap.querySelector('.qdp-strip');
-      const calBtn = wrap.querySelector('.qdp-cal-btn');
-      const pop = wrap.querySelector('.qdp-pop-strip');
-      const grid = wrap.querySelector('.qdp-grid');
-      const monthLabel = wrap.querySelector('.qdp-month-label');
-      let stripAnchor = startOfDay(selected || new Date());
-      triggerEl = calBtn;
-
-      function renderStrip() {
-        stripEl.innerHTML = '';
-        for (let i = 0; i < 7; i++) {
-          const d = new Date(stripAnchor); d.setDate(d.getDate() + i);
-          const disabled = isDisabled(d);
-          const cell = document.createElement('button');
-          cell.type = 'button';
-          cell.className = 'qdp-strip-day' + (sameDay(d, new Date()) ? ' today' : '') + (selected && sameDay(d, selected) ? ' selected' : '') + (disabled ? ' disabled' : '');
-          cell.innerHTML = `<span class="dow">${DOW_FULL[d.getDay()].slice(0, 3)}</span><span class="num">${d.getDate()}</span>`;
-          if (disabled) { cell.disabled = true; } else { cell.addEventListener('click', () => commit(d)); }
-          stripEl.appendChild(cell);
-        }
-      }
-      function close() { pop.classList.remove('open'); calBtn.classList.remove('open'); }
-      closeAll = close;
-      wrap.querySelector('[data-strip-nav="-1"]').addEventListener('click', () => { stripAnchor.setDate(stripAnchor.getDate() - 7); renderStrip(); });
-      wrap.querySelector('[data-strip-nav="1"]').addEventListener('click', () => { stripAnchor.setDate(stripAnchor.getDate() + 7); renderStrip(); });
-      calBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (pop.classList.contains('open')) { close(); return; }
-        document.querySelectorAll('.qdp-pop.open').forEach((p) => p.classList.remove('open'));
-        pop.classList.add('open');
-        calBtn.classList.add('open');
-        viewDate = new Date(selected || new Date());
-        buildCalendarGrid(grid, monthLabel);
-        pop.style.left = 'auto'; pop.style.right = '0';
-      });
-      pop.querySelectorAll('[data-nav]').forEach((btn) => btn.addEventListener('click', (e) => { e.stopPropagation(); viewDate.setMonth(viewDate.getMonth() + Number(btn.dataset.nav)); buildCalendarGrid(grid, monthLabel); }));
-      pop.addEventListener('click', (e) => e.stopPropagation());
-      document.addEventListener('click', close);
-
-      function updateLabel() {
-        if (selected) stripAnchor = startOfDay(selected);
-        renderStrip();
-      }
-      var updateLabelFn = updateLabel;
     }
 
-    // Wired up once, shared by both variants — every date change (chip
-    // pick, calendar click, strip click, or a plain code assignment via
-    // the .value override below) always funnels through here.
+    // Every date change (chip pick, calendar click, or a plain code
+    // assignment via the .value override below) always funnels through
+    // here.
     const nativeValueDesc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
     function commit(d) {
       selected = d;
