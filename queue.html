@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=177" />
+<link rel="stylesheet" href="styles.css?v=178" />
 </head>
 <body>
   <div class="login-wrap">
@@ -31,13 +31,20 @@
       <span class="brand-tagline">Time is the one asset nobody gets back</span>
     </a>
     <div class="login-card login-card-wide">
+      <div class="lang-toggle-wrap">
+        <div class="filter-seg" id="langToggle">
+          <button type="button" data-lang="en" class="active">English</button>
+          <button type="button" data-lang="hi">हिन्दी</button>
+        </div>
+      </div>
+
       <div id="loadingState">
-        <p class="panel-note" style="text-align:center;">Loading your queue status…</p>
+        <p class="panel-note" style="text-align:center;" id="loadingText">Loading your queue status…</p>
       </div>
 
       <div id="errorState" style="display:none;">
-        <h1 style="text-align:center;font-size:22px;">Link not found</h1>
-        <p class="panel-note" style="text-align:center;">
+        <h1 style="text-align:center;font-size:22px;" id="errorTitle">Link not found</h1>
+        <p class="panel-note" style="text-align:center;" id="errorBody">
           We couldn't find a booking for this link. Please double-check the message you received, or contact the clinic directly.
         </p>
       </div>
@@ -45,8 +52,8 @@
       <div id="closedState" style="display:none;">
         <div style="text-align:center;color:var(--grey-500);font-size:13px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;" id="closedClinicName"></div>
         <div style="text-align:center;font-size:18px;font-weight:600;margin:4px 0 20px;" id="closedDoctorName"></div>
-        <h1 style="text-align:center;font-size:22px;">Doctor has closed for the day</h1>
-        <p class="panel-note" style="text-align:center;">Please check back tomorrow, or contact the clinic directly.</p>
+        <h1 style="text-align:center;font-size:22px;" id="closedTitle">Doctor has closed for the day</h1>
+        <p class="panel-note" style="text-align:center;" id="closedBody">Please check back tomorrow, or contact the clinic directly.</p>
       </div>
 
       <div id="notYetState" style="display:none;">
@@ -77,7 +84,7 @@
         <div class="queue-status-msg" id="statusMsgText"></div>
 
         <div style="text-align:center;margin-bottom:16px;">
-          <div style="font-size:13px;color:var(--grey-500);">Your token number</div>
+          <div style="font-size:13px;color:var(--grey-500);" id="tokenLabel">Your token number</div>
           <div style="font-size:56px;font-weight:700;line-height:1.15;" id="tokenNumber">·</div>
         </div>
 
@@ -88,7 +95,7 @@
         <div id="doctorStatusBlock" style="display:none;"></div>
 
         <div id="nowServingBlock" style="display:none;" class="queue-nowserving-cell">
-          <div class="queue-nowserving-eyebrow">Currently being served</div>
+          <div class="queue-nowserving-eyebrow" id="nowServingEyebrow">Currently being served</div>
           <div class="queue-nowserving-num" id="nowServingNum"></div>
           <div class="queue-nowserving-meta" id="nowServingMeta"></div>
         </div>
@@ -98,20 +105,20 @@
         </div>
 
         <div id="nearbyBlock" style="display:none;margin-bottom:14px;">
-          <p class="queue-nearby-heading">Next Up Patients</p>
+          <p class="queue-nearby-heading" id="nearbyHeading">Next Up Patients</p>
           <div id="nearbyTokens" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px;"></div>
-          <p class="queue-nearby-sub">Patients are ordered by their scheduled appointment time and not token number</p>
+          <p class="queue-nearby-sub" id="nearbySub">Patients are ordered by their scheduled appointment time and not token number</p>
         </div>
 
-        <div class="queue-live-line"><span class="dot"></span><span>Live — updates automatically</span></div>
+        <div class="queue-live-line"><span class="dot"></span><span id="liveLineText">Live — updates automatically</span></div>
 
         <div class="queue-advisory">
-          <span class="text">Please check this live queue regularly for queue updates.</span>
+          <span class="text" id="advisoryText">Please check this live queue regularly for queue updates.</span>
         </div>
       </div>
 
       <p class="panel-note" id="footerNote" style="display:none;text-align:center;margin-top:22px;margin-bottom:0;border-top:1px solid var(--grey-100);padding-top:14px;">
-        This is your own private link, no login needed. Refreshes automatically.
+        This is your own private link and it refreshes automatically.
       </p>
     </div>
   </div>
@@ -139,6 +146,294 @@
       // show immediately, and so a background poll can refresh it in place.
       let currentData = null;
 
+      // ---- Language toggle + Hindi transliteration ----
+      // Ported verbatim from display.html's own localization system — this
+      // page duplicates it rather than sharing a module, same as every
+      // other helper in the app. Unlike display.html (whose language
+      // follows a clinic-wide setting), this is the one patient-facing
+      // page where the viewer picks for themselves, via the chip toggle
+      // below — same filter-seg pattern as doctor.html's schedule tabs.
+      const HI_WORD_DICT = {
+        garg: 'गर्ग', gupta: 'गुप्ता', sharma: 'शर्मा', verma: 'वर्मा', yadav: 'यादव',
+        singh: 'सिंह', kumar: 'कुमार', kumari: 'कुमारी', devi: 'देवी', khan: 'खान',
+        rao: 'राव', mehta: 'मेहता', patel: 'पटेल', reddy: 'रेड्डी', nair: 'नायर',
+        iyer: 'अय्यर', chopra: 'चोपड़ा', malhotra: 'मल्होत्रा', kapoor: 'कपूर',
+        agarwal: 'अग्रवाल', bansal: 'बंसल', jain: 'जैन', shah: 'शाह', joshi: 'जोशी',
+        pandey: 'पांडे', mishra: 'मिश्रा', tiwari: 'तिवारी', chauhan: 'चौहान',
+        rajput: 'राजपूत', thakur: 'ठाकुर', naidu: 'नायडू', rai: 'राय', dubey: 'दुबे',
+        trivedi: 'त्रिवेदी', saxena: 'सक्सेना', srivastava: 'श्रीवास्तव', bhatt: 'भट्ट',
+        menon: 'मेनन', mohammed: 'मोहम्मद', mohd: 'मोहम्मद', irfan: 'इरफ़ान',
+        ramesh: 'रमेश', suresh: 'सुरेश', rajesh: 'राजेश', mahesh: 'महेश',
+        dinesh: 'दिनेश', naresh: 'नरेश', mukesh: 'मुकेश', rakesh: 'राकेश',
+        ganesh: 'गणेश', umesh: 'उमेश', satyam: 'सत्यम', amit: 'अमित', sumit: 'सुमित',
+        vikram: 'विक्रम', vikas: 'विकास', ankit: 'अंकित', rohit: 'रोहित',
+        mohit: 'मोहित', sunil: 'सुनील', anil: 'अनिल', kapil: 'कपिल', nikhil: 'निखिल',
+        akhil: 'अखिल', sanjay: 'संजय', vijay: 'विजय', ajay: 'अजय', vinay: 'विनय',
+        uday: 'उदय', ravi: 'रवि', anand: 'आनंद', mohan: 'मोहन', rohan: 'रोहन',
+        karan: 'करण', arjun: 'अर्जुन', krishna: 'कृष्ण', ram: 'राम', shyam: 'श्याम',
+        deepak: 'दीपक', pankaj: 'पंकज', rajiv: 'राजीव', sanjiv: 'संजीव',
+        sanjeev: 'संजीव', manoj: 'मनोज', pramod: 'प्रमोद', vinod: 'विनोद',
+        ashok: 'अशोक', prakash: 'प्रकाश', subhash: 'सुभाष', venu: 'वेणु',
+        raghav: 'राघव', vishal: 'विशाल', rahul: 'राहुल', akash: 'आकाश', aakash: 'आकाश',
+        khushi: 'खुशी', priya: 'प्रिया', anjali: 'अंजलि', pooja: 'पूजा',
+        sunita: 'सुनीता', geeta: 'गीता', gita: 'गीता', rekha: 'रेखा', kavita: 'कविता',
+        sita: 'सीता', meena: 'मीना', reena: 'रीना', seema: 'सीमा', neha: 'नेहा',
+        neeta: 'नीता', anita: 'अनीता', sarita: 'सरिता', savita: 'सविता',
+        lata: 'लता', mamta: 'ममता', kiran: 'किरण', nisha: 'निशा', shanti: 'शांति',
+        radha: 'राधा', uma: 'उमा', usha: 'उषा', asha: 'आशा', vandana: 'वंदना',
+        archana: 'अर्चना', kalpana: 'कल्पना', indira: 'इंदिरा', sushma: 'सुष्मा',
+        kamla: 'कमला', kamala: 'कमला', vimla: 'विमला', nirmala: 'निर्मला',
+        vidya: 'विद्या', lakshmi: 'लक्ष्मी', saraswati: 'सरस्वती', durga: 'दुर्गा',
+        parvati: 'पार्वती', ganga: 'गंगा',
+        nagar: 'नगर', colony: 'कॉलोनी', sector: 'सेक्टर', vihar: 'विहार',
+        puram: 'पुरम', marg: 'मार्ग', chowk: 'चौक', bazaar: 'बाज़ार', gali: 'गली',
+        road: 'रोड', society: 'सोसाइटी', enclave: 'एन्क्लेव', park: 'पार्क',
+        mohalla: 'मोहल्ला', basti: 'बस्ती', camp: 'कैंप', ganj: 'गंज',
+        gandhi: 'गांधी', civil: 'सिविल', lines: 'लाइंस', shastri: 'शास्त्री',
+        model: 'मॉडल', town: 'टाउन', old: 'ओल्ड', city: 'सिटी', new: 'न्यू',
+        near: 'नियर', market: 'मार्केट', demo: 'डेमो', patient: 'पेशेंट',
+      };
+
+      function phoneticToDevanagari(word) {
+        const w = word.toLowerCase();
+        const consonants = [
+          ['ksh', 'क्ष'], ['gy', 'ज्ञ'], ['shh', 'ष'], ['chh', 'छ'],
+          ['kh', 'ख'], ['gh', 'घ'], ['ch', 'च'], ['jh', 'झ'], ['ng', 'ङ'], ['ny', 'ञ'],
+          ['th', 'थ'], ['dh', 'ध'], ['ph', 'फ'], ['bh', 'भ'], ['sh', 'श'],
+          ['k', 'क'], ['g', 'ग'], ['c', 'क'], ['j', 'ज'], ['t', 'त'], ['d', 'द'],
+          ['n', 'न'], ['p', 'प'], ['b', 'ब'], ['m', 'म'], ['y', 'य'], ['r', 'र'],
+          ['l', 'ल'], ['v', 'व'], ['w', 'व'], ['s', 'स'], ['h', 'ह'], ['f', 'फ़'],
+          ['z', 'ज़'], ['q', 'क़'], ['x', 'क्स'],
+        ];
+        const vowels = [
+          ['aa', 'आ', 'ा'], ['ee', 'ई', 'ी'], ['ii', 'ई', 'ी'], ['oo', 'ऊ', 'ू'],
+          ['ai', 'ऐ', 'ै'], ['au', 'औ', 'ौ'],
+          ['a', 'अ', ''], ['i', 'इ', 'ि'], ['u', 'उ', 'ु'], ['e', 'ए', 'े'], ['o', 'ओ', 'ो'],
+        ];
+        let out = '';
+        let i = 0;
+        while (i < w.length) {
+          const cons = consonants.find(([pat]) => w.startsWith(pat, i));
+          if (cons) {
+            i += cons[0].length;
+            const vow = vowels.find(([pat]) => w.startsWith(pat, i));
+            if (vow) { out += cons[1] + vow[2]; i += vow[0].length; }
+            else { out += cons[1]; }
+            continue;
+          }
+          const vow = vowels.find(([pat]) => w.startsWith(pat, i));
+          if (vow) { out += vow[1]; i += vow[0].length; continue; }
+          out += w[i]; // digits/punctuation pass through
+          i += 1;
+        }
+        return out;
+      }
+
+      function toDevanagari(text) {
+        if (!text) return text;
+        return text.split(/(\s+)/).map((token) => {
+          if (/^\s*$/.test(token)) return token;
+          const m = token.match(/^([A-Za-z]+)([^A-Za-z]*)$/);
+          if (!m) return token;
+          const [, word, rest] = m;
+          return (HI_WORD_DICT[word.toLowerCase()] || phoneticToDevanagari(word)) + rest;
+        }).join('');
+      }
+
+      // Specialty is picked from a fixed dropdown, so unlike names it has
+      // a real, known-good Hindi translation rather than a phonetic
+      // guess; free-text "Other" specialties fall back to transliteration.
+      const SPECIALTY_HI = {
+        'General Physician': 'सामान्य चिकित्सक',
+        'Pediatrician': 'बाल रोग विशेषज्ञ',
+        'Gynecologist': 'स्त्री रोग विशेषज्ञ',
+        'Dermatologist': 'त्वचा रोग विशेषज्ञ',
+        'Dentist': 'दंत चिकित्सक',
+        'ENT Specialist': 'कान-नाक-गला विशेषज्ञ',
+        'Ophthalmologist': 'नेत्र रोग विशेषज्ञ',
+        'Orthopedic': 'अस्थि रोग विशेषज्ञ',
+        'Cardiologist': 'हृदय रोग विशेषज्ञ',
+        'Neurologist': 'तंत्रिका रोग विशेषज्ञ',
+        'Psychiatrist': 'मनोचिकित्सक',
+        'General Surgeon': 'सामान्य सर्जन',
+        'Urologist': 'मूत्र रोग विशेषज्ञ',
+        'Gastroenterologist': 'पेट रोग विशेषज्ञ',
+        'Endocrinologist': 'अंतःस्रावी रोग विशेषज्ञ',
+        'Pulmonologist': 'फेफड़ा रोग विशेषज्ञ',
+        'Diabetologist': 'मधुमेह विशेषज्ञ',
+        'Physiotherapist': 'फिजियोथेरेपिस्ट',
+      };
+
+      // Only these fixed UI strings are ever "translated" for meaning —
+      // names, the clinic's own name, and any free text a doctor typed
+      // (their status reason) only ever get phonetically transliterated
+      // via localizeName below, never guessed at semantically.
+      const STRINGS = {
+        en: {
+          loading: 'Loading your queue status…',
+          linkNotFoundTitle: 'Link not found',
+          linkNotFoundBody: "We couldn't find a booking for this link. Please double-check the message you received, or contact the clinic directly.",
+          closedTitle: 'Doctor has closed for the day',
+          closedBody: 'Please check back tomorrow, or contact the clinic directly.',
+          notYetNote: (dateLabel) => `This link isn't active yet — please come back and open it again on the morning of ${dateLabel} to see your live position in the queue.`,
+          apptBookedFor: 'Your appointment is booked for',
+          onDate: (d) => `on ${d}`,
+          atTime: (t) => `at ${t}`,
+          inQueueWith: "You're in the queue with",
+          statusMessage: {
+            booked: 'You have not checked in to the clinic yet',
+            waiting: 'You are currently waiting in clinic',
+            in_consult: 'You are currently with the doctor',
+          },
+          tokenLabelNamed: (name) => `${name}, your token number is:`,
+          tokenLabelGeneric: 'Your token number',
+          youAreNext: "You're next!",
+          peopleAhead: (n) => `${n} ${n === 1 ? 'person is' : 'people are'} ahead of you`,
+          doctorStatusSentence: {
+            on_break: 'Doctor is on a break',
+            emergency: 'Doctor is dealing with an emergency',
+          },
+          formatDuration(mins) {
+            if (mins < 60) return `${mins}min`;
+            const h = Math.floor(mins / 60), m = mins % 60;
+            return m === 0 ? `${h}hr` : `${h}hr ${m}min`;
+          },
+          forDuration: (d) => `for ${d}`,
+          since: (t) => `since ${t}`,
+          currentlyBeingServed: 'Currently being served',
+          calledAt: (t) => `Called at ${t}`,
+          viewQueueDetails: 'View queue details',
+          nextUpPatients: 'Next Up Patients',
+          orderedBySchedule: 'Patients are ordered by their scheduled appointment time and not token number',
+          live: 'Live — updates automatically',
+          advisory: 'Please check this live queue regularly for queue updates.',
+          footerNote: 'This is your own private link and it refreshes automatically.',
+          noShowHeadline: 'This appointment was marked as a no-show',
+          noShowSub: (clinicName) => `If this was a mistake, please contact ${clinicName} directly.`,
+          visitCompleteHeadline: 'Your visit is complete',
+          visitCompleteSub: (doctorName, specialty) => `You were seen by ${doctorName}${specialty}. Thank you for visiting — this link has now ended.`,
+          tokenWas: 'Your token was',
+          needAnythingElse: 'Need anything else? Please contact the clinic directly.',
+          detailsTitle: 'Queue details',
+          detailsInConsult: (nowStr) => `You're currently with the doctor — here's how the rest of today's queue looks right now (${nowStr}).`,
+          detailsWaiting: (nowStr) => `You've checked in and are waiting — here's how today's queue looks right now (${nowStr}).`,
+          detailsPassedNotCalled: (apptStr, nowStr) => `Your appointment time (${apptStr}) has passed and you haven't been called yet — here's where things stand right now (${nowStr}).`,
+          detailsFromNowThrough: (nowStr, apptStr) => `Showing details from now (${nowStr}) through your appointment at ${apptStr}.`,
+          detailsFallback: 'Showing details from now through your position in the queue.',
+          bookedInWindow: 'Booked in this window',
+          arrivedWaiting: 'Arrived & waiting',
+          notYetArrived: 'Not yet arrived',
+          close: 'Close',
+        },
+        hi: {
+          loading: 'आपकी कतार की स्थिति लोड हो रही है…',
+          linkNotFoundTitle: 'लिंक नहीं मिला',
+          linkNotFoundBody: 'हमें इस लिंक के लिए कोई बुकिंग नहीं मिली। कृपया अपना प्राप्त संदेश दोबारा जांचें, या सीधे क्लिनिक से संपर्क करें।',
+          closedTitle: 'डॉक्टर आज के लिए बंद हो चुके हैं',
+          closedBody: 'कृपया कल फिर से देखें, या सीधे क्लिनिक से संपर्क करें।',
+          notYetNote: (dateLabel) => `यह लिंक अभी सक्रिय नहीं है — कृपया ${dateLabel} की सुबह वापस आकर इसे दोबारा खोलें, ताकि आप कतार में अपनी लाइव स्थिति देख सकें।`,
+          apptBookedFor: 'आपकी अपॉइंटमेंट बुक है',
+          onDate: (d) => `${d} को`,
+          atTime: (t) => `${t} पर`,
+          inQueueWith: 'आप कतार में हैं',
+          statusMessage: {
+            booked: 'आपने अभी तक क्लिनिक में चेक-इन नहीं किया है',
+            waiting: 'आप अभी क्लिनिक में प्रतीक्षा कर रहे हैं',
+            in_consult: 'आप अभी डॉक्टर के साथ हैं',
+          },
+          tokenLabelNamed: (name) => `${name}, आपका टोकन नंबर है:`,
+          tokenLabelGeneric: 'आपका टोकन नंबर',
+          youAreNext: 'अब आपकी बारी है!',
+          peopleAhead: (n) => `${n} व्यक्ति आपसे आगे ${n === 1 ? 'है' : 'हैं'}`,
+          doctorStatusSentence: {
+            on_break: 'डॉक्टर ब्रेक पर हैं',
+            emergency: 'डॉक्टर आपातकाल में व्यस्त हैं',
+          },
+          formatDuration(mins) {
+            if (mins < 60) return `${mins} मिनट`;
+            const h = Math.floor(mins / 60), m = mins % 60;
+            return m === 0 ? `${h} घंटा` : `${h} घंटा ${m} मिनट`;
+          },
+          forDuration: (d) => `${d} के लिए`,
+          since: (t) => `${t} से`,
+          currentlyBeingServed: 'अभी देखा जा रहा है',
+          calledAt: (t) => `${t} पर बुलाया गया`,
+          viewQueueDetails: 'कतार का विवरण देखें',
+          nextUpPatients: 'अगले मरीज़',
+          orderedBySchedule: 'मरीज़ों को उनके निर्धारित समय के अनुसार क्रम में रखा गया है, टोकन नंबर के अनुसार नहीं',
+          live: 'लाइव — अपने आप अपडेट होता है',
+          advisory: 'कृपया अपडेट के लिए यह लाइव कतार नियमित रूप से देखते रहें।',
+          footerNote: 'यह आपका निजी लिंक है और यह अपने आप अपडेट होता है।',
+          noShowHeadline: 'इस अपॉइंटमेंट को नो-शो के रूप में चिह्नित किया गया है',
+          noShowSub: (clinicName) => `यदि यह गलती से हुआ है, तो कृपया सीधे ${clinicName} से संपर्क करें।`,
+          visitCompleteHeadline: 'आपकी विज़िट पूरी हो गई है',
+          visitCompleteSub: (doctorName, specialty) => `आपको ${doctorName}${specialty} ने देखा। मिलने के लिए धन्यवाद — यह लिंक अब समाप्त हो गया है।`,
+          tokenWas: 'आपका टोकन था',
+          needAnythingElse: 'कुछ और चाहिए? कृपया सीधे क्लिनिक से संपर्क करें।',
+          detailsTitle: 'कतार का विवरण',
+          detailsInConsult: (nowStr) => `आप अभी डॉक्टर के साथ हैं — अभी (${nowStr}) बाकी कतार ऐसी दिख रही है।`,
+          detailsWaiting: (nowStr) => `आपने चेक-इन कर लिया है और प्रतीक्षा कर रहे हैं — अभी (${nowStr}) कतार ऐसी दिख रही है।`,
+          detailsPassedNotCalled: (apptStr, nowStr) => `आपके अपॉइंटमेंट का समय (${apptStr}) बीत चुका है और आपको अभी तक नहीं बुलाया गया है — अभी (${nowStr}) स्थिति यह है।`,
+          detailsFromNowThrough: (nowStr, apptStr) => `अभी (${nowStr}) से लेकर आपकी अपॉइंटमेंट के समय ${apptStr} तक का विवरण दिखाया जा रहा है।`,
+          detailsFallback: 'अभी से लेकर कतार में आपकी स्थिति तक का विवरण दिखाया जा रहा है।',
+          bookedInWindow: 'इस समय-सीमा में बुक',
+          arrivedWaiting: 'पहुंचे और प्रतीक्षा में',
+          notYetArrived: 'अभी नहीं पहुंचे',
+          close: 'बंद करें',
+        },
+      };
+
+      let T = STRINGS.en;
+      try {
+        if (localStorage.getItem('qlinic_queue_lang') === 'hi') T = STRINGS.hi;
+      } catch (e) { /* private browsing etc — default to English */ }
+
+      // Escaping happens at each call site (textContent needs none,
+      // innerHTML does) exactly like the rest of this file already did
+      // before localization — baking it in here would double-escape
+      // every textContent assignment.
+      function localizeName(text) {
+        if (!text) return text;
+        return T === STRINGS.hi ? toDevanagari(text) : text;
+      }
+      function localizeSpecialty(text) {
+        if (!text) return text;
+        if (T !== STRINGS.hi) return text;
+        return SPECIALTY_HI[text] || toDevanagari(text);
+      }
+
+      function applyStaticStrings() {
+        document.getElementById('loadingText').textContent = T.loading;
+        document.getElementById('errorTitle').textContent = T.linkNotFoundTitle;
+        document.getElementById('errorBody').textContent = T.linkNotFoundBody;
+        document.getElementById('closedTitle').textContent = T.closedTitle;
+        document.getElementById('closedBody').textContent = T.closedBody;
+        document.getElementById('nowServingEyebrow').textContent = T.currentlyBeingServed;
+        document.getElementById('nearbyHeading').textContent = T.nextUpPatients;
+        document.getElementById('nearbySub').textContent = T.orderedBySchedule;
+        document.getElementById('liveLineText').textContent = T.live;
+        document.getElementById('advisoryText').textContent = T.advisory;
+        document.getElementById('detailsOpenBtn').textContent = T.viewQueueDetails;
+        footerEl.textContent = T.footerNote;
+        document.querySelectorAll('#langToggle button').forEach((b) => {
+          b.classList.toggle('active', (b.dataset.lang === 'hi') === (T === STRINGS.hi));
+        });
+      }
+      applyStaticStrings();
+
+      document.getElementById('langToggle').addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn || btn.dataset.lang === undefined) return;
+        T = btn.dataset.lang === 'hi' ? STRINGS.hi : STRINGS.en;
+        try { localStorage.setItem('qlinic_queue_lang', btn.dataset.lang); } catch (e2) { /* ignore */ }
+        applyStaticStrings();
+        // Re-fetching (rather than re-rendering cached data) keeps this
+        // simple and correct for every screen this page can be on —
+        // loading/error/closed/not-yet/done/status — with one code path,
+        // at the cost of one extra request on a deliberate, rare action.
+        render().catch(showError);
+      });
+
       function showError() {
         loadingEl.style.display = 'none';
         statusEl.style.display = 'none';
@@ -162,24 +457,22 @@
         statusEl.style.display = 'none';
         footerEl.style.display = 'none';
         doneEl.style.display = 'block';
-        document.getElementById('doneClinicName').textContent = data.clinicName;
+        document.getElementById('doneClinicName').textContent = localizeName(data.clinicName);
         const banner = document.querySelector('.queue-done-banner');
         const isNoShow = data.status === 'no_show';
         banner.classList.toggle('is-noshow', isNoShow);
         document.querySelector('.queue-done-check').textContent = isNoShow ? '⚠️' : '✅';
         if (isNoShow) {
-          document.getElementById('doneHeadline').textContent = 'This appointment was marked as a no-show';
-          document.getElementById('doneSubText').textContent =
-            `If this was a mistake, please contact ${data.clinicName} directly.`;
+          document.getElementById('doneHeadline').textContent = T.noShowHeadline;
+          document.getElementById('doneSubText').textContent = T.noShowSub(localizeName(data.clinicName));
         } else {
-          const specialty = data.doctorSpecialty ? ` (${data.doctorSpecialty})` : '';
-          document.getElementById('doneHeadline').textContent = 'Your visit is complete';
-          document.getElementById('doneSubText').textContent =
-            `You were seen by ${data.doctorName}${specialty}. Thank you for visiting — this link has now ended.`;
+          const specialty = data.doctorSpecialty ? ` (${localizeSpecialty(data.doctorSpecialty)})` : '';
+          document.getElementById('doneHeadline').textContent = T.visitCompleteHeadline;
+          document.getElementById('doneSubText').textContent = T.visitCompleteSub(localizeName(data.doctorName), specialty);
         }
-        document.getElementById('doneTokenLabel').textContent = 'Your token was';
+        document.getElementById('doneTokenLabel').textContent = T.tokenWas;
         document.getElementById('doneTokenNumber').textContent = data.tokenDisplay || '·';
-        document.getElementById('doneFooterText').textContent = 'Need anything else? Please contact the clinic directly.';
+        document.getElementById('doneFooterText').textContent = T.needAnythingElse;
         if (pollIntervalId) { clearInterval(pollIntervalId); pollIntervalId = null; }
       }
 
@@ -194,8 +487,8 @@
         notYetEl.style.display = 'none';
         footerEl.style.display = 'block';
         closedEl.style.display = 'block';
-        document.getElementById('closedClinicName').textContent = data.clinicName;
-        document.getElementById('closedDoctorName').textContent = data.doctorName;
+        document.getElementById('closedClinicName').textContent = localizeName(data.clinicName);
+        document.getElementById('closedDoctorName').textContent = localizeName(data.doctorName);
       }
 
       // An appointment days out shouldn't show today's queue mechanics
@@ -210,48 +503,32 @@
         closedEl.style.display = 'none';
         footerEl.style.display = 'block';
         notYetEl.style.display = 'block';
-        document.getElementById('notYetClinicName').textContent = data.clinicName;
-        const specialty = data.doctorSpecialty ? ` (${Qlinic.escapeHtml(data.doctorSpecialty)})` : '';
+        document.getElementById('notYetClinicName').textContent = localizeName(data.clinicName);
+        const specialty = data.doctorSpecialty ? ` (${Qlinic.escapeHtml(localizeSpecialty(data.doctorSpecialty))})` : '';
         const dateLabel = Qlinic.formatDateLabel(data.bookedDate);
         document.getElementById('notYetApptLine').innerHTML =
-          `Your appointment is booked for <b>${Qlinic.escapeHtml(data.doctorName)}</b>${specialty}<span style="display:block;margin-top:2px;">on ${dateLabel}</span>`;
-        document.getElementById('notYetNote').textContent =
-          `This link isn't active yet — please come back and open it again on the morning of ${dateLabel} to see your live position in the queue.`;
+          `${T.apptBookedFor} <b>${Qlinic.escapeHtml(localizeName(data.doctorName))}</b>${specialty}<span style="display:block;margin-top:2px;">${T.onDate(dateLabel)}</span>`;
+        document.getElementById('notYetNote').textContent = T.notYetNote(dateLabel);
       }
 
-      // Sentence fragments, not standalone labels — DOCTOR_STATUS_SENTENCE
+      // Sentence fragments, not standalone labels — doctorStatusSentence
       // reads as "Doctor is {this}", so on_time is never looked up (the
       // whole line is hidden instead, same as before).
-      const DOCTOR_STATUS_SENTENCE = {
-        on_break: 'Doctor is on a break',
-        emergency: 'Doctor is dealing with an emergency',
-      };
-
-      const STATUS_MESSAGE = {
-        booked: 'You have not checked in to the clinic yet',
-        waiting: 'You are currently waiting in clinic',
-        in_consult: 'You are currently with the doctor',
-      };
-
-      function formatMinutesDuration(mins) {
-        if (mins < 60) return `${mins}min`;
-        const h = Math.floor(mins / 60), m = mins % 60;
-        return m === 0 ? `${h}hr` : `${h}hr ${m}min`;
-      }
 
       // "Your appointment is booked for Dr. X (Specialty) at 11:30 AM" only
       // makes sense for an actual appointment with a scheduled time — a
       // walk-in was never "booked for" a time, so it gets its own phrasing.
       function appointmentLineHtml(data) {
-        const specialty = data.doctorSpecialty ? ` (${Qlinic.escapeHtml(data.doctorSpecialty)})` : '';
+        const doctorName = Qlinic.escapeHtml(localizeName(data.doctorName));
+        const specialty = data.doctorSpecialty ? ` (${Qlinic.escapeHtml(localizeSpecialty(data.doctorSpecialty))})` : '';
         if (data.type === 'appointment' && data.bookedTime) {
           const timeStr = Qlinic.formatTime(Qlinic.parseTime(data.bookedTime));
           // Specialty + time forced onto their own line — left to wrap
           // wherever the browser happened to break it, this line split
           // mid-parenthetical in a way that read badly.
-          return `Your appointment is booked for <b>${Qlinic.escapeHtml(data.doctorName)}</b><span style="display:block;margin-top:2px;">${specialty.trim()} at ${timeStr}</span>`;
+          return `${T.apptBookedFor} <b>${doctorName}</b><span style="display:block;margin-top:2px;">${specialty.trim()} ${T.atTime(timeStr)}</span>`;
         }
-        return `You're in the queue with <b>${Qlinic.escapeHtml(data.doctorName)}</b>${specialty}`;
+        return `${T.inQueueWith} <b>${doctorName}</b>${specialty}`;
       }
 
       async function render() {
@@ -296,26 +573,33 @@
         statusEl.style.display = 'block';
         footerEl.style.display = 'block';
 
-        document.getElementById('clinicName').textContent = data.clinicName;
+        document.getElementById('clinicName').textContent = localizeName(data.clinicName);
         document.getElementById('appointmentLine').innerHTML = appointmentLineHtml(data);
         const statusMsgEl = document.getElementById('statusMsgText');
-        statusMsgEl.innerHTML = `<span class="pill">${Qlinic.escapeHtml(STATUS_MESSAGE[data.status] || '')}</span>`;
+        statusMsgEl.innerHTML = `<span class="pill">${Qlinic.escapeHtml(T.statusMessage[data.status] || '')}</span>`;
         statusMsgEl.classList.toggle('is-waiting', data.status === 'waiting');
         // Already prefixed by the RPC ("#12" for an appointment, "W3" for
         // a walk-in) — token_number itself is no longer a single shared
         // sequence, so the client can't derive the right prefix on its own.
         document.getElementById('tokenNumber').textContent = data.tokenDisplay || '·';
+        document.getElementById('tokenLabel').textContent = data.patientName
+          ? T.tokenLabelNamed(localizeName(data.patientName))
+          : T.tokenLabelGeneric;
 
         const doctorStatusBlock = document.getElementById('doctorStatusBlock');
         if (data.doctorStatus && data.doctorStatus !== 'on_time') {
-          const base = DOCTOR_STATUS_SENTENCE[data.doctorStatus] || `Doctor status: ${data.doctorStatus}`;
+          const base = T.doctorStatusSentence[data.doctorStatus] || `Doctor status: ${data.doctorStatus}`;
           // The doctor's own typed reason ("In a meeting") folded into the
           // same sentence instead of a separate line below "Waiting" — one
-          // fact about the doctor, said once. escapeHtml since this is
-          // free text landing on a public, unauthenticated page.
-          const notePart = Qlinic.isRealStatusReason(data.doctorStatusNote) ? ` (${Qlinic.escapeHtml(data.doctorStatusNote)})` : '';
-          const durationPart = data.doctorDelayMins ? ` for ${formatMinutesDuration(data.doctorDelayMins)}` : '';
-          const sincePart = data.doctorStatusUpdatedAt ? ` since ${Qlinic.formatTimestamp(data.doctorStatusUpdatedAt)}` : '';
+          // fact about the doctor, said once, set apart in its own color
+          // so it reads as the doctor's actual words rather than more
+          // templated copy. escapeHtml since this is free text landing on
+          // a public, unauthenticated page.
+          const notePart = Qlinic.isRealStatusReason(data.doctorStatusNote)
+            ? ` <span class="doc-note-quote">"${Qlinic.escapeHtml(localizeName(data.doctorStatusNote))}"</span>`
+            : '';
+          const durationPart = data.doctorDelayMins ? ` ${T.forDuration(T.formatDuration(data.doctorDelayMins))}` : '';
+          const sincePart = data.doctorStatusUpdatedAt ? ` ${T.since(Qlinic.formatTimestamp(data.doctorStatusUpdatedAt))}` : '';
           doctorStatusBlock.innerHTML = `<div class="queue-doctor-status">${base}${notePart}${durationPart}${sincePart}</div>`;
           doctorStatusBlock.style.display = 'block';
         } else {
@@ -326,8 +610,8 @@
         if (data.status === 'waiting' && data.position) {
           positionBlock.style.display = 'block';
           document.getElementById('positionText').textContent = data.position === 1
-            ? "You're next!"
-            : `${data.position - 1} ${data.position - 1 === 1 ? 'person is' : 'people are'} ahead of you`;
+            ? T.youAreNext
+            : T.peopleAhead(data.position - 1);
         } else {
           positionBlock.style.display = 'none';
         }
@@ -338,7 +622,7 @@
           // Already prefixed by the RPC — see tokenDisplay above.
           document.getElementById('nowServingNum').textContent = data.nowServingToken;
           document.getElementById('nowServingMeta').textContent = data.nowServingCalledAt
-            ? `Called at ${Qlinic.formatTimestamp(data.nowServingCalledAt)}`
+            ? T.calledAt(Qlinic.formatTimestamp(data.nowServingCalledAt))
             : '';
         } else {
           nowServingBlock.style.display = 'none';
@@ -378,10 +662,10 @@
         // slot time entirely, so re-checking the clock against it (as the
         // booked-only branch below does) doesn't apply to them anymore.
         if (data.status === 'in_consult') {
-          return `You're currently with the doctor — here's how the rest of today's queue looks right now (${nowStr}).`;
+          return T.detailsInConsult(nowStr);
         }
         if (data.status === 'waiting') {
-          return `You've checked in and are waiting — here's how today's queue looks right now (${nowStr}).`;
+          return T.detailsWaiting(nowStr);
         }
         if (data.type === 'appointment' && data.bookedTime) {
           const now = new Date();
@@ -395,20 +679,20 @@
           // by the patient's slot, not by "now"); only this sentence
           // needs to say so honestly instead of an inverted time span.
           if (now.getHours() * 60 + now.getMinutes() > apptMins) {
-            return `Your appointment time (${apptStr}) has passed and you haven't been called yet — here's where things stand right now (${nowStr}).`;
+            return T.detailsPassedNotCalled(apptStr, nowStr);
           }
-          return `Showing details from now (${nowStr}) through your appointment at ${apptStr}.`;
+          return T.detailsFromNowThrough(nowStr, apptStr);
         }
-        return 'Showing details from now through your position in the queue.';
+        return T.detailsFallback;
       }
 
       function renderDetailsModal(data) {
         const card = document.querySelector('#queueDetailsBackdrop .modal-card');
         card.querySelector('.queue-details-scope').textContent = detailsScopeText(data);
         card.querySelector('.queue-stat-grid').innerHTML = `
-          <div class="queue-stat-cell"><div class="num">${data.windowBookedCount}</div><div class="label">Booked in this window</div></div>
-          <div class="queue-stat-cell arrived"><div class="num">${data.windowArrivedCount}</div><div class="label">Arrived &amp; waiting</div></div>
-          <div class="queue-stat-cell notyet"><div class="num">${data.windowNotArrivedCount}</div><div class="label">Not yet arrived</div></div>
+          <div class="queue-stat-cell"><div class="num">${data.windowBookedCount}</div><div class="label">${T.bookedInWindow}</div></div>
+          <div class="queue-stat-cell arrived"><div class="num">${data.windowArrivedCount}</div><div class="label">${T.arrivedWaiting}</div></div>
+          <div class="queue-stat-cell notyet"><div class="num">${data.windowNotArrivedCount}</div><div class="label">${T.notYetArrived}</div></div>
         `;
       }
 
@@ -419,12 +703,12 @@
         backdrop.id = 'queueDetailsBackdrop';
         backdrop.innerHTML = `
           <div class="modal-card">
-            <h2 class="modal-title">Queue details</h2>
+            <h2 class="modal-title">${T.detailsTitle}</h2>
             <p class="queue-details-scope"></p>
-            <div class="queue-details-live"><span class="dot"></span>Live — updates automatically</div>
+            <div class="queue-details-live"><span class="dot"></span>${T.live}</div>
             <div class="queue-stat-grid"></div>
             <div class="modal-actions" style="margin-top:22px;">
-              <button type="button" class="btn-sm primary" id="queueDetailsCloseBtn">Close</button>
+              <button type="button" class="btn-sm primary" id="queueDetailsCloseBtn">${T.close}</button>
             </div>
           </div>
         `;

@@ -596,6 +596,15 @@ a { color: inherit; }
   background: var(--warning-bg); border-radius: var(--radius-sm);
   padding: 8px 12px; margin-bottom: 16px; line-height: 1.4;
 }
+/* The doctor's own typed reason ("Going out for an emergency") sits
+   inside the templated sentence above — set apart in the page's plain
+   text color instead of the surrounding amber, so it reads as a direct
+   quote from the doctor rather than more system-generated copy. */
+.queue-doctor-status .doc-note-quote { color: var(--black); font-weight: 700; font-style: italic; }
+/* Patient-facing language toggle, reusing doctor.html's filter-seg pill
+   control so the same "pick one" pattern feels familiar everywhere it
+   shows up in the product. */
+.lang-toggle-wrap { display: flex; justify-content: center; }
 .queue-nowserving-cell {
   border: 1.5px solid var(--accent); background: var(--mkt-blue-bg);
   border-radius: var(--radius-md); padding: 14px 16px; text-align: center; margin-bottom: 16px;
