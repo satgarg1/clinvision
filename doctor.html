@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=182" />
+<link rel="stylesheet" href="styles.css?v=183" />
 </head>
 <body>
   <div class="app-shell">
@@ -577,7 +577,7 @@
         function renderAll() {
           backdrop.querySelector('#scheduleFilterSeg').innerHTML = `
             <button type="button" data-tab="active" class="${activeTab === 'active' ? 'active' : ''}">Arrived <span class="count">${GROUPS.active.length}</span></button>
-            <button type="button" data-tab="booked" class="${activeTab === 'booked' ? 'active' : ''}">Booked <span class="count">${GROUPS.booked.length}</span></button>
+            <button type="button" data-tab="booked" class="${activeTab === 'booked' ? 'active' : ''}">Pending <span class="count">${GROUPS.booked.length}</span></button>
             <button type="button" data-tab="done" class="${activeTab === 'done' ? 'active' : ''}">Done <span class="count">${GROUPS.done.length}</span></button>
           `;
           backdrop.querySelector('#scheduleTbody').innerHTML = rowsHtmlFor(GROUPS[activeTab]);
@@ -650,7 +650,15 @@
         doctors = amDoctor ? [await Qlinic.getDoctor(myDoctorId)].filter(Boolean) : await Qlinic.getDoctors();
         const sel = document.getElementById('doctorSelect');
         const prevSelected = sel.value;
-        sel.innerHTML = doctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)}</option>`).join('');
+        // Same "N waiting, M booked" counts reception's own doctor
+        // dropdown already shows — an admin picking who to view
+        // shouldn't have to open each doctor in turn just to find out
+        // who's actually got a queue backing up right now.
+        const dropdownQueues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id, undefined, d)));
+        sel.innerHTML = doctors.map((d, i) => {
+          const dq = dropdownQueues[i];
+          return `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)} (${dq.waiting.length} waiting, ${dq.booked.length} booked)</option>`;
+        }).join('');
 
         if (doctors.length === 0) {
           document.getElementById('doctorPanels').style.display = 'none';

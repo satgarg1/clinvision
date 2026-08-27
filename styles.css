@@ -1707,6 +1707,18 @@ th.th-filterable { position: relative; }
    custom-range Month/Year selects). */
 .pill-label { display: block; font-size: 13px; font-weight: 600; color: var(--grey-700); margin-bottom: 6px; }
 #trendsPeriodField .pill-label { font-size: 15px; }
+/* Revenue/No-shows' single-day filter: the picker replaced a native
+   <input type="date"> that was carefully calibrated to match .pill-btn's
+   height/shape (see .pill-input's own comment) - the calendar picker's
+   default rectangular, grey-bordered look never went through that
+   calibration, so it sat taller and squarer than "Today" beside it.
+   Reshaped to the same pill/height here specifically, not globally -
+   every other page's picker keeps the plain bordered-field look that
+   matches its own neighboring controls. Label bumped to the same size
+   as Analytics' "Period" label, both labels together so the field and
+   the button beside it still line up. */
+#singleDayFilters .pill-label { font-size: 15px; }
+#singleDayFilters .qdp-trigger { border-radius: var(--radius-pill); padding: 8px 16px; }
 :root[data-theme="dark"] .pill-select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
