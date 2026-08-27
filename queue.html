@@ -372,8 +372,20 @@
       // elsewhere in the app.
       function detailsScopeText(data) {
         if (data.type === 'appointment' && data.bookedTime) {
-          const nowStr = Qlinic.formatTimestamp(new Date());
-          const apptStr = Qlinic.formatTime(Qlinic.parseTime(data.bookedTime));
+          const now = new Date();
+          const nowStr = Qlinic.formatTimestamp(now);
+          const apptMins = Qlinic.parseTime(data.bookedTime);
+          const apptStr = Qlinic.formatTime(apptMins);
+          // A running-behind doctor (or just a backlog) means the
+          // patient's own slot time can already be in the past even
+          // though they haven't been called yet — "now (10:32) through
+          // your appointment at 10:15" would read as a backwards range.
+          // The counts themselves are still correct either way (scoped
+          // by the patient's slot, not by "now"); only this sentence
+          // needs to say so honestly instead of an inverted time span.
+          if (now.getHours() * 60 + now.getMinutes() > apptMins) {
+            return `Your appointment time (${apptStr}) has passed and you haven't been called yet — here's where things stand right now (${nowStr}).`;
+          }
           return `Showing details from now (${nowStr}) through your appointment at ${apptStr}.`;
         }
         return 'Showing details from now through your position in the queue.';
