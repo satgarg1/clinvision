@@ -1308,7 +1308,7 @@
       minInvoiceNumber: data.minInvoiceNumber,
       maxInvoiceNumber: data.maxInvoiceNumber,
       unbilledPatients: (data.unbilledPatients || []).map((p) => ({
-        id: p.id, name: p.name, tokenDate: p.tokenDate, status: p.status, doctorId: p.doctorId,
+        id: p.id, name: p.name, phone: p.phone, tokenDate: p.tokenDate, status: p.status, doctorId: p.doctorId,
       })),
     };
   }

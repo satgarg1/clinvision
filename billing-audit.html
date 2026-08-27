@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=184" />
+<link rel="stylesheet" href="styles.css?v=185" />
 </head>
 <body>
   <div class="app-shell">
@@ -71,6 +71,10 @@
           guessing an amount. Anyone listed below was actually seen but has no invoice on file; fix it from
           <a href="billing.html">Billing</a> once that doctor's fee is set.
         </p>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:14px;" id="unbilledDoctorField">
+          <label class="pill-label">Doctor</label>
+          <select id="unbilledDoctorSelect" class="pill-select"></select>
+        </div>
         <div id="unbilledTableWrap"></div>
       </div>
     </main>
@@ -80,7 +84,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=70"></script>
+  <script src="clinic-data.js?v=71"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -140,19 +144,47 @@
       }
       renderSummary();
 
+      // Doctor filter narrows the same already-fetched list in memory,
+      // same pattern as Analytics' appointment-distribution chart - the
+      // list is small enough that a second query is never worth it.
+      // The field itself is skipped entirely when the gap only ever
+      // touches one doctor - nothing to filter down from.
+      let unbilledDoctorFilter = 'all';
+      function unbilledDoctorOptions() {
+        const counts = {};
+        audit.unbilledPatients.forEach((p) => { counts[p.doctorId] = (counts[p.doctorId] || 0) + 1; });
+        return Object.keys(counts)
+          .map((id) => ({ id, name: doctorById[id] ? doctorById[id].name : '—', count: counts[id] }))
+          .sort((a, b) => b.count - a.count);
+      }
+      function renderUnbilledDoctorFilter() {
+        const options = unbilledDoctorOptions();
+        const field = document.getElementById('unbilledDoctorField');
+        if (options.length <= 1) { field.style.display = 'none'; return; }
+        field.style.display = '';
+        const sel = document.getElementById('unbilledDoctorSelect');
+        sel.innerHTML = '<option value="all">All doctors</option>'
+          + options.map((o) => `<option value="${o.id}">${Qlinic.escapeHtml(o.name)} (${o.count})</option>`).join('');
+        sel.value = unbilledDoctorFilter;
+      }
+
       function renderUnbilled() {
         const wrap = document.getElementById('unbilledTableWrap');
-        if (audit.unbilledPatients.length === 0) {
-          wrap.innerHTML = '<div class="empty-state">None — every seen patient has a matching invoice.</div>';
+        const rows = unbilledDoctorFilter === 'all'
+          ? audit.unbilledPatients
+          : audit.unbilledPatients.filter((p) => p.doctorId === unbilledDoctorFilter);
+        if (rows.length === 0) {
+          wrap.innerHTML = `<div class="empty-state">${audit.unbilledPatients.length === 0 ? 'None — every seen patient has a matching invoice.' : 'None for this doctor.'}</div>`;
           return;
         }
         wrap.innerHTML = `
           <table class="qtable">
-            <thead><tr><th>Name</th><th>Doctor</th><th>Date</th><th>Status</th></tr></thead>
+            <thead><tr><th>Name</th><th>Phone</th><th>Doctor</th><th>Date</th><th>Status</th></tr></thead>
             <tbody>
-              ${audit.unbilledPatients.map((p) => `
+              ${rows.map((p) => `
                 <tr>
                   <td>${Qlinic.escapeHtml(p.name)}</td>
+                  <td>${Qlinic.escapeHtml(p.phone || '—')}</td>
                   <td>${Qlinic.escapeHtml(doctorById[p.doctorId] ? doctorById[p.doctorId].name : '—')}</td>
                   <td>${Qlinic.escapeHtml(Qlinic.formatDateLabel(p.tokenDate))}</td>
                   <td>${Qlinic.escapeHtml(STATUS_LABELS[p.status] || p.status)}</td>
@@ -162,7 +194,12 @@
           </table>
         `;
       }
+      renderUnbilledDoctorFilter();
       renderUnbilled();
+      document.getElementById('unbilledDoctorSelect').addEventListener('change', (e) => {
+        unbilledDoctorFilter = e.target.value;
+        renderUnbilled();
+      });
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
