@@ -77,6 +77,10 @@
             <label>Emergency fee (&#8377;)</label>
             <input type="number" id="newDoctorFeeEmergency" min="0" step="1" />
           </div>
+          <div class="doctor-form-field" style="width:150px;">
+            <label>HPR ID <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
+            <input type="text" id="newDoctorHprId" placeholder="e.g., 12-3456-7890-1234" style="text-transform:uppercase;" />
+          </div>
           <button type="submit" class="btn-sm primary">Add doctor</button>
         </form>
         <div id="newDoctorFeeHint" class="slot-hint" style="display:none;"></div>
@@ -98,7 +102,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=71"></script>
+  <script src="clinic-data.js?v=72"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -297,6 +301,10 @@
               </div>
             </div>
             <div id="editDoctorFeeHint" class="slot-hint" style="display:none;margin-bottom:14px;"></div>
+            <div class="doctor-form-field" style="margin-bottom:14px;">
+              <label>HPR ID <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
+              <input type="text" id="editDoctorHprId" value="${(doctor.hprId || '').replace(/"/g, '&quot;')}" placeholder="e.g., 12-3456-7890-1234" style="text-transform:uppercase;" />
+            </div>
             <div class="modal-actions">
               <button type="button" class="btn-sm primary" id="editDoctorSaveBtn">Save</button>
               <button type="button" class="btn-sm" id="editDoctorCancelBtn">Cancel</button>
@@ -345,7 +353,8 @@
             : specialtySelect;
           const feeNormal = Number(backdrop.querySelector('#editDoctorFeeNormal').value) || 0;
           const feeEmergency = Number(backdrop.querySelector('#editDoctorFeeEmergency').value) || 0;
-          await Qlinic.updateDoctor(doctor.id, { name, specialty, feeNormal, feeEmergency });
+          const hprId = backdrop.querySelector('#editDoctorHprId').value.trim().toUpperCase();
+          await Qlinic.updateDoctor(doctor.id, { name, specialty, feeNormal, feeEmergency, hprId });
           cleanup();
           showToast('Doctor updated');
           loadDoctors();
@@ -411,7 +420,8 @@
           : specialtySelect;
         const feeNormal = Number(document.getElementById('newDoctorFeeNormal').value) || 0;
         const feeEmergency = Number(document.getElementById('newDoctorFeeEmergency').value) || 0;
-        await Qlinic.addDoctor({ name, specialty, feeNormal, feeEmergency });
+        const hprId = document.getElementById('newDoctorHprId').value.trim().toUpperCase();
+        await Qlinic.addDoctor({ name, specialty, feeNormal, feeEmergency, hprId });
         e.target.reset();
         document.getElementById('newDoctorSpecialtyOtherField').style.display = 'none';
         clearNewDoctorFeeHint();

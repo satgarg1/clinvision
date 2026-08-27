@@ -422,6 +422,7 @@
       feeNormal: row.fee_normal,
       feeEmergency: row.fee_emergency,
       dayClosedAt: row.day_closed_at,
+      hprId: row.hpr_id,
     };
   }
 
@@ -565,6 +566,7 @@
     if (fields.state !== undefined) payload.state = fields.state;
     if (fields.phone !== undefined) payload.phone = fields.phone;
     if (fields.gstin !== undefined) payload.gstin = fields.gstin || null;
+    if (fields.hfrId !== undefined) payload.hfr_id = fields.hfrId || null;
     if (fields.logoUrl !== undefined) payload.logo_url = fields.logoUrl;
     const { error } = await sb.from('clinics').update(payload).eq('id', clinicId);
     if (error) throw error;
@@ -709,20 +711,22 @@
     return data ? normalizeDoctor(data) : null;
   }
 
-  async function addDoctor({ name, specialty, feeNormal, feeEmergency }) {
+  async function addDoctor({ name, specialty, feeNormal, feeEmergency, hprId }) {
     const clinicId = await ensureClinicContext();
     const { data, error } = await sb.from('doctors').insert({
       clinic_id: clinicId, name, specialty: specialty || '',
       fee_normal: feeNormal || 0, fee_emergency: feeEmergency || 0,
+      hpr_id: hprId || null,
     }).select().single();
     if (error) throw error;
     return normalizeDoctor(data);
   }
 
-  async function updateDoctor(doctorId, { name, specialty, feeNormal, feeEmergency }) {
+  async function updateDoctor(doctorId, { name, specialty, feeNormal, feeEmergency, hprId }) {
     const { error } = await sb.from('doctors').update({
       name, specialty: specialty || '',
       fee_normal: feeNormal || 0, fee_emergency: feeEmergency || 0,
+      hpr_id: hprId || null,
     }).eq('id', doctorId);
     if (error) throw error;
   }

@@ -96,6 +96,16 @@
                  separately holds a GSTIN for other reasons. -->
             <span class="field-hint">Consultation fees are GST-exempt</span>
           </div>
+          <div class="field" style="min-width:180px;">
+            <label>HFR ID <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
+            <input type="text" id="hfrIdInput" placeholder="e.g., IN2910000123" maxlength="20" style="text-transform:uppercase;" />
+            <!-- Health Facility Registry ID - a real-world, Aadhaar-KYC'd
+                 government registration the clinic completes itself
+                 outside this app; this field is just somewhere to record
+                 the resulting ID once it exists. Needed before this
+                 clinic can be discoverable under ABDM. -->
+            <span class="field-hint">From your ABDM Health Facility Registry registration</span>
+          </div>
           <div class="field" style="flex:0;">
             <label>&nbsp;</label>
             <button type="submit" class="btn-sm primary">Save</button>
@@ -230,7 +240,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=71"></script>
+  <script src="clinic-data.js?v=72"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -443,6 +453,7 @@
         document.getElementById('pincodeInput').value = clinic.pincode || '';
         setStateValue(document.getElementById('stateInput'), clinic.state || '');
         document.getElementById('gstinInput').value = clinic.gstin || '';
+        document.getElementById('hfrIdInput').value = clinic.hfr_id || '';
         graceWindowPicker.setValue(clinic.grace_window_mins);
         slotIntervalPicker.setValue(clinic.slot_interval_mins);
         slotCapacityPicker.setValue(clinic.slot_capacity);
@@ -493,6 +504,7 @@
           pincode: document.getElementById('pincodeInput').value,
           state: document.getElementById('stateInput').value,
           gstin: document.getElementById('gstinInput').value.trim().toUpperCase(),
+          hfrId: document.getElementById('hfrIdInput').value.trim().toUpperCase(),
         });
         showToast('Clinic profile updated');
         loadClinic();
