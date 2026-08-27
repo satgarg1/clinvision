@@ -321,16 +321,6 @@
       function formatPatientAge(p) {
         return p.age != null ? `${p.age}yr` : '—';
       }
-      // "9 AM" style label for the appointment-load chart's hour axis -
-      // scheduleTimeLabel above always prints minutes too, which is
-      // exactly what a chart axis doesn't want repeated across every bar.
-      function formatHourOnly(mins) {
-        let h = Math.floor(mins / 60);
-        const period = h < 12 ? 'AM' : 'PM';
-        let h12 = h % 12; if (h12 === 0) h12 = 12;
-        return `${h12} ${period}`;
-      }
-
       // Same nowServing+waiting+booked+done+noShow combination
       // buildWalkinRanks already uses — the full day's queue was always
       // being fetched, just never all shown together in one place. Modeled
@@ -403,22 +393,6 @@
           });
           visibleBuckets = chartBuckets.filter((b) => b.end > nowMin || b.isBacklog);
           currentBucket = visibleBuckets.find((b) => nowMin >= b.start && nowMin < b.end);
-          // TEMPORARY — pinpointing a reported bucket-distribution bug
-          // that's survived two rounds of fixes aimed at staleness.
-          // Dumps the exact computed buckets plus every appointment's
-          // raw bookedTime, so the real cause (bad boundaries vs. bad
-          // assignment vs. bad source data) is visible in one look
-          // instead of guessed at again. Safe to remove once resolved.
-          console.log('[chart-debug] nowMin', nowMin, Qlinic.formatTime(nowMin));
-          console.log('[chart-debug] buckets', chartBuckets.map((b) => ({
-            start: b.start, startLabel: Qlinic.formatTime(b.start),
-            end: b.end, endLabel: Qlinic.formatTime(b.end),
-            total: b.total, byStatus: b.byStatus,
-          })));
-          console.log('[chart-debug] allAppts', allAppts.map((p) => ({
-            name: p.name, status: p.status, bookedTime: p.bookedTime,
-            parsedMins: Qlinic.parseTime(p.bookedTime),
-          })));
           // Status-driven, not hour-driven - this drops a visit the moment
           // it's marked Done or No-show, unlike the bars above which never
           // move once drawn.
@@ -476,7 +450,13 @@
             type: 'bar',
             plugins: [valueLabelPlugin],
             data: {
-              labels: visibleBuckets.map((b) => formatHourOnly(b.start)),
+              // Qlinic.formatTime, not a bare hour - buckets are anchored
+              // to the clinic's real opening time, which isn't always a
+              // round hour ("2:30 PM-3:30 PM" is a real bucket for a
+              // 9:30 AM opening), and rounding the label down to "2 PM"
+              // made a correctly-counted bar look like it was counting
+              // the wrong hour entirely.
+              labels: visibleBuckets.map((b) => Qlinic.formatTime(b.start)),
               datasets: [{
                 data: visibleBuckets.map((b) => b.total),
                 borderRadius: 6,
@@ -528,7 +508,7 @@
                   callbacks: {
                     title(items) {
                       const b = visibleBuckets[items[0].dataIndex];
-                      return `${formatHourOnly(b.start)}–${formatHourOnly(b.end)}`;
+                      return `${Qlinic.formatTime(b.start)}–${Qlinic.formatTime(b.end)}`;
                     },
                     label(item) {
                       const b = visibleBuckets[item.dataIndex];
@@ -557,7 +537,7 @@
               ${visibleBuckets.length > 0 ? `
                 <div class="chart-subhead">
                   <span class="label">By hour</span>
-                  ${currentBucket ? `<span class="now-chip"><span class="dot"></span><span>Now: ${formatHourOnly(currentBucket.start)}–${formatHourOnly(currentBucket.end)}</span></span>` : ''}
+                  ${currentBucket ? `<span class="now-chip"><span class="dot"></span><span>Now: ${Qlinic.formatTime(currentBucket.start)}–${Qlinic.formatTime(currentBucket.end)}</span></span>` : ''}
                 </div>
                 <div class="chart-canvas-wrap"><canvas id="scheduleLoadChart" height="128"></canvas></div>
                 <p class="chart-note">Hover a bar for the status breakdown — a faded bar means that hour is still catching up, not yet fully seen.</p>
