@@ -89,6 +89,259 @@
     });
   }
 
+  // ---------------- custom date picker, replacing the bare native
+  // <input type="date"> everywhere it shows up. Two variants:
+  // 'chips' (a trigger + Today/Tomorrow/In-a-week quick picks above a
+  // calendar, for a date picked once and moved on from) and 'strip' (an
+  // always-visible week strip with a calendar icon as the escape hatch,
+  // for a filter that gets reopened all day). Mockup + rationale for
+  // which variant fits which field: see the "Date Picker Options"
+  // artifact from this session.
+  //
+  // Hides the real <input> (kept in the DOM, not removed) rather than
+  // replacing it, so every existing call site — .value reads/writes,
+  // .min/.max/.required, 'change' listeners, validation .focus() calls
+  // — keeps working completely unmodified. A property override on the
+  // element's own .value catches every future assignment (not just
+  // ones made through this widget), so code that sets the date
+  // programmatically after this runs still stays in sync.
+  function attachDatePicker(input, opts) {
+    opts = opts || {};
+    if (input._qlinicDatePicker) return input._qlinicDatePicker;
+    const variant = opts.variant === 'strip' ? 'strip' : 'chips';
+    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const DOW_FULL = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    function parseISO(v) {
+      if (!v) return null;
+      const parts = v.split('-').map(Number);
+      if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return null;
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    function toISO(d) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    function startOfDay(d) { const c = new Date(d); c.setHours(0, 0, 0, 0); return c; }
+    function sameDay(a, b) { return !!a && !!b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+    function fmtShort(d) {
+      const today = startOfDay(new Date());
+      const tmr = new Date(today); tmr.setDate(tmr.getDate() + 1);
+      if (sameDay(d, today)) return `Today, ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}`;
+      if (sameDay(d, tmr)) return `Tomorrow, ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}`;
+      return `${DOW_FULL[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}`;
+    }
+    // .min/.max are read fresh every time, not cached at attach time —
+    // reception sets pDate.min only after this runs, so caching it here
+    // would silently ignore that constraint forever.
+    function isDisabled(d) {
+      const day = startOfDay(d);
+      if (input.min) { const mn = parseISO(input.min); if (mn && day < startOfDay(mn)) return true; }
+      if (input.max) { const mx = parseISO(input.max); if (mx && day > startOfDay(mx)) return true; }
+      return false;
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'qdp qdp-' + variant;
+    input.insertAdjacentElement('afterend', wrap);
+    input.style.display = 'none';
+    input.tabIndex = -1;
+
+    let selected = parseISO(input.value);
+    let viewDate = selected ? new Date(selected) : new Date();
+
+    function buildCalendarGrid(gridEl, monthLabelEl) {
+      monthLabelEl.textContent = `${MONTHS[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
+      gridEl.innerHTML = '';
+      const first = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+      const startOffset = first.getDay();
+      const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
+      const prevDays = new Date(viewDate.getFullYear(), viewDate.getMonth(), 0).getDate();
+      const cells = [];
+      for (let i = startOffset - 1; i >= 0; i--) cells.push({ day: prevDays - i, muted: true, date: new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, prevDays - i) });
+      for (let d = 1; d <= daysInMonth; d++) cells.push({ day: d, muted: false, date: new Date(viewDate.getFullYear(), viewDate.getMonth(), d) });
+      let next = 1;
+      while (cells.length % 7 !== 0) cells.push({ day: next, muted: true, date: new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, next++) });
+      cells.forEach((c) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const disabled = isDisabled(c.date);
+        btn.className = 'qdp-day' + (c.muted ? ' muted' : '') + (sameDay(c.date, new Date()) ? ' today' : '') + (selected && sameDay(c.date, selected) ? ' selected' : '') + (disabled ? ' disabled' : '');
+        btn.textContent = c.day;
+        if (disabled) { btn.disabled = true; } else { btn.addEventListener('click', () => { commit(c.date); closeAll(); }); }
+        gridEl.appendChild(btn);
+      });
+    }
+
+    let closeAll = () => {};
+    let triggerEl;
+
+    if (variant === 'chips') {
+      wrap.innerHTML = `
+        <button type="button" class="qdp-trigger">
+          <span class="qdp-trigger-label"></span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+        </button>
+        <div class="qdp-pop">
+          <div class="qdp-quick">
+            <button type="button" data-quick="0">Today</button>
+            <button type="button" data-quick="1">Tomorrow</button>
+            <button type="button" data-quick="7">In a week</button>
+          </div>
+          <div class="qdp-head">
+            <span class="qdp-month-label"></span>
+            <div class="qdp-nav"><button type="button" data-nav="-1">‹</button><button type="button" data-nav="1">›</button></div>
+          </div>
+          <div class="qdp-dow"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+          <div class="qdp-grid"></div>
+        </div>
+      `;
+      triggerEl = wrap.querySelector('.qdp-trigger');
+      const pop = wrap.querySelector('.qdp-pop');
+      const grid = wrap.querySelector('.qdp-grid');
+      const monthLabel = wrap.querySelector('.qdp-month-label');
+
+      function positionPop() {
+        pop.style.left = '0'; pop.style.right = 'auto';
+        const rect = pop.getBoundingClientRect();
+        if (rect.right > window.innerWidth - 8) { pop.style.left = 'auto'; pop.style.right = '0'; }
+      }
+      function open() {
+        document.querySelectorAll('.qdp-pop.open').forEach((p) => { if (p !== pop) p.classList.remove('open'); });
+        pop.classList.add('open');
+        triggerEl.classList.add('open');
+        buildCalendarGrid(grid, monthLabel);
+        positionPop();
+      }
+      function close() { pop.classList.remove('open'); triggerEl.classList.remove('open'); }
+      closeAll = close;
+      triggerEl.addEventListener('click', (e) => { e.stopPropagation(); pop.classList.contains('open') ? close() : open(); });
+      pop.querySelectorAll('[data-nav]').forEach((btn) => btn.addEventListener('click', (e) => { e.stopPropagation(); viewDate.setMonth(viewDate.getMonth() + Number(btn.dataset.nav)); buildCalendarGrid(grid, monthLabel); }));
+      pop.querySelectorAll('[data-quick]').forEach((btn) => btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const d = startOfDay(new Date()); d.setDate(d.getDate() + Number(btn.dataset.quick));
+        if (isDisabled(d)) return;
+        viewDate = new Date(d);
+        commit(d);
+        close();
+      }));
+      pop.addEventListener('click', (e) => e.stopPropagation());
+      document.addEventListener('click', close);
+
+      function updateLabel() {
+        wrap.querySelector('.qdp-trigger-label').textContent = selected ? fmtShort(selected) : (opts.placeholder || 'Pick a date');
+        wrap.querySelector('.qdp-trigger-label').classList.toggle('qdp-placeholder', !selected);
+        pop.querySelectorAll('[data-quick]').forEach((btn) => {
+          const d = startOfDay(new Date()); d.setDate(d.getDate() + Number(btn.dataset.quick));
+          btn.classList.toggle('selected', !!selected && sameDay(d, selected));
+        });
+      }
+      var updateLabelFn = updateLabel;
+    } else {
+      wrap.innerHTML = `
+        <div class="qdp-strip-wrap">
+          <button type="button" class="qdp-strip-nav" data-strip-nav="-1">‹</button>
+          <div class="qdp-strip"></div>
+          <button type="button" class="qdp-strip-nav" data-strip-nav="1">›</button>
+          <button type="button" class="qdp-cal-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+          </button>
+        </div>
+        <div class="qdp-pop qdp-pop-strip">
+          <div class="qdp-head">
+            <span class="qdp-month-label"></span>
+            <div class="qdp-nav"><button type="button" data-nav="-1">‹</button><button type="button" data-nav="1">›</button></div>
+          </div>
+          <div class="qdp-dow"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+          <div class="qdp-grid"></div>
+        </div>
+      `;
+      const stripEl = wrap.querySelector('.qdp-strip');
+      const calBtn = wrap.querySelector('.qdp-cal-btn');
+      const pop = wrap.querySelector('.qdp-pop-strip');
+      const grid = wrap.querySelector('.qdp-grid');
+      const monthLabel = wrap.querySelector('.qdp-month-label');
+      let stripAnchor = startOfDay(selected || new Date());
+      triggerEl = calBtn;
+
+      function renderStrip() {
+        stripEl.innerHTML = '';
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(stripAnchor); d.setDate(d.getDate() + i);
+          const disabled = isDisabled(d);
+          const cell = document.createElement('button');
+          cell.type = 'button';
+          cell.className = 'qdp-strip-day' + (sameDay(d, new Date()) ? ' today' : '') + (selected && sameDay(d, selected) ? ' selected' : '') + (disabled ? ' disabled' : '');
+          cell.innerHTML = `<span class="dow">${DOW_FULL[d.getDay()].slice(0, 3)}</span><span class="num">${d.getDate()}</span>`;
+          if (disabled) { cell.disabled = true; } else { cell.addEventListener('click', () => commit(d)); }
+          stripEl.appendChild(cell);
+        }
+      }
+      function close() { pop.classList.remove('open'); calBtn.classList.remove('open'); }
+      closeAll = close;
+      wrap.querySelector('[data-strip-nav="-1"]').addEventListener('click', () => { stripAnchor.setDate(stripAnchor.getDate() - 7); renderStrip(); });
+      wrap.querySelector('[data-strip-nav="1"]').addEventListener('click', () => { stripAnchor.setDate(stripAnchor.getDate() + 7); renderStrip(); });
+      calBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (pop.classList.contains('open')) { close(); return; }
+        document.querySelectorAll('.qdp-pop.open').forEach((p) => p.classList.remove('open'));
+        pop.classList.add('open');
+        calBtn.classList.add('open');
+        viewDate = new Date(selected || new Date());
+        buildCalendarGrid(grid, monthLabel);
+        pop.style.left = 'auto'; pop.style.right = '0';
+      });
+      pop.querySelectorAll('[data-nav]').forEach((btn) => btn.addEventListener('click', (e) => { e.stopPropagation(); viewDate.setMonth(viewDate.getMonth() + Number(btn.dataset.nav)); buildCalendarGrid(grid, monthLabel); }));
+      pop.addEventListener('click', (e) => e.stopPropagation());
+      document.addEventListener('click', close);
+
+      function updateLabel() {
+        if (selected) stripAnchor = startOfDay(selected);
+        renderStrip();
+      }
+      var updateLabelFn = updateLabel;
+    }
+
+    // Wired up once, shared by both variants — every date change (chip
+    // pick, calendar click, strip click, or a plain code assignment via
+    // the .value override below) always funnels through here.
+    const nativeValueDesc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    function commit(d) {
+      selected = d;
+      nativeValueDesc.set.call(input, d ? toISO(d) : '');
+      updateLabelFn();
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    function syncFromInput() {
+      selected = parseISO(nativeValueDesc.get.call(input));
+      viewDate = new Date(selected || new Date());
+      updateLabelFn();
+    }
+    Object.defineProperty(input, 'value', {
+      configurable: true,
+      get() { return nativeValueDesc.get.call(input); },
+      set(v) { nativeValueDesc.set.call(input, v); syncFromInput(); },
+    });
+    // A native date input auto-selects its first segment on focus (a
+    // stray blue-highlighted day number) — focusing the visible trigger
+    // instead is both the fix and the only thing "focus the date field"
+    // can sensibly mean once the real input is hidden.
+    input.focus = () => triggerEl.focus();
+
+    updateLabelFn();
+    const api = {
+      setValue(d) { commit(d); },
+      refresh: syncFromInput,
+      destroy() {
+        wrap.remove();
+        input.style.display = '';
+        delete input._qlinicDatePicker;
+      },
+    };
+    input._qlinicDatePicker = api;
+    return api;
+  }
+
   // ---------------- time-of-day helpers (unchanged from the old data.js:
   // these operate on "HH:MM" strings like <input type="time"> values, not
   // on real timestamps, so they don't need to change just because the
@@ -1938,6 +2191,7 @@
     isRealStatusReason,
     escapeHtml,
     confirmDialog,
+    attachDatePicker,
     getQueueStatus,
 
     signUp,
