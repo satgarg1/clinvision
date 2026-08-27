@@ -185,11 +185,6 @@
       // redundant extra fetch of its own.
       let currentQueue = null;
       let currentDoctor = null;
-      // Set only while the "Today's full schedule" modal is open, so a
-      // patient getting called/finished elsewhere - or just the clock
-      // ticking past an hour - doesn't leave the modal showing a frozen
-      // snapshot from whenever it happened to be opened.
-      let openScheduleModalRefresh = null;
       // render() can be kicked off from three independent places (the
       // doctor dropdown, the live-change subscription, and its own
       // initial call) - with no guard, two overlapping calls' fetches
@@ -350,9 +345,8 @@
       // instead of something to scroll past to reach the active ones.
       function openFullScheduleModal(q, doc) {
         // Everything below is rebuilt from scratch by recompute() -
-        // called once now, and again from openScheduleModalRefresh
-        // whenever the queue changes or the clock ticks forward while
-        // this modal stays open. Without that, a doctor who leaves it
+        // called once now, and again every tick of this modal's own
+        // refresh interval below. Without that, a doctor who leaves it
         // open shows a snapshot frozen from the moment it was clicked -
         // "1 scheduled" for someone already long finished, or "Now:
         // 11 AM-12 PM" chip well after 1 PM.
@@ -610,21 +604,25 @@
           renderAll();
         });
 
-        // Lets render() (already re-fetching this doctor's queue on every
-        // live change) and the 30s clock tick push fresh data straight
-        // into this open modal, instead of it sitting frozen from
-        // whenever it was clicked open.
-        openScheduleModalRefresh = {
-          doctorId: doc.id,
-          run(freshQueue) {
-            recompute(freshQueue);
+        // Owns its own clock instead of waiting to be pushed to by
+        // render() or some other timer - simpler, and it means this
+        // modal staying current never depends on anything happening
+        // to fire elsewhere on the page while it's open. currentQueue
+        // is the same module-level variable render() already keeps
+        // fresh for the rest of the page; reading it here each tick
+        // (rather than a value captured once) is what actually catches
+        // a patient getting called/finished while this is open.
+        const refreshIntervalId = setInterval(() => {
+          if (!document.body.contains(backdrop)) { clearInterval(refreshIntervalId); return; }
+          if (currentQueue) {
+            recompute(currentQueue);
             renderAll();
-          },
-        };
+          }
+        }, 15000);
 
         function close() {
           if (scheduleChart) { scheduleChart.destroy(); scheduleChart = null; }
-          openScheduleModalRefresh = null;
+          clearInterval(refreshIntervalId);
           backdrop.remove();
           document.removeEventListener('keydown', onKey);
         }
@@ -673,9 +671,6 @@
         if (myRenderToken !== renderToken) return;
         currentDoctor = doc;
         currentQueue = q;
-        if (openScheduleModalRefresh && openScheduleModalRefresh.doctorId === doctorId) {
-          openScheduleModalRefresh.run(q);
-        }
         const walkinRanks = buildWalkinRanks(q);
         applyDoctorAccent(doctorId);
         renderNextAppointment(q);
@@ -1136,13 +1131,6 @@
       setInterval(() => {
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
         if (currentQueue) renderNextAppointment(currentQueue);
-        // Re-derives the schedule modal's chart purely from the clock
-        // moving forward, even when nothing in the queue itself has
-        // changed - otherwise a bucket only ever reclassifies (current
-        // -> backlog -> gone) on the next unrelated data event.
-        if (currentQueue && openScheduleModalRefresh && currentDoctor && openScheduleModalRefresh.doctorId === currentDoctor.id) {
-          openScheduleModalRefresh.run(currentQueue);
-        }
       }, 30000);
 
       render();
