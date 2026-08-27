@@ -87,11 +87,20 @@
               <option value="">From pincode</option>
             </select>
           </div>
+          <div class="field" style="min-width:180px;">
+            <label>GSTIN <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
+            <input type="text" id="gstinInput" placeholder="e.g., 22AAAAA0000A1Z5" maxlength="15" style="text-transform:uppercase;" />
+          </div>
           <div class="field" style="flex:0;">
             <label>&nbsp;</label>
             <button type="submit" class="btn-sm primary">Save</button>
           </div>
         </form>
+        <!-- Consultation fees are GST-exempt (Notification No. 12/2017-CT
+             (Rate), Entry 74) regardless of whether a GSTIN is on file -
+             this field is only for a clinic that separately holds a GSTIN
+             for other reasons and wants it on its own paperwork. -->
+        <p class="panel-note">Consultation fees are GST-exempt either way — a GSTIN here is only needed if your clinic separately holds one.</p>
       </div>
 
       <div class="panel">
@@ -221,7 +230,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=68"></script>
+  <script src="clinic-data.js?v=69"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -433,6 +442,7 @@
         document.getElementById('cityInput').value = clinic.city || '';
         document.getElementById('pincodeInput').value = clinic.pincode || '';
         setStateValue(document.getElementById('stateInput'), clinic.state || '');
+        document.getElementById('gstinInput').value = clinic.gstin || '';
         graceWindowPicker.setValue(clinic.grace_window_mins);
         slotIntervalPicker.setValue(clinic.slot_interval_mins);
         slotCapacityPicker.setValue(clinic.slot_capacity);
@@ -482,6 +492,7 @@
           city: document.getElementById('cityInput').value,
           pincode: document.getElementById('pincodeInput').value,
           state: document.getElementById('stateInput').value,
+          gstin: document.getElementById('gstinInput').value.trim().toUpperCase(),
         });
         showToast('Clinic profile updated');
         loadClinic();

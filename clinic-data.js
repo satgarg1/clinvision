@@ -564,6 +564,7 @@
     if (fields.pincode !== undefined) payload.pincode = fields.pincode;
     if (fields.state !== undefined) payload.state = fields.state;
     if (fields.phone !== undefined) payload.phone = fields.phone;
+    if (fields.gstin !== undefined) payload.gstin = fields.gstin || null;
     if (fields.logoUrl !== undefined) payload.logo_url = fields.logoUrl;
     const { error } = await sb.from('clinics').update(payload).eq('id', clinicId);
     if (error) throw error;
