@@ -73,11 +73,13 @@
         </div>
       </div>
 
+      <div class="filter-seg" id="trendGroupSeg"></div>
+
       <div class="panel" id="unlinkedDoctorPanel" style="display:none;">
         <div class="empty-state">Your account isn't linked to a doctor profile yet — ask your admin to link it from Team settings.</div>
       </div>
 
-      <div class="panel" id="revenueOverTimePanel">
+      <div class="panel" id="revenueOverTimePanel" data-group="revenue">
         <div class="panel-header"><h2 id="revenueOverTimeHeading">Revenue over time</h2></div>
         <div class="trend-chart-box"><canvas id="revenueChart"></canvas><div class="empty-state" id="revenueEmptyState" style="display:none;">No billed invoices in this period.</div></div>
         <div class="trend-drill" id="revenueDrill">
@@ -88,17 +90,7 @@
         </div>
       </div>
 
-      <div class="panel" id="visitsPerDoctorPanel">
-        <div class="panel-header"><h2 id="visitsPerDoctorHeading">Visits per doctor</h2></div>
-        <div class="trend-chart-box"><canvas id="visitsChart"></canvas></div>
-        <div class="trend-drill" id="visitsDrill">
-          <p class="trend-drill-label"><span id="visitsDrillLabel"></span><span class="trend-drill-close" data-close="visits">✕</span></p>
-          <p class="trend-drill-note">Visits trended across the period</p>
-          <div class="trend-drill-charts"><div class="trend-drill-chart-box"><canvas id="visitsDrillChart"></canvas></div></div>
-        </div>
-      </div>
-
-      <div class="panel" id="revenueByDoctorPanel">
+      <div class="panel" id="revenueByDoctorPanel" data-group="revenue">
         <div class="panel-header"><h2 id="revenueByDoctorHeading">Revenue by doctor</h2></div>
         <div class="trend-chart-box"><canvas id="revByDocChart"></canvas></div>
         <div class="trend-drill" id="revByDocDrill">
@@ -108,31 +100,17 @@
         </div>
       </div>
 
-      <div class="panel" id="noShowPanel">
-        <div class="panel-header"><h2 id="noShowHeading">No-show rate by week</h2></div>
-        <div class="trend-chart-box"><canvas id="noShowChart"></canvas><div class="empty-state" id="noShowEmptyState" style="display:none;">No resolved visits in this period.</div></div>
-        <div class="trend-drill" id="noShowDrill">
-          <p class="trend-drill-label"><span id="noShowDrillLabel"></span><span class="trend-drill-close" data-close="noshow">✕</span></p>
-          <p class="trend-drill-note" id="noShowDrillNote">By day, and by doctor, for this bucket</p>
-          <div class="trend-drill-charts two-up" id="noShowDrillCharts">
-            <div class="trend-drill-chart-box"><canvas id="noShowDayChart"></canvas></div>
-            <div class="trend-drill-chart-box"><canvas id="noShowDocChart"></canvas></div>
-          </div>
+      <div class="panel" id="visitsPerDoctorPanel" data-group="patients">
+        <div class="panel-header"><h2 id="visitsPerDoctorHeading">Visits per doctor</h2></div>
+        <div class="trend-chart-box"><canvas id="visitsChart"></canvas></div>
+        <div class="trend-drill" id="visitsDrill">
+          <p class="trend-drill-label"><span id="visitsDrillLabel"></span><span class="trend-drill-close" data-close="visits">✕</span></p>
+          <p class="trend-drill-note">Visits trended across the period</p>
+          <div class="trend-drill-charts"><div class="trend-drill-chart-box"><canvas id="visitsDrillChart"></canvas></div></div>
         </div>
       </div>
 
-      <div class="panel" id="peakHoursPanel">
-        <div class="panel-header"><h2>Peak hours</h2></div>
-        <p class="panel-note" style="margin-top:0;">Number of patients who arrived in each hour, across the whole period</p>
-        <div class="trend-chart-box"><canvas id="peakChart"></canvas><div class="empty-state" id="peakEmptyState" style="display:none;">No arrivals in this period.</div></div>
-        <div class="trend-drill" id="peakDrill">
-          <p class="trend-drill-label"><span id="peakDrillLabel"></span><span class="trend-drill-close" data-close="peak">✕</span></p>
-          <p class="trend-drill-note">How many of each doctor's patients arrived during this specific hour</p>
-          <div class="trend-drill-charts"><div class="trend-drill-chart-box"><canvas id="peakDrillChart"></canvas></div></div>
-        </div>
-      </div>
-
-      <div class="panel" id="demographicsPanel">
+      <div class="panel" id="demographicsPanel" data-group="patients">
         <div class="panel-header"><h2>Patient demographics</h2></div>
         <p class="panel-note" style="margin-top:0;">Who visited during this period, by gender and age</p>
         <div class="trend-drill-charts two-up" id="demographicsCharts">
@@ -148,7 +126,41 @@
         <div class="empty-state" id="demographicsEmptyState" style="display:none;">No patients in this period.</div>
       </div>
 
-      <div class="panel" id="consultDurationPanel">
+      <div class="panel" id="peakHoursPanel" data-group="patients">
+        <div class="panel-header"><h2>Peak hours</h2></div>
+        <p class="panel-note" style="margin-top:0;">Number of patients who arrived in each hour, across the whole period</p>
+        <div class="trend-chart-box"><canvas id="peakChart"></canvas><div class="empty-state" id="peakEmptyState" style="display:none;">No arrivals in this period.</div></div>
+        <div class="trend-drill" id="peakDrill">
+          <p class="trend-drill-label"><span id="peakDrillLabel"></span><span class="trend-drill-close" data-close="peak">✕</span></p>
+          <p class="trend-drill-note">How many of each doctor's patients arrived during this specific hour</p>
+          <div class="trend-drill-charts"><div class="trend-drill-chart-box"><canvas id="peakDrillChart"></canvas></div></div>
+        </div>
+      </div>
+
+      <div class="panel" id="apptDistPanel" data-group="patients">
+        <div class="panel-header"><h2>Appointment distribution by hour</h2></div>
+        <p class="panel-note" style="margin-top:0;">Every booked appointment counted into its scheduled hour, regardless of outcome — the shape of how the day was planned, not who showed up.</p>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:14px;" id="apptDistDoctorField">
+          <label class="pill-label">Doctor</label>
+          <select id="apptDistDoctorSelect" class="pill-select"></select>
+        </div>
+        <div class="trend-chart-box"><canvas id="apptDistChart"></canvas><div class="empty-state" id="apptDistEmptyState" style="display:none;">No appointments booked in this period.</div></div>
+      </div>
+
+      <div class="panel" id="noShowPanel" data-group="operations">
+        <div class="panel-header"><h2 id="noShowHeading">No-show rate by week</h2></div>
+        <div class="trend-chart-box"><canvas id="noShowChart"></canvas><div class="empty-state" id="noShowEmptyState" style="display:none;">No resolved visits in this period.</div></div>
+        <div class="trend-drill" id="noShowDrill">
+          <p class="trend-drill-label"><span id="noShowDrillLabel"></span><span class="trend-drill-close" data-close="noshow">✕</span></p>
+          <p class="trend-drill-note" id="noShowDrillNote">By day, and by doctor, for this bucket</p>
+          <div class="trend-drill-charts two-up" id="noShowDrillCharts">
+            <div class="trend-drill-chart-box"><canvas id="noShowDayChart"></canvas></div>
+            <div class="trend-drill-chart-box"><canvas id="noShowDocChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="consultDurationPanel" data-group="operations">
         <div class="panel-header"><h2 id="consultDurationHeading">Average consult duration</h2></div>
         <div class="trend-chart-box"><canvas id="consultChart"></canvas><div class="empty-state" id="consultEmptyState" style="display:none;">No completed-consultation timing data in this period yet.</div></div>
         <div class="trend-drill" id="consultDrill">
@@ -196,9 +208,17 @@
       // (billing is fully admin-only, per canAccessBilling/isAdmin
       // elsewhere) and not "Revenue by doctor" specifically, which is
       // just a restated single total once scoped to one doctor anyway.
+      // Handled entirely by the group tabs below (no "Revenue" tab is
+      // offered to a doctor, and its two panels carry data-group="revenue"),
+      // rather than a second, separate style.display here.
+      //
+      // The doctor filter on "Appointment distribution by hour" is real
+      // scope for an admin picking one doctor out of many, but for a
+      // doctor's own view it's already scoped to just them (getPatientsInRange
+      // below is called with myDoctorId) — an "All doctors" vs. one-name
+      // dropdown that both show the same data would just be clutter.
       if (amDoctor) {
-        document.getElementById('revenueOverTimePanel').style.display = 'none';
-        document.getElementById('revenueByDoctorPanel').style.display = 'none';
+        document.getElementById('apptDistDoctorField').style.display = 'none';
       }
 
       const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -974,6 +994,68 @@
         openTrendDrill('consultDrill');
       }
 
+      // Every type==='appointment' booking with a bookedTime counts into
+      // its scheduled hour, regardless of what happened to it since —
+      // done, no-show, and still-waiting all count the same, because
+      // this chart answers "how was the day planned," not "who showed
+      // up" (that question is what Peak hours, just above, already
+      // answers). Walk-ins are excluded even with a preferred time,
+      // matching the identical chart already shipped on Doctor View's
+      // schedule modal. Unlike that live view there's no "hide once
+      // passed" here — every hour of the whole selected period shows,
+      // since this is historical, not "what's left today."
+      //
+      // Hours are anchored to the clinic's real opening_time, not a
+      // round clock hour — a 9:30 AM opening produces buckets like
+      // "9:30 AM–10:30 AM," not the mislabeled clock-hour buckets that
+      // had to be fixed on the Doctor View chart this same session.
+      //
+      // The doctor dropdown filters the already-fetched `patients` for
+      // the period in memory — for an admin that list already covers
+      // every doctor (getPatientsInRange is called without a doctorId
+      // filter in loadAndRender), so switching doctors here never
+      // re-queries.
+      let apptDistDoctorFilter = 'all';
+      let apptDistPatientsCache = [];
+      function renderApptDist(patients, doctors) {
+        apptDistPatientsCache = patients;
+        const sel = document.getElementById('apptDistDoctorSelect');
+        sel.innerHTML = '<option value="all">All doctors</option>'
+          + doctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}</option>`).join('');
+        sel.value = doctors.some((d) => d.id === apptDistDoctorFilter) ? apptDistDoctorFilter : 'all';
+        apptDistDoctorFilter = sel.value;
+
+        const appts = patients.filter((p) => p.type === 'appointment' && p.bookedTime
+          && (apptDistDoctorFilter === 'all' || p.doctorId === apptDistDoctorFilter));
+
+        if (trendCharts.apptDist) { trendCharts.apptDist.destroy(); trendCharts.apptDist = null; }
+        const openMin = clinic && clinic.opening_time ? Qlinic.parseTime(clinic.opening_time) : null;
+        const closeMin = clinic && clinic.closing_time ? Qlinic.parseTime(clinic.closing_time) : null;
+        const hasClinicHours = openMin !== null && closeMin !== null && closeMin > openMin;
+        const hasData = hasClinicHours && appts.length > 0;
+        document.getElementById('apptDistChart').style.display = hasData ? '' : 'none';
+        document.getElementById('apptDistEmptyState').style.display = hasData ? 'none' : '';
+        if (!hasData) return;
+
+        const buckets = [];
+        for (let start = openMin; start < closeMin; start += 60) {
+          buckets.push({ start, end: Math.min(start + 60, closeMin), count: 0 });
+        }
+        appts.forEach((p) => {
+          const mins = Qlinic.parseTime(p.bookedTime);
+          const b = buckets.find((bk) => mins >= bk.start && mins < bk.end);
+          if (b) b.count += 1;
+        });
+        const labels = buckets.map((b) => `${Qlinic.formatTime(b.start)}–${Qlinic.formatTime(b.end)}`);
+        const colors = buckets.map(() => cssVar('--mkt-purple'));
+        trendCharts.apptDist = makeBarChart('apptDistChart', labels, buckets.map((b) => b.count), colors,
+          (v) => Math.round(v) + (Math.round(v) === 1 ? ' appointment' : ' appointments'), null, 'Appointments booked');
+      }
+      document.getElementById('apptDistDoctorSelect').addEventListener('change', (e) => {
+        apptDistDoctorFilter = e.target.value;
+        renderApptDist(apptDistPatientsCache, doctorListCache);
+      });
+
       function recolorTrendMains() {
         if (trendCharts.visits) { trendCharts.visits.data.datasets[0].backgroundColor = withSelection(trendCharts.visits._baseColors, trendSelected.visits); trendCharts.visits.update(); }
         if (trendCharts.revByDoc) { trendCharts.revByDoc.data.datasets[0].backgroundColor = withSelection(trendCharts.revByDoc._baseColors, trendSelected.revByDoc); trendCharts.revByDoc.update(); }
@@ -1016,7 +1098,8 @@
         // Dashboard and the Holidays page).
         if (amDoctor && !myDoctorId) {
           document.getElementById('unlinkedDoctorPanel').style.display = 'block';
-          ['visitsPerDoctorPanel', 'noShowPanel', 'peakHoursPanel', 'demographicsPanel', 'consultDurationPanel'].forEach((id) => {
+          document.getElementById('trendGroupSeg').style.display = 'none';
+          ['visitsPerDoctorPanel', 'noShowPanel', 'peakHoursPanel', 'demographicsPanel', 'consultDurationPanel', 'apptDistPanel'].forEach((id) => {
             document.getElementById(id).style.display = 'none';
           });
           return;
@@ -1047,6 +1130,7 @@
         renderPeakHours(patients);
         renderPatientDemographics(patients);
         renderConsultDuration(patients, doctors);
+        renderApptDist(patients, doctors);
       }
 
       function renderPeriodOptions() {
@@ -1087,6 +1171,44 @@
         document.getElementById(id).addEventListener('change', updateCustomRangeFromInputs);
       });
 
+      // Grouped by the question being asked, not by chart type: Revenue
+      // answers "how much, from whom"; Patients & Scheduling answers
+      // "who's coming, and when" (volume and timing, including the new
+      // hour-distribution chart — same family as Peak hours and Visits
+      // per doctor); Operations answers "how well is the clinic actually
+      // running" (no-shows, consult length flag a process problem rather
+      // than a business or scheduling one). No chart-count badges on the
+      // tabs — kept plain, same as the "Arrived/Pending/Done" tabs this
+      // reuses .filter-seg from.
+      const TREND_GROUPS = [
+        { key: 'revenue', label: 'Revenue' },
+        { key: 'patients', label: 'Patients & Scheduling' },
+        { key: 'operations', label: 'Operations' },
+      ];
+      // A doctor's own view has nothing in the Revenue group (both its
+      // panels are hidden for them) — no tab is offered for a group with
+      // nothing behind it, and the default landing tab is the first one
+      // that actually has content.
+      let activeTrendGroup = amDoctor ? 'patients' : 'revenue';
+      function renderTrendGroupTabs() {
+        document.getElementById('trendGroupSeg').innerHTML = TREND_GROUPS
+          .filter((g) => !(amDoctor && g.key === 'revenue'))
+          .map((g) => `<button type="button" data-group="${g.key}" class="${g.key === activeTrendGroup ? 'active' : ''}">${g.label}</button>`)
+          .join('');
+      }
+      function applyTrendGroupVisibility() {
+        document.querySelectorAll('.panel[data-group]').forEach((el) => {
+          el.style.display = el.dataset.group === activeTrendGroup ? '' : 'none';
+        });
+      }
+      document.getElementById('trendGroupSeg').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-group]');
+        if (!btn || btn.dataset.group === activeTrendGroup) return;
+        activeTrendGroup = btn.dataset.group;
+        renderTrendGroupTabs();
+        applyTrendGroupVisibility();
+      });
+
       document.getElementById('trendsPeriodSelect').addEventListener('change', (e) => {
         rangePreset = e.target.value;
         document.getElementById('trendsCustomRangeFilters').style.display = rangePreset === 'custom' ? 'flex' : 'none';
@@ -1108,6 +1230,8 @@
       populateMonthYearSelects('trendsRangeStartMonth', 'trendsRangeStartYear');
       populateMonthYearSelects('trendsRangeEndMonth', 'trendsRangeEndYear');
       renderPeriodOptions();
+      renderTrendGroupTabs();
+      applyTrendGroupVisibility();
       await loadAndRender();
       Qlinic.onLiveChange(loadAndRender);
     })();
