@@ -644,7 +644,7 @@ a { color: inherit; }
   display: inline-flex; align-items: center; gap: 5px;
 }
 .now-chip .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-dark); }
-.chart-canvas-wrap { position: relative; height: 172px; }
+.chart-canvas-wrap { position: relative; height: 128px; }
 .chart-note { font-size: 11.5px; font-style: italic; color: var(--grey-500); margin: 10px 2px 0; }
 
 /* Smaller and outlined so it reads as a tappable action next to the

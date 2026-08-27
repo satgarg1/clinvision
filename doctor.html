@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=175" />
+<link rel="stylesheet" href="styles.css?v=176" />
 </head>
 <body>
   <div class="app-shell">
@@ -500,7 +500,7 @@
                 <span class="label">By hour</span>
                 ${currentBucket ? `<span class="now-chip"><span class="dot"></span><span>Now: ${formatHourOnly(currentBucket.start)}–${formatHourOnly(currentBucket.end)}</span></span>` : ''}
               </div>
-              <div class="chart-canvas-wrap"><canvas id="scheduleLoadChart" height="172"></canvas></div>
+              <div class="chart-canvas-wrap"><canvas id="scheduleLoadChart" height="128"></canvas></div>
               <p class="chart-note">Hover a bar for the status breakdown — completed visits and no-shows still count toward their hour.</p>
             ` : '<p class="chart-note" style="margin-top:0;">All of today\'s appointments have passed.</p>'}
           </div>
@@ -509,22 +509,22 @@
         const backdrop = document.createElement('div');
         backdrop.className = 'modal-backdrop';
         backdrop.innerHTML = `
-          <div class="modal-card" role="dialog" aria-modal="true" style="max-width:600px;">
-            <h2 class="modal-title">${Qlinic.escapeHtml(doc.name)}'s full schedule — Today</h2>
-            <p class="panel-note" style="margin-top:0;">Every appointment and walk-in today, not just who's currently waiting</p>
-            <div class="filter-seg" id="scheduleFilterSeg">
-              <button type="button" data-tab="active" class="active">Active <span class="count">${GROUPS.active.length}</span></button>
-              <button type="button" data-tab="booked">Booked <span class="count">${GROUPS.booked.length}</span></button>
-              <button type="button" data-tab="done">Done <span class="count">${GROUPS.done.length}</span></button>
-            </div>
-            <div id="scheduleChartWrap" style="display:none;">${chartBlockHtml}</div>
-            <div style="max-height:50vh;overflow-y:auto;">
+          <div class="modal-card" role="dialog" aria-modal="true" style="max-width:600px;max-height:88vh;display:flex;flex-direction:column;padding:0;overflow:hidden;">
+            <div style="overflow-y:auto;padding:28px 30px 4px;">
+              <h2 class="modal-title">${Qlinic.escapeHtml(doc.name)}'s full schedule — Today</h2>
+              <p class="panel-note" style="margin-top:0;">Every appointment and walk-in today, not just who's currently waiting</p>
+              <div class="filter-seg" id="scheduleFilterSeg">
+                <button type="button" data-tab="active" class="active">Active <span class="count">${GROUPS.active.length}</span></button>
+                <button type="button" data-tab="booked">Booked <span class="count">${GROUPS.booked.length}</span></button>
+                <button type="button" data-tab="done">Done <span class="count">${GROUPS.done.length}</span></button>
+              </div>
+              <div id="scheduleChartWrap" style="display:none;">${chartBlockHtml}</div>
               <table class="qtable">
                 <thead><tr><th>Time</th><th>Name</th><th>Token</th><th>Age</th><th>Status</th></tr></thead>
                 <tbody id="scheduleTbody">${rowsHtmlFor(GROUPS.active)}</tbody>
               </table>
             </div>
-            <div class="modal-actions" style="margin-top:18px;">
+            <div class="modal-actions" style="margin:0;padding:14px 30px 22px;border-top:1px solid var(--grey-100);flex-shrink:0;">
               <button type="button" class="btn-sm primary" id="fullScheduleModalCloseBtn">Close</button>
             </div>
           </div>
