@@ -604,6 +604,19 @@ a { color: inherit; }
 .queue-nowserving-num { font-size: 34px; font-weight: 700; color: var(--chip-text); line-height: 1.1; }
 .queue-nowserving-meta { font-size: 12.5px; color: var(--grey-700); margin-top: 4px; }
 
+/* Doctor View's "Today's full schedule" modal: Active/Booked/Done tabs
+   so the doctor never has to scroll past a morning's worth of Done
+   patients to see who's actually waiting right now. */
+.filter-seg { display: inline-flex; background: var(--grey-100); border-radius: var(--radius-pill); padding: 3px; gap: 2px; margin-bottom: 16px; }
+.filter-seg button {
+  font-family: var(--font); font-size: 13px; font-weight: 700; color: var(--grey-700);
+  background: transparent; border: none; padding: 8px 16px; border-radius: var(--radius-pill); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.filter-seg button.active { background: var(--white); color: var(--accent-dark); box-shadow: var(--shadow-resting); }
+.filter-seg .count { font-size: 11px; font-weight: 800; background: var(--grey-300); color: var(--white); border-radius: var(--radius-pill); padding: 1px 7px; }
+.filter-seg button.active .count { background: var(--accent); }
+
 /* Smaller and outlined so it reads as a tappable action next to the
    now-serving cell, not another filled info panel the same shape. */
 .queue-details-btn {

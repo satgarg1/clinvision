@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=173" />
+<link rel="stylesheet" href="styles.css?v=174" />
 </head>
 <body>
   <div class="app-shell">
@@ -319,23 +319,31 @@
       // of an always-visible panel) but with patient-level detail instead
       // of bucketed slot counts, since a doctor wants to know who, not
       // just how many.
+      // Three groups instead of one long chronological list: "Active"
+      // (in-consultation + waiting) is what a doctor actually opens this
+      // for, and defaults to shown; Booked and Done are one click away
+      // instead of something to scroll past to reach the active ones.
       function openFullScheduleModal(q, doc) {
         const ranks = buildWalkinRanks(q);
-        const all = [
-          ...(q.nowServing ? [q.nowServing] : []),
-          ...q.waiting, ...q.booked, ...q.done, ...q.noShow,
-        ].sort((a, b) => scheduleMinutesFor(a) - scheduleMinutesFor(b));
-        const rowsHtml = all.length === 0
-          ? '<tr><td colspan="5" style="text-align:center;color:var(--grey-500);">Nothing on the schedule today.</td></tr>'
-          : all.map((p) => `
-              <tr ${p.status === 'done' || p.status === 'no_show' ? 'style="color:var(--grey-500);"' : ''}>
-                <td style="white-space:nowrap;">${Qlinic.escapeHtml(scheduleTimeLabel(p))}</td>
-                <td>${Qlinic.escapeHtml(p.name)}</td>
-                <td>${Qlinic.escapeHtml(formatToken(p, ranks) || '—')}</td>
-                <td>${formatPatientAge(p)}</td>
-                <td>${scheduleStatusBadge(p.status)}</td>
-              </tr>
-            `).join('');
+        const sortByTime = (list) => [...list].sort((a, b) => scheduleMinutesFor(a) - scheduleMinutesFor(b));
+        const GROUPS = {
+          active: sortByTime([...(q.nowServing ? [q.nowServing] : []), ...q.waiting]),
+          booked: sortByTime(q.booked),
+          done: sortByTime([...q.done, ...q.noShow]),
+        };
+
+        function rowsHtmlFor(list) {
+          if (list.length === 0) return '<tr><td colspan="5" style="text-align:center;color:var(--grey-500);">Nothing here right now.</td></tr>';
+          return list.map((p) => `
+            <tr ${p.status === 'done' || p.status === 'no_show' ? 'style="color:var(--grey-500);"' : ''}>
+              <td style="white-space:nowrap;">${Qlinic.escapeHtml(scheduleTimeLabel(p))}</td>
+              <td>${Qlinic.escapeHtml(p.name)}</td>
+              <td>${Qlinic.escapeHtml(formatToken(p, ranks) || '—')}</td>
+              <td>${formatPatientAge(p)}</td>
+              <td>${scheduleStatusBadge(p.status)}</td>
+            </tr>
+          `).join('');
+        }
 
         const backdrop = document.createElement('div');
         backdrop.className = 'modal-backdrop';
@@ -343,18 +351,29 @@
           <div class="modal-card" role="dialog" aria-modal="true" style="max-width:600px;">
             <h2 class="modal-title">${Qlinic.escapeHtml(doc.name)}'s full schedule — Today</h2>
             <p class="panel-note" style="margin-top:0;">Every appointment and walk-in today, not just who's currently waiting</p>
+            <div class="filter-seg" id="scheduleFilterSeg">
+              <button type="button" data-tab="active" class="active">Active <span class="count">${GROUPS.active.length}</span></button>
+              <button type="button" data-tab="booked">Booked <span class="count">${GROUPS.booked.length}</span></button>
+              <button type="button" data-tab="done">Done <span class="count">${GROUPS.done.length}</span></button>
+            </div>
             <div style="max-height:50vh;overflow-y:auto;">
               <table class="qtable">
                 <thead><tr><th>Time</th><th>Name</th><th>Token</th><th>Age</th><th>Status</th></tr></thead>
-                <tbody>${rowsHtml}</tbody>
+                <tbody id="scheduleTbody">${rowsHtmlFor(GROUPS.active)}</tbody>
               </table>
             </div>
-            <div class="modal-actions">
+            <div class="modal-actions" style="margin-top:18px;">
               <button type="button" class="btn-sm primary" id="fullScheduleModalCloseBtn">Close</button>
             </div>
           </div>
         `;
         document.body.appendChild(backdrop);
+        backdrop.querySelector('#scheduleFilterSeg').addEventListener('click', (e) => {
+          const btn = e.target.closest('button');
+          if (!btn) return;
+          backdrop.querySelectorAll('#scheduleFilterSeg button').forEach((b) => b.classList.toggle('active', b === btn));
+          backdrop.querySelector('#scheduleTbody').innerHTML = rowsHtmlFor(GROUPS[btn.dataset.tab]);
+        });
         function close() { backdrop.remove(); document.removeEventListener('keydown', onKey); }
         function onKey(e) { if (e.key === 'Escape') close(); }
         backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
