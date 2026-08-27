@@ -578,13 +578,19 @@ a { color: inherit; }
    a sense of how long that consult has been running. */
 .queue-clinic-name { text-align: center; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 10px; }
 .queue-appt-line { text-align: center; font-size: 15.5px; font-weight: 600; line-height: 1.45; margin-bottom: 10px; }
-.queue-status-msg { text-align: center; font-size: 13.5px; color: var(--grey-700); margin-bottom: 10px; }
-.queue-status-msg.is-waiting { color: var(--warning); font-weight: 700; }
-.queue-advisory {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  margin-top: 10px; text-align: center;
+/* The status a patient checks most anxiously deserves to read as a
+   fact, not a footnote — a solid pill instead of plain text. */
+.queue-status-msg { text-align: center; margin-bottom: 14px; }
+.queue-status-msg .pill {
+  display: inline-block; font-size: 13.5px; font-weight: 700; color: var(--chip-text);
+  background: var(--mkt-blue-bg); padding: 7px 16px; border-radius: var(--radius-pill);
 }
-.queue-advisory .text { font-size: 12px; color: var(--grey-500); line-height: 1.4; font-weight: 400; font-style: italic; }
+.queue-status-msg.is-waiting .pill { color: var(--warning); background: var(--warning-bg); }
+/* Plain grey italic was too easy to skim past for a line worth actually
+   reading — accent blue instead, still calm (not a warning color), but
+   with real contrast against white. */
+.queue-advisory { margin-top: 10px; text-align: center; }
+.queue-advisory .text { font-size: 14px; color: var(--chip-text); line-height: 1.4; font-weight: 600; font-style: italic; }
 .queue-doctor-status {
   text-align: center; font-size: 13.5px; font-weight: 600; color: var(--warning);
   background: var(--warning-bg); border-radius: var(--radius-sm);
@@ -597,6 +603,36 @@ a { color: inherit; }
 .queue-nowserving-eyebrow { font-size: 11px; font-weight: 700; color: var(--chip-text); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
 .queue-nowserving-num { font-size: 34px; font-weight: 700; color: var(--chip-text); line-height: 1.1; }
 .queue-nowserving-meta { font-size: 12.5px; color: var(--grey-700); margin-top: 4px; }
+
+/* Smaller and outlined so it reads as a tappable action next to the
+   now-serving cell, not another filled info panel the same shape. */
+.queue-details-btn {
+  font-family: var(--font); font-size: 13px; font-weight: 700; color: var(--accent);
+  background: var(--white); border: 1.5px solid var(--accent); border-radius: var(--radius-pill);
+  padding: 8px 18px; cursor: pointer;
+}
+.queue-nearby-heading { text-align: center; font-size: 16px; font-weight: 800; margin-bottom: 10px; }
+.queue-nearby-sub { text-align: center; font-weight: 400; color: var(--grey-500); font-size: 13px; line-height: 1.5; margin: 8px 0 0; }
+/* Replaces the old "Updated hh:mm:ss" timestamp with a heartbeat —
+   matches the same live indicator inside the queue-details popup, so
+   both read as one consistent "this is live" language on the page. */
+.queue-live-line { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--success); margin-top: 20px; }
+.queue-live-line .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: queue-pulse 1.4s infinite; }
+@keyframes queue-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* Queue-details popup: same confirmDialog/modal-card look used
+   elsewhere in the app, plus a 3-up stat grid for the scoped counts. */
+.queue-details-scope { font-size: 13px; color: var(--grey-700); line-height: 1.5; margin: 0 0 16px; }
+.queue-details-live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--success); margin-bottom: 18px; }
+.queue-details-live .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: queue-pulse 1.4s infinite; }
+.queue-stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.queue-stat-cell { text-align: center; background: var(--white); border: 1px solid var(--grey-300); border-radius: var(--radius-md); padding: 14px 6px; }
+.queue-stat-cell .num { font-size: 26px; font-weight: 800; color: var(--black); line-height: 1.1; }
+.queue-stat-cell .label { font-size: 11px; font-weight: 600; color: var(--grey-700); text-transform: uppercase; letter-spacing: 0.02em; margin-top: 6px; line-height: 1.35; }
+.queue-stat-cell.arrived { border-color: var(--success); background: var(--success-bg); }
+.queue-stat-cell.arrived .num { color: var(--success); }
+.queue-stat-cell.notyet { border-color: var(--warning); background: var(--warning-bg); }
+.queue-stat-cell.notyet .num { color: var(--warning); }
 
 /* queue.html's visit-complete screen: a gradient banner (cancels out
    .login-card-wide's own padding via negative margins to go full-bleed)

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=172" />
+<link rel="stylesheet" href="styles.css?v=173" />
 </head>
 <body>
   <div class="login-wrap">
@@ -50,10 +50,9 @@
       </div>
 
       <div id="notYetState" style="display:none;">
-        <div style="text-align:center;color:var(--grey-500);font-size:13px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;" id="notYetClinicName"></div>
-        <div style="text-align:center;font-size:18px;font-weight:600;margin:4px 0 20px;" id="notYetDoctorName"></div>
-        <h1 style="text-align:center;font-size:22px;" id="notYetHeadline"></h1>
-        <p class="panel-note" style="text-align:center;">This link will show your live queue position on the morning of your appointment.</p>
+        <div class="queue-clinic-name" id="notYetClinicName"></div>
+        <div class="queue-appt-line" id="notYetApptLine" style="margin-bottom:18px;"></div>
+        <p class="panel-note" style="text-align:center;" id="notYetNote"></p>
       </div>
 
       <div id="doneState" style="display:none;">
@@ -94,15 +93,19 @@
           <div class="queue-nowserving-meta" id="nowServingMeta"></div>
         </div>
 
-        <div id="nearbyBlock" style="display:none;margin-bottom:6px;">
-          <p class="panel-note" style="margin-bottom:2px;text-align:center;">Next up <span class="order-note">· ordered by scheduled time, not token number</span></p>
-          <div id="nearbyTokens" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px;"></div>
+        <div id="detailsOpenWrap" style="display:none;text-align:center;margin-bottom:16px;">
+          <button type="button" class="queue-details-btn" id="detailsOpenBtn">View queue details</button>
         </div>
 
-        <p class="panel-note" style="text-align:center;margin-top:20px;margin-bottom:0;" id="lastUpdated"></p>
+        <div id="nearbyBlock" style="display:none;margin-bottom:14px;">
+          <p class="queue-nearby-heading">Next Up Patients</p>
+          <div id="nearbyTokens" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px;"></div>
+          <p class="queue-nearby-sub">Patients are ordered by their scheduled appointment time and not token number</p>
+        </div>
+
+        <div class="queue-live-line"><span class="dot"></span><span>Live — updates automatically</span></div>
 
         <div class="queue-advisory">
-          <span aria-hidden="true">ℹ️</span>
           <span class="text">Please check this live queue regularly for queue updates.</span>
         </div>
       </div>
@@ -115,7 +118,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=64"></script>
+  <script src="clinic-data.js?v=65"></script>
   <script>
     (async function () {
       const params = new URLSearchParams(window.location.search);
@@ -131,6 +134,10 @@
       // Set once the 20s poll starts, below — showDone() clears it, since a
       // done/no-show visit has nothing left that could ever change.
       let pollIntervalId = null;
+      // The latest render's data, kept around so the queue-details popup
+      // (opened on demand, not on every render) always has something to
+      // show immediately, and so a background poll can refresh it in place.
+      let currentData = null;
 
       function showError() {
         loadingEl.style.display = 'none';
@@ -204,9 +211,12 @@
         footerEl.style.display = 'block';
         notYetEl.style.display = 'block';
         document.getElementById('notYetClinicName').textContent = data.clinicName;
-        document.getElementById('notYetDoctorName').textContent = data.doctorName;
-        document.getElementById('notYetHeadline').textContent =
-          `Your appointment is ${Qlinic.formatDateLabel(data.bookedDate)}`;
+        const specialty = data.doctorSpecialty ? ` (${Qlinic.escapeHtml(data.doctorSpecialty)})` : '';
+        const dateLabel = Qlinic.formatDateLabel(data.bookedDate);
+        document.getElementById('notYetApptLine').innerHTML =
+          `Your appointment is booked for <b>${Qlinic.escapeHtml(data.doctorName)}</b>${specialty}<span style="display:block;margin-top:2px;">on ${dateLabel}</span>`;
+        document.getElementById('notYetNote').textContent =
+          `This link isn't active yet — please come back and open it again on the morning of ${dateLabel} to see your live position in the queue.`;
       }
 
       // Sentence fragments, not standalone labels — DOCTOR_STATUS_SENTENCE
@@ -236,7 +246,10 @@
         const specialty = data.doctorSpecialty ? ` (${Qlinic.escapeHtml(data.doctorSpecialty)})` : '';
         if (data.type === 'appointment' && data.bookedTime) {
           const timeStr = Qlinic.formatTime(Qlinic.parseTime(data.bookedTime));
-          return `Your appointment is booked for <b>${Qlinic.escapeHtml(data.doctorName)}</b>${specialty} at ${timeStr}`;
+          // Specialty + time forced onto their own line — left to wrap
+          // wherever the browser happened to break it, this line split
+          // mid-parenthetical in a way that read badly.
+          return `Your appointment is booked for <b>${Qlinic.escapeHtml(data.doctorName)}</b><span style="display:block;margin-top:2px;">${specialty.trim()} at ${timeStr}</span>`;
         }
         return `You're in the queue with <b>${Qlinic.escapeHtml(data.doctorName)}</b>${specialty}`;
       }
@@ -286,7 +299,7 @@
         document.getElementById('clinicName').textContent = data.clinicName;
         document.getElementById('appointmentLine').innerHTML = appointmentLineHtml(data);
         const statusMsgEl = document.getElementById('statusMsgText');
-        statusMsgEl.textContent = STATUS_MESSAGE[data.status] || '';
+        statusMsgEl.innerHTML = `<span class="pill">${Qlinic.escapeHtml(STATUS_MESSAGE[data.status] || '')}</span>`;
         statusMsgEl.classList.toggle('is-waiting', data.status === 'waiting');
         // Already prefixed by the RPC ("#12" for an appointment, "W3" for
         // a walk-in) — token_number itself is no longer a single shared
@@ -314,7 +327,7 @@
           positionBlock.style.display = 'block';
           document.getElementById('positionText').textContent = data.position === 1
             ? "You're next!"
-            : `${data.position - 1} ${data.position - 1 === 1 ? 'person' : 'people'} ahead of you`;
+            : `${data.position - 1} ${data.position - 1 === 1 ? 'person is' : 'people are'} ahead of you`;
         } else {
           positionBlock.style.display = 'none';
         }
@@ -342,9 +355,66 @@
           nearbyBlock.style.display = 'none';
         }
 
-        document.getElementById('lastUpdated').textContent =
-          'Updated ' + new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+        currentData = data;
+        const detailsOpenWrap = document.getElementById('detailsOpenWrap');
+        detailsOpenWrap.style.display = (data.windowBookedCount != null) ? 'block' : 'none';
+        // If the popup is already open when a poll refreshes the page, its
+        // numbers refresh right along with it — same live behavior as the
+        // rest of the page, not a stale snapshot from when it was opened.
+        if (document.getElementById('queueDetailsBackdrop')) renderDetailsModal(data);
       }
+
+      // Scoped to "now through your own turn" — everyone still booked/
+      // waiting/in_consult whose slot falls at or before this patient's own
+      // (already excludes anyone done/no-show, since those statuses are
+      // never counted server-side), never the whole day and never anyone
+      // after this patient. Same modal-card look confirmDialog uses
+      // elsewhere in the app.
+      function detailsScopeText(data) {
+        if (data.type === 'appointment' && data.bookedTime) {
+          const nowStr = Qlinic.formatTimestamp(new Date());
+          const apptStr = Qlinic.formatTime(Qlinic.parseTime(data.bookedTime));
+          return `Showing details from now (${nowStr}) through your appointment at ${apptStr}.`;
+        }
+        return 'Showing details from now through your position in the queue.';
+      }
+
+      function renderDetailsModal(data) {
+        const card = document.querySelector('#queueDetailsBackdrop .modal-card');
+        card.querySelector('.queue-details-scope').textContent = detailsScopeText(data);
+        card.querySelector('.queue-stat-grid').innerHTML = `
+          <div class="queue-stat-cell"><div class="num">${data.windowBookedCount}</div><div class="label">Booked in this window</div></div>
+          <div class="queue-stat-cell arrived"><div class="num">${data.windowArrivedCount}</div><div class="label">Arrived &amp; waiting</div></div>
+          <div class="queue-stat-cell notyet"><div class="num">${data.windowNotArrivedCount}</div><div class="label">Not yet arrived</div></div>
+        `;
+      }
+
+      function openDetailsModal() {
+        if (!currentData) return;
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop';
+        backdrop.id = 'queueDetailsBackdrop';
+        backdrop.innerHTML = `
+          <div class="modal-card">
+            <h2 class="modal-title">Queue details</h2>
+            <p class="queue-details-scope"></p>
+            <div class="queue-details-live"><span class="dot"></span>Live — updates automatically</div>
+            <div class="queue-stat-grid"></div>
+            <div class="modal-actions">
+              <button type="button" class="btn-sm primary" id="queueDetailsCloseBtn">Close</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(backdrop);
+        renderDetailsModal(currentData);
+        function close() { backdrop.remove(); document.removeEventListener('keydown', onKey); }
+        function onKey(e) { if (e.key === 'Escape') close(); }
+        backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+        backdrop.querySelector('#queueDetailsCloseBtn').addEventListener('click', close);
+        document.addEventListener('keydown', onKey);
+      }
+
+      document.getElementById('detailsOpenBtn').addEventListener('click', openDetailsModal);
 
       if (!patientId) {
         showError();

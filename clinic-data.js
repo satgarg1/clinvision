@@ -1136,9 +1136,9 @@
     return `${dir}queue.html?id=${patientId}`;
   }
 
-  // Composing the message needs the clinic's name and grace window, and
-  // the doctor's name; never lets a failure here block the booking
-  // itself, since the SMS log is a nice-to-have, not the core action.
+  // Composing the message needs the clinic's name and the doctor's name
+  // and specialty; never lets a failure here block the booking itself,
+  // since the SMS log is a nice-to-have, not the core action.
   async function queueBookingNotification({ patientId, phone, doctorId, kind, bookedDate, bookedTime, tokenNumber }) {
     try {
       const clinicId = await ensureClinicContext();
@@ -1150,14 +1150,30 @@
       const tokenDisplay = tokenNumber ? (tokenNumber > 100000 ? 'W' + (tokenNumber - 100000) : '#' + tokenNumber) : null;
       const tokenLine = tokenDisplay ? ` Your token number is ${tokenDisplay}.` : '';
       const link = tokenNumber ? queueLinkFor(patientId) : '';
-      const queueLine = link ? ` See the current token being served and the next 5 in line, so you know when to leave home: ${link}` : '';
-      const message = kind === 'appointment'
-        ? `Hi! Your appointment with ${doctor.name} at ${clinic.name} is on ` +
-          `${formatDateLabel(bookedDate)} at ${formatTime(parseTime(bookedTime))}.${tokenLine} ` +
-          `Please arrive ${clinic.grace_window_mins} min early.${queueLine} – ${clinic.name}`
-        : `Hi! You're in the queue for ${doctor.name} at ${clinic.name}.${tokenLine}` +
+      const doctorLine = doctor.specialty ? `${doctor.name} (${doctor.specialty})` : doctor.name;
+
+      let message;
+      if (kind === 'appointment') {
+        const dateLabel = formatDateLabel(bookedDate);
+        const timeLabel = formatTime(parseTime(bookedTime));
+        // A booking days out shouldn't invite "see the current token
+        // being served" — there's no queue to see yet. Said plainly
+        // instead, with the actual date, so no one clicks in early
+        // expecting something and gets confused by queue.html's own
+        // "not yet" screen (see showNotYet in queue.html).
+        const isFuture = bookedDate && bookedDate > todayDateStr();
+        const queuePart = !link ? ''
+          : isFuture
+            ? ` This link will show your live queue position starting on the morning of ${dateLabel} — checking it before then won't show anything yet: ${link}`
+            : ` See the current token being served and the next 5 in line, so you know when to leave home: ${link}`;
+        message = `Hi! Your appointment with ${doctorLine} at ${clinic.name} is ${dateLabel} at ${timeLabel}.${tokenLine}${queuePart} – ${clinic.name}`;
+      } else {
+        const queueLine = link ? ` See the current token being served and the next 5 in line, so you know when to leave home: ${link}` : '';
+        message = `Hi! You're in the queue for ${doctorLine} at ${clinic.name}.${tokenLine}` +
           (queueLine || ' We\'ll keep you posted on your turn.') +
           ` – ${clinic.name}`;
+      }
+
       const { error } = await sb.from('notifications').insert({
         clinic_id: clinicId, patient_id: patientId, phone, message,
       });
