@@ -190,6 +190,16 @@
       // ticking past an hour - doesn't leave the modal showing a frozen
       // snapshot from whenever it happened to be opened.
       let openScheduleModalRefresh = null;
+      // render() can be kicked off from three independent places (the
+      // doctor dropdown, the live-change subscription, and its own
+      // initial call) - with no guard, two overlapping calls' fetches
+      // can resolve out of order, and whichever happens to finish last
+      // wins even if it was the older, staler one. Bumped at the start
+      // of every render() call; a call only commits its result if it's
+      // still the most recently started one by the time its fetch
+      // returns, so a slow, superseded call can never clobber a newer
+      // one's already-current state.
+      let renderToken = 0;
 
       function showToast(msg) {
         const t = document.getElementById('toast');
@@ -625,6 +635,7 @@
       }
 
       async function render() {
+        const myRenderToken = ++renderToken;
         // A doctor login not yet linked to a doctors row (Team settings)
         // has no data to scope to — same guard already used on
         // Dashboard/Analytics for this exact case.
@@ -654,8 +665,13 @@
 
         const doctorId = currentDoctorId();
         const doc = doctors.find((d) => d.id === doctorId);
-        currentDoctor = doc;
         const q = await Qlinic.getQueueForDoctor(doctorId);
+        // A newer render() call has since started - its own fetch will
+        // commit instead, so this now-stale result (however it happened
+        // to resolve) is dropped rather than overwriting more current
+        // data or, worse, momentarily flashing it on screen.
+        if (myRenderToken !== renderToken) return;
+        currentDoctor = doc;
         currentQueue = q;
         if (openScheduleModalRefresh && openScheduleModalRefresh.doctorId === doctorId) {
           openScheduleModalRefresh.run(q);
