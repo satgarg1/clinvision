@@ -371,9 +371,20 @@
       // after this patient. Same modal-card look confirmDialog uses
       // elsewhere in the app.
       function detailsScopeText(data) {
+        const nowStr = Qlinic.formatTimestamp(new Date());
+        // "Haven't been called yet" only ever applies to status==='booked'
+        // — once a patient has actually checked in (waiting) or is with
+        // the doctor (in_consult), they've moved past their original
+        // slot time entirely, so re-checking the clock against it (as the
+        // booked-only branch below does) doesn't apply to them anymore.
+        if (data.status === 'in_consult') {
+          return `You're currently with the doctor — here's how the rest of today's queue looks right now (${nowStr}).`;
+        }
+        if (data.status === 'waiting') {
+          return `You've checked in and are waiting — here's how today's queue looks right now (${nowStr}).`;
+        }
         if (data.type === 'appointment' && data.bookedTime) {
           const now = new Date();
-          const nowStr = Qlinic.formatTimestamp(now);
           const apptMins = Qlinic.parseTime(data.bookedTime);
           const apptStr = Qlinic.formatTime(apptMins);
           // A running-behind doctor (or just a backlog) means the
@@ -412,7 +423,7 @@
             <p class="queue-details-scope"></p>
             <div class="queue-details-live"><span class="dot"></span>Live — updates automatically</div>
             <div class="queue-stat-grid"></div>
-            <div class="modal-actions">
+            <div class="modal-actions" style="margin-top:22px;">
               <button type="button" class="btn-sm primary" id="queueDetailsCloseBtn">Close</button>
             </div>
           </div>
