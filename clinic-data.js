@@ -229,6 +229,11 @@
         wrap.querySelector('.qdp-trigger-label').classList.toggle('qdp-placeholder', !selected);
         pop.querySelectorAll('[data-quick]').forEach((btn) => {
           const d = startOfDay(new Date()); d.setDate(d.getDate() + Number(btn.dataset.quick));
+          // A field capped at today (a historical filter — can't pull
+          // revenue that hasn't happened yet) has no honest way to offer
+          // "Tomorrow"/"In a week" - hidden rather than left clickable
+          // and silently doing nothing.
+          btn.style.display = isDisabled(d) ? 'none' : '';
           btn.classList.toggle('selected', !!selected && sameDay(d, selected));
         });
       }
