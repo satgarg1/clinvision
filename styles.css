@@ -2567,29 +2567,47 @@ th.th-filterable { position: relative; }
 .patient-panel.mode-walkin { border-color: var(--grey-500); }
 .patient-panel.mode-appointment { border-color: var(--accent); }
 
+/* Same gradient-track/gradient-pill treatment as Analytics' group tabs
+   (#trendGroupSeg) and Revenue/No-shows' Single day-Range pills
+   (.period-pill) - the container is the raised track, buttons sit
+   borderless inside it. Unlike those two, each active state here keeps
+   its own distinct color (blue for a phoned-in appointment or the
+   light theme choice, near-black for a walk-in or the dark theme
+   choice) rather than one uniform accent gradient - that distinction
+   is meaningful (walk-in vs. booked-ahead, light vs. dark) and predates
+   this restyle, so it's carried forward as a matching pair of
+   gradients instead of being flattened away. */
 .mode-toggle {
-  display: flex;
-  gap: 8px;
+  display: inline-flex;
+  background: linear-gradient(180deg, var(--grey-100), var(--white));
+  border: 1px solid var(--grey-300);
+  border-radius: var(--radius-pill);
+  padding: 4px;
+  gap: 2px;
   margin-bottom: 16px;
+  box-shadow: var(--shadow-resting), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   flex-wrap: wrap;
 }
 .mode-btn {
   font-family: var(--font);
   font-size: 14px;
-  font-weight: 600;
-  padding: 10px 16px;
-  border-radius: 10px;
-  border: 1px solid var(--grey-300);
-  background: var(--white);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: transparent;
   color: var(--grey-700);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
-.mode-btn:hover { border-color: var(--grey-500); transform: scale(1.03); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
-.mode-btn.active[data-mode="walkin"] { background: var(--grey-900); border-color: var(--grey-900); color: #ffffff; }
-.mode-btn.active[data-mode="appointment"] { background: var(--accent); border-color: var(--accent); color: #ffffff; }
-.mode-btn.active[data-theme-choice="light"] { background: var(--accent); border-color: var(--accent); color: #ffffff; }
-.mode-btn.active[data-theme-choice="dark"] { background: var(--grey-900); border-color: var(--grey-900); color: #ffffff; }
+.mode-btn:hover:not(.active) { color: var(--accent-dark); }
+.mode-btn.active[data-mode="walkin"], .mode-btn.active[data-theme-choice="dark"] {
+  background: linear-gradient(135deg, var(--grey-900), var(--black)); color: #ffffff; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+.mode-btn.active[data-mode="appointment"], .mode-btn.active[data-theme-choice="light"] {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #ffffff; box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35);
+}
 
 .order-note {
   font-weight: 400;
