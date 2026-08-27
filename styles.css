@@ -2609,6 +2609,35 @@ th.th-filterable { position: relative; }
   background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #ffffff; box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35);
 }
 
+/* Doctor View's status row (Clear status/On a break/Emergency) - same
+   gradient-track look as the toggles above, scoped by id rather than
+   changed on .success-outline/.accent-outline themselves (those are
+   generic outline-button classes used elsewhere in the app that never
+   asked for this treatment). Unlike a real toggle these three are
+   independent actions, not mutually-exclusive selections, so there's
+   no single "active" pill to highlight - each button keeps its own
+   permanent gradient fill (green for Clear status, blue for the other
+   two, matching their existing outline colors) rather than only the
+   current choice being colored. Disabled state (nothing to clear, or
+   the day is closed) still dims normally via the base .btn-sm:disabled
+   opacity rule - untouched here. */
+#statusActionSeg {
+  display: inline-flex; background: linear-gradient(180deg, var(--grey-100), var(--white));
+  border: 1px solid var(--grey-300); border-radius: var(--radius-pill); padding: 4px; gap: 2px;
+  box-shadow: var(--shadow-resting), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+#statusActionSeg .btn-sm {
+  border: none; border-radius: var(--radius-pill); font-weight: 700; letter-spacing: 0.01em;
+}
+#statusActionSeg .btn-sm.success-outline {
+  background: linear-gradient(135deg, var(--success), #166a2e); color: #ffffff; box-shadow: 0 3px 10px rgba(30, 142, 62, 0.3);
+}
+#statusActionSeg .btn-sm.success-outline:hover { background: linear-gradient(135deg, var(--success), #166a2e); }
+#statusActionSeg .btn-sm.accent-outline {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #ffffff; box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35);
+}
+#statusActionSeg .btn-sm.accent-outline:hover { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); }
+
 .order-note {
   font-weight: 400;
   color: var(--grey-500);
