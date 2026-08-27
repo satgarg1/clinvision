@@ -631,7 +631,7 @@ a { color: inherit; }
 .filter-seg .count { font-size: 11px; font-weight: 800; background: var(--grey-300); color: var(--white); border-radius: var(--radius-pill); padding: 1px 7px; }
 .filter-seg button.active .count { background: var(--accent); }
 
-/* Appointment load chart, inside the schedule modal's Booked tab only -
+/* Booking load chart, inside the schedule modal's Booked tab only -
    one hue (a sky-to-brand-blue gradient) throughout, current hour marked
    with an outline rather than a second clashing color. */
 .chart-block {

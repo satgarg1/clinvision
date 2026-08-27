@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=179" />
+<link rel="stylesheet" href="styles.css?v=180" />
 </head>
 <body>
   <div class="app-shell">
@@ -329,10 +329,10 @@
       // of an always-visible panel) but with patient-level detail instead
       // of bucketed slot counts, since a doctor wants to know who, not
       // just how many.
-      // Three groups instead of one long chronological list: "Active"
+      // Three groups instead of one long chronological list: "Arrived"
       // (in-consultation + waiting) is what a doctor actually opens this
       // for, and defaults to shown; Booked and Done are one click away
-      // instead of something to scroll past to reach the active ones.
+      // instead of something to scroll past to reach the arrived ones.
       function openFullScheduleModal(q, doc) {
         // Everything below is rebuilt from scratch by recompute() -
         // called once now, and again every tick of this modal's own
@@ -353,15 +353,19 @@
             done: sortByTime([...queueSnapshot.done, ...queueSnapshot.noShow]),
           };
 
-          // ---- Appointment load chart (Booked tab only) ----
-          // Every *appointment* booked today counts toward its hour once,
+          // ---- Booking load chart (Booked tab only) ----
+          // Every booking with a real slot counts toward its hour once,
           // regardless of current status - a Done or No-show still counts
           // in the hour it was booked into, so the bars show how the day
           // was actually loaded, not just who's still outstanding. Only
           // which hours are visible moves forward as the day goes on.
+          // Walk-ins count here too as long as reception gave them a
+          // preferred time (bookedTime) - one with no assigned time was
+          // never meant to land in an hour slot, so it's correctly left
+          // out rather than silently miscounted somewhere.
           allAppts = [
             ...(queueSnapshot.nowServing ? [queueSnapshot.nowServing] : []), ...queueSnapshot.waiting, ...queueSnapshot.booked, ...queueSnapshot.done, ...queueSnapshot.noShow,
-          ].filter((p) => p.type === 'appointment' && p.bookedTime);
+          ].filter((p) => p.bookedTime);
 
           chartBuckets = [];
           if (clinic && clinic.opening_time && clinic.closing_time && allAppts.length > 0) {
@@ -528,7 +532,7 @@
             <div class="chart-block">
               <div class="chart-hero">
                 <div>
-                  <div class="chart-eyebrow">Appointments left today</div>
+                  <div class="chart-eyebrow">Bookings left today</div>
                   <div class="chart-stat-num">${stillToSee}</div>
                 </div>
                 <div class="chart-hero-caption">${chartHeroCaption()}</div>
@@ -572,7 +576,7 @@
         // can never drift out of sync with each other.
         function renderAll() {
           backdrop.querySelector('#scheduleFilterSeg').innerHTML = `
-            <button type="button" data-tab="active" class="${activeTab === 'active' ? 'active' : ''}">Active <span class="count">${GROUPS.active.length}</span></button>
+            <button type="button" data-tab="active" class="${activeTab === 'active' ? 'active' : ''}">Arrived <span class="count">${GROUPS.active.length}</span></button>
             <button type="button" data-tab="booked" class="${activeTab === 'booked' ? 'active' : ''}">Booked <span class="count">${GROUPS.booked.length}</span></button>
             <button type="button" data-tab="done" class="${activeTab === 'done' ? 'active' : ''}">Done <span class="count">${GROUPS.done.length}</span></button>
           `;

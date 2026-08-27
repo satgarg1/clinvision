@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=179" />
+<link rel="stylesheet" href="styles.css?v=180" />
 </head>
 <body>
   <div class="app-shell">
@@ -110,20 +110,29 @@
       const requestedDoctorId = params.get('doctor') || null;
 
       const TYPE_LABELS = { appointment: 'Appointment', walkin: 'Walk-in' };
+      // A walk-in's own priority flag (the true-emergency override,
+      // distinct from a "priority" appointment status elsewhere) is
+      // otherwise invisible in this list — worth surfacing right next
+      // to the type, since it's the reason one walk-in jumped the queue
+      // ahead of others booked earlier.
+      function typeLabel(p) {
+        if (p.type === 'appointment') return 'Appointment';
+        return p.isPriority ? 'Walk-in (Emg)' : 'Walk-in (Standard)';
+      }
 
       const METRICS = {
         footfall: {
           title: 'Footfall so far',
           filter: (p) => ['waiting', 'in_consult', 'done'].includes(p.status),
           columns: ['Name', 'Phone', 'Doctor', 'Type', 'Status'],
-          row: (p, doctorName) => [p.name, p.phone, doctorName, p.type === 'appointment' ? 'Appointment' : 'Walk-in', statusLabel(p.status)],
+          row: (p, doctorName) => [p.name, p.phone, doctorName, typeLabel(p), statusLabel(p.status)],
           filters: ['doctor', 'type'],
         },
         waiting: {
           title: 'Waiting now',
           filter: (p) => p.status === 'waiting',
           columns: ['Name', 'Phone', 'Doctor', 'Type', 'Arrived'],
-          row: (p, doctorName) => [p.name, p.phone, doctorName, p.type === 'appointment' ? 'Appointment' : 'Walk-in', p.arrivedAt ? Qlinic.formatTimestamp(p.arrivedAt) : '—'],
+          row: (p, doctorName) => [p.name, p.phone, doctorName, typeLabel(p), p.arrivedAt ? Qlinic.formatTimestamp(p.arrivedAt) : '—'],
         },
         inConsult: {
           title: 'In consultation',
@@ -149,7 +158,7 @@
           title: 'Booked today',
           filter: () => true,
           columns: ['Name', 'Phone', 'Doctor', 'Type', 'Status'],
-          row: (p, doctorName) => [p.name, p.phone, doctorName, p.type === 'appointment' ? 'Appointment' : 'Walk-in', statusLabel(p.status)],
+          row: (p, doctorName) => [p.name, p.phone, doctorName, typeLabel(p), statusLabel(p.status)],
           filters: ['type', 'doctor'],
         },
         priorityWaiting: {
