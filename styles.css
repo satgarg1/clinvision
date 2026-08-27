@@ -617,6 +617,36 @@ a { color: inherit; }
 .filter-seg .count { font-size: 11px; font-weight: 800; background: var(--grey-300); color: var(--white); border-radius: var(--radius-pill); padding: 1px 7px; }
 .filter-seg button.active .count { background: var(--accent); }
 
+/* Appointment load chart, inside the schedule modal's Booked tab only -
+   one hue (a sky-to-brand-blue gradient) throughout, current hour marked
+   with an outline rather than a second clashing color. */
+.chart-block {
+  background: var(--white); border: 1px solid var(--grey-100); border-radius: var(--radius-md);
+  padding: 18px 20px 14px; margin-bottom: 18px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.chart-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; }
+.chart-eyebrow {
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--grey-500); margin-bottom: 5px;
+}
+.chart-stat-num {
+  font-size: 34px; font-weight: 800; color: var(--black); line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+}
+.chart-hero-caption { text-align: right; font-size: 12.5px; color: var(--grey-700); line-height: 1.55; max-width: 220px; }
+.chart-hero-caption .muted { color: var(--grey-500); font-size: 11.5px; }
+.chart-divider { border: none; border-top: 1px solid var(--grey-100); margin: 14px 0 12px; }
+.chart-subhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.chart-subhead .label { font-size: 12px; font-weight: 700; color: var(--grey-700); }
+.now-chip {
+  font-size: 11px; font-weight: 700; color: var(--accent-dark);
+  background: rgba(0, 113, 227, 0.1); border-radius: var(--radius-pill); padding: 3px 10px;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.now-chip .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-dark); }
+.chart-canvas-wrap { position: relative; height: 172px; }
+.chart-note { font-size: 11.5px; font-style: italic; color: var(--grey-500); margin: 10px 2px 0; }
+
 /* Smaller and outlined so it reads as a tappable action next to the
    now-serving cell, not another filled info panel the same shape. */
 .queue-details-btn {

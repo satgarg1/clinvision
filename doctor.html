@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=174" />
+<link rel="stylesheet" href="styles.css?v=175" />
 </head>
 <body>
   <div class="app-shell">
@@ -143,6 +143,7 @@
   <div class="toast" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
   <script src="clinic-data.js?v=65"></script>
   <script>
@@ -310,6 +311,15 @@
       function formatPatientAge(p) {
         return p.age != null ? `${p.age}yr` : '—';
       }
+      // "9 AM" style label for the appointment-load chart's hour axis -
+      // scheduleTimeLabel above always prints minutes too, which is
+      // exactly what a chart axis doesn't want repeated across every bar.
+      function formatHourOnly(mins) {
+        let h = Math.floor(mins / 60);
+        const period = h < 12 ? 'AM' : 'PM';
+        let h12 = h % 12; if (h12 === 0) h12 = 12;
+        return `${h12} ${period}`;
+      }
 
       // Same nowServing+waiting+booked+done+noShow combination
       // buildWalkinRanks already uses — the full day's queue was always
@@ -345,6 +355,157 @@
           `).join('');
         }
 
+        // ---- Appointment load chart (Booked tab only) ----
+        // Every *appointment* booked today counts toward its hour once,
+        // regardless of current status - a Done or No-show still counts
+        // in the hour it was booked into, so the bars show how the day
+        // was actually loaded, not just who's still outstanding. Only
+        // which hours are visible moves forward as the day goes on.
+        const allAppts = [
+          ...(q.nowServing ? [q.nowServing] : []), ...q.waiting, ...q.booked, ...q.done, ...q.noShow,
+        ].filter((p) => p.type === 'appointment' && p.bookedTime);
+
+        let chartBuckets = [];
+        if (clinic && clinic.opening_time && clinic.closing_time && allAppts.length > 0) {
+          const openMin = Qlinic.parseTime(clinic.opening_time);
+          const closeMin = Qlinic.parseTime(clinic.closing_time);
+          if (closeMin > openMin) {
+            for (let start = openMin; start < closeMin; start += 60) {
+              chartBuckets.push({ start, end: Math.min(start + 60, closeMin), total: 0, byStatus: {} });
+            }
+            allAppts.forEach((p) => {
+              const mins = Qlinic.parseTime(p.bookedTime);
+              const b = chartBuckets.find((bk) => mins >= bk.start && mins < bk.end);
+              if (!b) return;
+              b.total += 1;
+              b.byStatus[p.status] = (b.byStatus[p.status] || 0) + 1;
+            });
+          }
+        }
+        const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+        const visibleBuckets = chartBuckets.filter((b) => b.end > nowMin);
+        const currentBucket = visibleBuckets.find((b) => nowMin >= b.start && nowMin < b.end);
+        // Status-driven, not hour-driven - this drops a visit the moment
+        // it's marked Done or No-show, unlike the bars above which never
+        // move once drawn.
+        const stillToSee = allAppts.filter((p) => p.status === 'booked' || p.status === 'waiting' || p.status === 'in_consult').length;
+        const showChart = chartBuckets.length > 0;
+        let scheduleChart = null;
+
+        function chartHeroCaption() {
+          const upcoming = visibleBuckets.reduce((s, b) => s + (b.byStatus.booked || 0) + (b.byStatus.waiting || 0), 0);
+          const noShowsSoFar = chartBuckets.filter((b) => b.end <= nowMin).reduce((s, b) => s + (b.byStatus.no_show || 0), 0);
+          let html = `${upcoming} from ${Qlinic.formatTime(nowMin)} to close`;
+          if (noShowsSoFar) html += `<br><span class="muted">${noShowsSoFar} no-show${noShowsSoFar === 1 ? '' : 's'} earlier today</span>`;
+          return html;
+        }
+
+        function renderScheduleChart(canvasEl) {
+          const styles = getComputedStyle(document.documentElement);
+          const cAccentDark = styles.getPropertyValue('--accent-dark').trim();
+          const cGrey900 = styles.getPropertyValue('--grey-900').trim();
+          const cBlack = styles.getPropertyValue('--black').trim();
+          const valueLabelPlugin = {
+            id: 'scheduleValueLabels',
+            afterDatasetsDraw(chart) {
+              const meta = chart.getDatasetMeta(0);
+              const ctx2 = chart.ctx;
+              ctx2.save();
+              ctx2.fillStyle = cBlack;
+              ctx2.font = '700 11px Inter, sans-serif';
+              ctx2.textAlign = 'center';
+              meta.data.forEach((bar, i) => {
+                const val = chart.data.datasets[0].data[i];
+                if (val) ctx2.fillText(String(val), bar.x, bar.y - 8);
+              });
+              ctx2.restore();
+            },
+          };
+          return new Chart(canvasEl, {
+            type: 'bar',
+            plugins: [valueLabelPlugin],
+            data: {
+              labels: visibleBuckets.map((b) => formatHourOnly(b.start)),
+              datasets: [{
+                data: visibleBuckets.map((b) => b.total),
+                borderRadius: 6,
+                borderSkipped: false,
+                maxBarThickness: 30,
+                categoryPercentage: 0.7,
+                borderColor: visibleBuckets.map((b) => (b === currentBucket ? cAccentDark : 'transparent')),
+                borderWidth: visibleBuckets.map((b) => (b === currentBucket ? 1.6 : 0)),
+                backgroundColor(context) {
+                  const { chart, dataIndex } = context;
+                  if (!chart.chartArea) return '#5aa4ef';
+                  const value = context.dataset.data[dataIndex] || 0;
+                  const yTop = chart.scales.y.getPixelForValue(value);
+                  const grad = chart.ctx.createLinearGradient(0, yTop, 0, chart.chartArea.bottom);
+                  grad.addColorStop(0, '#5aa4ef');
+                  grad.addColorStop(1, '#0058b0');
+                  return grad;
+                },
+              }],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              layout: { padding: { top: 16 } },
+              scales: {
+                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10.5, weight: '600' }, color: '#86868b' } },
+                y: {
+                  beginAtZero: true,
+                  suggestedMax: Math.max(4, ...visibleBuckets.map((b) => b.total)) * 1.22,
+                  ticks: { display: false, stepSize: 1 },
+                  grid: { drawTicks: false, color: 'rgba(134,134,139,0.14)' },
+                  border: { display: false },
+                },
+              },
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  backgroundColor: cGrey900,
+                  padding: 10,
+                  cornerRadius: 8,
+                  titleFont: { family: 'Inter', size: 12, weight: '700' },
+                  bodyFont: { family: 'Inter', size: 11.5 },
+                  callbacks: {
+                    title(items) {
+                      const b = visibleBuckets[items[0].dataIndex];
+                      return `${formatHourOnly(b.start)}–${formatHourOnly(b.end)}`;
+                    },
+                    label(item) {
+                      const b = visibleBuckets[item.dataIndex];
+                      const parts = Object.entries(b.byStatus).map(([k, v]) => `${v} ${k.replace('_', ' ')}`).join(', ');
+                      return `${b.total} scheduled${parts ? ' · ' + parts : ''}`;
+                    },
+                  },
+                },
+              },
+            },
+          });
+        }
+
+        const chartBlockHtml = showChart ? `
+          <div class="chart-block">
+            <div class="chart-hero">
+              <div>
+                <div class="chart-eyebrow">Appointments left today</div>
+                <div class="chart-stat-num">${stillToSee}</div>
+              </div>
+              <div class="chart-hero-caption">${chartHeroCaption()}</div>
+            </div>
+            <hr class="chart-divider" />
+            ${visibleBuckets.length > 0 ? `
+              <div class="chart-subhead">
+                <span class="label">By hour</span>
+                ${currentBucket ? `<span class="now-chip"><span class="dot"></span><span>Now: ${formatHourOnly(currentBucket.start)}–${formatHourOnly(currentBucket.end)}</span></span>` : ''}
+              </div>
+              <div class="chart-canvas-wrap"><canvas id="scheduleLoadChart" height="172"></canvas></div>
+              <p class="chart-note">Hover a bar for the status breakdown — completed visits and no-shows still count toward their hour.</p>
+            ` : '<p class="chart-note" style="margin-top:0;">All of today\'s appointments have passed.</p>'}
+          </div>
+        ` : '';
+
         const backdrop = document.createElement('div');
         backdrop.className = 'modal-backdrop';
         backdrop.innerHTML = `
@@ -356,6 +517,7 @@
               <button type="button" data-tab="booked">Booked <span class="count">${GROUPS.booked.length}</span></button>
               <button type="button" data-tab="done">Done <span class="count">${GROUPS.done.length}</span></button>
             </div>
+            <div id="scheduleChartWrap" style="display:none;">${chartBlockHtml}</div>
             <div style="max-height:50vh;overflow-y:auto;">
               <table class="qtable">
                 <thead><tr><th>Time</th><th>Name</th><th>Token</th><th>Age</th><th>Status</th></tr></thead>
@@ -373,8 +535,18 @@
           if (!btn) return;
           backdrop.querySelectorAll('#scheduleFilterSeg button').forEach((b) => b.classList.toggle('active', b === btn));
           backdrop.querySelector('#scheduleTbody').innerHTML = rowsHtmlFor(GROUPS[btn.dataset.tab]);
+          const chartWrap = backdrop.querySelector('#scheduleChartWrap');
+          const isBooked = btn.dataset.tab === 'booked';
+          chartWrap.style.display = isBooked && showChart ? '' : 'none';
+          if (isBooked && showChart && !scheduleChart && visibleBuckets.length > 0) {
+            scheduleChart = renderScheduleChart(backdrop.querySelector('#scheduleLoadChart'));
+          }
         });
-        function close() { backdrop.remove(); document.removeEventListener('keydown', onKey); }
+        function close() {
+          if (scheduleChart) { scheduleChart.destroy(); scheduleChart = null; }
+          backdrop.remove();
+          document.removeEventListener('keydown', onKey);
+        }
         function onKey(e) { if (e.key === 'Escape') close(); }
         backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
         backdrop.querySelector('#fullScheduleModalCloseBtn').addEventListener('click', close);
