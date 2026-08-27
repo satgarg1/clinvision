@@ -1476,6 +1476,18 @@ th.th-filterable { position: relative; }
   flex-wrap: wrap;
   align-items: flex-end;
 }
+/* Clinic profile's row mixes fields with a .field-hint underneath
+   (GSTIN, HFR ID) and ones without (City, State, the Save button
+   itself) - align-items: flex-end bottom-aligns every field to the
+   tallest one's bottom edge, which pushes the shorter fields' whole
+   label+input block down to match, making their labels sit visibly
+   lower than GSTIN/HFR's. Top-aligning instead fixes exactly that,
+   with no effect on this form's other rows (every field there is the
+   same height already, so flex-start and flex-end produce the same
+   result when there's no height difference to redistribute) - scoped
+   to this one form rather than changed on .inline-form itself, which
+   other pages rely on for their own flex-end alignment. */
+#clinicForm.inline-form { align-items: flex-start; }
 
 /* Queue rules and Display screen rows read as cramped/undersized next
    to the rest of the app's controls (10px gap, small buttons and
