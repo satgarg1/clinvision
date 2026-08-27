@@ -73,6 +73,12 @@
         <a href="no-shows.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Track no-shows</a>
       </div>
 
+      <div class="panel" id="billingAuditPanel">
+        <div class="panel-header"><h2>Billing Audit</h2></div>
+        <p class="panel-note">Confirms receipt numbers are gap-free and unique, and flags any seen patient with no invoice on file.</p>
+        <a href="billing-audit.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Open billing audit</a>
+      </div>
+
       <div class="panel" id="closedDatesPanel">
         <div class="panel-header"><h2>Closed Dates</h2></div>
         <p class="panel-note">Holidays and other one-off dates the clinic is closed, beyond the weekly off days set in Clinic Settings.</p>
@@ -139,7 +145,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=69"></script>
+  <script src="clinic-data.js?v=70"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -172,6 +178,7 @@
         document.getElementById('trendsNavLink').style.display = 'none';
       }
       document.getElementById('clinicSettingsPanel').style.display = amAdmin ? '' : 'none';
+      document.getElementById('billingAuditPanel').style.display = amAdmin ? '' : 'none';
       document.getElementById('doctorsPanel').style.display = amAdmin ? '' : 'none';
       document.getElementById('teamPanel').style.display = amAdmin ? '' : 'none';
       document.getElementById('patientDirectoryPanel').style.display = amDoctor ? 'none' : '';

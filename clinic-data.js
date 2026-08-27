@@ -1296,6 +1296,23 @@
     return data ? normalizeInvoice(data) : null;
   }
 
+  // Server-side coverage check (get_billing_audit(), migration 045) -
+  // computed in Postgres rather than fetched-and-checked client-side,
+  // since confirming the invoice_number range is gap-free only needs a
+  // count/min/max, not every invoice row over a clinic's whole history.
+  async function getBillingAudit() {
+    const { data, error } = await sb.rpc('get_billing_audit');
+    if (error) throw error;
+    return {
+      totalInvoices: data.totalInvoices || 0,
+      minInvoiceNumber: data.minInvoiceNumber,
+      maxInvoiceNumber: data.maxInvoiceNumber,
+      unbilledPatients: (data.unbilledPatients || []).map((p) => ({
+        id: p.id, name: p.name, tokenDate: p.tokenDate, status: p.status, doctorId: p.doctorId,
+      })),
+    };
+  }
+
   // The correction path for an auto-billed invoice: wrong payment
   // method, an emergency fee, or a genuinely free visit ('waived',
   // which zeroes the amount). Never required, only used for the
@@ -2110,6 +2127,7 @@
     getNoShowsForDateRange,
     hasAppointmentOnDate,
     getInvoiceById,
+    getBillingAudit,
     updateInvoicePayment,
     markArrived,
     markNoShow,
