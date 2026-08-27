@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=183" />
+<link rel="stylesheet" href="styles.css?v=184" />
 </head>
 <body>
   <div class="app-shell">
@@ -73,7 +73,7 @@
         </div>
       </div>
 
-      <div class="filter-seg" id="trendGroupSeg"></div>
+      <div id="trendGroupSeg"></div>
 
       <div class="panel" id="unlinkedDoctorPanel" style="display:none;">
         <div class="empty-state">Your account isn't linked to a doctor profile yet — ask your admin to link it from Team settings.</div>
@@ -126,7 +126,7 @@
         <div class="empty-state" id="demographicsEmptyState" style="display:none;">No patients in this period.</div>
       </div>
 
-      <div class="panel" id="peakHoursPanel" data-group="patients">
+      <div class="panel" id="peakHoursPanel" data-group="scheduling">
         <div class="panel-header"><h2>Peak hours</h2></div>
         <p class="panel-note" style="margin-top:0;">Number of patients who arrived in each hour, across the whole period</p>
         <div class="trend-chart-box"><canvas id="peakChart"></canvas><div class="empty-state" id="peakEmptyState" style="display:none;">No arrivals in this period.</div></div>
@@ -137,7 +137,7 @@
         </div>
       </div>
 
-      <div class="panel" id="apptDistPanel" data-group="patients">
+      <div class="panel" id="apptDistPanel" data-group="scheduling">
         <div class="panel-header"><h2>Appointment distribution by hour</h2></div>
         <p class="panel-note" style="margin-top:0;">Every booked appointment counted into its scheduled hour, regardless of outcome — the shape of how the day was planned, not who showed up.</p>
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:14px;" id="apptDistDoctorField">
@@ -147,7 +147,7 @@
         <div class="trend-chart-box"><canvas id="apptDistChart"></canvas><div class="empty-state" id="apptDistEmptyState" style="display:none;">No appointments booked in this period.</div></div>
       </div>
 
-      <div class="panel" id="noShowPanel" data-group="operations">
+      <div class="panel" id="noShowPanel" data-group="noshow">
         <div class="panel-header"><h2 id="noShowHeading">No-show rate by week</h2></div>
         <div class="trend-chart-box"><canvas id="noShowChart"></canvas><div class="empty-state" id="noShowEmptyState" style="display:none;">No resolved visits in this period.</div></div>
         <div class="trend-drill" id="noShowDrill">
@@ -160,7 +160,7 @@
         </div>
       </div>
 
-      <div class="panel" id="consultDurationPanel" data-group="operations">
+      <div class="panel" id="consultDurationPanel" data-group="consult">
         <div class="panel-header"><h2 id="consultDurationHeading">Average consult duration</h2></div>
         <div class="trend-chart-box"><canvas id="consultChart"></canvas><div class="empty-state" id="consultEmptyState" style="display:none;">No completed-consultation timing data in this period yet.</div></div>
         <div class="trend-drill" id="consultDrill">
@@ -491,7 +491,14 @@
         });
       }
 
-      function makeBarChart(canvasId, labels, data, colors, formatter, onClickIndex, yAxisLabel) {
+      // xTicksExtra (optional): overrides merged into the x-axis's own
+      // ticks config - e.g. {maxRotation:90,minRotation:90} to force
+      // fully vertical labels instead of Chart.js's own auto-rotated
+      // diagonal, for a chart whose labels are too long to sit flat
+      // (Appointment distribution by hour's "9:30 AM–10:30 AM" range
+      // labels). Every other bar chart here leaves this unset and keeps
+      // Chart.js's default behavior.
+      function makeBarChart(canvasId, labels, data, colors, formatter, onClickIndex, yAxisLabel, xTicksExtra) {
         const grid = cssVar('--grey-300');
         return new Chart(document.getElementById(canvasId), {
           type: 'bar',
@@ -501,7 +508,7 @@
             onClick: (evt, els) => { if (!els.length || !onClickIndex) return; onClickIndex(els[0].index); },
             plugins: { legend: { display: false }, tooltip: { ...chartTooltipBase(), callbacks: { label: (c) => (formatter ? formatter(c.parsed.y) : c.parsed.y) } } },
             scales: {
-              x: { grid: { display: false }, ticks: { color: cssVar('--grey-500'), font: chartFont() } },
+              x: { grid: { display: false }, ticks: { color: cssVar('--grey-500'), font: chartFont(), ...(xTicksExtra || {}) } },
               y: { grid: { color: grid }, title: axisTitle(yAxisLabel), ticks: { color: cssVar('--grey-500'), font: chartFont(), precision: 0, callback: (v) => (formatter ? formatter(v) : v) } },
             },
           },
@@ -1049,7 +1056,8 @@
         const labels = buckets.map((b) => `${Qlinic.formatTime(b.start)}–${Qlinic.formatTime(b.end)}`);
         const colors = buckets.map(() => cssVar('--mkt-purple'));
         trendCharts.apptDist = makeBarChart('apptDistChart', labels, buckets.map((b) => b.count), colors,
-          (v) => Math.round(v) + (Math.round(v) === 1 ? ' appointment' : ' appointments'), null, 'Appointments booked');
+          (v) => Math.round(v) + (Math.round(v) === 1 ? ' appointment' : ' appointments'), null, 'Appointments booked',
+          { maxRotation: 90, minRotation: 90 });
       }
       document.getElementById('apptDistDoctorSelect').addEventListener('change', (e) => {
         apptDistDoctorFilter = e.target.value;
@@ -1172,18 +1180,21 @@
       });
 
       // Grouped by the question being asked, not by chart type: Revenue
-      // answers "how much, from whom"; Patients & Scheduling answers
-      // "who's coming, and when" (volume and timing, including the new
-      // hour-distribution chart — same family as Peak hours and Visits
-      // per doctor); Operations answers "how well is the clinic actually
-      // running" (no-shows, consult length flag a process problem rather
-      // than a business or scheduling one). No chart-count badges on the
-      // tabs — kept plain, same as the "Arrived/Pending/Done" tabs this
-      // reuses .filter-seg from.
+      // answers "how much, from whom"; Patients answers "who's coming"
+      // (visit counts and demographics — population, not timing);
+      // Scheduling answers "when" (Peak hours and Appointment
+      // distribution are both hour-of-day load patterns — one from
+      // arrivals, one from bookings); No-shows and Consult Duration each
+      // get their own tab rather than being folded into a bigger
+      // "Operations" bucket — each flags a different kind of process
+      // problem, and neither reads as a subset of the other. No
+      // chart-count badges on the tabs — kept plain.
       const TREND_GROUPS = [
         { key: 'revenue', label: 'Revenue' },
-        { key: 'patients', label: 'Patients & Scheduling' },
-        { key: 'operations', label: 'Operations' },
+        { key: 'patients', label: 'Patients' },
+        { key: 'scheduling', label: 'Scheduling' },
+        { key: 'noshow', label: 'No-shows' },
+        { key: 'consult', label: 'Consult Duration' },
       ];
       // A doctor's own view has nothing in the Revenue group (both its
       // panels are hidden for them) — no tab is offered for a group with

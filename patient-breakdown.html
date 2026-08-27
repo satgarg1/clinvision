@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=183" />
+<link rel="stylesheet" href="styles.css?v=184" />
 </head>
 <body>
   <div class="app-shell">
@@ -56,8 +56,9 @@
 
       <div class="panel">
         <div class="panel-header" id="filterHeader" style="display:none;">
+          <div class="filter-seg" id="sortToggleSeg" style="display:none;margin-bottom:0;"></div>
           <div id="activeFilterChipsRow" class="active-filter-chips"></div>
-          <button type="button" class="btn-sm primary" id="resetFiltersBtn" style="margin-left:auto;">Reset filters</button>
+          <button type="button" class="btn-sm primary" id="resetFiltersBtn" style="display:none;margin-left:auto;">Reset filters</button>
         </div>
         <p class="panel-note" id="summaryNote"></p>
         <div id="tableWrap"></div>
@@ -143,9 +144,9 @@
         done: {
           title: 'Seen (done)',
           filter: (p) => p.status === 'done',
-          columns: ['Name', 'Phone', 'Doctor', 'Seen at'],
-          row: (p, doctorName) => [p.name, p.phone, doctorName, p.calledAt ? Qlinic.formatTimestamp(p.calledAt) : '—'],
-          filters: ['doctor'],
+          columns: ['Name', 'Phone', 'Doctor', 'Type', 'Seen at'],
+          row: (p, doctorName) => [p.name, p.phone, doctorName, typeLabel(p), p.calledAt ? Qlinic.formatTimestamp(p.calledAt) : '—'],
+          filters: ['doctor', 'type'],
         },
         noShow: {
           title: 'No-shows',
@@ -235,6 +236,33 @@
         return Math.max(0, Math.round((end - start) / 60000));
       }
 
+      // ---------------- Recency sort ----------------
+      // getPatientsInRange has no ORDER BY of its own, so without this
+      // every list here was rendering in whatever order Postgres happened
+      // to return rows in - not wrong, exactly, but not a real order
+      // either, which is what actually made it look unsortable. createdAt
+      // (always set, never null) is used rather than a metric-specific
+      // field like arrivedAt/calledAt, so every metric on this page sorts
+      // the same understandable way instead of each needing its own rule.
+      // Metrics with their own explicit ordering (avgWait/longestWait,
+      // sorted by wait duration) keep that instead - a recency toggle
+      // next to a duration-sorted list would just be confusing.
+      const showSortToggle = !config.needsWait;
+      let recencyDesc = true; // true = newest first
+      function renderSortToggle() {
+        document.getElementById('sortToggleSeg').innerHTML = `
+          <button type="button" data-sort="desc" class="${recencyDesc ? 'active' : ''}">Newest first</button>
+          <button type="button" data-sort="asc" class="${!recencyDesc ? 'active' : ''}">Oldest first</button>
+        `;
+      }
+      document.getElementById('sortToggleSeg').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-sort]');
+        if (!btn || (btn.dataset.sort === 'desc') === recencyDesc) return;
+        recencyDesc = btn.dataset.sort === 'desc';
+        renderSortToggle();
+        render();
+      });
+
       // ---------------- Column-header filters (same pattern as Revenue) ----------------
       let doctorFilterIds = new Set();
       let typeFilterValues = new Set();
@@ -319,9 +347,16 @@
         render();
       }
 
-      if (showDoctorFilter || showTypeFilter) {
+      if (showDoctorFilter || showTypeFilter || showSortToggle) {
         document.getElementById('filterHeader').style.display = '';
+      }
+      if (showDoctorFilter || showTypeFilter) {
+        document.getElementById('resetFiltersBtn').style.display = '';
         document.getElementById('resetFiltersBtn').addEventListener('click', resetAllFilters);
+      }
+      if (showSortToggle) {
+        document.getElementById('sortToggleSeg').style.display = '';
+        renderSortToggle();
       }
 
       function render() {
@@ -338,6 +373,10 @@
           } else if (config.sortDesc) {
             rows.sort((a, b) => b.waitMins - a.waitMins);
           }
+        } else {
+          rows = [...rows].sort((a, b) => recencyDesc
+            ? (b.createdAt || '').localeCompare(a.createdAt || '')
+            : (a.createdAt || '').localeCompare(b.createdAt || ''));
         }
 
         document.getElementById('summaryNote').textContent = config.needsWait

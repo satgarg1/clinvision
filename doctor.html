@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=183" />
+<link rel="stylesheet" href="styles.css?v=184" />
 </head>
 <body>
   <div class="app-shell">
@@ -405,9 +405,8 @@
         }
         recompute(q);
 
-        function rowsHtmlFor(list) {
-          if (list.length === 0) return '<tr><td colspan="5" style="text-align:center;color:var(--grey-500);">Nothing here right now.</td></tr>';
-          return list.map((p) => `
+        function rowHtml(p) {
+          return `
             <tr ${p.status === 'done' || p.status === 'no_show' ? 'style="color:var(--grey-500);"' : ''}>
               <td style="white-space:nowrap;">${Qlinic.escapeHtml(scheduleTimeLabel(p))}</td>
               <td>${Qlinic.escapeHtml(p.name)}</td>
@@ -415,7 +414,37 @@
               <td>${formatPatientAge(p)}</td>
               <td>${scheduleStatusBadge(p.status)}</td>
             </tr>
-          `).join('');
+          `;
+        }
+        // A busy doctor's Done list especially can run to 100+ rows a
+        // day - dumping all of them into one scrolling table buries the
+        // 5 that are actually likely to be what someone just clicked in
+        // for. Done always links out instead of expanding in place: an
+        // old completed visit is a record to look up, not something
+        // still needing action here, so it goes to the same Dashboard
+        // breakdown page every other "view all" in the app already uses
+        // (statBreakdownDialog's own viewAllHref link, same styling).
+        // Arrived/Pending expand in place instead - those ARE patients a
+        // doctor might still act on right now.
+        const SCHEDULE_PREVIEW_COUNT = 5;
+        let expandedScheduleTab = { active: false, booked: false };
+        function rowsHtmlFor(list, tabKey) {
+          if (list.length === 0) return '<tr><td colspan="5" style="text-align:center;color:var(--grey-500);">Nothing here right now.</td></tr>';
+          if (tabKey === 'done') {
+            let html = list.slice(0, SCHEDULE_PREVIEW_COUNT).map(rowHtml).join('');
+            if (list.length > SCHEDULE_PREVIEW_COUNT) {
+              const url = `patient-breakdown.html?metric=done&doctor=${encodeURIComponent(doc.id)}&date=${Qlinic.getTodayDate()}`;
+              html += `<tr><td colspan="5" style="text-align:center;padding-top:14px;"><a href="${url}" style="display:inline-block;color:var(--accent);font-weight:600;">View all ${list.length} seen today →</a></td></tr>`;
+            }
+            return html;
+          }
+          const expanded = expandedScheduleTab[tabKey];
+          const visible = expanded ? list : list.slice(0, SCHEDULE_PREVIEW_COUNT);
+          let html = visible.map(rowHtml).join('');
+          if (list.length > SCHEDULE_PREVIEW_COUNT) {
+            html += `<tr><td colspan="5" style="text-align:center;padding-top:14px;"><button type="button" class="btn-sm" data-expand-tab="${tabKey}">${expanded ? 'Show fewer' : `Show ${list.length - SCHEDULE_PREVIEW_COUNT} more`}</button></td></tr>`;
+          }
+          return html;
         }
 
         function chartHeroCaption() {
@@ -580,7 +609,7 @@
             <button type="button" data-tab="booked" class="${activeTab === 'booked' ? 'active' : ''}">Pending <span class="count">${GROUPS.booked.length}</span></button>
             <button type="button" data-tab="done" class="${activeTab === 'done' ? 'active' : ''}">Done <span class="count">${GROUPS.done.length}</span></button>
           `;
-          backdrop.querySelector('#scheduleTbody').innerHTML = rowsHtmlFor(GROUPS[activeTab]);
+          backdrop.querySelector('#scheduleTbody').innerHTML = rowsHtmlFor(GROUPS[activeTab], activeTab);
           const chartWrap = backdrop.querySelector('#scheduleChartWrap');
           const isBooked = activeTab === 'booked';
           if (scheduleChart) { scheduleChart.destroy(); scheduleChart = null; }
@@ -601,6 +630,15 @@
           const btn = e.target.closest('button');
           if (!btn) return;
           activeTab = btn.dataset.tab;
+          renderAll();
+        });
+
+        // Delegated once rather than re-attached per render, since
+        // scheduleTbody's whole innerHTML is replaced on every renderAll().
+        backdrop.querySelector('#scheduleTbody').addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-expand-tab]');
+          if (!btn) return;
+          expandedScheduleTab[btn.dataset.expandTab] = !expandedScheduleTab[btn.dataset.expandTab];
           renderAll();
         });
 
