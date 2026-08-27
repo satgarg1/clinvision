@@ -2152,6 +2152,10 @@ th.th-filterable { position: relative; }
 .doctor-status-row.row-status-on_break { background: #ece9fc; border-left: 4px solid #5b3ec9; padding-left: 8px; }
 .doctor-status-row.row-status-emergency { background: var(--danger-bg); border-left: 4px solid var(--danger); padding-left: 8px; }
 .doctor-status-row.row-status-closed { background: var(--grey-100); border-left: 4px solid var(--grey-500); padding-left: 8px; }
+/* Same tint already used for the "In consultation" badge elsewhere -
+   a doctor with someone in the chair right now is the one row worth
+   spotting first while scanning the list. */
+.doctor-status-row.row-in-consult { background: #e8f0fe; border-left: 4px solid var(--accent-dark); padding-left: 8px; }
 
 .toast {
   position: fixed;

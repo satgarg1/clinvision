@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=176" />
+<link rel="stylesheet" href="styles.css?v=177" />
 </head>
 <body>
   <div class="app-shell">
@@ -383,7 +383,17 @@
           }
         }
         const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
-        const visibleBuckets = chartBuckets.filter((b) => b.end > nowMin);
+        // An hour clocking out doesn't mean everyone in it has actually
+        // been seen - a doctor running behind can still have real
+        // patients sitting in an "elapsed" hour. Keep that bar around
+        // (faded, so it reads as overdue rather than "now") until every
+        // visit in it is actually resolved, instead of dropping it the
+        // moment the clock ticks past.
+        chartBuckets.forEach((b) => {
+          const resolved = (b.byStatus.done || 0) + (b.byStatus.no_show || 0);
+          b.isBacklog = b.end <= nowMin && b.total > 0 && resolved < b.total;
+        });
+        const visibleBuckets = chartBuckets.filter((b) => b.end > nowMin || b.isBacklog);
         const currentBucket = visibleBuckets.find((b) => nowMin >= b.start && nowMin < b.end);
         // Status-driven, not hour-driven - this drops a visit the moment
         // it's marked Done or No-show, unlike the bars above which never
@@ -404,6 +414,8 @@
           const styles = getComputedStyle(document.documentElement);
           const cAccentDark = styles.getPropertyValue('--accent-dark').trim();
           const cGrey900 = styles.getPropertyValue('--grey-900').trim();
+          const cGrey500 = styles.getPropertyValue('--grey-500').trim();
+          const cGrey300 = styles.getPropertyValue('--grey-300').trim();
           const cBlack = styles.getPropertyValue('--black').trim();
           const valueLabelPlugin = {
             id: 'scheduleValueLabels',
@@ -411,12 +423,13 @@
               const meta = chart.getDatasetMeta(0);
               const ctx2 = chart.ctx;
               ctx2.save();
-              ctx2.fillStyle = cBlack;
               ctx2.font = '700 11px Inter, sans-serif';
               ctx2.textAlign = 'center';
               meta.data.forEach((bar, i) => {
                 const val = chart.data.datasets[0].data[i];
-                if (val) ctx2.fillText(String(val), bar.x, bar.y - 8);
+                if (!val) return;
+                ctx2.fillStyle = visibleBuckets[i].isBacklog ? cGrey500 : cBlack;
+                ctx2.fillText(String(val), bar.x, bar.y - 8);
               });
               ctx2.restore();
             },
@@ -436,6 +449,12 @@
                 borderWidth: visibleBuckets.map((b) => (b === currentBucket ? 1.6 : 0)),
                 backgroundColor(context) {
                   const { chart, dataIndex } = context;
+                  const bucket = visibleBuckets[dataIndex];
+                  // A backlog bar (elapsed hour, still unresolved) fades
+                  // flat grey - it's overdue, not part of the day's
+                  // upcoming shape - and drops the gradient/shadow that
+                  // marks an active bar.
+                  if (bucket && bucket.isBacklog) return cGrey300;
                   if (!chart.chartArea) return '#5aa4ef';
                   const value = context.dataset.data[dataIndex] || 0;
                   const yTop = chart.scales.y.getPixelForValue(value);
@@ -501,7 +520,7 @@
                 ${currentBucket ? `<span class="now-chip"><span class="dot"></span><span>Now: ${formatHourOnly(currentBucket.start)}–${formatHourOnly(currentBucket.end)}</span></span>` : ''}
               </div>
               <div class="chart-canvas-wrap"><canvas id="scheduleLoadChart" height="128"></canvas></div>
-              <p class="chart-note">Hover a bar for the status breakdown — completed visits and no-shows still count toward their hour.</p>
+              <p class="chart-note">Hover a bar for the status breakdown — a faded bar means that hour is still catching up, not yet fully seen.</p>
             ` : '<p class="chart-note" style="margin-top:0;">All of today\'s appointments have passed.</p>'}
           </div>
         ` : '';
