@@ -169,6 +169,42 @@
       });
     }
 
+    // Jumping to a date more than a month or two away by clicking ‹ ›
+    // one month at a time doesn't scale - clicking the "August 2026"
+    // label instead drills into a year grid, then a month grid, then
+    // lands back on the day grid above (like most native date pickers).
+    // Purely a browsing aid: picking a year or month only moves
+    // viewDate, it never commits a value the way clicking an actual day
+    // does - that still only happens in buildCalendarGrid above.
+    let yearPage = 0;
+    function buildYearGrid(el) {
+      el.innerHTML = '';
+      const currentYear = viewDate.getFullYear();
+      for (let y = yearPage; y < yearPage + 9; y++) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'qdp-grid-cell' + (y === currentYear ? ' selected' : '');
+        btn.textContent = y;
+        btn.addEventListener('click', () => { viewDate.setFullYear(y); showMonthView(); });
+        el.appendChild(btn);
+      }
+    }
+    function buildMonthGrid(el) {
+      el.innerHTML = '';
+      const currentMonth = viewDate.getMonth();
+      MONTHS.forEach((name, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'qdp-grid-cell' + (i === currentMonth ? ' selected' : '');
+        btn.textContent = name.slice(0, 3);
+        btn.addEventListener('click', () => { viewDate.setMonth(i); showDayView(); });
+        el.appendChild(btn);
+      });
+    }
+    let showDayView = () => {};
+    let showYearView = () => {};
+    let showMonthView = () => {};
+
     let closeAll = () => {};
     let triggerEl;
 
@@ -184,29 +220,70 @@
             <button type="button" data-quick="1">Tomorrow</button>
             <button type="button" data-quick="7">In a week</button>
           </div>
-          <div class="qdp-head">
-            <span class="qdp-month-label"></span>
-            <div class="qdp-nav"><button type="button" data-nav="-1" title="Previous month" aria-label="Previous month">‹</button><button type="button" data-nav="1" title="Next month" aria-label="Next month">›</button></div>
+          <div class="qdp-dayview">
+            <div class="qdp-head">
+              <button type="button" class="qdp-month-label" title="Jump to a different month or year"></button>
+              <div class="qdp-nav"><button type="button" data-nav="-1" title="Previous month" aria-label="Previous month">‹</button><button type="button" data-nav="1" title="Next month" aria-label="Next month">›</button></div>
+            </div>
+            <div class="qdp-dow"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+            <div class="qdp-grid"></div>
           </div>
-          <div class="qdp-dow"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
-          <div class="qdp-grid"></div>
+          <div class="qdp-yearview" style="display:none;">
+            <div class="qdp-head">
+              <span class="qdp-head-title">Select a year</span>
+              <div class="qdp-nav"><button type="button" data-yearpage="-9" title="Earlier years" aria-label="Earlier years">‹</button><button type="button" data-yearpage="9" title="Later years" aria-label="Later years">›</button></div>
+            </div>
+            <div class="qdp-yeargrid"></div>
+          </div>
+          <div class="qdp-monthview" style="display:none;">
+            <div class="qdp-head">
+              <button type="button" class="qdp-back">‹ <span class="qdp-back-year"></span></button>
+            </div>
+            <div class="qdp-monthgrid"></div>
+          </div>
         </div>
       `;
       triggerEl = wrap.querySelector('.qdp-trigger');
       const pop = wrap.querySelector('.qdp-pop');
+      const dayView = wrap.querySelector('.qdp-dayview');
       const grid = wrap.querySelector('.qdp-grid');
       const monthLabel = wrap.querySelector('.qdp-month-label');
+      const yearView = wrap.querySelector('.qdp-yearview');
+      const yearGrid = wrap.querySelector('.qdp-yeargrid');
+      const monthView = wrap.querySelector('.qdp-monthview');
+      const monthGrid = wrap.querySelector('.qdp-monthgrid');
+      const backYearLabel = wrap.querySelector('.qdp-back-year');
 
       function positionPop() {
         pop.style.left = '0'; pop.style.right = 'auto';
         const rect = pop.getBoundingClientRect();
         if (rect.right > window.innerWidth - 8) { pop.style.left = 'auto'; pop.style.right = '0'; }
       }
+      showDayView = function () {
+        yearView.style.display = 'none';
+        monthView.style.display = 'none';
+        dayView.style.display = '';
+        buildCalendarGrid(grid, monthLabel);
+      };
+      showYearView = function () {
+        yearPage = Math.floor(viewDate.getFullYear() / 9) * 9;
+        dayView.style.display = 'none';
+        monthView.style.display = 'none';
+        yearView.style.display = '';
+        buildYearGrid(yearGrid);
+      };
+      showMonthView = function () {
+        dayView.style.display = 'none';
+        yearView.style.display = 'none';
+        monthView.style.display = '';
+        backYearLabel.textContent = viewDate.getFullYear();
+        buildMonthGrid(monthGrid);
+      };
       function open() {
         document.querySelectorAll('.qdp-pop.open').forEach((p) => { if (p !== pop) p.classList.remove('open'); });
         pop.classList.add('open');
         triggerEl.classList.add('open');
-        buildCalendarGrid(grid, monthLabel);
+        showDayView();
         positionPop();
       }
       function close() { pop.classList.remove('open'); triggerEl.classList.remove('open'); }
@@ -221,6 +298,9 @@
         commit(d);
         close();
       }));
+      monthLabel.addEventListener('click', (e) => { e.stopPropagation(); showYearView(); });
+      pop.querySelectorAll('[data-yearpage]').forEach((btn) => btn.addEventListener('click', (e) => { e.stopPropagation(); yearPage += Number(btn.dataset.yearpage); buildYearGrid(yearGrid); }));
+      wrap.querySelector('.qdp-back').addEventListener('click', (e) => { e.stopPropagation(); showYearView(); });
       pop.addEventListener('click', (e) => e.stopPropagation());
       document.addEventListener('click', close);
 

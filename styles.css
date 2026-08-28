@@ -1983,7 +1983,29 @@ th.th-filterable { position: relative; }
 }
 .qdp-pop.open { display: block; }
 .qdp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.qdp-head .qdp-month-label { font-size: 14px; font-weight: 700; color: var(--black); }
+.qdp-head-title { font-size: 14px; font-weight: 700; color: var(--black); }
+/* Clicking "August 2026" drills into a year grid, then a month grid
+   (see .qdp-yeargrid/.qdp-monthgrid below) - a button rather than the
+   plain text it used to be, so long-distance date entry doesn't mean
+   clicking the ‹ arrow one month at a time. */
+.qdp-head .qdp-month-label {
+  font-size: 14px; font-weight: 700; color: var(--black); background: none; border: none;
+  font-family: var(--font); padding: 0; cursor: pointer; display: flex; align-items: center; gap: 4px;
+}
+.qdp-head .qdp-month-label:hover { color: var(--accent-dark); }
+.qdp-head .qdp-month-label::after { content: '▾'; font-size: 10px; color: var(--grey-500); }
+.qdp-back {
+  font-family: var(--font); font-size: 13px; font-weight: 700; color: var(--grey-500); background: none;
+  border: none; cursor: pointer; padding: 0;
+}
+.qdp-back:hover { color: var(--accent-dark); }
+.qdp-yeargrid, .qdp-monthgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.qdp-grid-cell {
+  font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--black); background: transparent;
+  border: none; border-radius: var(--radius-sm); padding: 10px 4px; cursor: pointer;
+}
+.qdp-grid-cell:hover { background: var(--grey-100); }
+.qdp-grid-cell.selected { background: var(--accent); color: #fff; }
 .qdp-nav { display: flex; gap: 4px; }
 .qdp-nav button {
   width: 26px; height: 26px; border-radius: var(--radius-sm); border: none; background: var(--grey-100);

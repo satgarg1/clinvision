@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=191" />
+<link rel="stylesheet" href="styles.css?v=192" />
 </head>
 <body>
   <div class="app-shell">
@@ -59,17 +59,11 @@
       <div style="display:none;gap:24px;flex-wrap:wrap;margin-bottom:14px;" id="trendsCustomRangeFilters">
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
           <label class="pill-label">From</label>
-          <div style="display:flex;gap:8px;">
-            <select id="trendsRangeStartMonth" class="pill-select"></select>
-            <select id="trendsRangeStartYear" class="pill-select"></select>
-          </div>
+          <input type="date" lang="en-GB" id="trendsRangeStartDate" class="pill-input" />
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
           <label class="pill-label">To</label>
-          <div style="display:flex;gap:8px;">
-            <select id="trendsRangeEndMonth" class="pill-select"></select>
-            <select id="trendsRangeEndYear" class="pill-select"></select>
-          </div>
+          <input type="date" lang="en-GB" id="trendsRangeEndDate" class="pill-input" />
         </div>
       </div>
 
@@ -177,7 +171,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=73"></script>
+  <script src="clinic-data.js?v=74"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -300,21 +294,6 @@
       function fyLabel(startYear) {
         return `Apr '${String(startYear).slice(-2)} - Mar '${String(startYear + 1).slice(-2)}`;
       }
-      function monthYearToRange(fromMonth, fromYear, toMonth, toYear) {
-        if (!fromMonth || !fromYear || !toMonth || !toYear) return null;
-        const start = new Date(Number(fromYear), Number(fromMonth) - 1, 1);
-        const end = new Date(Number(toYear), Number(toMonth), 0);
-        return { start: toDateStr(start), end: toDateStr(end) };
-      }
-      const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-      function populateMonthYearSelects(monthSelectId, yearSelectId) {
-        document.getElementById(monthSelectId).innerHTML = MONTH_NAMES.map((name, i) => `<option value="${pad2(i + 1)}">${name}</option>`).join('');
-        const thisYear = new Date().getFullYear();
-        const years = [];
-        for (let y = thisYear; y <= thisYear + 1; y++) years.push(y);
-        document.getElementById(yearSelectId).innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join('');
-      }
-
       const RANGE_PRESETS = [
         { key: 'lastweek', label: 'Last week', compute: computeLastWeekRange },
         { key: 'currentweek', label: 'Current week', compute: computeCurrentWeekRange },
@@ -337,9 +316,9 @@
           return entry ? entry.label : '';
         }
         if (!customRange) return 'Custom';
-        const [sy, sm] = customRange.start.split('-').map(Number);
-        const [ey, em] = customRange.end.split('-').map(Number);
-        return `${MONTH_NAMES[sm - 1].slice(0, 3)} ${sy} - ${MONTH_NAMES[em - 1].slice(0, 3)} ${ey}`;
+        const [sy, sm, sd] = customRange.start.split('-').map(Number);
+        const [ey, em, ed] = customRange.end.split('-').map(Number);
+        return `${sd} ${MONTH_ABBREV[sm - 1]} ${sy} - ${ed} ${MONTH_ABBREV[em - 1]} ${ey}`;
       }
 
       // Bar granularity adapts to how wide the selected period actually
@@ -1147,35 +1126,34 @@
         ).join('');
       }
 
-      // Custom is restricted to at most 12 months so bars never exceed a
-      // readable count (bucketGranularity always lands on monthly bars
-      // past 35 days, so this caps it at 12 monthly bars). Auto-clamps
-      // and toasts rather than blocking, since there's no explicit
-      // "Apply" step here — the chart updates live as the fields change.
+      // Custom is restricted to at most ~12 months (366 days) so bars
+      // never exceed a readable count (bucketGranularity always lands on
+      // monthly bars past 35 days, so this caps it at 12 monthly bars).
+      // Auto-clamps and toasts rather than blocking, since there's no
+      // explicit "Apply" step here — the chart updates live as the
+      // fields change. ISO "YYYY-MM-DD" strings compare correctly with
+      // plain </>, so no Date parsing is needed for the ordering check.
       function updateCustomRangeFromInputs() {
-        const sMonthEl = document.getElementById('trendsRangeStartMonth');
-        const sYearEl = document.getElementById('trendsRangeStartYear');
-        const eMonthEl = document.getElementById('trendsRangeEndMonth');
-        const eYearEl = document.getElementById('trendsRangeEndYear');
-        const sm = Number(sMonthEl.value), sy = Number(sYearEl.value);
-        const em = Number(eMonthEl.value), ey = Number(eYearEl.value);
-        const startIdx = sy * 12 + (sm - 1);
-        let endIdx = ey * 12 + (em - 1);
-        if (endIdx < startIdx) {
-          endIdx = startIdx;
+        const startInput = document.getElementById('trendsRangeStartDate');
+        const endInput = document.getElementById('trendsRangeEndDate');
+        const s = startInput.value;
+        let e = endInput.value;
+        if (!s || !e) { customRange = null; loadAndRender(); return; }
+        if (e < s) {
+          e = s;
+          endInput.value = e;
           showToast("End date can't be before start date — adjusted.");
-        } else if (endIdx - startIdx > 11) {
-          endIdx = startIdx + 11;
-          showToast('Custom period is limited to 12 months — end date adjusted.');
+        } else if (Math.round((new Date(e) - new Date(s)) / 86400000) + 1 > 366) {
+          const capped = new Date(s);
+          capped.setDate(capped.getDate() + 365);
+          e = toDateStr(capped);
+          endInput.value = e;
+          showToast('Custom period is limited to about 12 months — end date adjusted.');
         }
-        if (endIdx !== ey * 12 + (em - 1)) {
-          eYearEl.value = String(Math.floor(endIdx / 12));
-          eMonthEl.value = pad2((endIdx % 12) + 1);
-        }
-        customRange = monthYearToRange(sMonthEl.value, sYearEl.value, eMonthEl.value, eYearEl.value);
+        customRange = { start: s, end: e };
         loadAndRender();
       }
-      ['trendsRangeStartMonth', 'trendsRangeStartYear', 'trendsRangeEndMonth', 'trendsRangeEndYear'].forEach((id) => {
+      ['trendsRangeStartDate', 'trendsRangeEndDate'].forEach((id) => {
         document.getElementById(id).addEventListener('change', updateCustomRangeFromInputs);
       });
 
@@ -1240,8 +1218,10 @@
       } else {
         document.getElementById('clinicLogoThumb').style.display = 'none';
       }
-      populateMonthYearSelects('trendsRangeStartMonth', 'trendsRangeStartYear');
-      populateMonthYearSelects('trendsRangeEndMonth', 'trendsRangeEndYear');
+      Qlinic.attachDatePicker(document.getElementById('trendsRangeStartDate'));
+      Qlinic.attachDatePicker(document.getElementById('trendsRangeEndDate'));
+      document.getElementById('trendsRangeStartDate').max = Qlinic.getTodayDate();
+      document.getElementById('trendsRangeEndDate').max = Qlinic.getTodayDate();
       renderPeriodOptions();
       renderTrendGroupTabs();
       applyTrendGroupVisibility();

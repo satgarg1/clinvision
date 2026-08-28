@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=191" />
+<link rel="stylesheet" href="styles.css?v=192" />
 </head>
 <body>
   <div class="app-shell">
@@ -79,17 +79,11 @@
       <div style="display:none;gap:24px;flex-wrap:wrap;margin-bottom:10px;" id="customRangeFilters">
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
           <label class="pill-label">From</label>
-          <div style="display:flex;gap:8px;">
-            <select id="rangeStartMonth" class="pill-select"></select>
-            <select id="rangeStartYear" class="pill-select"></select>
-          </div>
+          <input type="date" lang="en-GB" id="rangeStartDate" class="pill-input" />
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
           <label class="pill-label">To</label>
-          <div style="display:flex;gap:8px;">
-            <select id="rangeEndMonth" class="pill-select"></select>
-            <select id="rangeEndYear" class="pill-select"></select>
-          </div>
+          <input type="date" lang="en-GB" id="rangeEndDate" class="pill-input" />
         </div>
       </div>
 
@@ -112,7 +106,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=73"></script>
+  <script src="clinic-data.js?v=74"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -223,29 +217,11 @@
       function fyLabel(startYear) {
         return `Apr '${String(startYear).slice(-2)} - Mar '${String(startYear + 1).slice(-2)}`;
       }
-      // Custom is the only preset with visible date fields, and those
-      // fields are month-only (matches the granularity of every other
-      // preset here) — first day of the "from" month through the last
-      // day of the "to" month, no cap on how far apart they can be.
-      // Plain Month/Year <select> pairs instead of <input type="month">:
-      // the native month picker renders inconsistently (clipped year,
-      // fiddly year stepper) and is hard to style to match the rest of
-      // the page, where two ordinary dropdowns are reliable everywhere.
-      function monthYearToRange(fromMonth, fromYear, toMonth, toYear) {
-        if (!fromMonth || !fromYear || !toMonth || !toYear) return null;
-        const start = new Date(Number(fromYear), Number(fromMonth) - 1, 1);
-        const end = new Date(Number(toYear), Number(toMonth), 0);
-        return { start: toDateStr(start), end: toDateStr(end) };
-      }
-      const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-      function populateMonthYearSelects(monthSelectId, yearSelectId) {
-        document.getElementById(monthSelectId).innerHTML = MONTH_NAMES.map((name, i) => `<option value="${pad2(i + 1)}">${name}</option>`).join('');
-        const thisYear = new Date().getFullYear();
-        const years = [];
-        for (let y = thisYear; y <= thisYear + 1; y++) years.push(y);
-        document.getElementById(yearSelectId).innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join('');
-      }
-
+      // Custom is the only preset with visible date fields - real
+      // From/To calendars (Qlinic.attachDatePicker, same component as
+      // the single-day filter above) rather than Month+Year dropdowns,
+      // so an exact day can be picked, not just "somewhere in March
+      // 2026." No cap on how far apart From/To can be.
       const RANGE_PRESETS = [
         { key: 'lastweek', label: 'Last week', compute: computeLastWeekRange },
         { key: 'currentweek', label: 'Current week', compute: computeCurrentWeekRange },
@@ -703,14 +679,16 @@
         document.getElementById('dateFilter').value = Qlinic.getTodayDate();
         loadInvoices();
       });
+      // ISO "YYYY-MM-DD" strings compare correctly with plain <=/>=, so
+      // no Date parsing needed here - just swap if From ends up after To
+      // rather than silently returning an empty/backwards range.
       function updateCustomRangeFromInputs() {
-        customRange = monthYearToRange(
-          document.getElementById('rangeStartMonth').value, document.getElementById('rangeStartYear').value,
-          document.getElementById('rangeEndMonth').value, document.getElementById('rangeEndYear').value
-        );
+        const s = document.getElementById('rangeStartDate').value;
+        const e = document.getElementById('rangeEndDate').value;
+        customRange = (s && e) ? { start: s <= e ? s : e, end: s <= e ? e : s } : null;
         loadInvoices();
       }
-      ['rangeStartMonth', 'rangeStartYear', 'rangeEndMonth', 'rangeEndYear'].forEach((id) => {
+      ['rangeStartDate', 'rangeEndDate'].forEach((id) => {
         document.getElementById(id).addEventListener('change', updateCustomRangeFromInputs);
       });
 
@@ -755,14 +733,16 @@
       Qlinic.attachDatePicker(document.getElementById('dateFilter'));
       document.getElementById('dateFilter').max = Qlinic.getTodayDate();
       document.getElementById('dateFilter').value = Qlinic.getTodayDate();
-      populateMonthYearSelects('rangeStartMonth', 'rangeStartYear');
-      populateMonthYearSelects('rangeEndMonth', 'rangeEndYear');
+      Qlinic.attachDatePicker(document.getElementById('rangeStartDate'));
+      Qlinic.attachDatePicker(document.getElementById('rangeEndDate'));
+      document.getElementById('rangeStartDate').max = Qlinic.getTodayDate();
+      document.getElementById('rangeEndDate').max = Qlinic.getTodayDate();
       renderRangePresetOptions();
       if (linkedStart && linkedEnd) {
-        // A Trends bar links to an exact day-level range that usually
-        // isn't a whole month, so it's fetched exactly as given rather
-        // than forced through the (month-granularity) custom fields —
-        // those just get a best-effort month-level display value.
+        // A Trends bar links to an exact day-level range - now that From/
+        // To are real date pickers rather than Month+Year dropdowns, it's
+        // shown exactly as given instead of the previous best-effort
+        // month-level approximation.
         viewMode = 'range';
         rangePreset = 'custom';
         customRange = { start: linkedStart, end: linkedEnd };
@@ -771,12 +751,8 @@
         document.getElementById('singleDayFilters').style.display = 'none';
         document.getElementById('rangePresetField').style.display = 'flex';
         document.getElementById('customRangeFilters').style.display = 'flex';
-        const [sy, sm] = linkedStart.split('-');
-        const [ey, em] = linkedEnd.split('-');
-        document.getElementById('rangeStartMonth').value = sm;
-        document.getElementById('rangeStartYear').value = sy;
-        document.getElementById('rangeEndMonth').value = em;
-        document.getElementById('rangeEndYear').value = ey;
+        document.getElementById('rangeStartDate').value = linkedStart;
+        document.getElementById('rangeEndDate').value = linkedEnd;
       }
 
       const clinic = await Qlinic.getClinic();
