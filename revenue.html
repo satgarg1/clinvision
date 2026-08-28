@@ -139,7 +139,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=77"></script>
+  <script src="clinic-data.js?v=78"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -955,8 +955,12 @@
       Qlinic.attachDatePicker(document.getElementById('dateFilter'));
       document.getElementById('dateFilter').max = Qlinic.getTodayDate();
       document.getElementById('dateFilter').value = Qlinic.getTodayDate();
-      Qlinic.attachDatePicker(document.getElementById('rangeStartDate'));
-      Qlinic.attachDatePicker(document.getElementById('rangeEndDate'));
+      // Today/Tomorrow/In a week dropped - jumping just one end of a
+      // custom range to "today" independent of the other rarely makes
+      // sense as a range boundary. (dateFilter above keeps them - it's
+      // picking a single specific day, where the jump is useful.)
+      Qlinic.attachDatePicker(document.getElementById('rangeStartDate'), { quickButtons: false });
+      Qlinic.attachDatePicker(document.getElementById('rangeEndDate'), { quickButtons: false });
       document.getElementById('rangeStartDate').max = Qlinic.getTodayDate();
       document.getElementById('rangeEndDate').max = Qlinic.getTodayDate();
       renderRangePresetOptions();

@@ -100,7 +100,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=77"></script>
+  <script src="clinic-data.js?v=78"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -477,8 +477,11 @@
         downloadCsv(`patient-directory-${Qlinic.getTodayDate()}.csv`, csv);
       });
 
-      Qlinic.attachDatePicker(document.getElementById('periodStartDate'));
-      Qlinic.attachDatePicker(document.getElementById('periodEndDate'));
+      // Today/Tomorrow/In a week dropped - jumping just one end of a
+      // custom range to "today" independent of the other rarely makes
+      // sense as a range boundary.
+      Qlinic.attachDatePicker(document.getElementById('periodStartDate'), { quickButtons: false });
+      Qlinic.attachDatePicker(document.getElementById('periodEndDate'), { quickButtons: false });
       document.getElementById('periodStartDate').max = Qlinic.getTodayDate();
       document.getElementById('periodEndDate').max = Qlinic.getTodayDate();
       renderPeriodPresetOptions();

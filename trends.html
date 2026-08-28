@@ -187,7 +187,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=77"></script>
+  <script src="clinic-data.js?v=78"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -1372,8 +1372,11 @@
       } else {
         document.getElementById('clinicLogoThumb').style.display = 'none';
       }
-      Qlinic.attachDatePicker(document.getElementById('trendsRangeStartDate'));
-      Qlinic.attachDatePicker(document.getElementById('trendsRangeEndDate'));
+      // Today/Tomorrow/In a week dropped - jumping just one end of a
+      // custom range to "today" independent of the other rarely makes
+      // sense as a range boundary.
+      Qlinic.attachDatePicker(document.getElementById('trendsRangeStartDate'), { quickButtons: false });
+      Qlinic.attachDatePicker(document.getElementById('trendsRangeEndDate'), { quickButtons: false });
       document.getElementById('trendsRangeStartDate').max = Qlinic.getTodayDate();
       document.getElementById('trendsRangeEndDate').max = Qlinic.getTodayDate();
       renderPeriodOptions();

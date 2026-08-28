@@ -206,7 +206,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=77"></script>
+  <script src="clinic-data.js?v=78"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -581,7 +581,11 @@
       }
       myProfile = await Qlinic.getMyProfile();
       await loadDoctors();
-      Qlinic.attachDatePicker(document.getElementById('bDate'));
+      // Today/Tomorrow/In a week dropped - a bill is never future-dated
+      // (capped at today just below), so "Tomorrow"/"In a week" would
+      // sit there permanently disabled, and "Today" duplicates what the
+      // field already defaults to.
+      Qlinic.attachDatePicker(document.getElementById('bDate'), { quickButtons: false });
       // Backdating is the whole point of this field (billing a patient
       // seen yesterday, forgot at the time), but a bill dated in the
       // FUTURE never makes sense — capped at today.

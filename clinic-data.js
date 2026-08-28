@@ -103,6 +103,12 @@
   // element's own .value catches every future assignment (not just
   // ones made through this widget), so code that sets the date
   // programmatically after this runs still stays in sync.
+  //
+  // opts.quickButtons: false drops the Today/Tomorrow/In-a-week row -
+  // useful for a single "which day" filter, but meaningless on a
+  // consultation date (never future-dated) or a From/To range boundary
+  // (jumping either end to "today" independent of the other rarely
+  // makes sense). Defaults to true (unchanged for every other caller).
   function attachDatePicker(input, opts) {
     opts = opts || {};
     if (input._qlinicDatePicker) return input._qlinicDatePicker;
@@ -215,11 +221,12 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
         </button>
         <div class="qdp-pop">
+          ${opts.quickButtons === false ? '' : `
           <div class="qdp-quick">
             <button type="button" data-quick="0">Today</button>
             <button type="button" data-quick="1">Tomorrow</button>
             <button type="button" data-quick="7">In a week</button>
-          </div>
+          </div>`}
           <div class="qdp-dayview">
             <div class="qdp-head">
               <button type="button" class="qdp-month-label" title="Jump to a different month or year"></button>
