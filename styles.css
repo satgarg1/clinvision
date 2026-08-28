@@ -2389,9 +2389,12 @@ th.th-filterable { position: relative; }
 .revenue-today-sub { font-size: 12px; color: var(--grey-500); margin-top: 2px; }
 .revenue-daypair { display: flex; flex-direction: column; gap: 8px; }
 .revenue-day-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+/* Fixed width (not just padding) so "Best" and the longer "Worst" tag
+   take up the exact same space - otherwise the dates that follow start
+   at two different x-positions depending on which tag came before them. */
 .revenue-day-tag {
   font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
-  border-radius: 999px; padding: 2px 8px; flex-shrink: 0;
+  border-radius: 999px; padding: 2px 8px; flex-shrink: 0; width: 46px; text-align: center;
 }
 .revenue-day-tag.best { background: var(--mkt-teal-bg); color: var(--mkt-teal); }
 .revenue-day-tag.worst { background: var(--grey-100); color: var(--grey-700); }
@@ -2411,7 +2414,10 @@ th.th-filterable { position: relative; }
 .revenue-outstanding-btn:hover .revenue-outstanding-amt { text-decoration: underline; }
 .revenue-outstanding-amt { font-size: 15px; font-weight: 700; color: var(--danger); }
 .revenue-outstanding-count { font-size: 12px; color: var(--grey-500); margin-top: 2px; }
-.revenue-outstanding-arrow { font-size: 13px; color: var(--grey-500); transition: transform 0.15s ease; }
+/* Bigger and accent-blue (the app's standard "this is interactive"
+   color), not the same quiet grey as everything around it - at 13px
+   grey it read as decoration, not a control worth noticing. */
+.revenue-outstanding-arrow { font-size: 22px; line-height: 1; color: var(--accent); font-weight: 700; transition: transform 0.15s ease; }
 .revenue-outstanding-arrow.open { transform: rotate(180deg); }
 .revenue-outstanding-list { margin-top: 10px; flex-direction: column; gap: 8px; display: none; }
 .revenue-outstanding-list.open { display: flex; }
