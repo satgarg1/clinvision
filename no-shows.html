@@ -69,14 +69,20 @@
            that mix: it bottom-aligns every control's own box onto one
            line whether or not a label sits above it, with no spacer
            trick needed - matches .inline-form's own default elsewhere
-           in the app for exactly this reason. -->
+           in the app for exactly this reason. Each nested group
+           (singleDayFilters/customRangeFilters) is flex-wrap:nowrap on
+           itself - only the OUTER row is allowed to wrap. Without that,
+           Date and Today (now bare siblings with no wrapping div of
+           their own since their labels were dropped) could wrap
+           independently of each other and visually interleave with the
+           pill in a scrambled order. -->
       <div style="display:flex;align-items:flex-end;flex-wrap:wrap;gap:16px 24px;margin-bottom:10px;">
         <div class="period-pills" id="viewModeToggle" style="margin-bottom:0;">
           <button type="button" class="period-pill active" data-mode="single">Single day</button>
           <button type="button" class="period-pill" data-mode="range">Range</button>
         </div>
 
-        <div style="display:flex;gap:16px 24px;flex-wrap:wrap;" id="singleDayFilters">
+        <div style="display:flex;gap:16px 24px;flex-wrap:nowrap;" id="singleDayFilters">
           <input type="date" lang="en-GB" id="dateFilter" class="pill-input" aria-label="Date" />
           <button type="button" class="pill-btn" id="todayBtn">Today</button>
         </div>
@@ -85,7 +91,7 @@
           <select id="rangePresetSelect" class="pill-select" aria-label="Period"></select>
         </div>
 
-        <div style="display:none;gap:16px 24px;flex-wrap:wrap;" id="customRangeFilters">
+        <div style="display:none;gap:16px 24px;flex-wrap:nowrap;" id="customRangeFilters">
           <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
             <label class="pill-label">From</label>
             <input type="date" lang="en-GB" id="rangeStartDate" class="pill-input" />
@@ -114,7 +120,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=75"></script>
+  <script src="clinic-data.js?v=76"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
