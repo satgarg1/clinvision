@@ -1175,6 +1175,19 @@ input[type="number"] { -moz-appearance: textfield; }
   margin-bottom: 28px;
 }
 
+/* Settings hub: same grid idea as .card-grid, but for full .panel cards
+   (title + description + a button) rather than compact stat tiles - a
+   wider minmax so a card's description/button don't get squeezed. */
+.settings-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+/* .panel's own margin-bottom would double up with the grid's gap here
+   (extra space below every card, uneven vs. the 18px gap between
+   columns) - the grid's gap already spaces every card, in both axes. */
+.settings-card-grid .panel { margin-bottom: 0; }
+
 .stat-card {
   background: var(--white);
   border: 1px solid var(--grey-300);

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=199" />
+<link rel="stylesheet" href="styles.css?v=200" />
 </head>
 <body>
   <div class="app-shell">
@@ -51,63 +51,82 @@
         <h1>Settings</h1>
       </div>
 
-      <div class="panel" id="clinicSettingsPanel">
+      <!-- 12 panels, previously one long stacked column, are grouped into
+           4 gradient pill-tabs (same .period-pills component used
+           everywhere else) and laid out as a grid within each so a group
+           of 3-4 cards fits without scrolling. Every panel keeps its own
+           per-role display toggle exactly as before (set in the script
+           below) - data-group only decides which pill it belongs to.
+           A pill itself is hidden when nothing in its group is visible
+           for the current role (a plain doctor has nothing in Records),
+           computed alongside the per-card visibility in applySettingsGrouping()
+           further down. -->
+      <div class="period-pills" id="settingsGroupTabs" style="margin-bottom:20px;"></div>
+
+      <div class="settings-card-grid" id="settingsCardGrid">
+      <div class="panel" id="clinicSettingsPanel" data-group="clinic-setup">
         <div class="panel-header"><h2>Clinic Settings</h2></div>
         <p class="panel-note">Clinic profile, logo, queue rules, and operating hours.</p>
         <a href="clinic-settings.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage clinic settings</a>
       </div>
 
-      <div class="panel" id="doctorsPanel">
+      <div class="panel" id="doctorsPanel" data-group="clinic-setup">
         <div class="panel-header"><h2>Doctors</h2></div>
         <p class="panel-note">Add new doctors or update existing ones — name, specialty, fees, and HPR ID.</p>
         <p class="panel-note" id="doctorSummaryNote">Loading…</p>
         <a href="manage-doctors.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage doctors</a>
       </div>
 
-      <div class="panel" id="patientDirectoryPanel">
-        <div class="panel-header"><h2>Patient Directory</h2></div>
-        <p class="panel-note">A running record of every patient — total visits, first and last visit, and which doctors they've seen.</p>
-        <a href="patient-directory.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Open directory</a>
-      </div>
-
-      <div class="panel" id="noShowsPanel">
-        <div class="panel-header"><h2>No-shows</h2></div>
-        <p class="panel-note">Track missed appointments to spot patterns and follow up with patients.</p>
-        <a href="no-shows.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Track no-shows</a>
-      </div>
-
-      <div class="panel" id="billingAuditPanel">
-        <div class="panel-header"><h2>Billing Audit</h2></div>
-        <p class="panel-note">Confirms receipt numbers are gap-free and unique, and flags any seen patient with no invoice on file.</p>
-        <a href="billing-audit.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Open billing audit</a>
-      </div>
-
-      <div class="panel" id="closedDatesPanel">
+      <div class="panel" id="closedDatesPanel" data-group="clinic-setup">
         <div class="panel-header"><h2>Closed Dates</h2></div>
         <p class="panel-note">Holidays and other one-off dates the clinic is closed, beyond the weekly off days set in Clinic Settings.</p>
         <a href="closed-dates.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage closed dates</a>
       </div>
 
-      <div class="panel" id="teamPanel">
+      <div class="panel" id="doctorHolidaysPanel" data-group="clinic-setup">
+        <div class="panel-header"><h2>Doctor Holidays</h2></div>
+        <p class="panel-note" id="doctorHolidaysNote">Days a doctor is away, so reception is warned before booking them.</p>
+        <a href="doctor-holidays.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage holidays</a>
+      </div>
+
+      <div class="panel" id="patientDirectoryPanel" data-group="records">
+        <div class="panel-header"><h2>Patient Directory</h2></div>
+        <p class="panel-note">A running record of every patient — total visits, first and last visit, and which doctors they've seen.</p>
+        <a href="patient-directory.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Open directory</a>
+      </div>
+
+      <div class="panel" id="noShowsPanel" data-group="records">
+        <div class="panel-header"><h2>No-shows</h2></div>
+        <p class="panel-note">Track missed appointments to spot patterns and follow up with patients.</p>
+        <a href="no-shows.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Track no-shows</a>
+      </div>
+
+      <div class="panel" id="billingAuditPanel" data-group="records">
+        <div class="panel-header"><h2>Billing Audit</h2></div>
+        <p class="panel-note">Confirms receipt numbers are gap-free and unique, and flags any seen patient with no invoice on file.</p>
+        <a href="billing-audit.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Open billing audit</a>
+      </div>
+
+      <div class="panel" id="teamPanel" data-group="team-access">
         <div class="panel-header"><h2>Team</h2></div>
         <p class="panel-note">Set up login credentials for your team and manage their roles.</p>
         <p class="panel-note" id="teamSummaryNote">Loading…</p>
         <a href="team.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage team</a>
       </div>
 
-      <div class="panel" id="doctorHolidaysPanel">
-        <div class="panel-header"><h2>Doctor Holidays</h2></div>
-        <p class="panel-note" id="doctorHolidaysNote">Days a doctor is away, so reception is warned before booking them.</p>
-        <a href="doctor-holidays.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage holidays</a>
-      </div>
-
-      <div class="panel">
+      <div class="panel" data-group="team-access">
         <div class="panel-header"><h2>Account &amp; security</h2></div>
         <p class="panel-note">Signed in as <strong id="currentEmail">·</strong></p>
         <a href="account-security.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage account &amp; security</a>
       </div>
 
-      <div class="panel" id="displayScreenPanel">
+      <div class="panel" data-group="team-access">
+        <div class="panel-header"><h2>Session</h2></div>
+        <p class="panel-note">Signed in on this device. Logging out ends this session everywhere it's open.</p>
+        <a href="#" id="logoutLink" class="btn-sm danger-solid" style="display:inline-block;text-decoration:none;">Log out</a>
+      </div>
+
+      <div class="panel" id="displayScreenPanel" data-group="preferences">
         <div class="panel-header"><h2>Display screen</h2></div>
         <p class="panel-note">
           Language shown on the waiting-room TV board (queue positions, "now serving," etc). Applies to that shared
@@ -128,7 +147,7 @@
         </form>
       </div>
 
-      <div class="panel">
+      <div class="panel" data-group="preferences">
         <div class="panel-header"><h2>Appearance</h2></div>
         <p class="panel-note">Applies on this device, for the Qlinic app screens (not the waiting-room display).</p>
         <div class="mode-toggle" role="tablist" aria-label="Day or night theme" style="margin-bottom:0;">
@@ -136,11 +155,6 @@
           <button type="button" class="mode-btn theme-toggle-btn" data-theme-choice="dark">🌙 Night</button>
         </div>
       </div>
-
-      <div class="panel">
-        <div class="panel-header"><h2>Session</h2></div>
-        <p class="panel-note">Signed in on this device. Logging out ends this session everywhere it's open.</p>
-        <a href="#" id="logoutLink" class="btn-sm danger-solid" style="display:inline-block;text-decoration:none;">Log out</a>
       </div>
     </main>
   </div>
@@ -181,22 +195,58 @@
       if (!amAdmin && !amDoctor) {
         document.getElementById('trendsNavLink').style.display = 'none';
       }
-      document.getElementById('clinicSettingsPanel').style.display = amAdmin ? '' : 'none';
-      document.getElementById('billingAuditPanel').style.display = amAdmin ? '' : 'none';
-      document.getElementById('doctorsPanel').style.display = amAdmin ? '' : 'none';
-      document.getElementById('teamPanel').style.display = amAdmin ? '' : 'none';
-      document.getElementById('patientDirectoryPanel').style.display = amDoctor ? 'none' : '';
-      document.getElementById('noShowsPanel').style.display = amDoctor ? 'none' : '';
-      // Doctors get read-only access to this page now (they can't add or
-      // remove a closure, but benefit from seeing the list, same as
-      // reception does), so unlike the other operational panels above,
-      // this one is never hidden by role.
-      document.getElementById('closedDatesPanel').style.display = '';
-      document.getElementById('displayScreenPanel').style.display = amDoctor ? 'none' : '';
-      document.getElementById('doctorHolidaysPanel').style.display = (amAdmin || amDoctor) ? '' : 'none';
+      // Same per-role access rules as before - just collected into a set
+      // of hidden panel ids instead of writing .style.display directly,
+      // since actual visibility now also depends on which group pill is
+      // selected (see applySettingsGrouping below). closedDatesPanel and
+      // the three panels with no id (Account & security, Appearance,
+      // Session) are never role-hidden, same as before.
+      const roleHiddenIds = new Set();
+      if (!amAdmin) { roleHiddenIds.add('clinicSettingsPanel'); roleHiddenIds.add('billingAuditPanel'); roleHiddenIds.add('doctorsPanel'); roleHiddenIds.add('teamPanel'); }
+      // Doctors get read-only access to Closed Dates now (they can't add
+      // or remove a closure, but benefit from seeing the list, same as
+      // reception does) - never role-hidden, unlike the operational
+      // panels above.
+      if (amDoctor) { roleHiddenIds.add('patientDirectoryPanel'); roleHiddenIds.add('noShowsPanel'); roleHiddenIds.add('displayScreenPanel'); }
+      if (!amAdmin && !amDoctor) { roleHiddenIds.add('doctorHolidaysPanel'); }
       document.getElementById('doctorHolidaysNote').textContent = amDoctor
         ? 'Add the days you\'re away, so reception is warned before booking you.'
         : 'Days a doctor is away, so reception is warned before booking them.';
+
+      // Group pill-tabs (same .period-pills component used everywhere
+      // else) replace the old one-long-column layout. A pill disappears
+      // entirely when nothing in its group survives role-visibility -
+      // Records has nothing for a plain doctor (Patient Directory,
+      // No-shows, and Billing Audit are all hidden for that role).
+      const SETTINGS_GROUPS = [
+        { slug: 'clinic-setup', label: 'Clinic Setup' },
+        { slug: 'records', label: 'Records' },
+        { slug: 'team-access', label: 'Team & Access' },
+        { slug: 'preferences', label: 'Preferences' },
+      ];
+      let activeSettingsGroup = null;
+      function applySettingsGrouping() {
+        const panels = Array.from(document.querySelectorAll('#settingsCardGrid .panel'));
+        const visiblePanels = panels.filter((p) => !roleHiddenIds.has(p.id));
+        const groupsWithPanels = SETTINGS_GROUPS.filter((g) => visiblePanels.some((p) => p.dataset.group === g.slug));
+        if (!activeSettingsGroup || !groupsWithPanels.some((g) => g.slug === activeSettingsGroup)) {
+          activeSettingsGroup = groupsWithPanels.length ? groupsWithPanels[0].slug : null;
+        }
+        document.getElementById('settingsGroupTabs').innerHTML = groupsWithPanels.map((g) =>
+          `<button type="button" class="period-pill${g.slug === activeSettingsGroup ? ' active' : ''}" data-group-tab="${g.slug}">${g.label}</button>`
+        ).join('');
+        document.querySelectorAll('#settingsGroupTabs [data-group-tab]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            activeSettingsGroup = btn.getAttribute('data-group-tab');
+            applySettingsGrouping();
+          });
+        });
+        panels.forEach((p) => {
+          const roleVisible = !roleHiddenIds.has(p.id);
+          p.style.display = (roleVisible && p.dataset.group === activeSettingsGroup) ? '' : 'none';
+        });
+      }
+      applySettingsGrouping();
 
       function showToast(msg) {
         const t = document.getElementById('toast');
