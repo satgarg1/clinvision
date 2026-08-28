@@ -1123,6 +1123,14 @@
       });
 
       async function renderQueues() {
+        // Fired here, not just from onLiveChange - most queue-changing
+        // actions on this page (mark arrived, call next, mark done, edit
+        // a patient, switching the doctor/date filter, ...) call
+        // renderQueues() directly right after their own local write,
+        // without waiting for the realtime round-trip. Hooking the chip
+        // only into onLiveChange meant it lagged behind every one of
+        // those local actions until a realtime event happened to arrive.
+        renderWaitingChip();
         const myToken = ++queueRenderToken;
         await refreshDoctorsCache();
         if (myToken !== queueRenderToken) return;
@@ -1601,12 +1609,10 @@
       fillDoctorSelects();
       setPatientMode('appointment');
       renderQueues();
-      renderWaitingChip();
 
       Qlinic.onLiveChange(() => {
         renderSearch();
         renderQueues();
-        renderWaitingChip();
       });
     })();
   </script>
