@@ -51,19 +51,28 @@
         <h1>Analytics</h1>
       </div>
 
-      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:10px;" id="trendsPeriodField">
-        <label class="pill-label">Period</label>
-        <select id="trendsPeriodSelect" class="pill-select"></select>
-      </div>
-
-      <div style="display:none;gap:24px;flex-wrap:wrap;margin-bottom:14px;" id="trendsCustomRangeFilters">
-        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
-          <label class="pill-label">From</label>
-          <input type="date" lang="en-GB" id="trendsRangeStartDate" class="pill-input" />
+      <!-- One shared row instead of "Period" sitting alone above a
+           separate row of From/To fields - trendsCustomRangeFilters is
+           still toggled by the exact same JS (.style.display =
+           'flex'/'none'), just nested here as a flex child instead of a
+           separate top-level block, so it simply drops out of this
+           row's flow when hidden. Both already carry real labels, so no
+           spacer trick is needed the way the pill-toggle pages need one. -->
+      <div style="display:flex;align-items:flex-end;flex-wrap:wrap;gap:16px 24px;margin-bottom:10px;">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;" id="trendsPeriodField">
+          <label class="pill-label">Period</label>
+          <select id="trendsPeriodSelect" class="pill-select"></select>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
-          <label class="pill-label">To</label>
-          <input type="date" lang="en-GB" id="trendsRangeEndDate" class="pill-input" />
+
+        <div style="display:none;gap:16px 24px;flex-wrap:wrap;" id="trendsCustomRangeFilters">
+          <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+            <label class="pill-label">From</label>
+            <input type="date" lang="en-GB" id="trendsRangeStartDate" class="pill-input" />
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+            <label class="pill-label">To</label>
+            <input type="date" lang="en-GB" id="trendsRangeEndDate" class="pill-input" />
+          </div>
         </div>
       </div>
 
