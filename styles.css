@@ -1198,7 +1198,12 @@ input[type="number"] { -moz-appearance: textfield; }
    form/toggle for Display screen/Appearance) down with margin-top:auto
    puts every card's action on the same bottom edge regardless of how
    much text precedes it. */
-.settings-card-grid .panel { display: flex; flex-direction: column; }
+/* align-items:flex-start overrides flex's default "stretch," which was
+   sizing every card's button (and the Appearance toggle) to the full
+   card width - only the vertical placement needed fixing, not the
+   button's own width, so children now keep their natural content
+   width and just get positioned by the column layout below. */
+.settings-card-grid .panel { display: flex; flex-direction: column; align-items: flex-start; }
 .settings-card-grid .panel > *:last-child { margin-top: auto; }
 
 .stat-card {
