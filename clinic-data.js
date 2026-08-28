@@ -1028,6 +1028,33 @@
     };
   }
 
+  // Supabase/PostgREST caps how many rows a single request can return
+  // (commonly 1000) — a query with no explicit limit doesn't error past
+  // that cap, it just silently truncates, which is worse than an error:
+  // the result looks complete. Only two queries in this file genuinely
+  // need a clinic's ENTIRE history rather than some date-scoped slice
+  // (getPatientDirectory, getOutstandingInvoices below) — this pages
+  // through in fixed-size chunks via .range() until a page comes back
+  // short of a full page, guaranteeing every matching row is seen
+  // regardless of how large the clinic's history has grown. pageSize is
+  // kept well under any realistic server-side cap on purpose: if it
+  // were set AT the actual cap (unknown from here) and the server
+  // silently capped a request below what was asked for, a full page and
+  // a truncated one would look identical and the loop would stop early.
+  async function fetchAllRows(buildQuery, pageSize) {
+    pageSize = pageSize || 500;
+    let allRows = [];
+    let from = 0;
+    while (true) {
+      const { data, error } = await buildQuery(from, from + pageSize - 1);
+      if (error) throw error;
+      allRows = allRows.concat(data || []);
+      if (!data || data.length < pageSize) break;
+      from += pageSize;
+    }
+    return allRows;
+  }
+
   // A clinic-wide, deduplicated-by-phone directory of everyone who has
   // actually been seen at least once (same waiting/in_consult/done
   // footfall definition used everywhere else in the app) — built for
@@ -1044,12 +1071,18 @@
   async function getPatientDirectory() {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    const { data, error } = await sb
+    // A secondary tiebreak on id, not just created_at, keeps paging
+    // stable across requests — two rows sharing the exact same
+    // timestamp (a realistic case: rows inserted in the same trigger-
+    // driven transaction) would otherwise have no guaranteed order
+    // between pages, risking the same row appearing twice or not at all.
+    const data = await fetchAllRows((from, to) => sb
       .from('patients')
       .select('name, phone, age, gender, address, doctor_id, token_date, status, created_at')
       .eq('clinic_id', clinicId)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to));
 
     const byPhone = {};
     (data || []).forEach((row) => {
@@ -1421,10 +1454,15 @@
   async function getOutstandingInvoices() {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    const { data, error } = await sb.from('invoices').select('*')
+    // Same unbounded-history concern as getPatientDirectory above -
+    // paged via fetchAllRows so a clinic with a long invoice history
+    // doesn't silently drop older unpaid bills off the end of a
+    // server-capped single request.
+    const data = await fetchAllRows((from, to) => sb.from('invoices').select('*')
       .eq('clinic_id', clinicId)
-      .order('invoice_date', { ascending: true });
-    if (error) throw error;
+      .order('invoice_date', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to));
     return data.map(normalizeInvoice).filter((inv) => inv.amount > inv.amountReceived);
   }
 
@@ -1593,11 +1631,19 @@
     ]);
     const current = mine.find((p) => p.status === 'in_consult');
     if (current) {
-      await sb.from('patients').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', current.id);
+      // Both writes below used to go unchecked - a failed one (a dropped
+      // connection, a stale session) meant this function returned as if
+      // nothing went wrong, and the caller's toast said "Next patient
+      // called in" even though nobody actually moved. Thrown here so the
+      // caller's own error handling (or lack of it) is what decides what
+      // the doctor sees, instead of a silent false positive.
+      const { error } = await sb.from('patients').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', current.id);
+      if (error) throw error;
     }
     const waiting = mine.filter((p) => p.status === 'waiting').sort((a, b) => compareQueueOrder(a, b, doctor));
     if (waiting.length === 0) return { called: false };
-    await sb.from('patients').update({ status: 'in_consult', called_at: new Date().toISOString() }).eq('id', waiting[0].id);
+    const { error } = await sb.from('patients').update({ status: 'in_consult', called_at: new Date().toISOString() }).eq('id', waiting[0].id);
+    if (error) throw error;
     return { called: true };
   }
 
@@ -1613,7 +1659,11 @@
     const mine = await fetchPatientsForDoctorAndDate(doctorId, today);
     const current = mine.find((p) => p.status === 'in_consult');
     if (current) {
-      await sb.from('patients').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', current.id);
+      // See callNextPatient's identical comment - this used to go
+      // unchecked, so a failed write here still showed "Visit marked as
+      // done" at every call site.
+      const { error } = await sb.from('patients').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', current.id);
+      if (error) throw error;
     }
   }
 
