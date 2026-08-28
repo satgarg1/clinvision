@@ -66,17 +66,11 @@
       <div style="display:none;gap:24px;flex-wrap:wrap;margin-bottom:10px;" id="customPeriodFilters">
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
           <label class="pill-label">From</label>
-          <div style="display:flex;gap:8px;">
-            <select id="periodStartMonth" class="pill-select"></select>
-            <select id="periodStartYear" class="pill-select"></select>
-          </div>
+          <input type="date" lang="en-GB" id="periodStartDate" class="pill-input" />
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
           <label class="pill-label">To</label>
-          <div style="display:flex;gap:8px;">
-            <select id="periodEndMonth" class="pill-select"></select>
-            <select id="periodEndYear" class="pill-select"></select>
-          </div>
+          <input type="date" lang="en-GB" id="periodEndDate" class="pill-input" />
         </div>
       </div>
 
@@ -160,25 +154,10 @@
         const start = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth() - n, 1);
         return { start: toDateStr(start), end: toDateStr(end) };
       }
-      // Custom is the only preset with visible fields, and they're plain
-      // Month/Year <select> pairs (not <input type="month">, which
-      // renders inconsistently and clips its own year) — first day of
-      // the "from" month through the last day of the "to" month.
-      function monthYearToRange(fromMonth, fromYear, toMonth, toYear) {
-        if (!fromMonth || !fromYear || !toMonth || !toYear) return null;
-        const start = new Date(Number(fromYear), Number(fromMonth) - 1, 1);
-        const end = new Date(Number(toYear), Number(toMonth), 0);
-        return { start: toDateStr(start), end: toDateStr(end) };
-      }
-      const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-      function populateMonthYearSelects(monthSelectId, yearSelectId) {
-        document.getElementById(monthSelectId).innerHTML = MONTH_NAMES.map((name, i) => `<option value="${pad2(i + 1)}">${name}</option>`).join('');
-        const thisYear = new Date().getFullYear();
-        const years = [];
-        for (let y = thisYear; y <= thisYear + 1; y++) years.push(y);
-        document.getElementById(yearSelectId).innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join('');
-      }
-
+      // Custom is the only preset with visible fields - real From/To
+      // calendars (Qlinic.attachDatePicker) rather than Month/Year
+      // dropdowns, so an exact day can be picked, not just "somewhere in
+      // March 2026."
       const PERIOD_PRESETS = [
         { key: 'all', label: 'All time' },
         { key: 'currentmonth', label: 'Current month' },
@@ -466,15 +445,17 @@
         renderTable();
       });
 
+      // ISO "YYYY-MM-DD" strings compare correctly with plain <=/>=, so
+      // no Date parsing needed here - just swap if From ends up after To
+      // rather than silently returning an empty/backwards range.
       function updateCustomPeriodFromInputs() {
-        customPeriodRange = monthYearToRange(
-          document.getElementById('periodStartMonth').value, document.getElementById('periodStartYear').value,
-          document.getElementById('periodEndMonth').value, document.getElementById('periodEndYear').value
-        );
+        const s = document.getElementById('periodStartDate').value;
+        const e = document.getElementById('periodEndDate').value;
+        customPeriodRange = (s && e) ? { start: s <= e ? s : e, end: s <= e ? e : s } : null;
         currentPage = 1;
         renderTable();
       }
-      ['periodStartMonth', 'periodStartYear', 'periodEndMonth', 'periodEndYear'].forEach((id) => {
+      ['periodStartDate', 'periodEndDate'].forEach((id) => {
         document.getElementById(id).addEventListener('change', updateCustomPeriodFromInputs);
       });
 
@@ -487,8 +468,10 @@
         downloadCsv(`patient-directory-${Qlinic.getTodayDate()}.csv`, csv);
       });
 
-      populateMonthYearSelects('periodStartMonth', 'periodStartYear');
-      populateMonthYearSelects('periodEndMonth', 'periodEndYear');
+      Qlinic.attachDatePicker(document.getElementById('periodStartDate'));
+      Qlinic.attachDatePicker(document.getElementById('periodEndDate'));
+      document.getElementById('periodStartDate').max = Qlinic.getTodayDate();
+      document.getElementById('periodEndDate').max = Qlinic.getTodayDate();
       renderPeriodPresetOptions();
 
       const clinic = await Qlinic.getClinic();
