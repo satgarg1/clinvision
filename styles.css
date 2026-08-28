@@ -651,12 +651,20 @@ a { color: inherit; }
 }
 #trendGroupSeg button {
   font-family: var(--font); font-size: 13.5px; font-weight: 700; letter-spacing: 0.01em; color: var(--grey-700);
-  background: transparent; border: none; padding: 9px 18px; border-radius: var(--radius-pill); cursor: pointer;
+  background: transparent; border: 1.5px solid transparent; padding: 9px 18px; border-radius: var(--radius-pill); cursor: pointer;
   white-space: nowrap;
-  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 #trendGroupSeg button:hover:not(.active) { color: var(--accent-dark); }
-#trendGroupSeg button.active { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: var(--white); box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35); }
+/* Crisp white outline around the active pill - picked over a glossy
+   highlight/self-tone edge/glow-ring alternative (see gradient-pill-
+   border-options mockup) as the clearest of the four at a glance. Base
+   button already reserves a 1.5px transparent border so this doesn't
+   shift the pill's size when it activates. */
+#trendGroupSeg button.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: var(--white);
+  border-color: rgba(255, 255, 255, 0.9); box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35);
+}
 
 /* Booking load chart, inside the schedule modal's Booked tab only -
    one hue (a sky-to-brand-blue gradient) throughout, current hour marked
@@ -2139,14 +2147,19 @@ th.th-filterable { position: relative; }
   letter-spacing: 0.01em;
   padding: 9px 18px;
   border-radius: var(--radius-pill);
-  border: none;
+  border: 1.5px solid transparent;
   background: transparent;
   color: var(--grey-700);
   cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 .period-pill:hover:not(.active) { color: var(--accent-dark); }
-.period-pill.active { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: var(--white); box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35); }
+/* Crisp white outline - same treatment as #trendGroupSeg's active pill,
+   applied everywhere this gradient-pill pattern appears. */
+.period-pill.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: var(--white);
+  border-color: rgba(255, 255, 255, 0.9); box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35);
+}
 
 /* Trends charts: a fixed-height box for a Chart.js canvas
    (maintainAspectRatio:false relies on the parent having a real height),
@@ -2614,18 +2627,23 @@ th.th-filterable { position: relative; }
   letter-spacing: 0.01em;
   padding: 10px 18px;
   border-radius: var(--radius-pill);
-  border: none;
+  border: 1.5px solid transparent;
   background: transparent;
   color: var(--grey-700);
   cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 .mode-btn:hover:not(.active) { color: var(--accent-dark); }
+/* Crisp white outline - same treatment as #trendGroupSeg's active pill,
+   applied everywhere this gradient-pill pattern appears. Works on both
+   color variants below since white reads clearly against near-black too. */
 .mode-btn.active[data-mode="walkin"], .mode-btn.active[data-theme-choice="dark"] {
-  background: linear-gradient(135deg, var(--grey-900), var(--black)); color: #ffffff; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, var(--grey-900), var(--black)); color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.9); box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
 }
 .mode-btn.active[data-mode="appointment"], .mode-btn.active[data-theme-choice="light"] {
-  background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #ffffff; box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35);
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.9); box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35);
 }
 
 /* Doctor View's status row (Clear status/On a break/Emergency) - same
@@ -2648,7 +2666,10 @@ th.th-filterable { position: relative; }
 /* Outlined by default (transparent fill, colored border+text) and only
    fills with the full gradient on hover — reads as a real pressable
    control rather than three permanently-lit status lights. Border stays
-   1.5px transparent on hover (never "none") so nothing shifts size. */
+   1.5px on hover too (colored -> crisp white, never "none") so nothing
+   shifts size; the white ring on fill matches the same treatment used
+   on every other active gradient pill in the app (Analytics tabs, the
+   mode toggles, Revenue/No-shows' day-range pills). */
 #statusActionSeg .btn-sm {
   border: 1.5px solid transparent; border-radius: var(--radius-pill); font-weight: 700; letter-spacing: 0.01em;
   background: transparent;
@@ -2656,15 +2677,15 @@ th.th-filterable { position: relative; }
 }
 #statusActionSeg .btn-sm.success-outline { border-color: var(--success); color: var(--success); }
 #statusActionSeg .btn-sm.success-outline:hover {
-  border-color: transparent; background: linear-gradient(135deg, var(--success), #166a2e); color: #ffffff; box-shadow: 0 3px 10px rgba(30, 142, 62, 0.3);
+  border-color: rgba(255, 255, 255, 0.9); background: linear-gradient(135deg, var(--success), #166a2e); color: #ffffff; box-shadow: 0 3px 10px rgba(30, 142, 62, 0.3);
 }
 #statusActionSeg .btn-sm.accent-outline { border-color: var(--accent); color: var(--accent); }
 #statusActionSeg .btn-sm.accent-outline:hover {
-  border-color: transparent; background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #ffffff; box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35);
+  border-color: rgba(255, 255, 255, 0.9); background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #ffffff; box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35);
 }
 #statusActionSeg .btn-sm.danger-outline { border-color: var(--danger); color: var(--danger); }
 #statusActionSeg .btn-sm.danger-outline:hover {
-  border-color: transparent; background: linear-gradient(135deg, #e0433d, var(--danger)); color: #ffffff; box-shadow: 0 3px 10px rgba(197, 34, 31, 0.35);
+  border-color: rgba(255, 255, 255, 0.9); background: linear-gradient(135deg, #e0433d, var(--danger)); color: #ffffff; box-shadow: 0 3px 10px rgba(197, 34, 31, 0.35);
 }
 
 .order-note {
