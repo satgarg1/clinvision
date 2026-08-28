@@ -1100,6 +1100,31 @@
       // (unlike the waiting/holiday chips) - a calm week is itself the
       // answer, not the absence of a check having run.
       async function renderAnomalyChip() {
+        const btn = document.getElementById('anomalyChipBtn');
+        const icon = document.getElementById('anomalyChipIcon');
+        const text = document.getElementById('anomalyChipText');
+        const popover = document.getElementById('anomalyPopover');
+        try {
+          await renderAnomalyChipInner(btn, icon, text, popover);
+        } catch (err) {
+          // A failed fetch here used to leave the chip showing whatever
+          // it last rendered — stale data with nothing to say it's stale,
+          // which is worse than admitting the check didn't run. This is
+          // a passive insight, not a user-initiated action, so a neutral
+          // fallback in the chip itself (not a toast) is what it gets.
+          console.warn('Could not check for anomalies:', err);
+          btn.className = 'anomaly-chip calm';
+          icon.textContent = '…';
+          text.textContent = 'Could not check';
+          popover.innerHTML = `
+            <div class="anomaly-eyebrow">This week vs. last week</div>
+            <div class="anomaly-calm-body">
+              <span class="text">Something went wrong loading this comparison — try refreshing the page.</span>
+            </div>
+          `;
+        }
+      }
+      async function renderAnomalyChipInner(btn, icon, text, popover) {
         const thisWeek = computeCurrentWeekRange();
         const lastWeek = computeLastWeekRange();
         const scopeDoctorId = myDoctorId || undefined;
@@ -1154,11 +1179,6 @@
           })
           .filter((m) => Math.abs(m.pct) >= ANOMALY_THRESHOLD_PCT)
           .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct));
-
-        const btn = document.getElementById('anomalyChipBtn');
-        const icon = document.getElementById('anomalyChipIcon');
-        const text = document.getElementById('anomalyChipText');
-        const popover = document.getElementById('anomalyPopover');
 
         function cardHtml(m) {
           const arrow = m.pct > 0 ? 'up' : 'down';
@@ -1251,13 +1271,23 @@
         document.getElementById('visitsPerDoctorHeading').textContent = `Visits per doctor (${label})`;
         document.getElementById('revenueByDoctorHeading').textContent = `Revenue by doctor (${label})`;
 
-        // Revenue is skipped entirely for a doctor's own view (both
-        // panels are hidden above) — no reason to fetch invoices at all.
-        const [invoices, patients, doctorsRaw] = await Promise.all([
-          amDoctor ? Promise.resolve([]) : Qlinic.getInvoicesForDateRange(range.start, range.end),
-          Qlinic.getPatientsInRange(range.start, range.end, myDoctorId || undefined),
-          amDoctor ? Qlinic.getDoctor(myDoctorId) : Qlinic.getDoctors({ includeInactive: true }),
-        ]);
+        // A failed fetch here used to throw unhandled mid-function,
+        // leaving whichever charts hadn't been reached yet frozen on
+        // stale data with no error shown - switching the period or
+        // doctor filter would then look like it silently did nothing.
+        let invoices, patients, doctorsRaw;
+        try {
+          // Revenue is skipped entirely for a doctor's own view (both
+          // panels are hidden above) — no reason to fetch invoices at all.
+          [invoices, patients, doctorsRaw] = await Promise.all([
+            amDoctor ? Promise.resolve([]) : Qlinic.getInvoicesForDateRange(range.start, range.end),
+            Qlinic.getPatientsInRange(range.start, range.end, myDoctorId || undefined),
+            amDoctor ? Qlinic.getDoctor(myDoctorId) : Qlinic.getDoctors({ includeInactive: true }),
+          ]);
+        } catch (err) {
+          showToast(err.message || 'Could not load Analytics data — please try again.');
+          return;
+        }
         const doctors = amDoctor ? (doctorsRaw ? [doctorsRaw] : []) : doctorsRaw;
         doctorByIdCache = Object.fromEntries(doctors.map((d) => [d.id, d]));
         doctorListCache = doctors;

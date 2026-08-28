@@ -1010,13 +1010,18 @@
           update.bookedDate = bookedDate;
           update.bookedTime = bookedTime;
         }
-        await Qlinic.updatePatientContact(id, update);
-        // Setting an effective time is how a late arrival or a revived
-        // no-show actually rejoins today's queue — one action, not a
-        // separate "Mark arrived" click after this one. An already-waiting
-        // patient just gets re-sorted by the new time instead.
-        if (status === 'booked' || status === 'no_show') {
-          await Qlinic.markArrived(id);
+        try {
+          await Qlinic.updatePatientContact(id, update);
+          // Setting an effective time is how a late arrival or a revived
+          // no-show actually rejoins today's queue — one action, not a
+          // separate "Mark arrived" click after this one. An already-waiting
+          // patient just gets re-sorted by the new time instead.
+          if (status === 'booked' || status === 'no_show') {
+            await Qlinic.markArrived(id);
+          }
+        } catch (err) {
+          showToast(err.message || 'Could not save changes — please try again.');
+          return;
         }
         editingSearchPatientId = null;
         showToast(status === 'booked' || status === 'no_show' ? 'Marked arrived' : 'Patient details updated');
@@ -1035,7 +1040,16 @@
       // table re-rendered out from under it — reads as a jolt, not a click.
       async function doMarkArrived(id, btn) {
         if (btn) btn.disabled = true;
-        await Qlinic.markArrived(id);
+        try {
+          await Qlinic.markArrived(id);
+        } catch (err) {
+          // Same bug class the Add-patient submit handler already hit once
+          // (see its own comment above) — a failed write here used to
+          // leave the button stuck disabled with no explanation at all.
+          if (btn) btn.disabled = false;
+          showToast(err.message || 'Could not mark arrived — please try again.');
+          return;
+        }
         // Search results used to be cleared here on the assumption
         // reception was done once one patient was marked — but working
         // through a whole batch of arrivals means re-typing the same
@@ -1049,7 +1063,12 @@
 
       async function doMarkNoShow(id) {
         if (await Qlinic.confirmDialog({ message: 'Mark this patient as a no-show?', confirmLabel: 'Mark as no-show', danger: true })) {
-          await Qlinic.markNoShow(id);
+          try {
+            await Qlinic.markNoShow(id);
+          } catch (err) {
+            showToast(err.message || 'Could not mark as no-show — please try again.');
+            return;
+          }
           renderQueues();
           showToast('Marked as no-show');
         }
@@ -1070,7 +1089,12 @@
         const feeType = row.querySelector('.adj-fee-type').value;
         const paymentMode = row.querySelector('.adj-payment-mode').value;
         const amountReceived = row.querySelector('.adj-amount-received').value;
-        await Qlinic.updateInvoicePayment({ invoiceId, feeType, paymentMode, amountReceived });
+        try {
+          await Qlinic.updateInvoicePayment({ invoiceId, feeType, paymentMode, amountReceived });
+        } catch (err) {
+          showToast(err.message || 'Could not update billing — please try again.');
+          return;
+        }
         editingInvoiceId = null;
         showToast('Billing updated');
         renderQueues();
