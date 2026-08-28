@@ -1338,6 +1338,24 @@
     return data.map(normalizeInvoice);
   }
 
+  // Unlike every other invoice query on this page, deliberately NOT
+  // scoped to a date range - an unpaid bill from last month is exactly
+  // as worth chasing today as one from this morning. amount > amount
+  // received can't be pushed down as a column-to-column filter in a
+  // plain PostgREST query, so this fetches every invoice for the clinic
+  // and filters client-side, same as Revenue's own outstandingOnly
+  // toggle already does within whatever range it's currently viewing.
+  // Oldest-first, so the longest-overdue balance surfaces first.
+  async function getOutstandingInvoices() {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId) return [];
+    const { data, error } = await sb.from('invoices').select('*')
+      .eq('clinic_id', clinicId)
+      .order('invoice_date', { ascending: true });
+    if (error) throw error;
+    return data.map(normalizeInvoice).filter((inv) => inv.amount > inv.amountReceived);
+  }
+
   // token_date is a plain date column (not a timestamp), so a range filter
   // here doesn't need the local-time-boundary conversion getInvoicesForDate
   // needs for created_at.
@@ -2206,6 +2224,7 @@
     getTodayInvoices,
     getInvoicesForDate,
     getInvoicesForDateRange,
+    getOutstandingInvoices,
     getPatientsInRange,
     getNoShowsForDate,
     getNoShowsForDateRange,

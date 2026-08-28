@@ -2359,6 +2359,69 @@ th.th-filterable { position: relative; }
   font-size: 12px; color: var(--grey-500); text-align: center;
 }
 
+/* Revenue's one-tap insights chip - same shape as .holiday-chip/
+   .waiting-chip, its own class since it's an unrelated feature. Reuses
+   the existing .trend-chip.good/.bad badge (defined above for
+   Dashboard's stat cards) for the today-vs-yesterday arrow rather than
+   inventing a second trend-badge look. */
+.revenue-chip-wrap { position: relative; }
+.revenue-chip {
+  display: inline-flex; align-items: center; gap: 8px; font-family: var(--font);
+  font-size: 13px; font-weight: 600; color: var(--chip-text); background: var(--mkt-blue-bg);
+  border: none; border-radius: var(--radius-pill); padding: 8px 14px; cursor: pointer; white-space: nowrap;
+}
+.revenue-chip:hover { filter: brightness(0.97); }
+:root[data-theme="dark"] .revenue-chip:hover { filter: brightness(1.2); }
+.revenue-popover {
+  position: absolute; top: calc(100% + 8px); right: 0; width: 320px;
+  background: var(--white); border: 1px solid var(--grey-300); border-radius: 12px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.14); z-index: 50; padding: 4px; display: none;
+}
+.revenue-popover.open { display: block; }
+.revenue-section { padding: 12px 14px; }
+.revenue-section + .revenue-section { border-top: 1px solid var(--grey-100); }
+.revenue-eyebrow {
+  font-size: 10.5px; font-weight: 700; color: var(--grey-500);
+  text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;
+}
+.revenue-today-row { display: flex; align-items: baseline; justify-content: space-between; }
+.revenue-today-num { font-size: 22px; font-weight: 700; }
+.revenue-today-sub { font-size: 12px; color: var(--grey-500); margin-top: 2px; }
+.revenue-daypair { display: flex; flex-direction: column; gap: 8px; }
+.revenue-day-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.revenue-day-tag {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+  border-radius: 999px; padding: 2px 8px; flex-shrink: 0;
+}
+.revenue-day-tag.best { background: var(--mkt-teal-bg); color: var(--mkt-teal); }
+.revenue-day-tag.worst { background: var(--grey-100); color: var(--grey-700); }
+.revenue-day-date { font-size: 12.5px; color: var(--grey-700); flex: 1; }
+.revenue-day-amt { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.revenue-doc-row { display: flex; align-items: center; gap: 10px; }
+.revenue-doc-row + .revenue-doc-row { margin-top: 8px; }
+.revenue-doc-period { font-size: 10.5px; font-weight: 700; color: var(--grey-500); text-transform: uppercase; width: 62px; flex-shrink: 0; }
+.revenue-doc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.revenue-doc-info { flex: 1; min-width: 0; }
+.revenue-doc-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.revenue-doc-count { font-size: 13px; font-weight: 700; color: var(--grey-700); font-variant-numeric: tabular-nums; }
+.revenue-outstanding-btn {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; text-align: left;
+}
+.revenue-outstanding-btn:hover .revenue-outstanding-amt { text-decoration: underline; }
+.revenue-outstanding-amt { font-size: 15px; font-weight: 700; color: var(--danger); }
+.revenue-outstanding-count { font-size: 12px; color: var(--grey-500); margin-top: 2px; }
+.revenue-outstanding-arrow { font-size: 13px; color: var(--grey-500); transition: transform 0.15s ease; }
+.revenue-outstanding-arrow.open { transform: rotate(180deg); }
+.revenue-outstanding-list { margin-top: 10px; flex-direction: column; gap: 8px; display: none; }
+.revenue-outstanding-list.open { display: flex; }
+.revenue-outstanding-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.revenue-outstanding-row .info { min-width: 0; }
+.revenue-outstanding-row .name { font-size: 12.5px; color: var(--black); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.revenue-outstanding-row .phone { font-size: 11.5px; color: var(--grey-500); font-variant-numeric: tabular-nums; }
+.revenue-outstanding-row .amt { font-size: 13px; color: var(--danger); font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.revenue-empty-note { font-size: 12.5px; color: var(--grey-500); font-style: italic; }
+
 .status-pill {
   font-size: 13px;
   font-weight: 700;

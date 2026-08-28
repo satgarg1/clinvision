@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=194" />
+<link rel="stylesheet" href="styles.css?v=195" />
 </head>
 <body>
   <div class="app-shell">
@@ -49,6 +49,13 @@
     <main class="app-main">
       <div class="app-topbar" style="margin-bottom:16px;">
         <h1>Revenue</h1>
+        <div class="revenue-chip-wrap" id="revenueChipWrap" style="display:none;">
+          <button type="button" class="revenue-chip" id="revenueChipBtn" aria-expanded="false">
+            <span aria-hidden="true">💰</span>
+            <span id="revenueChipText"></span>
+          </button>
+          <div class="revenue-popover" id="revenuePopover"></div>
+        </div>
       </div>
 
       <input type="text" id="patientSearch" placeholder="Search by patient name..." />
@@ -118,7 +125,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=74"></script>
+  <script src="clinic-data.js?v=75"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -142,6 +149,7 @@
       let allInvoices = [];
       let currentPage = 1;
       let doctorById = {};
+      let doctorsListCache = []; // same doctors as doctorById, kept as an ordered array too - only needed for the revenue chip's doctor-color dots
       let editingInvoiceId = null;
       let viewMode = 'single'; // 'single' | 'range'
       let rangePreset = 'lastweek';
@@ -309,7 +317,189 @@
         // show a real name in the filter and table, not a blank/missing one.
         const doctors = await Qlinic.getDoctors({ includeInactive: true });
         doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
+        doctorsListCache = doctors;
       }
+
+      // Same 5-color identity palette used app-wide (Reception, Doctor
+      // View, the waiting-room board) - only used here for the revenue
+      // chip's doctor dots.
+      const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
+      function accentForDoctor(doctorId) {
+        const idx = doctorsListCache.findIndex((d) => d.id === doctorId);
+        return ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
+      }
+
+      // Same "yesterday at the same clock time, not yesterday's whole
+      // day" fairness rule as Dashboard's own trend chips - percentChip
+      // itself is a straight copy of that function.
+      function percentChip(todayVal, yesterdayVal, higherIsGood) {
+        if (!yesterdayVal || todayVal == null) return null;
+        const pct = Math.round(((todayVal - yesterdayVal) / yesterdayVal) * 100);
+        if (pct === 0) return null;
+        const isIncrease = pct > 0;
+        return { text: `${Math.abs(pct)}%`, arrow: isIncrease ? '▲' : '▼', good: isIncrease === higherIsGood };
+      }
+
+      // One-tap insights chip: today vs. yesterday, this month's best/
+      // worst day, the busiest doctor today and this week (by distinct
+      // patients, not revenue - a doctor earnings ranking was pulled per
+      // feedback), and all-time outstanding balances with phone numbers
+      // for follow-up. Every number here is read from
+      // getInvoicesForDateRange/getOutstandingInvoices - both already
+      // used elsewhere in this app - nothing new is fetched beyond one
+      // extra range query and one extra outstanding query.
+      async function renderRevenueChip() {
+        const todayStr = Qlinic.getTodayDate();
+        const cutoffYesterday = new Date(Date.now() - 24 * 3600000);
+        const yesterdayStr = toDateStr(cutoffYesterday);
+        const monthStart = toDateStr(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+        const weekRange = computeCurrentWeekRange();
+        const fetchStart = [monthStart, weekRange.start, yesterdayStr].sort()[0];
+
+        const [rangeInvoices, outstandingInvoices] = await Promise.all([
+          Qlinic.getInvoicesForDateRange(fetchStart, todayStr),
+          Qlinic.getOutstandingInvoices(),
+        ]);
+
+        const wrap = document.getElementById('revenueChipWrap');
+        if (doctorsListCache.length === 0) { wrap.style.display = 'none'; return; }
+        wrap.style.display = '';
+
+        const sumReceived = (invs) => invs.reduce((sum, inv) => sum + inv.amountReceived, 0);
+        const todayTotal = sumReceived(rangeInvoices.filter((inv) => inv.invoiceDate === todayStr));
+        const yesterdayTotal = sumReceived(rangeInvoices.filter((inv) =>
+          inv.invoiceDate === yesterdayStr && new Date(inv.createdAt) <= cutoffYesterday
+        ));
+        const trend = percentChip(todayTotal, yesterdayTotal, true);
+        const trendBadge = trend ? `<span class="trend-chip ${trend.good ? 'good' : 'bad'}">${trend.arrow} ${trend.text}</span>` : '';
+
+        document.getElementById('revenueChipText').innerHTML = `₹${todayTotal} today ${trendBadge}`;
+
+        // Best/worst day this month, by amount actually collected.
+        const monthInvoices = rangeInvoices.filter((inv) => inv.invoiceDate >= monthStart);
+        const byDay = {};
+        monthInvoices.forEach((inv) => { byDay[inv.invoiceDate] = (byDay[inv.invoiceDate] || 0) + inv.amountReceived; });
+        const dayEntries = Object.entries(byDay).sort((a, b) => b[1] - a[1]);
+        const bestDay = dayEntries[0] || null;
+        const worstDay = dayEntries.length ? dayEntries[dayEntries.length - 1] : null;
+
+        // Busiest doctor by distinct patients seen, not revenue.
+        function busiestDoctor(invs) {
+          const byDoctor = {};
+          invs.forEach((inv) => {
+            if (!byDoctor[inv.doctorId]) byDoctor[inv.doctorId] = new Set();
+            byDoctor[inv.doctorId].add(inv.patientId);
+          });
+          let top = null;
+          Object.entries(byDoctor).forEach(([doctorId, patients]) => {
+            if (!top || patients.size > top.count) top = { doctorId, count: patients.size };
+          });
+          return top;
+        }
+        const busiestToday = busiestDoctor(rangeInvoices.filter((inv) => inv.invoiceDate === todayStr));
+        const busiestWeek = busiestDoctor(rangeInvoices.filter((inv) => inv.invoiceDate >= weekRange.start && inv.invoiceDate <= weekRange.end));
+
+        const outstandingTotal = outstandingInvoices.reduce((sum, inv) => sum + Math.max(0, inv.amount - inv.amountReceived), 0);
+        const outstandingShown = outstandingInvoices.slice(0, 10);
+
+        function docRow(label, best) {
+          if (!best || !doctorById[best.doctorId]) {
+            return `<div class="revenue-doc-row"><span class="revenue-doc-period">${label}</span><span class="revenue-empty-note">No visits yet</span></div>`;
+          }
+          const doctor = doctorById[best.doctorId];
+          return `
+            <div class="revenue-doc-row">
+              <span class="revenue-doc-period">${label}</span>
+              <span class="revenue-doc-dot dot-${accentForDoctor(best.doctorId)}"></span>
+              <div class="revenue-doc-info"><div class="revenue-doc-name">${Qlinic.escapeHtml(doctor.name)}</div></div>
+              <span class="revenue-doc-count">${best.count} patient${best.count === 1 ? '' : 's'}</span>
+            </div>
+          `;
+        }
+
+        document.getElementById('revenuePopover').innerHTML = `
+          <div class="revenue-section">
+            <div class="revenue-eyebrow">Today vs. yesterday</div>
+            <div class="revenue-today-row">
+              <span class="revenue-today-num">₹${todayTotal}</span>
+              ${trendBadge}
+            </div>
+            <div class="revenue-today-sub">₹${yesterdayTotal} yesterday at this time</div>
+          </div>
+
+          <div class="revenue-section">
+            <div class="revenue-eyebrow">Best &amp; worst day this month</div>
+            ${bestDay ? `
+              <div class="revenue-daypair">
+                <div class="revenue-day-row">
+                  <span class="revenue-day-tag best">Best</span>
+                  <span class="revenue-day-date">${Qlinic.escapeHtml(Qlinic.formatDateLabel(bestDay[0]))}</span>
+                  <span class="revenue-day-amt">₹${bestDay[1]}</span>
+                </div>
+                <div class="revenue-day-row">
+                  <span class="revenue-day-tag worst">Worst</span>
+                  <span class="revenue-day-date">${Qlinic.escapeHtml(Qlinic.formatDateLabel(worstDay[0]))}</span>
+                  <span class="revenue-day-amt">₹${worstDay[1]}</span>
+                </div>
+              </div>
+            ` : '<div class="revenue-empty-note">Not enough data yet</div>'}
+          </div>
+
+          <div class="revenue-section">
+            <div class="revenue-eyebrow">Busiest doctor</div>
+            ${docRow('Today', busiestToday)}
+            ${docRow('This week', busiestWeek)}
+          </div>
+
+          <div class="revenue-section">
+            <div class="revenue-eyebrow">Outstanding</div>
+            <button type="button" class="revenue-outstanding-btn" id="revenueOutstandingToggle">
+              <div>
+                <div class="revenue-outstanding-amt">₹${outstandingTotal}</div>
+                <div class="revenue-outstanding-count">Across ${outstandingInvoices.length} bill${outstandingInvoices.length === 1 ? '' : 's'}</div>
+              </div>
+              <span class="revenue-outstanding-arrow" id="revenueOutstandingArrow">▾</span>
+            </button>
+            ${outstandingInvoices.length ? `
+              <div class="revenue-outstanding-list" id="revenueOutstandingList">
+                ${outstandingShown.map((inv) => `
+                  <div class="revenue-outstanding-row">
+                    <div class="info">
+                      <div class="name">${Qlinic.escapeHtml(inv.patientName)}</div>
+                      <div class="phone">${Qlinic.escapeHtml(inv.patientPhone || '·')}</div>
+                    </div>
+                    <span class="amt">₹${Math.max(0, inv.amount - inv.amountReceived)}</span>
+                  </div>
+                `).join('')}
+                ${outstandingInvoices.length > 10 ? `<div class="revenue-empty-note">Showing oldest 10 of ${outstandingInvoices.length}</div>` : ''}
+              </div>
+            ` : ''}
+          </div>
+        `;
+        const outstandingToggleBtn = document.getElementById('revenueOutstandingToggle');
+        if (outstandingToggleBtn) {
+          outstandingToggleBtn.addEventListener('click', () => {
+            document.getElementById('revenueOutstandingList').classList.toggle('open');
+            document.getElementById('revenueOutstandingArrow').classList.toggle('open');
+          });
+        }
+      }
+      function closeRevenuePopover() {
+        document.getElementById('revenuePopover').classList.remove('open');
+        document.getElementById('revenueChipBtn').setAttribute('aria-expanded', 'false');
+      }
+      document.getElementById('revenueChipBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const popover = document.getElementById('revenuePopover');
+        const isOpen = popover.classList.toggle('open');
+        document.getElementById('revenueChipBtn').setAttribute('aria-expanded', String(isOpen));
+      });
+      document.addEventListener('click', (e) => {
+        if (!document.getElementById('revenueChipWrap').contains(e.target)) closeRevenuePopover();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeRevenuePopover();
+      });
 
       function searchTerm() {
         return document.getElementById('patientSearch').value.trim().toLowerCase();
@@ -677,6 +867,12 @@
       }
 
       async function loadInvoices() {
+        // Fired here, not just from onLiveChange - every filter/date
+        // change on this page calls loadInvoices() directly right after
+        // itself, without waiting for the realtime round-trip (same fix
+        // as Reception's waiting-chip needed after it shipped lagging
+        // behind local actions).
+        renderRevenueChip();
         const range = currentRange();
         allInvoices = viewMode === 'range'
           ? (range ? await Qlinic.getInvoicesForDateRange(range.start, range.end) : [])
