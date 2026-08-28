@@ -1187,6 +1187,19 @@ input[type="number"] { -moz-appearance: textfield; }
    (extra space below every card, uneven vs. the 18px gap between
    columns) - the grid's gap already spaces every card, in both axes. */
 .settings-card-grid .panel { margin-bottom: 0; }
+/* A grid row stretches every card to the tallest one's height by
+   default, but a card's own content (description text, then a button)
+   doesn't know to use that extra room - it just leaves it as blank
+   space below the button, so buttons in the same row land at different
+   heights depending on how much description text sits above them
+   (e.g. Doctors' extra "5 active of 5 total" line vs. Clinic Settings'
+   single line). Turning the card into a flex column and pushing
+   whichever element comes last (the link/button, or the inline
+   form/toggle for Display screen/Appearance) down with margin-top:auto
+   puts every card's action on the same bottom edge regardless of how
+   much text precedes it. */
+.settings-card-grid .panel { display: flex; flex-direction: column; }
+.settings-card-grid .panel > *:last-child { margin-top: auto; }
 
 .stat-card {
   background: var(--white);
