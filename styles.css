@@ -2312,6 +2312,53 @@ th.th-filterable { position: relative; }
 }
 .holiday-popover-footer a:hover { background: var(--grey-100); }
 
+/* Reception's "who's waiting" chip - same shape/behavior as the
+   .holiday-chip above (hidden entirely when empty, a shortcut instead
+   of a count when there's exactly one), kept as its own class rather
+   than reusing .holiday-chip since the two features are unrelated and
+   independently editable. */
+.waiting-chip-wrap { position: relative; }
+.waiting-chip {
+  display: inline-flex; align-items: center; gap: 8px; font-family: var(--font);
+  font-size: 13px; font-weight: 600; color: var(--chip-text); background: var(--mkt-blue-bg);
+  border: none; border-radius: var(--radius-pill); padding: 8px 14px; cursor: pointer; white-space: nowrap;
+}
+.waiting-chip:hover { filter: brightness(0.97); }
+:root[data-theme="dark"] .waiting-chip:hover { filter: brightness(1.2); }
+.waiting-popover {
+  position: absolute; top: calc(100% + 8px); right: 0; width: 300px;
+  background: var(--white); border: 1px solid var(--grey-300); border-radius: 10px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.14); z-index: 50; padding: 6px; display: none;
+}
+.waiting-popover.open { display: block; }
+.waiting-popover-header {
+  font-size: 11px; font-weight: 700; color: var(--grey-500);
+  text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 10px 6px;
+}
+.waiting-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-sm); }
+.waiting-row:hover { background: var(--grey-100); }
+.waiting-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.waiting-row .info { flex: 1; min-width: 0; }
+.waiting-row .patient-name-line { display: flex; align-items: center; gap: 6px; }
+.waiting-row .patient-name { font-size: 13px; font-weight: 600; }
+.waiting-row .patient-sub { font-size: 12px; color: var(--grey-500); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.waiting-row .waiting-time-badge {
+  font-size: 11.5px; font-weight: 700; color: var(--grey-700); background: var(--grey-100);
+  border-radius: 6px; padding: 4px 7px; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.waiting-emergency-badge {
+  display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; letter-spacing: 0.02em;
+  color: var(--danger); background: var(--danger-bg); border-radius: 999px; padding: 2px 7px;
+  text-transform: uppercase; flex-shrink: 0;
+}
+/* Plain text, not a link like .holiday-popover-footer - Reception's own
+   full multi-doctor queue already lives further down this same page,
+   so there's nothing else to link to here. */
+.waiting-popover-footer {
+  border-top: 1px solid var(--grey-300); margin-top: 4px; padding: 8px 10px 2px;
+  font-size: 12px; color: var(--grey-500); text-align: center;
+}
+
 .status-pill {
   font-size: 13px;
   font-weight: 700;

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=193" />
+<link rel="stylesheet" href="styles.css?v=194" />
 </head>
 <body>
   <div class="app-shell">
@@ -50,8 +50,17 @@
       <div class="closed-day-banner" id="closedDayBanner" style="display:none;"></div>
       <div class="app-topbar" style="margin-bottom:16px;">
         <h1>Reception</h1>
-        <div class="clock-pill">
-          <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Time: <span class="time" id="clockTime">--</span></span>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="waiting-chip-wrap" id="waitingChipWrap" style="display:none;">
+            <button type="button" class="waiting-chip" id="waitingChipBtn" aria-expanded="false">
+              <span aria-hidden="true">🧍</span>
+              <span id="waitingChipText"></span>
+            </button>
+            <div class="waiting-popover" id="waitingPopover"></div>
+          </div>
+          <div class="clock-pill">
+            <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Time: <span class="time" id="clockTime">--</span></span>
+          </div>
         </div>
       </div>
 
@@ -260,6 +269,73 @@
         const idx = doctorsCache.findIndex((d) => d.id === doctorId);
         return ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
       }
+
+      // At-a-glance "who's waiting right now" chip, same hide-when-empty
+      // / shortcut-when-one pattern as Dashboard's upcoming-holidays chip
+      // - reads Qlinic.getAllQueues (the exact function already used to
+      // build the doctor-picker's "N waiting" counts below), always
+      // scoped to today regardless of whatever date the queue section
+      // further down is currently browsing. No queue logic touched -
+      // this only reads it. Cross-doctor order isn't something the real
+      // queue has (each doctor's queue is independent), so this defines
+      // its own: true emergencies first, then whoever's effective time
+      // (already computed per patient by getQueueForDoctor) is soonest.
+      async function renderWaitingChip() {
+        const allQueues = await Qlinic.getAllQueues(Qlinic.getTodayDate());
+        const allWaiting = allQueues
+          .flatMap(({ doctor, queue }) => queue.waiting.map((p) => Object.assign({}, p, { doctorName: doctor.name })))
+          .sort((a, b) => {
+            if (!!a.isPriority !== !!b.isPriority) return a.isPriority ? -1 : 1;
+            return new Date(a.effectiveTime) - new Date(b.effectiveTime);
+          });
+
+        const wrap = document.getElementById('waitingChipWrap');
+        if (allWaiting.length === 0) {
+          wrap.style.display = 'none';
+          closeWaitingPopover();
+          return;
+        }
+        wrap.style.display = '';
+        document.getElementById('waitingChipText').textContent =
+          allWaiting.length === 1
+            ? `Next: ${allWaiting[0].name} — ${allWaiting[0].doctorName}`
+            : `${allWaiting.length} waiting`;
+
+        const shown = allWaiting.slice(0, 10);
+        document.getElementById('waitingPopover').innerHTML = `
+          <div class="waiting-popover-header">${allWaiting.length} patient${allWaiting.length === 1 ? '' : 's'} waiting</div>
+          ${shown.map((p) => `
+            <div class="waiting-row">
+              <span class="waiting-dot dot-${accentForDoctor(p.doctorId)}"></span>
+              <div class="info">
+                <div class="patient-name-line">
+                  <span class="patient-name">${Qlinic.escapeHtml(p.name)}</span>
+                  ${p.isPriority ? '<span class="waiting-emergency-badge">🚨 Emergency</span>' : ''}
+                </div>
+                <div class="patient-sub">Token #${p.tokenNumber} · ${Qlinic.escapeHtml(p.doctorName)}</div>
+              </div>
+              <span class="waiting-time-badge">${Qlinic.formatTimestamp(p.effectiveTime)}</span>
+            </div>
+          `).join('')}
+          ${allWaiting.length > 10 ? `<div class="waiting-popover-footer">Showing next 10 of ${allWaiting.length} waiting</div>` : ''}
+        `;
+      }
+      function closeWaitingPopover() {
+        document.getElementById('waitingPopover').classList.remove('open');
+        document.getElementById('waitingChipBtn').setAttribute('aria-expanded', 'false');
+      }
+      document.getElementById('waitingChipBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const popover = document.getElementById('waitingPopover');
+        const isOpen = popover.classList.toggle('open');
+        document.getElementById('waitingChipBtn').setAttribute('aria-expanded', String(isOpen));
+      });
+      document.addEventListener('click', (e) => {
+        if (!document.getElementById('waitingChipWrap').contains(e.target)) closeWaitingPopover();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeWaitingPopover();
+      });
 
       function showToast(msg) {
         const t = document.getElementById('toast');
@@ -1525,10 +1601,12 @@
       fillDoctorSelects();
       setPatientMode('appointment');
       renderQueues();
+      renderWaitingChip();
 
       Qlinic.onLiveChange(() => {
         renderSearch();
         renderQueues();
+        renderWaitingChip();
       });
     })();
   </script>
