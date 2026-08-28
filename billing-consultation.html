@@ -206,7 +206,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=75"></script>
+  <script src="clinic-data.js?v=76"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -245,6 +245,12 @@
       // for the same visit. Cleared on phone/date changes that find no
       // match, and after a successful submit.
       let currentInvoiceId = null;
+      // Set whenever the phone lookup finds a real queued patient for the
+      // selected date, whether or not they're already billed - passed to
+      // createInvoice so a new bill actually links back to that patients
+      // row (otherwise it stays stuck on Billing Audit's "seen without an
+      // invoice" list forever, even after being billed).
+      let currentPatientId = null;
 
       function updateFeeTypeOptions() {
         const doctorId = document.getElementById('bDoctor').value;
@@ -313,6 +319,7 @@
         const phone = document.getElementById('bPhone').value.trim();
         const hint = document.getElementById('lookupHint');
         currentInvoiceId = null;
+        currentPatientId = null;
         if (!phone) { hint.textContent = ''; hint.className = 'slot-hint'; return; }
         if (!isValidPhone(phone)) {
           hint.textContent = 'Enter a valid 10-digit phone number to look up their visit.';
@@ -330,6 +337,7 @@
           hint.className = 'slot-hint';
           return;
         }
+        currentPatientId = match.todayPatientId || null;
         if (match.name) document.getElementById('bName').value = match.name;
         if (match.address) document.getElementById('bAddress').value = match.address;
         if (match.age) document.getElementById('bAge').value = match.age;
@@ -467,6 +475,7 @@
         document.getElementById('lookupHint').textContent = '';
         document.getElementById('lookupHint').className = 'slot-hint';
         currentInvoiceId = null;
+        currentPatientId = null;
         updateFeeTypeOptions();
       }
 
@@ -531,6 +540,12 @@
                 paymentMode: document.getElementById('bPaymentMode').value,
                 amountReceived: Number(document.getElementById('bAmountReceived').value) || 0,
                 invoiceDate,
+                // Links this bill back to the real patients row the phone
+                // lookup found for this date (null for a genuine walk-in-
+                // manual bill with no queue row at all) - without this the
+                // patient stays stuck on Billing Audit's "seen without an
+                // invoice" list even after being billed.
+                patientId: currentPatientId,
               });
           if (currentInvoiceId) showToast('Existing bill corrected, not duplicated');
           renderReceipt(invoice);

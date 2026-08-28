@@ -1165,6 +1165,15 @@
     // printing" hint is the guard against that edge case rather than
     // trying to disambiguate it here.
     let todayDoctorId = null;
+    // Fed straight into createInvoice's p_patient_id so a manually-billed
+    // invoice for a real queued patient (the exact "seen without an
+    // invoice" case the billing audit flags) actually links back to that
+    // patients row - without it, get_billing_audit()'s `not exists
+    // (... where patient_id = p.id)` check never sees the new invoice as
+    // theirs, and the same patient stays stuck on the audit list forever
+    // even after being billed. This value used to be fetched here and
+    // silently dropped before returning - that was the bug.
+    let todayPatientId = null;
     let todayFeeType = null;
     let todayInvoiceId = null;
     let todayPaymentMode = null;
@@ -1186,6 +1195,7 @@
       if (patientErr) throw patientErr;
       if (todayPatient) {
         todayDoctorId = todayPatient.doctor_id;
+        todayPatientId = todayPatient.id;
         // Fee type only exists once they're actually billed (e.g. the
         // auto-invoice-on-arrival trigger already ran); a booked-but-not-
         // arrived visit has a doctor but no fee type yet, left for
@@ -1233,6 +1243,7 @@
       mostRecentFeeType,
       mostRecentVisitDate,
       todayDoctorId,
+      todayPatientId,
       todayFeeType,
       todayInvoiceId,
       todayPaymentMode,
@@ -1282,7 +1293,14 @@
     return data.length > 0;
   }
 
-  async function createInvoice({ doctorId, feeType, patientName, patientPhone, patientAddress, patientAge, patientGender, paymentMode, amountReceived, invoiceDate }) {
+  // patientId (optional) links the new invoice back to a real patients
+  // row - the exact link get_billing_audit() checks for when deciding
+  // whether someone was "seen without an invoice." Left null for a
+  // genuinely walk-in-manual bill with no queue row to link to at all;
+  // billing-consultation.html passes it whenever its phone lookup found
+  // a real visit for the selected date (see getBillingPatientLookup's
+  // todayPatientId).
+  async function createInvoice({ doctorId, feeType, patientName, patientPhone, patientAddress, patientAge, patientGender, paymentMode, amountReceived, invoiceDate, patientId }) {
     const { data, error } = await sb.rpc('create_invoice', {
       p_doctor_id: doctorId,
       p_fee_type: feeType,
@@ -1294,6 +1312,7 @@
       p_payment_mode: paymentMode || 'cash',
       p_amount_received: amountReceived == null ? null : Number(amountReceived),
       p_invoice_date: invoiceDate || todayDateStr(),
+      p_patient_id: patientId || null,
     });
     if (error) throw error;
     return normalizeInvoice(data);
