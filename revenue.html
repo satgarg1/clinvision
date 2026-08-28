@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=198" />
+<link rel="stylesheet" href="styles.css?v=199" />
 </head>
 <body>
   <div class="app-shell">
@@ -76,35 +76,27 @@
            could wrap independently of each other and visually
            interleave with the pill in a scrambled order.
 
-           Alignment: every group here is a column of a label (real, or
-           the invisible-but-space-taking kind via visibility:hidden) on
-           top of its actual control - all sharing the identical
-           .pill-label class so every column's label is exactly the
-           same height. The row then aligns to flex-end, so every real
-           control (pill / date+Today / dropdown / From-To) lands on the
-           same bottom edge instead of the pill and dropdown's shorter,
-           label-less boxes floating centered against From/To's taller
-           label-plus-input ones. The pill itself keeps its original
-           size - this fixes the row without shrinking anything. -->
+           Alignment: the pill/Date/Today/Custom-dropdown have no label
+           of their own, but From/To do ("From"/"To" - nothing else
+           distinguishes them) - align-items:flex-end bottom-aligns
+           every group's actual control regardless of that difference,
+           since flex-end lines up each item's own bottom edge rather
+           than the whole column's midpoint. No spacer needed. Every
+           control in the row is also height/shape-matched in
+           styles.css (search "Revenue/No-shows' filter row") so
+           nothing here reads shorter or squarer than its neighbours. -->
       <div style="display:flex;align-items:flex-end;flex-wrap:wrap;gap:16px 24px;margin-bottom:10px;">
-        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
-          <label class="pill-label" style="visibility:hidden;">Mode</label>
-          <div class="period-pills" id="viewModeToggle" style="margin-bottom:0;">
-            <button type="button" class="period-pill active" data-mode="single">Single day</button>
-            <button type="button" class="period-pill" data-mode="range">Range</button>
-          </div>
+        <div class="period-pills" id="viewModeToggle" style="margin-bottom:0;">
+          <button type="button" class="period-pill active" data-mode="single">Single day</button>
+          <button type="button" class="period-pill" data-mode="range">Range</button>
         </div>
 
-        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;" id="singleDayFilters">
-          <label class="pill-label" style="visibility:hidden;">Date</label>
-          <div style="display:flex;gap:16px 24px;flex-wrap:nowrap;">
-            <input type="date" lang="en-GB" id="dateFilter" class="pill-input" aria-label="Date" />
-            <button type="button" class="pill-btn" id="todayBtn">Today</button>
-          </div>
+        <div style="display:flex;gap:16px 24px;flex-wrap:nowrap;" id="singleDayFilters">
+          <input type="date" lang="en-GB" id="dateFilter" class="pill-input" aria-label="Date" />
+          <button type="button" class="pill-btn" id="todayBtn">Today</button>
         </div>
 
-        <div style="display:none;flex-direction:column;align-items:flex-start;gap:6px;" id="rangePresetField">
-          <label class="pill-label" style="visibility:hidden;">Period</label>
+        <div style="display:none;" id="rangePresetField">
           <select id="rangePresetSelect" class="pill-select" aria-label="Period"></select>
         </div>
 

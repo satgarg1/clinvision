@@ -1765,18 +1765,27 @@ th.th-filterable { position: relative; }
    custom-range Month/Year selects). */
 .pill-label { display: block; font-size: 13px; font-weight: 600; color: var(--grey-700); margin-bottom: 6px; }
 #trendsPeriodField .pill-label { font-size: 15px; }
-/* Revenue/No-shows' single-day filter: the picker replaced a native
-   <input type="date"> that was carefully calibrated to match .pill-btn's
-   height/shape (see .pill-input's own comment) - the calendar picker's
-   default rectangular, grey-bordered look never went through that
-   calibration, so it sat taller and squarer than "Today" beside it.
-   Reshaped to the same pill/height here specifically, not globally -
-   every other page's picker keeps the plain bordered-field look that
-   matches its own neighboring controls. Label bumped to the same size
-   as Analytics' "Period" label, both labels together so the field and
-   the button beside it still line up. */
-#singleDayFilters .pill-label { font-size: 15px; }
-#singleDayFilters .qdp-trigger { border-radius: var(--radius-pill); padding: 8px 16px; }
+/* Revenue/No-shows' filter row: the pill toggle, Date field, Today,
+   Custom dropdown and From/To pickers all sit on one line (see the
+   row's own comment in revenue.html/no-shows.html) and need to look
+   like one coherent row rather than a jumble of different-height
+   boxes. .period-pill itself is the tallest thing here (9px vertical
+   padding) and stays that size - everything below scales UP to meet
+   it rather than the pill shrinking down to them.
+   - The date picker replaced a native <input type="date"> that was
+     never calibrated to match .pill-btn's height/shape - its default
+     rectangular, grey-bordered look sat taller and squarer than
+     "Today" beside it. Reshaped to the same pill here specifically,
+     not globally - every other page's picker keeps the plain
+     bordered-field look that matches its own neighbouring controls. */
+#singleDayFilters .qdp-trigger { border-radius: var(--radius-pill); padding: 9px 16px; }
+/* Today, and the Custom dropdown that replaces the Date field once
+   Range is picked - both bumped from .pill-btn/.pill-select's usual
+   8px to the Date field's 9px, so nothing in this row reads shorter
+   than its neighbours. */
+#singleDayFilters .pill-btn,
+#rangePresetField .pill-select { padding: 9px 16px 9px 16px; }
+#rangePresetField .pill-select { padding-right: 32px; }
 :root[data-theme="dark"] .pill-select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
@@ -1981,12 +1990,24 @@ th.th-filterable { position: relative; }
    field, whose dark filled-in text anchors the box's edges better on
    its own). Scoped to Revenue/No-shows' #customRangeFilters, Analytics'
    #trendsCustomRangeFilters, and Patient Directory's
-   #customPeriodFilters rather than every .qdp-trigger app-wide. */
+   #customPeriodFilters rather than every .qdp-trigger app-wide.
+   Also reshaped to the same full pill .qdp-trigger already gets on the
+   single-day filter - left at the base 8px-radius rectangle before,
+   these sat visibly taller and squarer than the pill-select/pill-input
+   next to them (Period's dropdown, or Revenue/No-shows' own pill
+   toggle). */
 #customRangeFilters .qdp-trigger,
 #trendsCustomRangeFilters .qdp-trigger,
 #customPeriodFilters .qdp-trigger {
   border-color: var(--grey-500);
+  border-radius: var(--radius-pill);
 }
+/* Revenue/No-shows: matches the row's pill/Date/Today/Custom-dropdown,
+   all bumped to 9px above. Analytics/Patient Directory have no pill in
+   this row, so their own From/To just match Period's unbumped 8px. */
+#customRangeFilters .qdp-trigger { padding: 9px 16px; }
+#trendsCustomRangeFilters .qdp-trigger,
+#customPeriodFilters .qdp-trigger { padding: 8px 16px; }
 
 .qdp-pop {
   position: absolute; top: calc(100% + 6px); z-index: 30;
