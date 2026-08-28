@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=197" />
+<link rel="stylesheet" href="styles.css?v=198" />
 </head>
 <body>
   <div class="app-shell">
@@ -185,6 +185,50 @@
       // redundant extra fetch of its own.
       let currentQueue = null;
       let currentDoctor = null;
+      // Guardrail against forgetting to mark a visit Done - reported
+      // after a real 2-hour miss (stepped away mid-consultation, never
+      // came back to hit "Done," only noticed on a manual check later).
+      // Checked whenever currentQueue refreshes (every render(), plus a
+      // 30s ambient tick below) - no extra fetch, just reads the
+      // calledAt already in memory. Client-side only: this fires while
+      // someone happens to have this doctor's page open, not as a
+      // background/push notification (nothing in this app sends those).
+      const LONG_CONSULT_THRESHOLD_MINS = 30;
+      const LONG_CONSULT_REPEAT_MINS = 15; // re-prompt this often past the threshold if still not marked done
+      let longConsultPromptedFor = null; // `${patientId}::${bucket}` - guards against re-asking on every tick once already prompted for this bucket
+      let longConsultDialogOpen = false;
+      async function checkLongConsultation() {
+        if (longConsultDialogOpen) return;
+        const serving = currentQueue && currentQueue.nowServing;
+        if (!serving || !serving.calledAt) { longConsultPromptedFor = null; return; }
+        const mins = Math.floor((Date.now() - new Date(serving.calledAt)) / 60000);
+        if (mins < LONG_CONSULT_THRESHOLD_MINS) { longConsultPromptedFor = null; return; }
+        const bucket = Math.floor((mins - LONG_CONSULT_THRESHOLD_MINS) / LONG_CONSULT_REPEAT_MINS);
+        const key = `${serving.id}::${bucket}`;
+        if (longConsultPromptedFor === key) return;
+        longConsultPromptedFor = key;
+        longConsultDialogOpen = true;
+        try {
+          const shouldFinish = await Qlinic.confirmDialog({
+            title: 'Still in consultation?',
+            message: `It's been ${mins} minutes with ${serving.name} — still with them, or did marking them Done get missed?`,
+            confirmLabel: 'Mark Done now',
+            cancelLabel: 'Still with them',
+          });
+          if (shouldFinish) {
+            await Qlinic.finishCurrentPatient(currentDoctorId());
+            render();
+            showToast('Visit marked as done');
+          }
+        } catch (err) {
+          // Best-effort reminder - a failed finishCurrentPatient here
+          // shouldn't be silent, but it also shouldn't block anything
+          // else on the page.
+          showToast(err.message || 'Could not update the queue');
+        } finally {
+          longConsultDialogOpen = false;
+        }
+      }
       // render() can be kicked off from three independent places (the
       // doctor dropdown, the live-change subscription, and its own
       // initial call) - with no guard, two overlapping calls' fetches
@@ -728,6 +772,7 @@
         if (myRenderToken !== renderToken) return;
         currentDoctor = doc;
         currentQueue = q;
+        checkLongConsultation();
         const walkinRanks = buildWalkinRanks(q);
         applyDoctorAccent(doctorId);
         renderNextAppointment(q);
@@ -1197,6 +1242,7 @@
       setInterval(() => {
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
         if (currentQueue) renderNextAppointment(currentQueue);
+        checkLongConsultation();
       }, 30000);
 
       render();
