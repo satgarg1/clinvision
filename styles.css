@@ -637,14 +637,22 @@ a { color: inherit; }
    neither of which asked for this treatment. A gradient active pill
    (instead of .filter-seg's flat white) and a raised track make this
    read as the page's primary navigation, not just another filter. */
+/* Spans the full width instead of sitting compact near the left edge -
+   each button keeps its own natural, single-line width (white-space:
+   nowrap) and the extra room is spent as space-between gaps, not by
+   stretching any one label's box (a flex:1 approach was tried first but
+   force-equal-width columns made the longer labels below wrap to two
+   lines). */
 #trendGroupSeg {
-  display: inline-flex; background: linear-gradient(180deg, var(--grey-100), var(--white));
+  display: flex; justify-content: space-between; width: 100%;
+  background: linear-gradient(180deg, var(--grey-100), var(--white));
   border: 1px solid var(--grey-300); border-radius: var(--radius-pill); padding: 4px; gap: 2px;
   margin-bottom: 20px; box-shadow: var(--shadow-resting), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 #trendGroupSeg button {
   font-family: var(--font); font-size: 13.5px; font-weight: 700; letter-spacing: 0.01em; color: var(--grey-700);
   background: transparent; border: none; padding: 9px 18px; border-radius: var(--radius-pill); cursor: pointer;
+  white-space: nowrap;
   transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 #trendGroupSeg button:hover:not(.active) { color: var(--accent-dark); }
@@ -1088,6 +1096,12 @@ input[type="number"] { -moz-appearance: textfield; }
   flex-wrap: wrap;
   gap: 12px;
 }
+/* Analytics only: the page has no subtitle/actions sharing this row with
+   the "Analytics" h1 the way most pages do, so the base 32px gap before
+   "Period" read as an oversized dead zone. Scoped by id rather than
+   shrinking .app-topbar itself, which every other page still relies on
+   at its default size. */
+#trendsTopbar { margin-bottom: 14px; }
 
 .app-topbar h1 {
   font-size: var(--text-2xl);
@@ -1469,6 +1483,11 @@ th.th-filterable { position: relative; }
    exact status. */
 .btn-sm.success-outline { background: var(--white); color: var(--success); border-color: var(--success); }
 .btn-sm.success-outline:hover { background: var(--success); color: #ffffff; }
+/* Same shape again, red — Doctor View's Emergency button, so it no longer
+   shares accent-outline's blue with "On a break" (the two read as
+   indistinguishable at a glance otherwise). */
+.btn-sm.danger-outline { background: var(--white); color: var(--danger); border-color: var(--danger); }
+.btn-sm.danger-outline:hover { background: var(--danger); color: #ffffff; }
 
 .inline-form {
   display: flex;
@@ -2611,32 +2630,42 @@ th.th-filterable { position: relative; }
 
 /* Doctor View's status row (Clear status/On a break/Emergency) - same
    gradient-track look as the toggles above, scoped by id rather than
-   changed on .success-outline/.accent-outline themselves (those are
-   generic outline-button classes used elsewhere in the app that never
-   asked for this treatment). Unlike a real toggle these three are
-   independent actions, not mutually-exclusive selections, so there's
-   no single "active" pill to highlight - each button keeps its own
-   permanent gradient fill (green for Clear status, blue for the other
-   two, matching their existing outline colors) rather than only the
-   current choice being colored. Disabled state (nothing to clear, or
-   the day is closed) still dims normally via the base .btn-sm:disabled
-   opacity rule - untouched here. */
+   changed on .success-outline/.accent-outline/.danger-outline themselves
+   (those are generic outline-button classes used elsewhere in the app
+   that never asked for this treatment). Unlike a real toggle these three
+   are independent actions, not mutually-exclusive selections, so there's
+   no single "active" pill to highlight - each button stays outlined
+   (green/blue/red, matching their existing outline colors) and only
+   fills with its gradient on hover, so it reads as a real pressable
+   control rather than three permanently-lit status lights. Disabled
+   state (nothing to clear, or the day is closed) still dims normally via
+   the base .btn-sm:disabled opacity rule - untouched here. */
 #statusActionSeg {
   display: inline-flex; background: linear-gradient(180deg, var(--grey-100), var(--white));
   border: 1px solid var(--grey-300); border-radius: var(--radius-pill); padding: 4px; gap: 2px;
   box-shadow: var(--shadow-resting), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
+/* Outlined by default (transparent fill, colored border+text) and only
+   fills with the full gradient on hover — reads as a real pressable
+   control rather than three permanently-lit status lights. Border stays
+   1.5px transparent on hover (never "none") so nothing shifts size. */
 #statusActionSeg .btn-sm {
-  border: none; border-radius: var(--radius-pill); font-weight: 700; letter-spacing: 0.01em;
+  border: 1.5px solid transparent; border-radius: var(--radius-pill); font-weight: 700; letter-spacing: 0.01em;
+  background: transparent;
+  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
-#statusActionSeg .btn-sm.success-outline {
-  background: linear-gradient(135deg, var(--success), #166a2e); color: #ffffff; box-shadow: 0 3px 10px rgba(30, 142, 62, 0.3);
+#statusActionSeg .btn-sm.success-outline { border-color: var(--success); color: var(--success); }
+#statusActionSeg .btn-sm.success-outline:hover {
+  border-color: transparent; background: linear-gradient(135deg, var(--success), #166a2e); color: #ffffff; box-shadow: 0 3px 10px rgba(30, 142, 62, 0.3);
 }
-#statusActionSeg .btn-sm.success-outline:hover { background: linear-gradient(135deg, var(--success), #166a2e); }
-#statusActionSeg .btn-sm.accent-outline {
-  background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #ffffff; box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35);
+#statusActionSeg .btn-sm.accent-outline { border-color: var(--accent); color: var(--accent); }
+#statusActionSeg .btn-sm.accent-outline:hover {
+  border-color: transparent; background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #ffffff; box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35);
 }
-#statusActionSeg .btn-sm.accent-outline:hover { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); }
+#statusActionSeg .btn-sm.danger-outline { border-color: var(--danger); color: var(--danger); }
+#statusActionSeg .btn-sm.danger-outline:hover {
+  border-color: transparent; background: linear-gradient(135deg, #e0433d, var(--danger)); color: #ffffff; box-shadow: 0 3px 10px rgba(197, 34, 31, 0.35);
+}
 
 .order-note {
   font-weight: 400;

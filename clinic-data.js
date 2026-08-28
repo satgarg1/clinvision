@@ -186,7 +186,7 @@
           </div>
           <div class="qdp-head">
             <span class="qdp-month-label"></span>
-            <div class="qdp-nav"><button type="button" data-nav="-1">‹</button><button type="button" data-nav="1">›</button></div>
+            <div class="qdp-nav"><button type="button" data-nav="-1" title="Previous month" aria-label="Previous month">‹</button><button type="button" data-nav="1" title="Next month" aria-label="Next month">›</button></div>
           </div>
           <div class="qdp-dow"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
           <div class="qdp-grid"></div>

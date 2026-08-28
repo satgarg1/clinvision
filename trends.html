@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=189" />
+<link rel="stylesheet" href="styles.css?v=190" />
 </head>
 <body>
   <div class="app-shell">
@@ -47,7 +47,7 @@
     </aside>
 
     <main class="app-main">
-      <div class="app-topbar">
+      <div class="app-topbar" id="trendsTopbar">
         <h1>Analytics</h1>
       </div>
 
@@ -177,7 +177,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=72"></script>
+  <script src="clinic-data.js?v=73"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -1180,19 +1180,21 @@
       });
 
       // Grouped by the question being asked, not by chart type: Revenue
-      // answers "how much, from whom"; Patients answers "who's coming"
-      // (visit counts and demographics — population, not timing);
-      // Scheduling answers "when" (Peak hours and Appointment
-      // distribution are both hour-of-day load patterns — one from
-      // arrivals, one from bookings); No-shows and Consult Duration each
-      // get their own tab rather than being folded into a bigger
-      // "Operations" bucket — each flags a different kind of process
-      // problem, and neither reads as a subset of the other. No
-      // chart-count badges on the tabs — kept plain.
+      // answers "how much, from whom"; Patient Stats answers "who's
+      // coming" (visit counts and demographics — population, not
+      // timing); Clinic Scheduling answers "when" (Peak hours and
+      // Appointment distribution are both hour-of-day load patterns —
+      // one from arrivals, one from bookings); No-shows and Consult
+      // Duration each get their own tab rather than being folded into a
+      // bigger "Operations" bucket — each flags a different kind of
+      // process problem, and neither reads as a subset of the other. No
+      // chart-count badges on the tabs — kept plain. Internal `key`s stay
+      // 'patients'/'scheduling' (only the on-screen `label`s changed) so
+      // nothing else keyed on the old tab names needs touching.
       const TREND_GROUPS = [
         { key: 'revenue', label: 'Revenue' },
-        { key: 'patients', label: 'Patients' },
-        { key: 'scheduling', label: 'Scheduling' },
+        { key: 'patients', label: 'Patient Stats' },
+        { key: 'scheduling', label: 'Clinic Scheduling' },
         { key: 'noshow', label: 'No-shows' },
         { key: 'consult', label: 'Consult Duration' },
       ];

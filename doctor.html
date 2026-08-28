@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=189" />
+<link rel="stylesheet" href="styles.css?v=190" />
 </head>
 <body>
   <div class="app-shell">
@@ -84,7 +84,7 @@
           <div class="inline-form" id="statusActionSeg" style="margin-bottom:10px;">
             <button class="btn-sm success-outline" data-status="on_time">Clear status</button>
             <button class="btn-sm accent-outline" data-status="on_break">On a break</button>
-            <button class="btn-sm accent-outline" data-status="emergency">Emergency</button>
+            <button class="btn-sm danger-outline" data-status="emergency">Emergency</button>
           </div>
           <div id="statusLockedNote" class="field-hint" style="display:none;"></div>
           <div id="delayInputWrap" style="display:none;margin-top:10px;">
@@ -145,7 +145,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=72"></script>
+  <script src="clinic-data.js?v=73"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -754,9 +754,18 @@
         // as a light hover reinforcement.
         const dayIsClosed = !!doc.dayClosedAt;
         const lockTitle = dayIsClosed ? 'Day closed — press "I\'m back" to regain control.' : '';
+        // Each button also gets a plain-language title explaining what
+        // clicking it actually does — the label alone says the status
+        // name but not who sees it or what changes. Overridden below by
+        // the disabled-state reason whenever one applies.
+        const STATUS_BTN_TITLES = {
+          on_time: 'Return to available — clears On a break or Emergency.',
+          on_break: 'Broadcasts a delay and reason to every waiting patient and the display screen.',
+          emergency: 'Flags you unavailable for non-urgent cases, right now.',
+        };
         document.querySelectorAll('[data-status]').forEach((btn) => {
           btn.disabled = dayIsClosed;
-          if (dayIsClosed) btn.title = lockTitle; else btn.removeAttribute('title');
+          btn.title = dayIsClosed ? lockTitle : STATUS_BTN_TITLES[btn.getAttribute('data-status')];
         });
 
         // "Clear status" only means something once something's been set
