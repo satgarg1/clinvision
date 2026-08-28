@@ -2767,7 +2767,18 @@ table.qtable tbody tr.breakdown-row-link:hover { background: var(--mkt-blue-bg);
   transform: translateY(0);
 }
 
-/* ---------------- Billing receipt (print-only, sized for A4) ---------------- */
+/* ---------------- Billing receipt (print-only, sized for A4) ----------------
+   The whole receipt is meant to fit on one A4 page (@media print below) -
+   adding the GSTIN line and the GST-exempt line pushed a normal receipt
+   past that by ~40-50px, spilling the signature/footer/exempt-line block
+   onto a second printed page. Several margins/paddings below
+   (.receipt-header, .receipt-meta-row, .receipt-info-grid,
+   .receipt-items td, .receipt-totals-wrap, .receipt-signature-wrap,
+   .receipt-footer, .receipt-exempt-line) were trimmed by a few px each to
+   claw that back - deliberately tighter than they'd otherwise be, not an
+   oversight. If a future addition needs more vertical room again, trim
+   here first rather than letting the receipt silently split across
+   pages. */
 
 .receipt {
   display: none;
@@ -2789,7 +2800,7 @@ table.qtable tbody tr.breakdown-row-link:hover { background: var(--mkt-blue-bg);
   align-items: center;
   text-align: center;
   border-bottom: 3px solid var(--accent);
-  padding-bottom: 20px;
+  padding-bottom: 16px;
   margin-bottom: 8px;
 }
 .receipt-logo { max-height: 96px; max-width: 320px; width: auto; height: auto; object-fit: contain; margin-bottom: 12px; }
@@ -2809,10 +2820,10 @@ table.qtable tbody tr.breakdown-row-link:hover { background: var(--mkt-blue-bg);
   justify-content: space-between;
   color: var(--grey-500);
   font-size: 13px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
-.receipt-info-grid { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
+.receipt-info-grid { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
 .receipt-info-grid td { width: 50%; padding: 0 20px 18px 0; vertical-align: top; }
 .receipt-info-grid td + td { padding-left: 20px; border-left: 1px solid var(--grey-100); }
 .receipt-label {
@@ -2837,9 +2848,9 @@ table.qtable tbody tr.breakdown-row-link:hover { background: var(--mkt-blue-bg);
   padding-bottom: 12px;
 }
 .receipt-items th:last-child, .receipt-items td:last-child { text-align: right; }
-.receipt-items td { padding: 16px 0; border-bottom: 1px solid var(--grey-300); font-size: 15px; }
+.receipt-items td { padding: 14px 0; border-bottom: 1px solid var(--grey-300); font-size: 15px; }
 
-.receipt-totals-wrap { display: flex; justify-content: flex-end; margin-top: 20px; margin-bottom: 24px; }
+.receipt-totals-wrap { display: flex; justify-content: flex-end; margin-top: 16px; margin-bottom: 18px; }
 .receipt-totals { width: 280px; }
 .receipt-totals-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 15px; }
 .receipt-totals-row span:first-child { color: var(--grey-700); }
@@ -2876,7 +2887,7 @@ table.qtable tbody tr.breakdown-row-link:hover { background: var(--mkt-blue-bg);
   border-radius: 999px;
 }
 
-.receipt-signature-wrap { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 32px; page-break-inside: avoid; }
+.receipt-signature-wrap { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 22px; page-break-inside: avoid; }
 .receipt-generated-note { font-size: 12px; color: var(--grey-500); max-width: 260px; }
 .receipt-signature-line {
   width: 220px;
@@ -2894,8 +2905,8 @@ table.qtable tbody tr.breakdown-row-link:hover { background: var(--mkt-blue-bg);
   gap: 12px;
   text-align: left;
   color: var(--grey-500);
-  margin-top: 16px;
-  padding-top: 12px;
+  margin-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid var(--grey-100);
   font-size: 13px;
   page-break-inside: avoid;
@@ -2909,7 +2920,7 @@ table.qtable tbody tr.breakdown-row-link:hover { background: var(--mkt-blue-bg);
 /* Plain small print, not a boxed callout - reads as an ordinary
    compliance footnote rather than something competing for attention
    with the amount actually charged higher up the page. */
-.receipt-exempt-line { text-align: right; color: var(--black); font-style: italic; font-weight: 700; font-size: 10.5px; margin-top: 14px; }
+.receipt-exempt-line { text-align: right; color: var(--black); font-style: italic; font-weight: 700; font-size: 10.5px; margin-top: 8px; }
 
 @media print {
   @page { size: A4; margin: 15mm; }
