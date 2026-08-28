@@ -1975,6 +1975,18 @@ th.th-filterable { position: relative; }
 .qdp-trigger.open { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12); }
 .qdp-trigger svg { color: var(--grey-500); flex-shrink: 0; }
 .qdp-trigger-label.qdp-placeholder { color: var(--grey-500); font-weight: 500; }
+/* Custom range's From/To pickers specifically - the default
+   grey-300 border reads as barely-there, especially with the greyed-out
+   "Pick a date" placeholder text inside it (unlike the single-day date
+   field, whose dark filled-in text anchors the box's edges better on
+   its own). Scoped to Revenue/No-shows' #customRangeFilters, Analytics'
+   #trendsCustomRangeFilters, and Patient Directory's
+   #customPeriodFilters rather than every .qdp-trigger app-wide. */
+#customRangeFilters .qdp-trigger,
+#trendsCustomRangeFilters .qdp-trigger,
+#customPeriodFilters .qdp-trigger {
+  border-color: var(--grey-500);
+}
 
 .qdp-pop {
   position: absolute; top: calc(100% + 6px); z-index: 30;
@@ -2159,15 +2171,20 @@ th.th-filterable { position: relative; }
    exactly rather than approximating it. */
 .period-pills {
   display: inline-flex; background: linear-gradient(180deg, var(--grey-100), var(--white));
-  border: 1px solid var(--grey-300); border-radius: var(--radius-pill); padding: 4px; gap: 2px;
+  border: 1px solid var(--grey-300); border-radius: var(--radius-pill); padding: 3px; gap: 2px;
   margin-bottom: 20px; box-shadow: var(--shadow-resting), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
+/* Vertical padding trimmed from 9px to 6px (~8px off the pill's total
+   height) so it sits close to .pill-input/.pill-btn's own ~35-37px
+   height instead of towering ~10px above them - that mismatch was what
+   made this row look uncentered no matter which align-items value the
+   row itself used. */
 .period-pill {
   font-family: var(--font);
   font-size: 13.5px;
   font-weight: 700;
   letter-spacing: 0.01em;
-  padding: 9px 18px;
+  padding: 6px 18px;
   border-radius: var(--radius-pill);
   border: 1.5px solid transparent;
   background: transparent;
@@ -2427,6 +2444,49 @@ th.th-filterable { position: relative; }
 .revenue-outstanding-row .phone { font-size: 11.5px; color: var(--grey-500); font-variant-numeric: tabular-nums; }
 .revenue-outstanding-row .amt { font-size: 13px; color: var(--danger); font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .revenue-empty-note { font-size: 12.5px; color: var(--grey-500); font-style: italic; }
+
+/* Analytics' anomaly chip - scans this-week-vs-last-week across revenue,
+   footfall, no-shows and avg. consult duration, surfacing whichever
+   moved most. Unlike Revenue/Reception's chip, this one's color/icon
+   change with the finding itself (red for a bad move, teal for a good
+   one, grey for "nothing stands out") rather than staying one fixed
+   color, since the whole point is to catch the eye when something's
+   actually worth looking at. Never hides - a calm week is itself the
+   answer, not the absence of a check. */
+.anomaly-chip-wrap { position: relative; }
+.anomaly-chip {
+  display: inline-flex; align-items: center; gap: 8px; font-family: var(--font);
+  font-size: 13px; font-weight: 700; border: none; border-radius: var(--radius-pill);
+  padding: 8px 14px; cursor: pointer; white-space: nowrap;
+}
+.anomaly-chip.bad { background: var(--danger-bg); color: var(--danger); }
+.anomaly-chip.good { background: var(--mkt-teal-bg); color: var(--mkt-teal); }
+.anomaly-chip.calm { background: var(--grey-100); color: var(--grey-700); font-weight: 600; }
+.anomaly-popover {
+  position: absolute; top: calc(100% + 8px); right: 0; width: 340px;
+  background: var(--white); border: 1px solid var(--grey-300); border-radius: 12px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.14); z-index: 50; padding: 14px 16px; display: none;
+}
+.anomaly-popover.open { display: block; }
+.anomaly-eyebrow { font-size: 10.5px; font-weight: 700; color: var(--grey-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
+.anomaly-card { display: flex; gap: 12px; padding: 10px 0; }
+.anomaly-card + .anomaly-card { border-top: 1px solid var(--grey-100); }
+.anomaly-badge {
+  flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 16px;
+}
+.anomaly-badge.bad { background: var(--danger-bg); }
+.anomaly-badge.good { background: var(--mkt-teal-bg); }
+.anomaly-body { flex: 1; min-width: 0; }
+.anomaly-headline { font-size: 13.5px; font-weight: 700; margin-bottom: 3px; }
+.anomaly-headline .num.bad { color: var(--danger); }
+.anomaly-headline .num.good { color: var(--mkt-teal); }
+.anomaly-sub { font-size: 12px; color: var(--grey-500); line-height: 1.5; }
+.anomaly-tab-link { display: inline-block; margin-top: 5px; font-size: 11.5px; font-weight: 700; color: var(--accent-dark); background: none; border: none; padding: 0; cursor: pointer; font-family: var(--font); }
+.anomaly-tab-link:hover { text-decoration: underline; }
+.anomaly-calm-body { display: flex; align-items: center; gap: 10px; padding: 4px 0 2px; }
+.anomaly-calm-body .icon { font-size: 20px; }
+.anomaly-calm-body .text { font-size: 13px; color: var(--grey-700); }
 
 .status-pill {
   font-size: 13px;

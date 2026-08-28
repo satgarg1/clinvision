@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=196" />
+<link rel="stylesheet" href="styles.css?v=197" />
 </head>
 <body>
   <div class="app-shell">
@@ -68,19 +68,14 @@
            blocks, so a hidden one simply drops out of this row's flow.
            "Date"/"Period" labels dropped as redundant (a calendar icon
            and a dropdown are self-explanatory on their own) - From/To
-           keep theirs since nothing else distinguishes them. Row uses
-           align-items:flex-end (not center) specifically because of
-           that mix: it bottom-aligns every control's own box onto one
-           line whether or not a label sits above it, with no spacer
-           trick needed - matches .inline-form's own default elsewhere
-           in the app for exactly this reason. Each nested group
-           (singleDayFilters/customRangeFilters) is flex-wrap:nowrap on
-           itself - only the OUTER row is allowed to wrap. Without that,
-           Date and Today (now bare siblings with no wrapping div of
-           their own since their labels were dropped) could wrap
-           independently of each other and visually interleave with the
-           pill in a scrambled order. -->
-      <div style="display:flex;align-items:flex-end;flex-wrap:wrap;gap:16px 24px;margin-bottom:10px;">
+           keep theirs since nothing else distinguishes them. Each
+           nested group (singleDayFilters/customRangeFilters) is
+           flex-wrap:nowrap on itself - only the OUTER row is allowed to
+           wrap. Without that, Date and Today (now bare siblings with no
+           wrapping div of their own since their labels were dropped)
+           could wrap independently of each other and visually
+           interleave with the pill in a scrambled order. -->
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:16px 24px;margin-bottom:10px;">
         <div class="period-pills" id="viewModeToggle" style="margin-bottom:0;">
           <button type="button" class="period-pill active" data-mode="single">Single day</button>
           <button type="button" class="period-pill" data-mode="range">Range</button>
@@ -126,7 +121,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=76"></script>
+  <script src="clinic-data.js?v=77"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');

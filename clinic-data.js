@@ -1174,6 +1174,13 @@
     // even after being billed. This value used to be fetched here and
     // silently dropped before returning - that was the bug.
     let todayPatientId = null;
+    // Set only by the "unbilled visit, any date" tier below (never by an
+    // exact same-date match, which needs no correcting) - the caller uses
+    // this to fix the Consultation date field to the visit's REAL date,
+    // since clearing a Billing Audit entry from days ago while the date
+    // field is still sitting on today would print a receipt for the
+    // wrong day even though patient_id now links correctly.
+    let todayVisitDate = null;
     let todayFeeType = null;
     let todayInvoiceId = null;
     let todayPaymentMode = null;
@@ -1215,20 +1222,58 @@
           todayAmountReceived = todayInvoice.amount_received;
         }
       } else {
-        const { data: recentPatient, error: recentErr } = await sb.from('patients')
-          .select('id, doctor_id, token_date')
-          .eq('clinic_id', clinicId).eq('phone', cleanPhone)
-          .order('token_date', { ascending: false }).limit(1).maybeSingle();
-        if (recentErr) throw recentErr;
-        if (recentPatient) {
-          mostRecentDoctorId = recentPatient.doctor_id;
-          mostRecentVisitDate = recentPatient.token_date;
-          const { data: recentInvoice, error: recentInvErr } = await sb.from('invoices')
-            .select('fee_type')
-            .eq('clinic_id', clinicId).eq('patient_id', recentPatient.id)
-            .order('created_at', { ascending: false }).limit(1).maybeSingle();
-          if (recentInvErr) throw recentInvErr;
-          mostRecentFeeType = recentInvoice ? recentInvoice.fee_type : null;
+        // No visit on the exact requested date - before falling back to
+        // "just autofill from whatever they were last billed for" (which
+        // can't link a new invoice to anything), check whether they have
+        // an unbilled visit on a DIFFERENT date at all. This is exactly
+        // the Billing Audit workflow: reception looks a patient up by
+        // phone to clear them off the "seen without an invoice" list,
+        // with no reason to also hunt down and set the exact original
+        // visit date first. Without this tier, billing them here would
+        // silently fall into the read-only "most recent" autofill path
+        // (which never sets todayPatientId), reproducing the exact bug
+        // this was meant to fix: patient_id stays null, the audit count
+        // never moves, even though a real invoice now exists.
+        let unbilledVisit = null;
+        try {
+          const { data: candidates, error: candErr } = await sb.from('patients')
+            .select('id, doctor_id, token_date')
+            .eq('clinic_id', clinicId).eq('phone', cleanPhone)
+            .in('status', ['waiting', 'in_consult', 'done'])
+            .order('token_date', { ascending: false })
+            .limit(5);
+          if (candErr) throw candErr;
+          if (candidates && candidates.length) {
+            const candidateIds = candidates.map((c) => c.id);
+            const { data: existingInvoices, error: invErr } = await sb.from('invoices')
+              .select('patient_id')
+              .in('patient_id', candidateIds);
+            if (invErr) throw invErr;
+            const billedIds = new Set((existingInvoices || []).map((i) => i.patient_id));
+            unbilledVisit = candidates.find((c) => !billedIds.has(c.id)) || null;
+          }
+        } catch (e) { /* best-effort */ }
+
+        if (unbilledVisit) {
+          todayDoctorId = unbilledVisit.doctor_id;
+          todayPatientId = unbilledVisit.id;
+          todayVisitDate = unbilledVisit.token_date;
+        } else {
+          const { data: recentPatient, error: recentErr } = await sb.from('patients')
+            .select('id, doctor_id, token_date')
+            .eq('clinic_id', clinicId).eq('phone', cleanPhone)
+            .order('token_date', { ascending: false }).limit(1).maybeSingle();
+          if (recentErr) throw recentErr;
+          if (recentPatient) {
+            mostRecentDoctorId = recentPatient.doctor_id;
+            mostRecentVisitDate = recentPatient.token_date;
+            const { data: recentInvoice, error: recentInvErr } = await sb.from('invoices')
+              .select('fee_type')
+              .eq('clinic_id', clinicId).eq('patient_id', recentPatient.id)
+              .order('created_at', { ascending: false }).limit(1).maybeSingle();
+            if (recentInvErr) throw recentInvErr;
+            mostRecentFeeType = recentInvoice ? recentInvoice.fee_type : null;
+          }
         }
       }
     } catch (e) { /* best-effort */ }
@@ -1244,6 +1289,7 @@
       mostRecentVisitDate,
       todayDoctorId,
       todayPatientId,
+      todayVisitDate,
       todayFeeType,
       todayInvoiceId,
       todayPaymentMode,

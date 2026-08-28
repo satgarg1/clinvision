@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=196" />
+<link rel="stylesheet" href="styles.css?v=197" />
 </head>
 <body>
   <div class="app-shell">
@@ -49,6 +49,13 @@
     <main class="app-main">
       <div class="app-topbar" id="trendsTopbar">
         <h1>Analytics</h1>
+        <div class="anomaly-chip-wrap" id="anomalyChipWrap">
+          <button type="button" class="anomaly-chip calm" id="anomalyChipBtn" aria-expanded="false">
+            <span aria-hidden="true" id="anomalyChipIcon">…</span>
+            <span id="anomalyChipText">Checking…</span>
+          </button>
+          <div class="anomaly-popover" id="anomalyPopover"></div>
+        </div>
       </div>
 
       <!-- One shared row instead of "Period" sitting alone above a
@@ -180,7 +187,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=76"></script>
+  <script src="clinic-data.js?v=77"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -1084,7 +1091,145 @@
         return rangePreset === 'custom' ? customRange : rangeForPreset(rangePreset);
       }
 
+      // "The one thing worth noticing today" - independent of whatever
+      // period the page itself is showing, always this week vs. last
+      // week, scanning the same metrics already computed elsewhere on
+      // this page (revenue, footfall, no-shows, avg. consult duration)
+      // for whichever moved the most, so nobody has to flip through all
+      // five tabs comparing periods themselves to catch it. Never hides
+      // (unlike the waiting/holiday chips) - a calm week is itself the
+      // answer, not the absence of a check having run.
+      async function renderAnomalyChip() {
+        const thisWeek = computeCurrentWeekRange();
+        const lastWeek = computeLastWeekRange();
+        const scopeDoctorId = myDoctorId || undefined;
+
+        const [thisInvoices, lastInvoices, thisPatients, lastPatients] = await Promise.all([
+          amDoctor ? Promise.resolve([]) : Qlinic.getInvoicesForDateRange(thisWeek.start, thisWeek.end),
+          amDoctor ? Promise.resolve([]) : Qlinic.getInvoicesForDateRange(lastWeek.start, lastWeek.end),
+          Qlinic.getPatientsInRange(thisWeek.start, thisWeek.end, scopeDoctorId),
+          Qlinic.getPatientsInRange(lastWeek.start, lastWeek.end, scopeDoctorId),
+        ]);
+
+        const sumReceived = (invs) => invs.reduce((sum, inv) => sum + inv.amountReceived, 0);
+        const seenCount = (pats) => pats.filter((p) => p.status === 'waiting' || p.status === 'in_consult' || p.status === 'done').length;
+        const noShowCount = (pats) => pats.filter((p) => p.status === 'no_show').length;
+        // Same shape as renderConsultDuration's own filter, just averaged
+        // across every doctor instead of broken out per doctor.
+        const avgConsultMins = (pats) => {
+          const timed = pats.filter((p) => p.status === 'done' && p.calledAt && p.doneAt && new Date(p.doneAt) >= new Date(p.calledAt));
+          if (!timed.length) return null;
+          return timed.reduce((sum, p) => sum + (new Date(p.doneAt) - new Date(p.calledAt)) / 60000, 0) / timed.length;
+        };
+
+        const candidates = [];
+        if (!amDoctor) {
+          candidates.push({ key: 'revenue', label: 'Revenue', icon: '💰', higherIsGood: true,
+            thisVal: sumReceived(thisInvoices), lastVal: sumReceived(lastInvoices),
+            fmt: (v) => `₹${Math.round(v)}` });
+        }
+        candidates.push({ key: 'patients', label: 'Footfall', icon: '📈', higherIsGood: true,
+          thisVal: seenCount(thisPatients), lastVal: seenCount(lastPatients),
+          fmt: (v) => `${Math.round(v)} patient${Math.round(v) === 1 ? '' : 's'}` });
+        candidates.push({ key: 'noshow', label: 'No-shows', icon: '⚠️', higherIsGood: false,
+          thisVal: noShowCount(thisPatients), lastVal: noShowCount(lastPatients),
+          fmt: (v) => `${Math.round(v)}` });
+        const thisAvg = avgConsultMins(thisPatients), lastAvg = avgConsultMins(lastPatients);
+        if (thisAvg != null && lastAvg != null) {
+          candidates.push({ key: 'consult', label: 'Avg. consult duration', icon: '⏱️', higherIsGood: false,
+            thisVal: thisAvg, lastVal: lastAvg, fmt: (v) => `${Math.round(v)} min` });
+        }
+
+        // A metric with nothing to compare against last week (lastVal=0)
+        // would show a meaningless "up infinity%" - skipped rather than
+        // forced into a percentage. Below 15% is treated as normal
+        // week-to-week noise, not something worth flagging.
+        const ANOMALY_THRESHOLD_PCT = 15;
+        const scored = candidates
+          .filter((m) => m.lastVal > 0)
+          .map((m) => {
+            const pct = Math.round(((m.thisVal - m.lastVal) / m.lastVal) * 100);
+            const isIncrease = m.thisVal > m.lastVal;
+            return Object.assign({}, m, { pct, good: isIncrease === m.higherIsGood });
+          })
+          .filter((m) => Math.abs(m.pct) >= ANOMALY_THRESHOLD_PCT)
+          .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct));
+
+        const btn = document.getElementById('anomalyChipBtn');
+        const icon = document.getElementById('anomalyChipIcon');
+        const text = document.getElementById('anomalyChipText');
+        const popover = document.getElementById('anomalyPopover');
+
+        function cardHtml(m) {
+          const arrow = m.pct > 0 ? 'up' : 'down';
+          const tone = m.good ? 'good' : 'bad';
+          return `
+            <div class="anomaly-card">
+              <div class="anomaly-badge ${tone}">${m.icon}</div>
+              <div class="anomaly-body">
+                <div class="anomaly-headline">${Qlinic.escapeHtml(m.label)} <span class="num ${tone}">${arrow} ${Math.abs(m.pct)}%</span></div>
+                <div class="anomaly-sub">${m.fmt(m.thisVal)} this week vs. ${m.fmt(m.lastVal)} last week.</div>
+                <button type="button" class="anomaly-tab-link" data-jump-group="${m.key}">Open ${Qlinic.escapeHtml(m.label === 'Avg. consult duration' ? 'Consult Duration' : m.label === 'Footfall' ? 'Patient Stats' : m.label)} tab →</button>
+              </div>
+            </div>
+          `;
+        }
+
+        if (scored.length === 0) {
+          btn.className = 'anomaly-chip calm';
+          icon.textContent = '✓';
+          text.textContent = 'Steady week';
+          const anyComparable = candidates.some((m) => m.lastVal > 0);
+          popover.innerHTML = `
+            <div class="anomaly-eyebrow">This week vs. last week</div>
+            <div class="anomaly-calm-body">
+              <span class="icon">✓</span>
+              <span class="text">${anyComparable
+                ? `${candidates.map((m) => m.label).join(', ')} are all within ${ANOMALY_THRESHOLD_PCT}% of last week — nothing stands out.`
+                : 'Not enough data from last week yet to compare.'}</span>
+            </div>
+          `;
+        } else {
+          const top = scored[0];
+          btn.className = 'anomaly-chip ' + (top.good ? 'good' : 'bad');
+          icon.textContent = top.icon;
+          text.textContent = `${top.label} ${top.pct > 0 ? 'up' : 'down'} ${Math.abs(top.pct)}%`;
+          popover.innerHTML = `<div class="anomaly-eyebrow">This week vs. last week</div>` +
+            scored.slice(0, 2).map(cardHtml).join('');
+        }
+        popover.querySelectorAll('[data-jump-group]').forEach((linkBtn) => {
+          linkBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            activeTrendGroup = linkBtn.dataset.jumpGroup;
+            renderTrendGroupTabs();
+            applyTrendGroupVisibility();
+            closeAnomalyPopover();
+          });
+        });
+      }
+      function closeAnomalyPopover() {
+        document.getElementById('anomalyPopover').classList.remove('open');
+        document.getElementById('anomalyChipBtn').setAttribute('aria-expanded', 'false');
+      }
+      document.getElementById('anomalyChipBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const popover = document.getElementById('anomalyPopover');
+        const isOpen = popover.classList.toggle('open');
+        document.getElementById('anomalyChipBtn').setAttribute('aria-expanded', String(isOpen));
+      });
+      document.addEventListener('click', (e) => {
+        if (!document.getElementById('anomalyChipWrap').contains(e.target)) closeAnomalyPopover();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeAnomalyPopover();
+      });
+
       async function loadAndRender() {
+        // Fired here, not just from onLiveChange - every period/doctor
+        // filter change on this page calls loadAndRender() directly right
+        // after itself, without waiting for the realtime round-trip (the
+        // same fix Reception's and Revenue's chips needed after shipping).
+        renderAnomalyChip();
         const range = currentRange();
         if (!range) return;
 
