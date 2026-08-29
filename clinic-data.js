@@ -2104,9 +2104,34 @@
     return !!session;
   }
 
+  // A clinic's own subscription_status gates every authenticated page
+  // through this one choke point, not a separate check each page has
+  // to remember to add - admin, reception, and doctor logins are all
+  // staff of the same clinic, so a lapsed or suspended clinic blocks
+  // all of them alike, not just the admin who'd see a billing page.
+  // 'active' always passes; 'trialing' passes until trial_ends_at (or
+  // forever if that's somehow null); anything else ('suspended', or a
+  // future status this doesn't know about) is blocked. This is the MVP
+  // manual-gate version - subscription_status is flipped by hand today
+  // (see migration 053), a payment processor's webhook later, but this
+  // check and account-suspended.html don't change either way.
+  function isSubscriptionActive(clinic) {
+    if (!clinic) return true; // no clinic row yet (mid-signup) - nothing to gate
+    if (clinic.subscription_status === 'active') return true;
+    if (clinic.subscription_status === 'trialing') {
+      return !clinic.trial_ends_at || new Date(clinic.trial_ends_at) > new Date();
+    }
+    return false;
+  }
+
   async function requireLogin(loginPagePath) {
     if (!(await isLoggedIn())) {
       window.location.href = loginPagePath || 'login.html';
+      return;
+    }
+    const clinic = await getClinic();
+    if (!isSubscriptionActive(clinic)) {
+      window.location.href = 'account-suspended.html';
     }
   }
 
@@ -2382,6 +2407,7 @@
     logout,
     isLoggedIn,
     requireLogin,
+    isSubscriptionActive,
     getCurrentUserEmail,
     changeEmail,
     changePassword,

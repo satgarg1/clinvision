@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Forgot password: Qlinic</title>
+<title>Account status: Qlinic</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
@@ -31,23 +31,16 @@
       <span class="brand-tagline">Time is the one asset nobody gets back</span>
     </a>
     <div class="login-card">
-      <h1>Reset your password</h1>
-      <p class="panel-note" style="text-align:center;margin:-14px 0 22px;">
-        Enter the email on your clinic account and we'll send you a link to set a new password.
-      </p>
+      <h1 id="suspendedTitle">Checking your account…</h1>
+      <p class="panel-note" id="suspendedBody" style="text-align:left;"></p>
 
-      <div id="forgotNote" class="login-hint" style="display:none;"></div>
-
-      <form id="forgotForm">
-        <div class="field">
-          <label for="forgotEmail">Email</label>
-          <input type="email" id="forgotEmail" required />
-        </div>
-        <button type="submit" class="btn btn-accent" id="forgotBtn" style="width:100%;">Send reset link</button>
-      </form>
+      <div id="suspendedActions" style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+        <a href="#" id="whatsappLink" class="btn btn-accent" style="width:100%;text-align:center;text-decoration:none;display:none;box-sizing:border-box;">Message us on WhatsApp</a>
+        <button type="button" class="btn btn-ghost" id="recheckBtn" style="width:100%;">I've sorted this out — check again</button>
+      </div>
 
       <div class="login-hint">
-        <a href="login.html">Back to login</a>
+        <a href="#" id="logoutLink">Log out</a>
       </div>
     </div>
   </div>
@@ -56,27 +49,62 @@
   <script src="clinic-config.js"></script>
   <script src="clinic-data.js?v=80"></script>
   <script>
-    document.getElementById('forgotForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById('forgotBtn');
-      const note = document.getElementById('forgotNote');
-      note.style.display = 'none';
-      btn.disabled = true;
-      btn.textContent = 'Sending…';
-      try {
-        const email = document.getElementById('forgotEmail').value;
-        const redirectTo = window.location.href.replace(/forgot-password\.html.*$/, 'reset-password.html');
-        await Qlinic.requestPasswordReset(email, redirectTo);
-        e.target.style.display = 'none';
-        note.style.display = 'block';
-        note.textContent = 'Check your email for a password reset link.';
-      } catch (err) {
-        note.style.display = 'block';
-        note.textContent = err.message || 'Could not send reset email.';
-        btn.disabled = false;
-        btn.textContent = 'Send reset link';
+    (async function () {
+      // Deliberately NOT Qlinic.requireLogin() here - that's the exact
+      // check that lands someone on THIS page in the first place, so
+      // calling it again would just bounce straight back. Checking
+      // isLoggedIn() directly still keeps this page from being useful
+      // to reach while logged out.
+      if (!(await Qlinic.isLoggedIn())) {
+        window.location.href = 'login.html';
+        return;
       }
-    });
+
+      // TODO before this goes live to real clinics: WHATSAPP_NUMBER
+      // below is a placeholder (91XXXXXXXXXX), same as contact.html's
+      // own TODO. Replace it with the real support number.
+      const WHATSAPP_NUMBER = '91XXXXXXXXXX';
+
+      const clinic = await Qlinic.getClinic();
+
+      // Reached this page, but the clinic is actually fine (activated
+      // since the redirect happened, or this URL was opened directly
+      // out of curiosity) - straight through to the app instead of
+      // showing an alarming message about nothing.
+      if (Qlinic.isSubscriptionActive(clinic)) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+
+      const titleEl = document.getElementById('suspendedTitle');
+      const bodyEl = document.getElementById('suspendedBody');
+      const waLink = document.getElementById('whatsappLink');
+      const clinicName = clinic ? clinic.name : 'your clinic';
+
+      const isTrialExpired = clinic && clinic.subscription_status === 'trialing';
+      if (isTrialExpired) {
+        titleEl.textContent = 'Your trial has ended';
+        bodyEl.textContent = `${clinicName}'s free trial is over. Get in touch to activate your subscription and pick back up right where you left off — nothing about your data changes.`;
+      } else {
+        titleEl.textContent = 'Access paused';
+        bodyEl.textContent = `${clinicName}'s access to Qlinic has been paused. Get in touch if you think this is a mistake, or to sort out billing.`;
+      }
+
+      waLink.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi, I'd like to sort out billing for ${clinicName} on Qlinic.`)}`;
+      waLink.style.display = 'block';
+
+      document.getElementById('recheckBtn').addEventListener('click', () => {
+        window.location.reload();
+      });
+
+      document.getElementById('logoutLink').addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+          await Qlinic.logout();
+        } catch (err) { /* best-effort - send them to login either way */ }
+        window.location.href = 'login.html';
+      });
+    })();
   </script>
   <script>
     (function () {
