@@ -103,7 +103,12 @@
           `;
           document.getElementById('reopenDayBtn').addEventListener('click', async () => {
             if (await Qlinic.confirmDialog({ title: 'Reopen the day?', message: "This only unlocks the close button again, it won't undo any no-shows already finalized.", confirmLabel: 'Reopen' })) {
-              await Qlinic.reopenDay();
+              try {
+                await Qlinic.reopenDay();
+              } catch (err) {
+                showToast(err.message || 'Could not reopen the day — please try again.');
+                return;
+              }
               showToast('Day reopened');
               renderEndOfDay();
             }
@@ -116,7 +121,12 @@
           `;
           document.getElementById('closeDayBtn').addEventListener('click', async () => {
             if (await Qlinic.confirmDialog({ title: 'Close the day?', message: 'Everyone still "booked" and not arrived today will be marked as no-show.', confirmLabel: 'Close the day' })) {
-              await Qlinic.closeDayNoShows();
+              try {
+                await Qlinic.closeDayNoShows();
+              } catch (err) {
+                showToast(err.message || 'Could not close the day — please try again.');
+                return;
+              }
               showToast('Day closed, no-shows finalized');
               renderEndOfDay();
             }

@@ -175,7 +175,12 @@
 
       async function doDeleteHoliday(id) {
         if (!(await Qlinic.confirmDialog({ message: 'Remove this holiday?', confirmLabel: 'Remove', danger: true }))) return;
-        await Qlinic.deleteDoctorHoliday(id);
+        try {
+          await Qlinic.deleteDoctorHoliday(id);
+        } catch (err) {
+          showToast(err.message || 'Could not remove holiday — please try again.');
+          return;
+        }
         showToast('Holiday removed');
         loadHolidays();
       }
@@ -224,7 +229,12 @@
           const note = backdrop.querySelector('#editHolidayNote').value.trim();
           if (!date) { showToast('Pick a date first'); return; }
           if (holidays.some((h) => h.date === date && h.id !== holiday.id)) { showToast('That date is already on the list'); return; }
-          await Qlinic.updateDoctorHoliday(holiday.id, { date, note });
+          try {
+            await Qlinic.updateDoctorHoliday(holiday.id, { date, note });
+          } catch (err) {
+            showToast(err.message || 'Could not update holiday — please try again.');
+            return;
+          }
           cleanup();
           showToast('Holiday updated');
           loadHolidays();
@@ -244,7 +254,12 @@
         const date = dateInput.value;
         if (!date) { showToast('Pick a date first'); return; }
         if (holidays.some((h) => h.date === date)) { showToast('That date is already on the list'); return; }
-        await Qlinic.addDoctorHoliday({ doctorId: targetDoctorId, date, note: noteInput.value.trim() });
+        try {
+          await Qlinic.addDoctorHoliday({ doctorId: targetDoctorId, date, note: noteInput.value.trim() });
+        } catch (err) {
+          showToast(err.message || 'Could not add holiday — please try again.');
+          return;
+        }
         dateInput.value = '';
         noteInput.value = '';
         showToast('Holiday added');

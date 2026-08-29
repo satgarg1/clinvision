@@ -449,8 +449,25 @@
         // simple and correct for every screen this page can be on —
         // loading/error/closed/not-yet/done/status — with one code path,
         // at the cost of one extra request on a deliberate, rare action.
-        render().catch(showError);
+        // handleRefreshError, not showError - this booking already proved
+        // itself real on the initial load; a failed re-fetch here just
+        // means try again, not "this link doesn't exist."
+        render().catch(handleRefreshError);
       });
+
+      // A refresh failing after the page already showed a real status
+      // once - a dropped poll, or (rarely) this same re-fetch on a
+      // language switch - does NOT mean the booking stopped existing.
+      // showError() below is reserved for the very first load, where
+      // "we don't know yet if this booking is real" is actually true;
+      // from here on, this page runs unattended in waiting rooms on
+      // phones, where a lost signal is common and routine - the safer
+      // read is to leave the last good screen up and let the next poll
+      // try again, not flip to "Link not found" and alarm someone over
+      // a booking that's completely fine.
+      function handleRefreshError(err) {
+        console.warn('Could not refresh queue status:', err);
+      }
 
       function showError() {
         loadingEl.style.display = 'none';
@@ -765,7 +782,8 @@
       // done/no-show screen — showDone() has nothing to clear in that case,
       // it just never gets set.
       if (doneEl.style.display !== 'block') {
-        pollIntervalId = setInterval(() => { render().catch(showError); }, 20000);
+        // handleRefreshError, not showError - see its own comment above.
+        pollIntervalId = setInterval(() => { render().catch(handleRefreshError); }, 20000);
       }
     })();
   </script>

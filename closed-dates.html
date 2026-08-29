@@ -167,7 +167,12 @@
 
       async function doDeleteClosure(id) {
         if (!(await Qlinic.confirmDialog({ message: 'Remove this closed date?', confirmLabel: 'Remove', danger: true }))) return;
-        await Qlinic.deleteClinicClosure(id);
+        try {
+          await Qlinic.deleteClinicClosure(id);
+        } catch (err) {
+          showToast(err.message || 'Could not remove closed date — please try again.');
+          return;
+        }
         showToast('Closed date removed');
         loadClosures();
       }
@@ -216,7 +221,12 @@
           const note = backdrop.querySelector('#editClosureNote').value.trim();
           if (!date) { showToast('Pick a date first'); return; }
           if (closures.some((c) => c.date === date && c.id !== closure.id)) { showToast('That date is already on the list'); return; }
-          await Qlinic.updateClinicClosure(closure.id, { date, note });
+          try {
+            await Qlinic.updateClinicClosure(closure.id, { date, note });
+          } catch (err) {
+            showToast(err.message || 'Could not update closed date — please try again.');
+            return;
+          }
           cleanup();
           showToast('Closed date updated');
           loadClosures();
@@ -237,7 +247,12 @@
         const date = dateInput.value;
         if (!date) { showToast('Pick a date first'); return; }
         if (closures.some((c) => c.date === date)) { showToast('That date is already on the list'); return; }
-        await Qlinic.addClinicClosure({ date, note: noteInput.value.trim() });
+        try {
+          await Qlinic.addClinicClosure({ date, note: noteInput.value.trim() });
+        } catch (err) {
+          showToast(err.message || 'Could not add closed date — please try again.');
+          return;
+        }
         dateInput.value = '';
         noteInput.value = '';
         showToast('Closed date added');

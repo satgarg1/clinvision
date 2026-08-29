@@ -389,12 +389,20 @@
         const bestDay = dayEntries[0] || null;
         const worstDay = dayEntries.length ? dayEntries[dayEntries.length - 1] : null;
 
-        // Busiest doctor by distinct patients seen, not revenue.
+        // Busiest doctor by distinct patients seen, not revenue. patientId
+        // is null for a manually-billed invoice with no linked queue row
+        // (a real, accepted gap - see createInvoice's own comment) -
+        // several such invoices would otherwise all add the same `null`
+        // to the Set and collapse into one "patient," undercounting a
+        // doctor who's actually seen more people than that. Each null
+        // patientId is given its own unique placeholder key instead, so
+        // it counts as its own distinct visit rather than merging with
+        // every other unlinked one.
         function busiestDoctor(invs) {
           const byDoctor = {};
           invs.forEach((inv) => {
             if (!byDoctor[inv.doctorId]) byDoctor[inv.doctorId] = new Set();
-            byDoctor[inv.doctorId].add(inv.patientId);
+            byDoctor[inv.doctorId].add(inv.patientId || `unlinked:${inv.id}`);
           });
           let top = null;
           Object.entries(byDoctor).forEach(([doctorId, patients]) => {
@@ -619,7 +627,11 @@
 
         const totalCollected = inSummary.reduce((sum, inv) => sum + inv.amountReceived, 0);
         const totalOutstanding = inSummary.reduce((sum, inv) => sum + Math.max(0, inv.amount - inv.amountReceived), 0);
-        const patientsServedCount = new Set(inSummary.map((inv) => inv.patientId)).size;
+        // Same null-patientId fix as busiestDoctor above - a manually-
+        // billed invoice with no linked queue row has patientId null, and
+        // several of those would otherwise all collapse into one "patient"
+        // in the Set, undercounting how many people were actually served.
+        const patientsServedCount = new Set(inSummary.map((inv) => inv.patientId || `unlinked:${inv.id}`)).size;
         const consultationCount = inSummary.filter((inv) => inv.feeType === 'consultation').length;
         const emergencyCount = inSummary.filter((inv) => inv.feeType === 'emergency').length;
         const followUpCount = inSummary.filter((inv) => inv.feeType === 'waived').length;
@@ -843,7 +855,12 @@
         const feeType = row.querySelector('.adj-fee-type').value;
         const paymentMode = row.querySelector('.adj-payment-mode').value;
         const amountReceived = row.querySelector('.adj-amount-received').value;
-        await Qlinic.updateInvoicePayment({ invoiceId, feeType, paymentMode, amountReceived });
+        try {
+          await Qlinic.updateInvoicePayment({ invoiceId, feeType, paymentMode, amountReceived });
+        } catch (err) {
+          showToast(err.message || 'Could not update billing — please try again.');
+          return;
+        }
         editingInvoiceId = null;
         showToast('Billing updated');
         await loadInvoices();

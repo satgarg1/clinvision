@@ -909,18 +909,26 @@
         if (closeBtn) {
           closeBtn.addEventListener('click', async () => {
             if (await Qlinic.confirmDialog({ title: 'Close your day?', message: "Reception and the waiting screen will be notified, and you'll drop off the display screen in 3 minutes.", confirmLabel: 'Close my day', danger: true })) {
-              await Qlinic.closeDoctorDay(currentDoctorId());
-              render();
-              showToast('Day closed, reception notified');
+              try {
+                await Qlinic.closeDoctorDay(currentDoctorId());
+                render();
+                showToast('Day closed, reception notified');
+              } catch (err) {
+                showToast(err.message || 'Could not close the day — please try again.');
+              }
             }
           });
         }
         const reopenBtn = document.getElementById('reopenDoctorDayBtn');
         if (reopenBtn) {
           reopenBtn.addEventListener('click', async () => {
-            await Qlinic.reopenDoctorDay(currentDoctorId());
-            render();
-            showToast('Back for the day');
+            try {
+              await Qlinic.reopenDoctorDay(currentDoctorId());
+              render();
+              showToast('Back for the day');
+            } catch (err) {
+              showToast(err.message || 'Could not reopen your day — please try again.');
+            }
           });
         }
       }

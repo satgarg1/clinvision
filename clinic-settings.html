@@ -497,15 +497,20 @@
         const landmark = document.getElementById('landmarkInput').value.trim();
         const addressParts = [building, area];
         if (landmark) addressParts.push(`near ${landmark}`);
-        await Qlinic.updateClinic({
-          name: document.getElementById('clinicNameInput').value,
-          addressLine: addressParts.filter(Boolean).join(', '),
-          city: document.getElementById('cityInput').value,
-          pincode: document.getElementById('pincodeInput').value,
-          state: document.getElementById('stateInput').value,
-          gstin: document.getElementById('gstinInput').value.trim().toUpperCase(),
-          hfrId: document.getElementById('hfrIdInput').value.trim().toUpperCase(),
-        });
+        try {
+          await Qlinic.updateClinic({
+            name: document.getElementById('clinicNameInput').value,
+            addressLine: addressParts.filter(Boolean).join(', '),
+            city: document.getElementById('cityInput').value,
+            pincode: document.getElementById('pincodeInput').value,
+            state: document.getElementById('stateInput').value,
+            gstin: document.getElementById('gstinInput').value.trim().toUpperCase(),
+            hfrId: document.getElementById('hfrIdInput').value.trim().toUpperCase(),
+          });
+        } catch (err) {
+          showToast(err.message || 'Could not update clinic profile — please try again.');
+          return;
+        }
         showToast('Clinic profile updated');
         loadClinic();
       });
@@ -545,19 +550,29 @@
       });
       document.getElementById('removeLogoBtn').addEventListener('click', async () => {
         if (!(await Qlinic.confirmDialog({ message: 'Remove your clinic logo?', confirmLabel: 'Remove', danger: true }))) return;
-        await Qlinic.removeClinicLogo();
+        try {
+          await Qlinic.removeClinicLogo();
+        } catch (err) {
+          showToast(err.message || 'Could not remove logo — please try again.');
+          return;
+        }
         showToast('Logo removed');
         loadClinic();
       });
 
       document.getElementById('rulesForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        await Qlinic.updateClinic({
-          graceWindowMins: document.getElementById('graceWindowInput').value,
-          slotIntervalMins: document.getElementById('slotIntervalInput').value,
-          slotCapacity: document.getElementById('slotCapacityInput').value,
-          scheduleIntervalMins: document.getElementById('scheduleIntervalInput').value,
-        });
+        try {
+          await Qlinic.updateClinic({
+            graceWindowMins: document.getElementById('graceWindowInput').value,
+            slotIntervalMins: document.getElementById('slotIntervalInput').value,
+            slotCapacity: document.getElementById('slotCapacityInput').value,
+            scheduleIntervalMins: document.getElementById('scheduleIntervalInput').value,
+          });
+        } catch (err) {
+          showToast(err.message || 'Could not update queue rules — please try again.');
+          return;
+        }
         showToast('Queue rules updated');
       });
 
@@ -569,12 +584,17 @@
           showToast('Closing time must be after opening time');
           return;
         }
-        await Qlinic.updateClinic({
-          followUpBufferDays: document.getElementById('followUpBufferInput').value || 0,
-          openingTime,
-          closingTime,
-          weeklyOffDays: getWeeklyOffDays(),
-        });
+        try {
+          await Qlinic.updateClinic({
+            followUpBufferDays: document.getElementById('followUpBufferInput').value || 0,
+            openingTime,
+            closingTime,
+            weeklyOffDays: getWeeklyOffDays(),
+          });
+        } catch (err) {
+          showToast(err.message || 'Could not update clinic controls — please try again.');
+          return;
+        }
         showToast('Clinic controls updated');
       });
 

@@ -354,7 +354,12 @@
           const feeNormal = Number(backdrop.querySelector('#editDoctorFeeNormal').value) || 0;
           const feeEmergency = Number(backdrop.querySelector('#editDoctorFeeEmergency').value) || 0;
           const hprId = backdrop.querySelector('#editDoctorHprId').value.trim().toUpperCase();
-          await Qlinic.updateDoctor(doctor.id, { name, specialty, feeNormal, feeEmergency, hprId });
+          try {
+            await Qlinic.updateDoctor(doctor.id, { name, specialty, feeNormal, feeEmergency, hprId });
+          } catch (err) {
+            showToast(err.message || 'Could not update doctor — please try again.');
+            return;
+          }
           cleanup();
           showToast('Doctor updated');
           loadDoctors();
@@ -372,7 +377,12 @@
         }))) {
           return;
         }
-        await Qlinic.setDoctorActive(id, isActive);
+        try {
+          await Qlinic.setDoctorActive(id, isActive);
+        } catch (err) {
+          showToast(err.message || 'Could not update doctor — please try again.');
+          return;
+        }
         showToast(isActive ? 'Doctor reactivated' : 'Doctor deactivated');
         loadDoctors();
       }
@@ -421,7 +431,12 @@
         const feeNormal = Number(document.getElementById('newDoctorFeeNormal').value) || 0;
         const feeEmergency = Number(document.getElementById('newDoctorFeeEmergency').value) || 0;
         const hprId = document.getElementById('newDoctorHprId').value.trim().toUpperCase();
-        await Qlinic.addDoctor({ name, specialty, feeNormal, feeEmergency, hprId });
+        try {
+          await Qlinic.addDoctor({ name, specialty, feeNormal, feeEmergency, hprId });
+        } catch (err) {
+          showToast(err.message || 'Could not add doctor — please try again.');
+          return;
+        }
         e.target.reset();
         document.getElementById('newDoctorSpecialtyOtherField').style.display = 'none';
         clearNewDoctorFeeHint();

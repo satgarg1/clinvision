@@ -194,7 +194,12 @@
         }))) {
           return;
         }
-        await Qlinic.setStaffActive(id, isActive);
+        try {
+          await Qlinic.setStaffActive(id, isActive);
+        } catch (err) {
+          showToast(err.message || 'Could not update access — please try again.');
+          return;
+        }
         showToast(isActive ? 'Access restored' : 'Access removed');
         renderTeam();
       }
@@ -220,7 +225,13 @@
         }
         if (!e.target.classList.contains('staff-role')) return;
         const id = e.target.getAttribute('data-id');
-        await Qlinic.updateStaffRole(id, e.target.value);
+        try {
+          await Qlinic.updateStaffRole(id, e.target.value);
+        } catch (err) {
+          showToast(err.message || 'Could not update role — please try again.');
+          renderTeam();
+          return;
+        }
         showToast('Role updated');
         renderTeam();
       });

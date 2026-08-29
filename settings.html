@@ -287,7 +287,12 @@
 
       document.getElementById('displayLanguageForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        await Qlinic.updateClinic({ displayLanguage: document.getElementById('displayLanguageInput').value });
+        try {
+          await Qlinic.updateClinic({ displayLanguage: document.getElementById('displayLanguageInput').value });
+        } catch (err) {
+          showToast(err.message || 'Could not update display language — please try again.');
+          return;
+        }
         showToast('Display screen language updated');
       });
 
@@ -303,7 +308,12 @@
 
       document.getElementById('logoutLink').addEventListener('click', async (e) => {
         e.preventDefault();
-        await Qlinic.logout();
+        try {
+          await Qlinic.logout();
+        } catch (err) {
+          showToast(err.message || 'Could not log out — please try again.');
+          return;
+        }
         window.location.href = 'login.html';
       });
 
