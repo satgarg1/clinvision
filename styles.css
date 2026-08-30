@@ -519,6 +519,7 @@ a { color: inherit; }
   grid-template-columns: 0.95fr 1.1fr;
   align-items: start;
   gap: 56px;
+  padding: 60px 6vw 90px;
   overflow: hidden;
 }
 .hero-stage .content { max-width: 560px; text-align: left; }
