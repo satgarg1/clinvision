@@ -940,20 +940,38 @@ a { color: inherit; }
   .suite-desc { margin-left: auto; margin-right: auto; }
 }
 
-/* Comparison, v1: "Without Qlinic vs. With Qlinic" -- plain paper canvas,
-   no ambient glow (the two bordered cards are already the visual
-   interest here, a glow behind them would just compete). Sits between
-   Full Suite and Explore Qlinic. Top padding kept modest (70px) against
-   Full Suite's own 130px bottom padding, same reasoning as Full Suite's
-   own port: stacking two full paddings here would reproduce the
-   "too much space between sections" mistake from the hero-to-trust port. */
+/* Comparison, v1: "Without Qlinic vs. With Qlinic". Sits between Full
+   Suite and Explore Qlinic. Top padding kept modest (70px) against Full
+   Suite's own 130px bottom padding, same reasoning as Full Suite's own
+   port: stacking two full paddings here would reproduce the "too much
+   space between sections" mistake from the hero-to-trust port.
+   Ambient glow reuses Hero's own blue (rgba(0,113,227,...)) -- without
+   one, this section shared the exact same flat paper tone as Full
+   Suite right above it with nothing to mark the seam between them, so
+   the two blended together. Structured like Trust/Full Suite's own
+   glow (an ellipse spanning the section via inset:0) rather than
+   Hero's compact top-anchored circle, since this section is a full
+   multi-row block like those two, not a single hero viewport. */
 .compare {
   position: relative;
   background: var(--mkt-paper);
   padding: 70px 6vw 130px;
   border-top: 1px solid var(--grey-300);
+  /* No overflow:hidden here, unlike Trust/Suite -- this section's
+     intro column is position:sticky, and a clipped ancestor breaks
+     sticky positioning entirely. Not needed for containment anyway:
+     the glow below is inset:0, exactly the same box as this section,
+     so there's nothing for it to overflow. */
+}
+.compare-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 90% 60% at 50% 0%, rgba(0, 113, 227, 0.14) 0%, rgba(0, 113, 227, 0.05) 45%, rgba(0, 113, 227, 0) 75%);
 }
 .compare-inner {
+  position: relative;
+  z-index: 1;
   max-width: 1400px;
   margin: 0 auto;
   display: grid;
@@ -1005,7 +1023,14 @@ a { color: inherit; }
   border: 2px solid var(--grey-300);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  /* Scroll-triggered reveal, same opacity/translateY transition curve
+     as Trust's items and Full Suite's rows -- this section had none
+     yet, unlike everything else on the page. */
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.6s cubic-bezier(0.19, 1, 0.22, 1), transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
 }
+.compare-col.show { opacity: 1; transform: translateY(0); }
 .compare-col.without { grid-column: 1; border-color: var(--danger); }
 .compare-col.with { grid-column: 2; border-color: var(--success); }
 .compare-head {
