@@ -58,7 +58,15 @@
           </div>
           <div class="field">
             <label for="password">Password</label>
-            <input type="password" id="password" name="password" autocomplete="current-password" required />
+            <!-- Starts suppressed (name/autocomplete deliberately NOT
+                 "password"/"current-password") -- a browser will still
+                 offer to fill a saved password into this field just
+                 because it's type=password in a form on this origin,
+                 even while the matching email field sits hidden right
+                 above it. Phone mode gets no saved-password identity at
+                 all; the pill toggle below restores the real one only
+                 when Email is selected. -->
+            <input type="password" id="password" name="password-hidden" autocomplete="new-password" required />
           </div>
           <div class="remember-row">
             <input type="checkbox" id="rememberMe" checked />
@@ -89,6 +97,7 @@
       const emailField = document.getElementById('emailField');
       const phoneInput = document.getElementById('identifierPhone');
       const emailInput = document.getElementById('identifierEmail');
+      const passwordInput = document.getElementById('password');
       phoneInput.required = true;
 
       pill.querySelectorAll('button').forEach(function (btn) {
@@ -103,11 +112,18 @@
             emailField.style.display = 'none';
             phoneInput.required = true;
             emailInput.required = false;
+            // Suppressed again -- a saved email+password credential has
+            // no business appearing while the field it belongs with is
+            // hidden.
+            passwordInput.name = 'password-hidden';
+            passwordInput.autocomplete = 'new-password';
           } else {
             phoneField.style.display = 'none';
             emailField.style.display = '';
             phoneInput.required = false;
             emailInput.required = true;
+            passwordInput.name = 'password';
+            passwordInput.autocomplete = 'current-password';
           }
         });
       });
