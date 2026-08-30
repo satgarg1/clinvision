@@ -481,6 +481,27 @@
         document.getElementById('rPaymentMode').textContent = PAYMENT_MODE_LABELS[invoice.paymentMode] || invoice.paymentMode;
       }
 
+      // renderReceipt() just set the logo <img> elements' src a moment
+      // ago; that's an async load, and window.print() doesn't wait for
+      // pending images on its own. Most of the time the logo's already
+      // browser-cached (the small clinicLogoThumb preview at the top of
+      // this same page loads the identical URL first, well before the
+      // user ever submits), which is exactly why this bug was so easy to
+      // miss - it only shows up when that cache is cold (first load,
+      // cleared cache, a different browser). Waiting for both logo
+      // <img>s (a no-op if already .complete) closes that race properly
+      // instead of relying on incidental cache timing.
+      function waitForReceiptLogos() {
+        var imgs = [document.getElementById('rClinicLogo'), document.getElementById('rFooterLogo')];
+        return Promise.all(imgs.map(function (img) {
+          if (!img || !img.src || img.complete) return Promise.resolve();
+          return new Promise(function (resolve) {
+            img.addEventListener('load', resolve, { once: true });
+            img.addEventListener('error', resolve, { once: true });
+          });
+        }));
+      }
+
       function resetForm() {
         document.getElementById('billingForm').reset();
         document.getElementById('bDate').value = Qlinic.getTodayDate();
@@ -561,6 +582,7 @@
               });
           if (currentInvoiceId) showToast('Existing bill corrected, not duplicated');
           renderReceipt(invoice);
+          await waitForReceiptLogos();
           window.print();
           resetForm();
         } catch (err) {
@@ -608,7 +630,11 @@
           document.getElementById('reprintMessage').textContent =
             `Receipt #RC-${String(invoice.invoiceNumber).padStart(4, '0')} for ${invoice.patientName}`;
           renderReceipt(invoice);
-          document.getElementById('reprintBtn').addEventListener('click', () => window.print());
+          document.getElementById('reprintBtn').addEventListener('click', async () => {
+            await waitForReceiptLogos();
+            window.print();
+          });
+          await waitForReceiptLogos();
           window.print();
         }
       } else {
