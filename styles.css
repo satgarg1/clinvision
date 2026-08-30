@@ -618,6 +618,23 @@ a { color: inherit; }
   font-weight: 400;
 }
 
+/* Nudges the illustration's top edge down to the midpoint of the eyebrow's
+   margin-bottom (21px eyebrow height + half of its fixed 32px
+   margin-bottom = 37px) so it lines up with the gap between the eyebrow
+   and the headline's first line, instead of sitting flush with the
+   eyebrow's own top. Both those figures are fixed (eyebrow font-size and
+   margin-bottom don't change with viewport width in this range), so this
+   holds steady from 901px up. Scoped with its own min-width query rather
+   than relying on source order to beat the max-width:900px block below --
+   that ordering trap is exactly what silently broke the eyebrow's mobile
+   centering earlier. Below 901px the image reorders above the text
+   entirely (see that block's order:-1), where this offset wouldn't mean
+   anything, so it's confined to widths where the two columns actually
+   sit side by side. */
+@media (min-width: 901px) {
+  .hero-stage .hero-visual { margin-top: 37px; }
+}
+
 .hero-visual img {
   width: 100%;
   height: auto;

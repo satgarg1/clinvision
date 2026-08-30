@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=211" />
+<link rel="stylesheet" href="styles.css?v=212" />
 </head>
 <body>
 
@@ -173,6 +173,41 @@
         });
       }, { threshold: 0.2 });
       items.forEach(function (el) { obs.observe(el); });
+    })();
+
+    // Line up the "support" line under items 1, 2, 4 and 5 -- item 3 has no
+    // support line and is deliberately left out of this, its longer lead
+    // is allowed to run taller than the rest. A fixed min-height can't work
+    // here: how many lines each lead wraps to changes with viewport width
+    // (measured 2 lines at 1600px, 3 lines at 750px for these same leads),
+    // so the shorter ones are padded to match whichever is tallest at the
+    // CURRENT width, recomputed on resize and once webfonts finish loading
+    // (metric-fallback text can reflow once Fraunces/Inter actually apply).
+    (function () {
+      var leadIds = ['trustItem1', 'trustItem2', 'trustItem4', 'trustItem5'];
+      function equalizeTrustLeads() {
+        var leads = leadIds.map(function (id) {
+          var item = document.getElementById(id);
+          return item ? item.querySelector('.trust-lead') : null;
+        }).filter(Boolean);
+        if (leads.length < 2) return;
+        leads.forEach(function (el) { el.style.minHeight = ''; });
+        var max = 0;
+        leads.forEach(function (el) {
+          var h = el.getBoundingClientRect().height;
+          if (h > max) max = h;
+        });
+        leads.forEach(function (el) { el.style.minHeight = max + 'px'; });
+      }
+      var resizeTimer;
+      window.addEventListener('resize', function () {
+        window.clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(equalizeTrustLeads, 150);
+      });
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(equalizeTrustLeads);
+      }
+      equalizeTrustLeads();
     })();
   </script>
 
