@@ -419,6 +419,20 @@
         if (T !== STRINGS.hi) return text;
         return SPECIALTY_HI[text] || toDevanagari(text);
       }
+      // Qlinic.formatDateLabel is shared with every internal English admin
+      // page (reception, billing, revenue...), so it always returns "Today"/
+      // "Tomorrow" in English regardless of this page's own language toggle
+      // -- that literal English word was landing inside an otherwise-Hindi
+      // sentence ("...बुक हो गई है Tomorrow के लिए..."). Only those two
+      // near-term labels get translated; anything further out already
+      // renders as a plain weekday+date ("Fri, Aug 28"), which reads fine
+      // dropped into either language as-is.
+      function localizeDateLabel(label) {
+        if (T !== STRINGS.hi) return label;
+        if (label === 'Today') return 'आज';
+        if (label === 'Tomorrow') return 'कल';
+        return label;
+      }
 
       function applyStaticStrings() {
         document.getElementById('loadingText').textContent = T.loading;
@@ -542,7 +556,7 @@
         notYetEl.style.display = 'block';
         document.getElementById('notYetClinicName').textContent = localizeName(data.clinicName);
         const specialty = data.doctorSpecialty ? ` (${Qlinic.escapeHtml(localizeSpecialty(data.doctorSpecialty))})` : '';
-        const dateLabel = Qlinic.formatDateLabel(data.bookedDate);
+        const dateLabel = localizeDateLabel(Qlinic.formatDateLabel(data.bookedDate));
         document.getElementById('notYetApptLine').innerHTML =
           T.apptLineFutureDate(Qlinic.escapeHtml(localizeName(data.doctorName)), specialty, dateLabel);
         document.getElementById('notYetNote').textContent = T.notYetNote(dateLabel);
