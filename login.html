@@ -56,17 +56,23 @@
             <label for="identifierEmail">Email</label>
             <input type="email" id="identifierEmail" name="email" autocomplete="username" />
           </div>
-          <div class="field">
-            <label for="password">Password</label>
-            <!-- Starts suppressed (name/autocomplete deliberately NOT
-                 "password"/"current-password") -- a browser will still
-                 offer to fill a saved password into this field just
-                 because it's type=password in a form on this origin,
-                 even while the matching email field sits hidden right
-                 above it. Phone mode gets no saved-password identity at
-                 all; the pill toggle below restores the real one only
-                 when Email is selected. -->
-            <input type="password" id="password" name="password-hidden" autocomplete="new-password" required />
+          <!-- Same split as the identifier fields above, extended to
+               password -- mutating one shared password field's name/
+               autocomplete at runtime (tried first) stopped the browser
+               from offering the saved credential in Email mode at all:
+               a password manager evaluates the form's fields once, close
+               to page load, and doesn't reliably re-recognize a field
+               after JS renames it later. Two permanently stable password
+               inputs, each paired with its own identifier, avoids that
+               entirely -- the email pair's identity never changes, so
+               the browser can actually learn and offer it. -->
+          <div class="field" id="phonePasswordField">
+            <label for="passwordPhone">Password</label>
+            <input type="password" id="passwordPhone" name="password-phone" autocomplete="off" required />
+          </div>
+          <div class="field" id="emailPasswordField" style="display:none;">
+            <label for="passwordEmail">Password</label>
+            <input type="password" id="passwordEmail" name="password" autocomplete="current-password" />
           </div>
           <div class="remember-row">
             <input type="checkbox" id="rememberMe" checked />
@@ -97,8 +103,12 @@
       const emailField = document.getElementById('emailField');
       const phoneInput = document.getElementById('identifierPhone');
       const emailInput = document.getElementById('identifierEmail');
-      const passwordInput = document.getElementById('password');
+      const phonePasswordField = document.getElementById('phonePasswordField');
+      const emailPasswordField = document.getElementById('emailPasswordField');
+      const passwordPhone = document.getElementById('passwordPhone');
+      const passwordEmail = document.getElementById('passwordEmail');
       phoneInput.required = true;
+      passwordPhone.required = true;
 
       pill.querySelectorAll('button').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -110,20 +120,21 @@
           if (mode === 'phone') {
             phoneField.style.display = '';
             emailField.style.display = 'none';
+            phonePasswordField.style.display = '';
+            emailPasswordField.style.display = 'none';
             phoneInput.required = true;
             emailInput.required = false;
-            // Suppressed again -- a saved email+password credential has
-            // no business appearing while the field it belongs with is
-            // hidden.
-            passwordInput.name = 'password-hidden';
-            passwordInput.autocomplete = 'new-password';
+            passwordPhone.required = true;
+            passwordEmail.required = false;
           } else {
             phoneField.style.display = 'none';
             emailField.style.display = '';
+            phonePasswordField.style.display = 'none';
+            emailPasswordField.style.display = '';
             phoneInput.required = false;
             emailInput.required = true;
-            passwordInput.name = 'password';
-            passwordInput.autocomplete = 'current-password';
+            passwordPhone.required = false;
+            passwordEmail.required = true;
           }
         });
       });
@@ -143,7 +154,9 @@
       btn.textContent = 'Logging in…';
       try {
         const isPhoneMode = document.getElementById('idPill').classList.contains('mode-phone');
-        const password = document.getElementById('password').value;
+        const password = isPhoneMode
+          ? document.getElementById('passwordPhone').value
+          : document.getElementById('passwordEmail').value;
         let email;
         if (isPhoneMode) {
           const phone = document.getElementById('identifierPhone').value.trim();
