@@ -1,0 +1,254 @@
+<title>Filter Row Height Fix</title>
+<style>
+  :root {
+    --accent: #0071e3;
+    --accent-dark: #0058b0;
+    --black: #1d1d1f;
+    --grey-900: #2b2b2d;
+    --grey-700: #4a4a4c;
+    --grey-500: #86868b;
+    --grey-300: #d2d2d7;
+    --grey-100: #f5f5f7;
+    --white: #ffffff;
+    --mkt-teal: #0d9488;
+    --mkt-teal-bg: #ccfbf1;
+    --danger: #c5221f;
+    --danger-bg: #fce8e6;
+    --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --radius-pill: 999px;
+    --radius-sm: 8px;
+    --radius-lg: 20px;
+    --shadow-resting: 0 2px 8px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.08);
+    --page-bg: var(--grey-100);
+    --card-bg: var(--white);
+    --ruler: #ff5f8a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --black: #f2f2f4; --grey-900: #3a3a3c; --grey-700: #c7c7cc; --grey-500: #98989d;
+      --grey-300: #48484a; --grey-100: #1c1c1e; --white: #232325; --page-bg: #131314; --card-bg: #1c1c1e;
+      --shadow-resting: 0 2px 8px rgba(0,0,0,0.35), 0 12px 32px rgba(0,0,0,0.45);
+    }
+  }
+  :root[data-theme="dark"] {
+    --black: #f2f2f4; --grey-900: #3a3a3c; --grey-700: #c7c7cc; --grey-500: #98989d;
+    --grey-300: #48484a; --grey-100: #1c1c1e; --white: #232325; --page-bg: #131314; --card-bg: #1c1c1e;
+    --shadow-resting: 0 2px 8px rgba(0,0,0,0.35), 0 12px 32px rgba(0,0,0,0.45);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font); background: var(--page-bg); color: var(--black); padding: 40px 24px 80px; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .lede { font-size: 14.5px; line-height: 1.6; color: var(--grey-700); margin: 0 0 32px; max-width: 66ch; }
+  .lede code { background: var(--card-bg); border: 1px solid var(--grey-300); border-radius: 4px; padding: 1px 5px; font-size: 13px; }
+
+  .section { background: var(--card-bg); border: 1px solid var(--grey-300); border-radius: var(--radius-lg); box-shadow: var(--shadow-resting); padding: 24px 28px 26px; margin-bottom: 24px; }
+  .section h2 { font-size: 16px; margin: 0 0 4px; }
+  .section .note { font-size: 13px; color: var(--grey-700); line-height: 1.55; margin: 4px 0 18px; max-width: 62ch; }
+
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 640px) { .compare { grid-template-columns: 1fr; } }
+  .pane { background: var(--grey-100); border: 1px solid var(--grey-300); border-radius: 14px; padding: 16px 18px 18px; }
+  .pane-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .pane-label.before { color: var(--danger); }
+  .pane-label.after { color: var(--mkt-teal); }
+  .pane-label .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* Deliberately NOT pill-shaped and NOT gradient-filled - this control
+     only exists so this mockup can show both states without two static
+     screenshots. It is not part of the design being proposed, so it's
+     styled to look nothing like the real .period-pill it sits above -
+     plain underlined text tabs, not a rounded filled pill. */
+  .stage-toggle-caption { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--grey-500); margin-bottom: 6px; }
+  .stage-toggle { display: flex; gap: 16px; border-bottom: 1px solid var(--grey-300); margin-bottom: 14px; }
+  .stage-toggle button { font-family: var(--font); font-size: 12.5px; font-weight: 600; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--grey-500); padding: 0 0 7px; cursor: pointer; margin-bottom: -1px; }
+  .stage-toggle button.active { color: var(--black); border-bottom-color: var(--grey-700); font-weight: 700; }
+
+  .fake-search { width: 100%; padding: 9px 15px; border-radius: var(--radius-pill); border: 1px solid var(--grey-300); background: var(--card-bg); color: var(--grey-500); font-size: 12.5px; font-family: var(--font); margin-bottom: 12px; }
+
+  .row { display: flex; flex-wrap: wrap; gap: 12px 16px; position: relative; }
+  .row.center { align-items: center; }
+  .row.flexend { align-items: flex-end; }
+
+  /* BEFORE: today's shipped shapes */
+  .before .pp-toggle { display: inline-flex; background: linear-gradient(180deg, var(--grey-100), var(--card-bg)); border: 1px solid var(--grey-300); border-radius: var(--radius-pill); padding: 4px; gap: 2px; }
+  .before .pp-pill { font-family: var(--font); font-size: 13.5px; font-weight: 700; padding: 9px 18px; border-radius: var(--radius-pill); border: 1.5px solid transparent; background: transparent; color: var(--grey-700); }
+  .before .pp-pill.active { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; border-color: rgba(255,255,255,0.9); box-shadow: 0 3px 10px rgba(0,113,227,0.35); }
+  .before .qdp-old { font-family: var(--font); font-size: 14px; font-weight: 400; padding: 12px 13px; border-radius: var(--radius-sm); border: 1px solid var(--grey-300); background: var(--card-bg); color: var(--black); display: inline-flex; align-items: center; gap: 8px; }
+  .before .pp-btn { font-family: var(--font); font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: var(--radius-pill); border: 1px solid var(--accent); background: var(--card-bg); color: var(--accent); }
+  /* Real chevron, not a text glyph - a text "⌄" positioned by hand
+     never lands on the exact same baseline as the app's actual
+     background-image SVG chevron, which is what made the first
+     pass's dropdown arrow look subtly off. Same technique the real
+     .pill-select uses: appearance:none plus a background-image, so
+     this renders pixel-for-pixel like the shipped control. */
+  .pp-select-chevron {
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a4a4c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; background-size: 12px;
+  }
+  .before .pp-select { font-family: var(--font); font-size: 13px; font-weight: 600; padding: 8px 32px 8px 16px; border-radius: var(--radius-pill); border: 1px solid var(--grey-300); background-color: var(--card-bg); color: var(--black); }
+  .before .qdp-old-labeled { font-family: var(--font); font-size: 14px; font-weight: 400; padding: 12px 13px; border-radius: var(--radius-sm); border: 1px solid var(--grey-500); background: var(--card-bg); color: var(--grey-500); }
+  .before .lab-col { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .before .pill-label { font-size: 13px; font-weight: 600; color: var(--grey-700); }
+
+  /* AFTER: height-matched shapes - pill unchanged, everything else grown/reshaped to meet it */
+  .after .pp-toggle { display: inline-flex; background: linear-gradient(180deg, var(--grey-100), var(--card-bg)); border: 1px solid var(--grey-300); border-radius: var(--radius-pill); padding: 4px; gap: 2px; }
+  .after .pp-pill { font-family: var(--font); font-size: 13.5px; font-weight: 700; padding: 9px 18px; border-radius: var(--radius-pill); border: 1.5px solid transparent; background: transparent; color: var(--grey-700); }
+  .after .pp-pill.active { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; border-color: rgba(255,255,255,0.9); box-shadow: 0 3px 10px rgba(0,113,227,0.35); }
+  .after .qdp-new { font-family: var(--font); font-size: 14px; font-weight: 400; padding: 9px 16px; border-radius: var(--radius-pill); border: 1px solid var(--grey-300); background: var(--card-bg); color: var(--black); display: inline-flex; align-items: center; gap: 8px; }
+  .after .pp-btn { font-family: var(--font); font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: var(--radius-pill); border: 1px solid var(--accent); background: var(--card-bg); color: var(--accent); }
+  /* Revenue/No-shows' Custom dropdown - left exactly as shipped, 8px,
+     per feedback that it already looks fine and doesn't need to match
+     the pill's height. */
+  .after .pp-select { font-family: var(--font); font-size: 13px; font-weight: 600; padding: 8px 32px 8px 16px; border-radius: var(--radius-pill); border: 1px solid var(--grey-300); background-color: var(--card-bg); color: var(--black); }
+  .after .qdp-new-labeled-revenue { font-family: var(--font); font-size: 14px; font-weight: 400; padding: 9px 16px; border-radius: var(--radius-pill); border: 1px solid var(--grey-500); background: var(--card-bg); color: var(--grey-500); }
+  .after .qdp-new-labeled { font-family: var(--font); font-size: 14px; font-weight: 400; padding: 8px 16px; border-radius: var(--radius-pill); border: 1px solid var(--grey-500); background: var(--card-bg); color: var(--grey-500); }
+  .after .pp-select-8 { font-family: var(--font); font-size: 13px; font-weight: 600; padding: 8px 32px 8px 16px; border-radius: var(--radius-pill); border: 1px solid var(--grey-300); background-color: var(--card-bg); color: var(--black); }
+  .after .lab-col { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .after .pill-label { font-size: 13px; font-weight: 600; color: var(--grey-700); }
+
+  .demo[data-state="single"] .range-only { display: none; }
+  .demo[data-state="range"] .single-only { display: none; }
+
+  .ruler-toggle-wrap { text-align: right; margin-top: 10px; }
+  .ruler-toggle { font-family: var(--font); font-size: 11px; font-weight: 700; color: var(--ruler); background: none; border: 1px dashed var(--ruler); border-radius: var(--radius-pill); padding: 4px 10px; cursor: pointer; }
+  .ruler-line { position: absolute; left: -4px; right: -4px; height: 1px; background: var(--ruler); z-index: 5; pointer-events: none; }
+
+  .px-note { font-size: 11.5px; color: var(--grey-500); margin-top: 10px; font-variant-numeric: tabular-nums; }
+  .px-note b { color: var(--grey-700); }
+
+  .diff-list { list-style: none; margin: 0; padding: 0; font-size: 13px; line-height: 1.7; }
+  .diff-list li { padding-left: 18px; position: relative; margin-bottom: 4px; }
+  .diff-list li::before { content: '→'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+  .diff-list code { background: var(--grey-100); border: 1px solid var(--grey-300); border-radius: 4px; padding: 1px 5px; font-size: 12px; }
+</style>
+
+<div class="wrap">
+  <h1>Filter row height fix</h1>
+  <p class="lede">No new labels, no restructuring — every box that needed it grows or reshapes to match its neighbours. The gradient pill (<code>.period-pill</code>) and the Custom/Period dropdowns stay exactly as they are today; the Date field, Today button, and From/To pickers pick up 1px of padding and, where they were still a squarish 8px-radius box, the same full pill shape the Date field already has. The dropdown's chevron is also fixed below — the last render's version was a hand-placed character, not the site's real SVG arrow, which is what made it look slightly off.</p>
+
+  <div class="section">
+    <h2>Revenue &amp; No-shows</h2>
+    <p class="note">Single day (pill · date · Today) and Range → Custom (pill · dropdown · From · To) both get every box in the row to the same height as the pill.</p>
+    <div class="compare">
+      <div class="pane">
+        <div class="pane-label before"><span class="dot"></span>Before</div>
+        <div class="stage-toggle-caption">👆 Mockup control, not part of the design — pick a state to preview</div>
+        <div class="stage-toggle" data-toggle-for="b1"><button class="active" data-state="single">Preview: Single day</button><button data-state="range">Preview: Range → Custom</button></div>
+        <input class="fake-search" disabled value="Search by patient name..." />
+        <div class="before demo" id="b1" data-state="single">
+          <div class="row center">
+            <div class="pp-toggle"><button class="pp-pill active">Single day</button><button class="pp-pill">Range</button></div>
+            <div class="single-only qdp-old">28 Aug 2026 📅</div>
+            <button class="single-only pp-btn">Today</button>
+            <div class="range-only pp-select pp-select-chevron">Custom</div>
+            <div class="range-only qdp-old-labeled">Pick a date 📅</div>
+            <div class="range-only qdp-old-labeled">Pick a date 📅</div>
+          </div>
+        </div>
+        <div class="ruler-toggle-wrap"><button class="ruler-toggle" data-ruler-for="b1">Show heights</button></div>
+      </div>
+      <div class="pane">
+        <div class="pane-label after"><span class="dot"></span>After</div>
+        <div class="stage-toggle" data-toggle-for="a1"><button class="active" data-state="single">Single day</button><button data-state="range">Range → Custom</button></div>
+        <input class="fake-search" disabled value="Search by patient name..." />
+        <div class="after demo" id="a1" data-state="single">
+          <div class="row center">
+            <div class="pp-toggle"><button class="pp-pill active">Single day</button><button class="pp-pill">Range</button></div>
+            <div class="single-only qdp-new">28 Aug 2026 📅</div>
+            <button class="single-only pp-btn">Today</button>
+            <div class="range-only pp-select pp-select-chevron">Custom</div>
+            <div class="range-only qdp-new-labeled-revenue">Pick a date 📅</div>
+            <div class="range-only qdp-new-labeled-revenue">Pick a date 📅</div>
+          </div>
+        </div>
+        <div class="ruler-toggle-wrap"><button class="ruler-toggle" data-ruler-for="a1">Show heights</button></div>
+      </div>
+    </div>
+    <ul class="diff-list" style="margin-top:18px;">
+      <li><code>.period-pill</code> — untouched, stays <b>9px 18px</b> padding.</li>
+      <li><code>#singleDayFilters .qdp-trigger</code> (the Date field) — padding <b>8px→9px</b>, already pill-shaped.</li>
+      <li><code>#singleDayFilters .pill-btn</code> (Today) — new scoped rule, padding <b>8px→9px</b>.</li>
+      <li><code>#rangePresetField .pill-select</code> (the Custom dropdown) — <b>left as-is</b>, per feedback. Still 8px, still the current shape.</li>
+      <li><code>#customRangeFilters .qdp-trigger</code> (From/To) — now pill-shaped (<b>8px-radius box → full pill</b>), padding <b>12px→9px</b>, matching the pill/Date/Today — not the Custom dropdown next to it.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Analytics &amp; Patient Directory</h2>
+    <p class="note">No pill toggle in this row — just Period next to From/To, so nothing needs the extra 1px. Only the boxes' shape changes: the From/To picker goes from a squarish, taller 8px-radius box to the same slim pill as Period.</p>
+    <div class="compare">
+      <div class="pane">
+        <div class="pane-label before"><span class="dot"></span>Before</div>
+        <input class="fake-search" disabled value="Search by patient name, phone, or address..." />
+        <div class="before">
+          <div class="row flexend">
+            <div class="lab-col"><span class="pill-label">Period</span><div class="pp-select pp-select-chevron">Custom</div></div>
+            <div class="lab-col"><span class="pill-label">From</span><div class="qdp-old-labeled">Pick a date 📅</div></div>
+            <div class="lab-col"><span class="pill-label">To</span><div class="qdp-old-labeled">Pick a date 📅</div></div>
+          </div>
+        </div>
+        <div class="ruler-toggle-wrap"><button class="ruler-toggle" data-ruler-for="b2">Show heights</button></div>
+        <div class="row-ref" id="b2" style="display:none;"></div>
+      </div>
+      <div class="pane">
+        <div class="pane-label after"><span class="dot"></span>After</div>
+        <input class="fake-search" disabled value="Search by patient name, phone, or address..." />
+        <div class="after">
+          <div class="row flexend">
+            <div class="lab-col"><span class="pill-label">Period</span><div class="pp-select-8 pp-select-chevron">Custom</div></div>
+            <div class="lab-col"><span class="pill-label">From</span><div class="qdp-new-labeled">Pick a date 📅</div></div>
+            <div class="lab-col"><span class="pill-label">To</span><div class="qdp-new-labeled">Pick a date 📅</div></div>
+          </div>
+        </div>
+        <div class="ruler-toggle-wrap"><button class="ruler-toggle" data-ruler-for="a2">Show heights</button></div>
+        <div class="row-ref" id="a2" style="display:none;"></div>
+      </div>
+    </div>
+    <ul class="diff-list" style="margin-top:18px;">
+      <li><code>.pill-select</code> (Period) — untouched, stays <b>8px 16px</b> vertical padding.</li>
+      <li><code>#trendsCustomRangeFilters .qdp-trigger</code>, <code>#customPeriodFilters .qdp-trigger</code> (From/To) — <b>8px-radius box → full pill</b>, padding <b>12px→8px</b>. Border-color darkening already shipped stays as-is.</li>
+    </ul>
+  </div>
+
+  <p class="px-note">Approximate rendered box heights at default browser line-height — <b>Before:</b> pill ≈37px, date/Today ≈35px, Custom dropdown ≈33px, From/To picker ≈41px (tallest box in the row, and the wrong shape). <b>After:</b> pill ≈37px, date/Today ≈37px, From/To picker ≈37px (Revenue/No-shows), Custom dropdown left at its current ≈33px. Analytics/Patient Directory: Period ≈34px, From/To picker ≈34px — same shape, same height as each other.</p>
+</div>
+
+<script>
+  document.querySelectorAll('[data-toggle-for]').forEach((tg) => {
+    const demo = document.getElementById(tg.dataset.toggleFor);
+    tg.querySelectorAll('button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        tg.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        demo.dataset.state = btn.dataset.state;
+        const line = demo.querySelector('.ruler-line');
+        if (line) line.remove();
+      });
+    });
+  });
+
+  document.querySelectorAll('.ruler-toggle').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.rulerFor;
+      let row = document.querySelector('#' + targetId + ' .row');
+      if (!row) {
+        // static (non-toggled) sections reference a placeholder id - find
+        // the row inside the same pane instead.
+        row = btn.closest('.pane').querySelector('.row');
+      }
+      const existing = row.querySelector('.ruler-line');
+      if (existing) { existing.remove(); return; }
+      const rowRect = row.getBoundingClientRect();
+      const items = Array.from(row.children).filter((c) => c.offsetParent !== null && !c.classList.contains('ruler-line'));
+      const bottoms = items.map((c) => c.getBoundingClientRect().bottom - rowRect.top);
+      const maxBottom = Math.max(...bottoms);
+      const line = document.createElement('div');
+      line.className = 'ruler-line';
+      line.style.top = maxBottom + 'px';
+      row.style.position = 'relative';
+      row.appendChild(line);
+    });
+  });
+</script>

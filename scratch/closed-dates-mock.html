@@ -1,0 +1,204 @@
+<title>Closed Dates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
+<style>
+:root {
+  --accent: #0071e3;
+  --accent-dark: #0058b0;
+  --black: #1d1d1f;
+  --grey-900: #2b2b2d;
+  --grey-700: #4a4a4c;
+  --grey-500: #86868b;
+  --grey-300: #d2d2d7;
+  --grey-100: #f5f5f7;
+  --white: #ffffff;
+  --danger: #c5221f;
+  --danger-bg: #fce8e6;
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --radius: 12px;
+  --dark-surface-bg: #1d1d1f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --black: #f2f2f4;
+    --grey-900: #3a3a3c;
+    --grey-700: #c7c7cc;
+    --grey-500: #98989d;
+    --grey-300: #48484a;
+    --grey-100: #232325;
+    --white: #1c1c1e;
+    --danger-bg: rgba(197, 34, 31, 0.22);
+  }
+}
+:root[data-theme="dark"] {
+  --black: #f2f2f4;
+  --grey-900: #3a3a3c;
+  --grey-700: #c7c7cc;
+  --grey-500: #98989d;
+  --grey-300: #48484a;
+  --grey-100: #232325;
+  --white: #1c1c1e;
+  --danger-bg: rgba(197, 34, 31, 0.22);
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font); color: var(--black); background: var(--grey-100); -webkit-font-smoothing: antialiased; }
+.mock-shell { display: flex; min-height: 560px; border: 1px solid var(--grey-300); border-radius: var(--radius); overflow: hidden; }
+.mock-sidebar { width: 200px; flex-shrink: 0; background: var(--white); border-right: 1px solid var(--grey-300); padding: 20px 16px; }
+.mock-brand { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 20px; }
+.mock-nav a { display: block; padding: 8px 10px; margin-bottom: 2px; border-radius: 8px; font-size: 13px; color: var(--grey-700); text-decoration: none; }
+.mock-nav a.active { background: var(--grey-100); color: var(--black); font-weight: 600; }
+.mock-main { flex: 1; background: var(--grey-100); padding: 32px 36px; overflow-y: auto; }
+.breadcrumb { font-size: 13px; color: var(--grey-500); margin-bottom: 4px; }
+.breadcrumb span { margin: 0 4px; }
+h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 20px; }
+.panel { background: var(--white); border: 1px solid var(--grey-300); border-radius: var(--radius); padding: 26px 28px; margin-bottom: 20px; }
+.panel h2 { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 8px; }
+.panel-note { font-size: 13px; color: var(--grey-500); margin: 0 0 16px; }
+.inline-form { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+.field { min-width: 160px; }
+.field label { display: block; font-size: 13px; font-weight: 600; color: var(--grey-700); margin-bottom: 6px; }
+.field input { width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid var(--grey-300); border-radius: 8px; font-family: var(--font); background: var(--white); color: var(--black); }
+.field input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+.field-error { display: block; font-size: 12px; color: var(--danger); margin-top: 6px; min-height: 15px; }
+.btn-sm { font-family: var(--font); font-size: 13px; font-weight: 600; padding: 7px 14px; border-radius: 8px; border: 1px solid transparent; background: var(--grey-100); color: var(--grey-700); cursor: pointer; }
+.btn-sm.primary { background: var(--accent); color: #ffffff; padding: 10px 18px; font-size: 14px; }
+.btn-sm.primary:hover { background: var(--accent-dark); }
+.btn-sm.danger { background: transparent; color: var(--danger); padding: 5px 10px; }
+.btn-sm.danger:hover { background: var(--danger-bg); }
+table.qtable { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 20px; }
+table.qtable th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--grey-500); padding: 8px 10px; border-bottom: 1px solid var(--grey-300); }
+table.qtable td { padding: 12px 10px; border-bottom: 1px solid var(--grey-100); vertical-align: middle; }
+table.qtable tr:last-child td { border-bottom: none; }
+.sub-line { font-size: 12px; color: var(--grey-500); margin-top: 2px; }
+.empty-state { padding: 24px 0; text-align: center; color: var(--grey-500); font-size: 14px; }
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--dark-surface-bg); color: #ffffff; padding: 12px 20px; border-radius: 10px; font-size: 14px; opacity: 0; transform: translateY(10px); transition: opacity 0.2s ease, transform 0.2s ease; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+.mock-note { font-size: 12px; color: var(--grey-500); margin-top: 14px; text-align: center; }
+</style>
+
+<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;">Mockup of a new Closed Dates settings page for the Qlinic clinic app, where an admin adds one-off closure dates like holidays and Reception is warned before booking on them.</h2>
+
+<div class="mock-shell">
+  <aside class="mock-sidebar">
+    <div class="mock-brand">Qlinic</div>
+    <nav class="mock-nav">
+      <a href="#">Dashboard</a>
+      <a href="#">Reception</a>
+      <a href="#">Doctor View</a>
+      <a href="#">Revenue</a>
+      <a href="#">Trends</a>
+      <a href="#" class="active">Settings</a>
+    </nav>
+  </aside>
+  <main class="mock-main">
+    <div class="breadcrumb"><a href="#">Settings</a><span>/</span>Closed dates</div>
+    <h1>Closed dates</h1>
+
+    <div class="panel">
+      <h2>Add a closure</h2>
+      <p class="panel-note">Reception is warned before booking an appointment on any date listed below.</p>
+      <form id="closureForm" class="inline-form">
+        <div class="field" style="max-width:200px;">
+          <label for="closureDate">Date</label>
+          <input type="date" id="closureDate" />
+          <span class="field-error" id="dateError"></span>
+        </div>
+        <div class="field" style="flex:1;min-width:220px;">
+          <label for="closureNote">Note (optional)</label>
+          <input type="text" id="closureNote" placeholder="e.g. Diwali" />
+          <span class="field-error"></span>
+        </div>
+        <div class="field" style="flex:0;">
+          <label style="visibility:hidden;">Add</label>
+          <button type="submit" class="btn-sm primary">Add closure</button>
+        </div>
+      </form>
+
+      <div id="tableWrap"></div>
+    </div>
+
+    <p class="mock-note">Mockup only — Add and Delete work locally to preview the flow, nothing is saved.</p>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let closures = [
+  { date: '2026-10-20', note: 'Diwali' },
+  { date: '2026-01-26', note: 'Republic Day' },
+  { date: '2026-08-15', note: 'Independence Day' },
+];
+
+function fmtDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function render() {
+  const wrap = document.getElementById('tableWrap');
+  if (closures.length === 0) {
+    wrap.innerHTML = '<div class="empty-state">No closed dates added yet.</div>';
+    return;
+  }
+  const sorted = [...closures].sort((a, b) => a.date.localeCompare(b.date));
+  wrap.innerHTML = `
+    <table class="qtable">
+      <thead><tr><th>Date</th><th>Note</th><th></th></tr></thead>
+      <tbody>
+        ${sorted.map((c) => `
+          <tr>
+            <td>${fmtDate(c.date)}</td>
+            <td>${c.note ? c.note : '<span class="sub-line">No note</span>'}</td>
+            <td style="text-align:right;"><button type="button" class="btn-sm danger" data-date="${c.date}">Delete</button></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+  wrap.querySelectorAll('[data-date]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (!confirm('Remove this closed date?')) return;
+      closures = closures.filter((c) => c.date !== btn.getAttribute('data-date'));
+      render();
+      showToast('Closed date removed');
+    });
+  });
+}
+
+document.getElementById('closureForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const dateInput = document.getElementById('closureDate');
+  const noteInput = document.getElementById('closureNote');
+  const dateError = document.getElementById('dateError');
+  const date = dateInput.value;
+  if (!date) {
+    dateError.textContent = 'Pick a date first';
+    return;
+  }
+  if (closures.some((c) => c.date === date)) {
+    dateError.textContent = '';
+    showToast('That date is already on the list');
+    return;
+  }
+  dateError.textContent = '';
+  closures.push({ date, note: noteInput.value.trim() });
+  dateInput.value = '';
+  noteInput.value = '';
+  render();
+  showToast('Closed date added');
+});
+document.getElementById('closureDate').addEventListener('input', () => {
+  document.getElementById('dateError').textContent = '';
+});
+
+render();
+</script>
