@@ -1821,6 +1821,11 @@ input[type="number"] { -moz-appearance: textfield; }
   pointer-events: none;
   background: radial-gradient(ellipse 70% 60% at 50% 30%, rgba(0, 113, 227, 0.18) 0%, rgba(0, 113, 227, 0.06) 45%, rgba(0, 113, 227, 0) 75%);
 }
+/* Black base with a moving light band clipped to the text itself
+   ("diamond shines" per feedback) rather than a static color -- the
+   gradient's own stops carry the color, so background-clip:text
+   doubles as both the black fill and the sweeping highlight in one
+   property instead of layering a separate glow effect on top. */
 .auth-headline {
   position: relative;
   z-index: 1;
@@ -1829,9 +1834,22 @@ input[type="number"] { -moz-appearance: textfield; }
   font-size: clamp(38px, 4.2vw, 54px);
   line-height: 1.22;
   letter-spacing: -0.01em;
-  color: #227a4c;
   text-align: center;
   max-width: 480px;
+  background: linear-gradient(110deg, #1d1d1f 35%, #f5f5f7 48%, #ffffff 52%, #1d1d1f 65%);
+  background-size: 250% 100%;
+  background-position: 200% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: auth-headline-shine 5s ease-in-out infinite;
+}
+@keyframes auth-headline-shine {
+  0%, 15% { background-position: 200% 0; }
+  85%, 100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-headline { animation: none; background-position: 0 0; }
 }
 
 /* Flat white, no separate bordered card inside it -- the pane itself
@@ -1850,15 +1868,13 @@ input[type="number"] { -moz-appearance: textfield; }
   border-left: 1px solid var(--grey-300);
   box-shadow: -24px 0 48px rgba(0, 0, 0, 0.04);
 }
-.auth-form-inner { width: 100%; max-width: 420px; }
 /* signup.html's form runs to 9+ fields (address split into building/
-   area/landmark, city/state, phone, logo upload) -- cramped at the
-   other three pages' 420px, so it gets its own wider pane and column,
-   set via this one modifier on .auth-shell rather than a second copy
-   of every rule above. */
-.auth-shell.auth-wide .auth-illustration { flex: 1 1 50%; }
-.auth-shell.auth-wide .auth-form-pane { flex: 1 1 50%; }
-.auth-shell.auth-wide .auth-form-inner { max-width: 520px; }
+   area/landmark, city/state, phone, logo upload) and was briefly given
+   its own wider 50/50 pane for breathing room -- reverted per explicit
+   feedback: every auth page uses the identical 66/34 split and 420px
+   form column, full stop, rather than one page looking different from
+   the other three. */
+.auth-form-inner { width: 100%; max-width: 420px; }
 
 .auth-eyebrow { font-size: 20px; font-weight: 600; color: var(--grey-500); margin-bottom: 8px; }
 .auth-eyebrow b { color: var(--black); }
@@ -1944,20 +1960,15 @@ input[type="number"] { -moz-appearance: textfield; }
 .auth-hint a:hover { text-decoration: underline; }
 
 @media (max-width: 900px) {
-  .auth-shell, .auth-shell.auth-wide { flex-direction: column; }
+  .auth-shell { flex-direction: column; }
   /* Same fallback the real .login-brand-corner already uses on a
      narrow viewport: out of absolute positioning and into normal
      flow, so it can't sit underneath (or collide with) the stacked
      illustration pane's own top padding. */
   .auth-corner-brand { position: static; margin: 20px 0 0 24px; }
-  .auth-illustration, .auth-shell.auth-wide .auth-illustration {
-    position: static; height: auto; flex: none; padding: 40px 24px;
-  }
+  .auth-illustration { position: static; height: auto; flex: none; padding: 40px 24px; }
   .auth-headline { font-size: 30px; }
-  .auth-form-pane, .auth-shell.auth-wide .auth-form-pane {
-    flex: none; padding: 40px 24px; border-left: none; box-shadow: none; border-top: 1px solid var(--grey-300);
-  }
-  .auth-shell.auth-wide .auth-form-inner { max-width: 420px; }
+  .auth-form-pane { flex: none; padding: 40px 24px; border-left: none; box-shadow: none; border-top: 1px solid var(--grey-300); }
 }
 
 /* ---------------- App shell (dashboard / reception / doctor) ---------------- */
