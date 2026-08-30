@@ -2367,6 +2367,14 @@ th.th-filterable { position: relative; }
    other pages rely on for their own flex-end alignment. */
 #clinicForm.inline-form { align-items: flex-start; }
 
+/* Team's "Add a staff member" form is deliberately two literal
+   .inline-form rows (identity/credentials/phone, then role/doctor/the
+   submit button) rather than one row left to .inline-form's own
+   flex-wrap to break wherever it happens to once Phone pushed it past
+   4 fields -- that would land the split at a different point depending
+   on viewport width, not the grouping actually intended. */
+#addStaffForm .inline-form + .inline-form { margin-top: 14px; }
+
 /* Queue rules and Display screen rows read as cramped/undersized next
    to the rest of the app's controls (10px gap, small buttons and
    time-pickers): bigger boxes, a wider gap, and the Save button matched

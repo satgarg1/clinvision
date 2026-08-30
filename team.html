@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=220" />
+<link rel="stylesheet" href="styles.css?v=221" />
 </head>
 <body>
   <div class="app-shell">
@@ -57,39 +57,51 @@
       <div class="panel">
         <div class="panel-header"><h2>Add a staff member</h2></div>
         <p class="panel-note">
-          Create their login here, then share the email and password with them yourself
-          (WhatsApp, in person, however you'd normally do it).
+          Create their login here, then share the email, password, and phone number with them
+          yourself (WhatsApp, in person, however you'd normally do it). The phone number lets
+          them log in with their phone instead of typing their email every time.
         </p>
-        <form id="addStaffForm" class="inline-form">
-          <div class="field">
-            <label>Full name</label>
-            <input type="text" id="newStaffName" placeholder="Priya Sharma" required />
+        <form id="addStaffForm">
+          <div class="inline-form">
+            <div class="field">
+              <label>Full name</label>
+              <input type="text" id="newStaffName" placeholder="Priya Sharma" required />
+            </div>
+            <div class="field">
+              <label>Email</label>
+              <input type="email" id="newStaffEmail" required />
+            </div>
+            <div class="field">
+              <label>Password</label>
+              <input type="text" id="newStaffPassword" minlength="6" required placeholder="At least 6 characters" />
+            </div>
+            <div class="field">
+              <label>Phone <span class="sub-line">(for phone login)</span></label>
+              <div style="display:flex;gap:8px;">
+                <input type="text" value="+91" disabled style="flex:0 0 60px;text-align:center;" />
+                <input type="tel" id="newStaffPhone" inputmode="numeric" maxlength="10" placeholder="10-digit number" style="flex:1;min-width:0;" />
+              </div>
+            </div>
           </div>
-          <div class="field">
-            <label>Email</label>
-            <input type="email" id="newStaffEmail" required />
-          </div>
-          <div class="field">
-            <label>Password</label>
-            <input type="text" id="newStaffPassword" minlength="6" required placeholder="At least 6 characters" />
-          </div>
-          <div class="field">
-            <label>Role</label>
-            <select id="newStaffRole">
-              <option value="reception">Reception</option>
-              <option value="doctor">Doctor</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-          <div class="field" id="newStaffDoctorField" style="display:none;">
-            <label>Which doctor</label>
-            <select id="newStaffDoctorId">
-              <option value="">— link later —</option>
-            </select>
-          </div>
-          <div class="field" style="flex:0;min-width:190px;">
-            <label>&nbsp;</label>
-            <button type="submit" class="btn-sm primary">Add staff member</button>
+          <div class="inline-form">
+            <div class="field" style="max-width:220px;">
+              <label>Role</label>
+              <select id="newStaffRole">
+                <option value="reception">Reception</option>
+                <option value="doctor">Doctor</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div class="field" id="newStaffDoctorField" style="display:none;max-width:260px;">
+              <label>Which doctor</label>
+              <select id="newStaffDoctorId">
+                <option value="">— link later —</option>
+              </select>
+            </div>
+            <div class="field" style="flex:0;min-width:190px;">
+              <label>&nbsp;</label>
+              <button type="submit" class="btn-sm primary">Add staff member</button>
+            </div>
           </div>
         </form>
         <p class="panel-note" id="addStaffNote" style="display:none;margin-top:12px;margin-bottom:0;"></p>
@@ -106,7 +118,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=80"></script>
+  <script src="clinic-data.js?v=81"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -157,7 +169,7 @@
         const box = document.getElementById('teamList');
         box.innerHTML = `
           <table class="qtable">
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Linked doctor</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Linked doctor</th><th>Status</th><th></th></tr></thead>
             <tbody>
               ${team.map((p) => {
                 const isSelf = p.id === myProfileId;
@@ -165,6 +177,9 @@
                 <tr style="${p.isActive ? '' : 'opacity:0.5;'}">
                   <td>${p.fullName ? Qlinic.escapeHtml(p.fullName) : '·'}${isSelf ? ' <span class="sub-line">(you)</span>' : ''}</td>
                   <td>${Qlinic.escapeHtml(p.email)}</td>
+                  <td>
+                    <input type="tel" class="staff-phone" data-id="${p.id}" data-original="${p.phone ? Qlinic.escapeHtml(p.phone) : ''}" inputmode="numeric" maxlength="10" placeholder="Add for phone login" value="${p.phone ? Qlinic.escapeHtml(p.phone) : ''}" style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);" />
+                  </td>
                   <td>
                     <select class="staff-role" data-id="${p.id}" ${isSelf ? 'disabled' : ''} style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);">${roleOptionsHtml(p.role)}</select>
                   </td>
@@ -209,6 +224,30 @@
         this.value = this.value.replace(/[0-9]/g, '');
       });
 
+      // Strips anything non-numeric as they type, matching billing's own
+      // phone field and reception's patient forms.
+      document.getElementById('newStaffPhone').addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').slice(0, 10);
+      });
+
+      document.getElementById('teamList').addEventListener('input', function (e) {
+        if (!e.target.classList.contains('staff-phone')) return;
+        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+      });
+
+      document.getElementById('teamList').addEventListener('blur', async (e) => {
+        if (!e.target.classList.contains('staff-phone')) return;
+        if (e.target.value === e.target.getAttribute('data-original')) return; // untouched, don't re-save/toast
+        const id = e.target.getAttribute('data-id');
+        try {
+          await Qlinic.updateStaffPhone(id, e.target.value);
+          showToast('Phone number updated');
+        } catch (err) {
+          showToast(err.message || 'Could not update phone number — please try again.');
+        }
+        renderTeam();
+      }, true); // capture: 'blur' doesn't bubble, unlike 'change'/'input' above
+
       document.getElementById('teamList').addEventListener('change', async (e) => {
         if (e.target.classList.contains('staff-doctor-link')) {
           const id = e.target.getAttribute('data-id');
@@ -247,10 +286,11 @@
         const fullName = document.getElementById('newStaffName').value;
         const email = document.getElementById('newStaffEmail').value;
         const password = document.getElementById('newStaffPassword').value;
+        const phone = document.getElementById('newStaffPhone').value;
         const role = document.getElementById('newStaffRole').value;
         const doctorId = document.getElementById('newStaffDoctorId').value;
         try {
-          await Qlinic.createStaffAccount({ email, password, fullName, role, doctorId });
+          await Qlinic.createStaffAccount({ email, password, fullName, role, doctorId, phone });
           note.style.display = 'block';
           note.textContent = `Added. Share these with ${fullName}: email ${email}, password ${password}.`;
           e.target.reset();

@@ -2175,6 +2175,7 @@
     return {
       id: row.id,
       email: row.email,
+      phone: row.phone,
       fullName: row.full_name,
       role: row.role,
       isActive: row.is_active,
@@ -2246,7 +2247,7 @@
   // (or overwrites) the admin's own session in this browser's storage;
   // otherwise auth.signUp() would sign the admin's tab in as the new
   // staff member instead.
-  async function createStaffAccount({ email, password, fullName, role, doctorId }) {
+  async function createStaffAccount({ email, password, fullName, role, doctorId, phone }) {
     const tempClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
@@ -2258,6 +2259,7 @@
       staff_full_name: fullName,
       staff_role: role,
       staff_doctor_id: role === 'doctor' ? (doctorId || null) : null,
+      staff_phone: phone || null,
     });
     if (linkError) throw linkError;
   }
@@ -2269,6 +2271,16 @@
 
   async function updateStaffRole(profileId, role) {
     const { error } = await sb.from('profiles').update({ role }).eq('id', profileId);
+    if (error) throw error;
+  }
+
+  // Own RPC (not a direct table update, unlike updateStaffRole/
+  // updateStaffDoctorLink above) so the admin-only + same-clinic check
+  // lives in one place server-side rather than relying on an RLS policy
+  // written to match — phone feeds the pre-login lookup, so a stray
+  // write here is a bigger deal than most other profile fields.
+  async function updateStaffPhone(profileId, phone) {
+    const { error } = await sb.rpc('update_staff_phone', { staff_id: profileId, new_phone: phone || null });
     if (error) throw error;
   }
 
@@ -2424,6 +2436,7 @@
     setStaffActive,
     updateStaffRole,
     updateStaffDoctorLink,
+    updateStaffPhone,
 
     getTheme,
     setTheme,
