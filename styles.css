@@ -612,19 +612,32 @@ a { color: inherit; }
 }
 .hero-visual-caption { margin-top: 14px; font-family: var(--font); font-size: 13px; color: var(--grey-500); text-align: center; }
 
-/* The scroll-cue ("SCROLL" + trickling line) that lived here was a
-   "there's more below the fold" affordance -- it made sense reviewing
-   the hero alone as a full-screen mockup, but once real sections follow
-   immediately after, it just sits in whatever gap is left below the
-   shorter of the two hero columns and reads as a stray, broken element.
-   Removed along with its HTML/JS references. */
+/* Restored -- the earlier removal blamed this element for the dead gap,
+   but the real cause was the hero's own oversized padding (fixed above).
+   Now that the gap between hero and trust is tight, this sits right
+   below the CTA row as intended, not stranded in empty space. */
+.hero-scroll-cue {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 40px;
+  font-family: var(--font);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-500);
+}
+.hero-scroll-cue .dot { width: 1px; height: 26px; background: var(--grey-300); position: relative; overflow: hidden; }
+.hero-scroll-cue .dot::after { content: ''; position: absolute; top: -100%; left: 0; width: 100%; height: 100%; background: var(--grey-700); animation: hero-trickle 1.8s ease-in-out infinite; animation-delay: 3.4s; }
+@keyframes hero-trickle { 0% { top: -100%; } 60% { top: 100%; } 100% { top: 100%; } }
 
 /* Reduced motion should kill genuinely gratuitous, looping decoration
-   (the ambient glow) -- it should not also erase the one-time entrance
-   sequence, which is meaningful content pacing, not a parallax/
-   vestibular-trigger effect. */
+   (the ambient glow, the scroll-cue trickle) -- it should not also erase
+   the one-time entrance sequence, which is meaningful content pacing,
+   not a parallax/vestibular-trigger effect. */
 @media (prefers-reduced-motion: reduce) {
-  .hero-glow { animation: none !important; }
+  .hero-glow, .hero-scroll-cue .dot::after { animation: none !important; }
 }
 
 /* Trust band, v2 -- replaces the dark-surface version above. Same
