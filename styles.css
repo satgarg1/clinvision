@@ -779,6 +779,167 @@ a { color: inherit; }
   .trust-num { margin-left: auto; margin-right: auto; }
 }
 
+/* Full Suite, v1: six alternating text/illustration rows on the same paper
+   canvas as Trust, with a warm amber ambient glow (Trust's is green,
+   the hero's is blue -- each "chapter" of the page gets its own accent
+   on a shared neutral ground). Top padding deliberately kept modest
+   (70px, against Trust's own 130px bottom) rather than reusing this
+   mockup's original standalone 110px -- stacked on top of Trust's own
+   bottom padding, 110 would have reproduced the exact "too much space
+   between sections" mistake from the hero-to-trust port. Verified via
+   getBoundingClientRect after shipping: gap between Trust's last row
+   and this section's eyebrow is well short of the several-hundred-px
+   dead zone that triggered that fix. */
+.suite {
+  position: relative;
+  background: var(--mkt-paper);
+  padding: 70px 6vw 130px;
+  border-top: 1px solid var(--grey-300);
+  overflow: hidden;
+}
+.suite-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 90% 60% at 50% 0%, rgba(180, 83, 9, 0.14) 0%, rgba(180, 83, 9, 0.05) 45%, rgba(180, 83, 9, 0) 75%);
+}
+.suite-head { position: relative; z-index: 1; max-width: 640px; margin: 0 auto 96px; text-align: center; }
+.suite-eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  /* Trust's own eyebrow is 18px/700 -- this one is deliberately bigger,
+     not just matching it. */
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #8a4008;
+  margin-bottom: 18px;
+}
+.suite-h2 {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0;
+  color: var(--black);
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 20;
+  /* This headline runs long (65 characters) -- too long for Trust's own
+     640px header column at any readable size. width:max-content lets it
+     escape that cap (same trick as the hero eyebrow); the actual
+     centering is done via left:50%/translateX(-50%) rather than
+     margin:auto, since auto margins can't center a box that's already
+     wider than its parent (that's what caused the real "pushed right of
+     center" bug caught in mockup review -- margin:auto was overridden
+     with a redundant max-width:100% that silently clamped the box back
+     to 640px while the nowrap text overflowed past its right edge,
+     unclipped and unmeasured by a plain getBoundingClientRect check on
+     the box; there is no max-width here for exactly that reason). The
+     2.2vw ratio is conservative on purpose: needed-width and
+     available-width both scale linearly with viewport, so one ratio
+     holds the line at every width from ~700px up, confirmed with a
+     Range-based measurement of the actual painted text (not just the
+     element's box) at 1024px and 1920px. */
+  font-size: clamp(22px, 2.2vw, 34px);
+  white-space: nowrap;
+  width: max-content;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+}
+@media (max-width: 700px) {
+  /* Below 700px there's no sane font-size that keeps 65 characters on
+     one line and stays readable -- let it wrap normally instead,
+     matching how Trust's own (much shorter) h2 already behaves. */
+  .suite-h2 {
+    white-space: normal;
+    width: auto;
+    max-width: 100%;
+    font-size: clamp(24px, 6vw, 32px);
+    position: static;
+    left: auto;
+    transform: none;
+  }
+}
+.suite-rows {
+  position: relative;
+  z-index: 1;
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 130px;
+}
+.suite-row {
+  display: flex;
+  /* Top-aligned, not centered: centering let the shorter column (almost
+     always the text block) drift below the taller one's top edge. */
+  align-items: flex-start;
+  gap: 40px;
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.6s cubic-bezier(0.19, 1, 0.22, 1), transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+}
+.suite-row.show { opacity: 1; transform: translateY(0); }
+.suite-row.reverse { flex-direction: row-reverse; }
+.suite-row .text-col,
+.suite-row .art-col {
+  /* Equal flex-basis 0 + flex-grow 1 on both sides forces a strict 50/50
+     split every time, so a row's illustration always lines up under the
+     row above's text column and vice versa -- one consistent
+     two-column skeleton, not independently-sized pairs per row. */
+  flex: 1 1 0;
+  min-width: 0;
+}
+.suite-num {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 600;
+  /* Matches Trust's own big-numeral treatment (its .trust-num is 40px). */
+  font-size: 44px;
+  letter-spacing: 0;
+  color: var(--mkt-amber);
+  opacity: 0.75;
+  margin-bottom: 10px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 30;
+}
+.suite-title {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--black);
+  font-size: clamp(28px, 2.8vw, 36px);
+  line-height: 1.25;
+  margin: 0 0 16px;
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 16;
+}
+.suite-desc {
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--grey-700);
+  margin: 0;
+  max-width: 480px;
+}
+.art-col img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-hover);
+}
+@media (max-width: 900px) {
+  .suite-rows { gap: 90px; }
+  .suite-row, .suite-row.reverse { flex-direction: column; text-align: center; }
+  .suite-row .text-col, .suite-row .art-col { flex: 1 1 auto; width: 100%; }
+  .suite-desc { margin-left: auto; margin-right: auto; }
+}
+
 /* ---------------- Shared colorful accents (used across every logged-in page) ----------------
    Same 5-color palette as the landing page, applied consistently: each doctor
    gets a stable color (by their position in the doctors list) shown as a top

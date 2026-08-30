@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=212" />
+<link rel="stylesheet" href="styles.css?v=213" />
 </head>
 <body>
 
@@ -208,6 +208,95 @@
         document.fonts.ready.then(equalizeTrustLeads);
       }
       equalizeTrustLeads();
+    })();
+  </script>
+
+  <!-- FULL SUITE -->
+  <section class="suite">
+    <div class="suite-glow" aria-hidden="true"></div>
+    <div class="suite-head">
+      <div class="suite-eyebrow">The full suite</div>
+      <h2 class="suite-h2">One system, seamlessly integrated with every part of your clinic.</h2>
+    </div>
+    <div class="suite-rows">
+      <div class="suite-row" id="suiteRow1">
+        <div class="text-col">
+          <div class="suite-num">01</div>
+          <h3 class="suite-title">Queue &amp; Flow</h3>
+          <p class="suite-desc">No patient should have to guess how long they'll wait, or interrupt reception to find out. Patients see their position and also know when a doctor's running behind, without having to ask reception.</p>
+        </div>
+        <div class="art-col">
+          <img src="suite-queue.png" alt="A patient checking her phone calmly with a token and time thought bubble, while the receptionist helps another patient at the desk." />
+        </div>
+      </div>
+      <div class="suite-row reverse" id="suiteRow2">
+        <div class="text-col">
+          <div class="suite-num">02</div>
+          <h3 class="suite-title">Analytics &amp; Trends</h3>
+          <p class="suite-desc">You shouldn't have to guess whether business is up or down this month. Revenue, patient volume, and automatic anomaly alerts. A fact, not just a feeling that Tuesday was busy.</p>
+        </div>
+        <div class="art-col">
+          <img src="suite-analytics.png" alt="A clinic owner at his desk holding a small upward trend card, with a wall calendar behind him showing Tuesday circled." />
+        </div>
+      </div>
+      <div class="suite-row" id="suiteRow3">
+        <div class="text-col">
+          <div class="suite-num">03</div>
+          <h3 class="suite-title">Team &amp; Doctors</h3>
+          <p class="suite-desc">One doctor's day off, another's late start, a holiday nobody flagged: easy to lose track of when it all lives in someone's head. Multiple doctors, staff roles, holidays, and closed dates managed from one place, not a notebook.</p>
+        </div>
+        <div class="art-col">
+          <img src="suite-team.png" alt="Two doctors and a staff member standing together at a wall calendar, marking a holiday date." />
+        </div>
+      </div>
+      <div class="suite-row reverse" id="suiteRow4">
+        <div class="text-col">
+          <div class="suite-num">04</div>
+          <h3 class="suite-title">Patient Records</h3>
+          <p class="suite-desc">Paper records go missing. Memory fades. Neither should decide what a doctor knows about a patient. Every patient, every visit, searchable, plus automatic tracking of anyone who never showed up.</p>
+        </div>
+        <div class="art-col">
+          <img src="suite-records.png" alt="A receptionist holding neat patient folders, one marked with a search icon, beside a faded folder flagged as a missed visit." />
+        </div>
+      </div>
+      <div class="suite-row" id="suiteRow5">
+        <div class="text-col">
+          <div class="suite-num">05</div>
+          <h3 class="suite-title">One System, Not a Stack of Registers</h3>
+          <p class="suite-desc">Running a clinic on paper means running it on whoever remembers where they wrote something down. No more flipping through pages to find a patient's history. Every visit, every note, one search away.</p>
+        </div>
+        <div class="art-col">
+          <img src="suite-system.png" alt="A tall, toppling stack of old paper registers beside a staff member holding a phone showing a single checkmark instead." />
+        </div>
+      </div>
+      <div class="suite-row reverse" id="suiteRow6">
+        <div class="text-col">
+          <div class="suite-num">06</div>
+          <h3 class="suite-title">Consultation Billing, Handled</h3>
+          <p class="suite-desc">Manually written receipts are slow, easy to miscopy, and even easier to lose track of by the end of the day. Bill a consultation in seconds, with a printed receipt ready before the patient reaches the door.</p>
+        </div>
+        <div class="art-col">
+          <img src="suite-billing.png" alt="A doctor handing a freshly printed receipt to a patient already turning toward the door." />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // Scroll-triggered reveal for the Full Suite rows -- same pattern as
+    // the Trust row just above: this section sits below the fold, so it
+    // plays on intersection rather than a fixed timer like the hero's.
+    (function () {
+      var rows = document.querySelectorAll('.suite-row');
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('show');
+            obs.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.2 });
+      rows.forEach(function (el) { obs.observe(el); });
     })();
   </script>
 
