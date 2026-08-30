@@ -1127,12 +1127,14 @@ a { color: inherit; }
 .final-cta h2 {
   /* Same family/weight as the FAQ heading (Fraunces, 600, not 700) --
      "large font, not bold" per feedback, matching Razorpay's own
-     reference where the closing headline is big but not heavy. */
+     reference where the closing headline is big but not heavy.
+     Capped a bit lower than the hero's own 88px max -- "reduce the
+     font a little" feedback after seeing it at full width. */
   font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.15;
-  font-size: clamp(40px, 7vw, 88px);
+  font-size: clamp(38px, 6vw, 76px);
   margin: 0 0 32px;
   color: var(--black);
   font-optical-sizing: none;
