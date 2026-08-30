@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=203" />
+<link rel="stylesheet" href="styles.css?v=204" />
 </head>
 <body>
 
@@ -39,31 +39,86 @@
 
   <!-- HERO -->
   <section class="mkt-section" style="background:var(--mkt-paper);">
-    <div class="hero-grid">
-      <div>
-        <div class="eyebrow">Clinic queue &amp; billing, built for India</div>
-        <h1 class="mkt-h1" style="font-size:clamp(34px, 4.6vw, 58px); line-height:1.15;">Your waiting room is full. Everyone's asking the same question. One link answers it for you.</h1>
-        <p class="mkt-sub" style="margin:0 0 32px;">No app for patients to install, no new screen to buy, no retraining for reception. Just an honest, updating answer to "how much longer" &mdash; sent straight to a patient's phone.</p>
-        <div class="mkt-cta-row">
-          <a href="contact.html" class="btn btn-accent btn-large">Book a demo</a>
-          <a href="who-its-for.html" class="btn btn-ghost btn-large">Is this for my clinic?</a>
+    <div class="hero-stage">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="content">
+        <div class="eyebrow hero-fx" id="heroFxEyebrow">
+          Clinic management, built in India for India
+          <svg class="hero-flag" width="24" height="16" viewBox="0 0 30 20">
+            <rect width="30" height="6.67" y="0" fill="#FF9933"/>
+            <rect width="30" height="6.67" y="6.67" fill="#FFFFFF"/>
+            <rect width="30" height="6.67" y="13.33" fill="#138808"/>
+            <circle cx="15" cy="10" r="2.3" fill="none" stroke="#000080" stroke-width="0.45"/>
+            <circle cx="15" cy="10" r="0.55" fill="#000080"/>
+            <g stroke="#000080" stroke-width="0.3">
+              <line x1="15" y1="7.7" x2="15" y2="12.3"/>
+              <line x1="12.7" y1="10" x2="17.3" y2="10"/>
+              <line x1="13.35" y1="8.35" x2="16.65" y2="11.65"/>
+              <line x1="16.65" y1="8.35" x2="13.35" y2="11.65"/>
+            </g>
+          </svg>
+        </div>
+
+        <h1 class="mkt-h1">
+          <span class="hero-line hero-fx" id="heroFxLine1">Your doctor is behind schedule.</span>
+          <span class="hero-line hero-fx" id="heroFxLine2">Your staff repeats themselves all day.</span>
+          <span class="hero-line hero-line-last hero-fx" id="heroFxLine3">Your patients are guessing.</span>
+          <span class="hero-line-resolve hero-fx hero-fx-pop" id="heroFxResolve">One system fixes all three.</span>
+        </h1>
+
+        <p class="mkt-sub hero-sub hero-fx" id="heroFxSub">From the moment a patient walks in to the moment they walk out, one system handles the queue, the billing, the records, and the numbers behind your clinic.</p>
+
+        <div class="mkt-cta-row hero-fx" id="heroFxCta">
+          <a href="contact.html" class="btn btn-accent btn-large">Book a Demo</a>
+          <a href="#" id="heroWhatsapp" class="btn btn-ghost btn-large">Chat on WhatsApp</a>
         </div>
       </div>
-      <div class="hero-visual">
-        <div class="device-frame">
-          <div class="device-notch"></div>
-          <div class="device-screen">
-            <div class="qcard-label">Your patient's queue link</div>
-            <div class="qcard-position"><span class="qcard-num">3</span><span class="qcard-of">of 8 waiting</span></div>
-            <div class="qcard-doctor"><span class="status-dot"></span>Dr. Mehta &middot; running ~15 min behind</div>
-            <div class="qcard-eta">Expect your turn around <strong>4:40 PM</strong></div>
-            <div class="qcard-note">We'll message you the moment this changes.</div>
-          </div>
-        </div>
-        <div class="hero-visual-caption">Illustrative &mdash; what a patient actually sees, no app required</div>
+
+      <div class="hero-visual hero-fx" id="heroFxImage">
+        <img src="hero.png" alt="A calm clinic waiting room: the doctor's door shows a green status light, the receptionist is relaxed, and the patient checks her phone knowing her number is up next." />
+        <div class="hero-visual-caption hero-fx" id="heroFxCaption">Illustrative &mdash; a clinic already running on Qlinic</div>
       </div>
+
+      <div class="hero-scroll-cue hero-fx" id="heroFxScroll">Scroll<div class="dot"></div></div>
     </div>
   </section>
+
+  <script>
+    // TODO before this goes live to real visitors: same placeholder number
+    // as contact.html's WHATSAPP_NUMBER -- replace with the real business
+    // WhatsApp number, in one place, once it exists.
+    (function () {
+      var WHATSAPP_NUMBER = '91XXXXXXXXXX';
+      var msg = "Hi, I saw your website and want to know more about Qlinic.";
+      var link = document.getElementById('heroWhatsapp');
+      if (link) link.href = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(msg);
+    })();
+
+    // Hero entrance sequence -- real setTimeout timers + a .show class,
+    // not CSS animation-delay (which didn't reliably fire for the
+    // headline spans in testing). See styles.css's .hero-fx rules.
+    (function () {
+      var seq = [
+        ['heroFxEyebrow', 0],
+        ['heroFxImage', 300],
+        ['heroFxLine1', 250],
+        ['heroFxLine2', 600],
+        ['heroFxLine3', 950],
+        ['heroFxResolve', 1450],
+        ['heroFxSub', 2100],
+        ['heroFxCaption', 2250],
+        ['heroFxCta', 2350],
+        ['heroFxScroll', 2600]
+      ];
+      seq.forEach(function (pair) {
+        var id = pair[0], delay = pair[1];
+        window.setTimeout(function () {
+          var el = document.getElementById(id);
+          if (el) el.classList.add('show');
+        }, delay);
+      });
+    })();
+  </script>
 
   <!-- THE FIX -->
   <section class="mkt-section grey reveal">

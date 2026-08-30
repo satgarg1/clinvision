@@ -491,85 +491,125 @@ a { color: inherit; }
    not the page background default (which stays --white everywhere else). */
 :root { --mkt-paper: #faf8f4; }
 
-/* Two-column hero: headline+CTA on the left, an actual (illustrative, not
-   live) rendering of what a patient's queue link shows on the right --
-   replaces trying to sell the promise with abstract color blobs alone. */
-.hero-grid {
+/* Hero, v2: headline+CTA on the left, a real (illustrative, labeled)
+   clinic-scene image on the right -- replaced the earlier phone/queue-card
+   mockup after review found it read as exposing the actual product screen,
+   and replaced abstract color blobs before that. Classes below are scoped
+   under .hero-stage specifically so the entrance-sequence treatment (the
+   centered eyebrow, the oversized serif lines) can't leak onto this same
+   .eyebrow/.mkt-h1 markup used unstyled-by-this-block elsewhere on the page
+   and on the other 4 marketing pages -- confirmed via grep that
+   .hero-stage/.hero-fx/.hero-glow/.hero-line* are index.html-only. */
+.hero-stage {
+  position: relative;
   display: grid;
-  grid-template-columns: 1.15fr 1fr;
+  grid-template-columns: 0.95fr 1.1fr;
+  align-items: start;
   gap: 56px;
-  align-items: center;
-  text-align: left;
+  overflow: hidden;
 }
-.hero-grid .mkt-h1 { margin: 0 0 20px; }
-@media (max-width: 860px) {
-  .hero-grid { grid-template-columns: 1fr; text-align: center; }
-  .hero-grid .mkt-cta-row { justify-content: center; }
-  .hero-grid .hero-visual { order: -1; }
+.hero-stage .content { max-width: 560px; text-align: left; }
+@media (max-width: 900px) {
+  .hero-stage { grid-template-columns: 1fr; text-align: center; }
+  .hero-stage .content { max-width: 640px; margin: 0 auto; text-align: center; }
+  .hero-stage .eyebrow, .hero-stage .mkt-cta-row { justify-content: center; }
+  .hero-stage .hero-sub { margin: 34px auto 0; }
+  .hero-stage .hero-visual { order: -1; max-width: 480px; margin: 0 auto; }
 }
 
-.hero-visual { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-.device-frame {
-  width: 260px;
-  background: var(--black);
-  border-radius: 36px;
-  padding: 14px;
+.hero-glow {
+  position: absolute;
+  width: 900px;
+  height: 900px;
+  border-radius: 50%;
+  top: -420px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(0, 113, 227, 0.10) 0%, rgba(0, 113, 227, 0) 68%);
+  animation: hero-breathe 9s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes hero-breathe { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.08); } }
+
+/* Entrance sequence -- driven by JS adding .show to each element in turn
+   (see the inline script at the bottom of index.html), not CSS
+   animation-delay: animation-delay proved unreliable for headline spans
+   on first paint in testing. This mirrors the .reveal/.visible pattern
+   already used elsewhere on the site, just staged on a timer instead of
+   scroll intersection. */
+.hero-fx { opacity: 0; transform: translateY(20px); transition: opacity 0.6s cubic-bezier(0.19,1,0.22,1), transform 0.6s cubic-bezier(0.19,1,0.22,1); }
+.hero-fx.show { opacity: 1; transform: translateY(0); }
+.hero-fx.hero-fx-pop { transform: translateY(20px) scale(0.97); }
+.hero-fx.hero-fx-pop.show { transform: translateY(0) scale(1); }
+
+.hero-stage .eyebrow {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  margin-bottom: 32px;
+  font-size: 18px;
+  padding-left: 0;
+}
+/* The shared .eyebrow::before dot is positioned for a left-aligned label --
+   left:0 reads as a stray floating dot once this one specific eyebrow is
+   centered, so it's dropped here only; the flag icon already marks it. */
+.hero-stage .eyebrow::before { display: none; }
+.hero-flag { flex-shrink: 0; }
+
+.hero-stage .mkt-cta-row { justify-content: flex-start; margin-top: 38px; }
+
+.hero-stage .mkt-h1 { margin: 0; line-height: 1.16; }
+.hero-line { display: block; font-size: clamp(24px, 3vw, 38px); margin-bottom: 0.42em; }
+.hero-line.hero-line-last { margin-bottom: 0; }
+.hero-line-resolve {
+  display: inline-block;
+  margin-top: 0.55em;
+  color: var(--accent);
+  font-size: clamp(26px, 3.1vw, 39px);
+  font-weight: 700;
+  white-space: nowrap;
+}
+@media (max-width: 600px) {
+  .hero-line { font-size: clamp(22px, 6vw, 30px); }
+  .hero-line-resolve { font-size: clamp(26px, 7.5vw, 36px); }
+}
+
+.hero-sub { margin: 34px 0 0; }
+
+.hero-visual img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-hover);
-  transform: rotate(-3deg);
 }
-.device-notch {
-  width: 70px;
-  height: 18px;
-  background: var(--black);
-  border-radius: 0 0 14px 14px;
-  margin: 0 auto 6px;
-}
-.device-screen {
-  background: var(--mkt-paper);
-  border-radius: 24px;
-  padding: 26px 20px 22px;
-  text-align: left;
-}
-.qcard-label {
+.hero-visual-caption { margin-top: 14px; font-family: var(--font); font-size: 13px; color: var(--grey-500); text-align: center; }
+
+.hero-scroll-cue {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 40px;
   font-family: var(--font);
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--grey-500);
-  margin-bottom: 14px;
 }
-.qcard-position { display: flex; align-items: baseline; gap: 8px; margin-bottom: 14px; }
-.qcard-num {
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 48px;
-  font-weight: 600;
-  color: var(--accent);
-  line-height: 1;
+.hero-scroll-cue .dot { width: 1px; height: 26px; background: var(--grey-300); position: relative; overflow: hidden; }
+.hero-scroll-cue .dot::after { content: ''; position: absolute; top: -100%; left: 0; width: 100%; height: 100%; background: var(--grey-700); animation: hero-trickle 1.8s ease-in-out infinite; animation-delay: 3.4s; }
+@keyframes hero-trickle { 0% { top: -100%; } 60% { top: 100%; } 100% { top: 100%; } }
+
+/* Reduced motion should kill genuinely gratuitous, looping decoration (the
+   ambient glow, the scroll-cue trickle) -- it should not also erase the
+   one-time entrance sequence, which is meaningful content pacing, not a
+   parallax/vestibular-trigger effect. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-glow, .hero-scroll-cue .dot::after { animation: none !important; }
 }
-.qcard-of { font-family: var(--font); font-size: 14px; color: var(--grey-700); }
-.qcard-doctor {
-  font-family: var(--font);
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--black);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-bottom: 12px;
-}
-.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mkt-coral); flex-shrink: 0; }
-.qcard-eta { font-family: var(--font); font-size: 14px; color: var(--grey-700); margin: 0 0 10px; }
-.qcard-eta strong { color: var(--black); }
-.qcard-note {
-  font-family: var(--font);
-  font-size: 12px;
-  color: var(--grey-500);
-  border-top: 1px solid var(--grey-300);
-  padding-top: 10px;
-  margin-top: 4px;
-}
-.hero-visual-caption { font-family: var(--font); font-size: 13px; color: var(--grey-500); }
 
 /* Trust band -- reuses the existing .mkt-section.dark surface. Every claim
    here is real and checkable today (RLS isolation, the shipped Billing
