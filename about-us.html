@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>About us: Qlinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css?v=219" />
+</head>
+<body>
+
+  <nav class="mkt-nav">
+    <a href="index.html" class="brand">
+      <span class="brand-top">
+        <span class="brand-clock clock-face" id="navClock">
+          <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;color:var(--black);">
+            <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="5"></circle>
+            <line class="clock-hour" x1="50" y1="50" x2="50" y2="30" stroke="currentColor" stroke-width="6" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+            <line class="clock-min" x1="50" y1="50" x2="50" y2="18" stroke="currentColor" stroke-width="4" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+            <line class="clock-sec" x1="50" y1="50" x2="50" y2="14" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
+            <circle cx="50" cy="50" r="3" fill="currentColor"></circle>
+          </svg>
+        </span>
+        Qlinic
+      </span>
+      <span class="brand-tagline">Time is the one asset nobody gets back</span>
+    </a>
+    <div class="mkt-nav-links">
+      <a href="who-its-for.html" style="font-weight:600;font-size:15px;color:var(--black);text-decoration:none;">Who it's for</a>
+      <a href="whats-inside.html" style="font-weight:600;font-size:15px;color:var(--black);text-decoration:none;">What's inside</a>
+      <a href="how-it-works.html" style="font-weight:600;font-size:15px;color:var(--black);text-decoration:none;">How it works</a>
+      <a href="about-us.html" class="mkt-nav-current" style="font-weight:600;font-size:15px;text-decoration:none;">About us</a>
+      <a href="contact.html" style="font-weight:600;font-size:15px;color:var(--black);text-decoration:none;">Contact</a>
+      <a href="login.html" class="btn btn-accent">Log in</a>
+    </div>
+  </nav>
+
+  <!-- PLACEHOLDER: this page is a stub. Real content (our story, mission,
+       values, team) is a separate, deliberately-scoped piece of writing --
+       see the "About us page: real content" item in BACKLOG.md. -->
+  <div class="mkt-fullbleed" style="background:var(--mkt-paper);">
+    <section class="mkt-section" style="padding-top:160px;padding-bottom:160px;">
+      <div class="eyebrow">About us</div>
+      <h2 class="mkt-h2">Our story is still being written.</h2>
+      <p class="mkt-sub">This page is on its way. In the meantime, here's what Qlinic does and who it's for.</p>
+      <div class="mkt-cta-row">
+        <a href="who-its-for.html" class="btn btn-accent btn-large">Who it's for</a>
+        <a href="contact.html" class="btn btn-ghost btn-large">Contact us</a>
+      </div>
+    </section>
+  </div>
+
+  <footer class="mkt-footer">
+    Qlinic: Intelligent Clinic Flow Management &nbsp;·&nbsp; Prototype build, not for clinical or production use &nbsp;·&nbsp;
+    <a href="contact.html">Contact us</a> &nbsp;·&nbsp;
+    <a href="login.html">Clinic admin login</a>
+  </footer>
+
+  <script>
+    (function () {
+      function applyTime(root) {
+        const now = new Date();
+        const s = now.getSeconds();
+        const m = now.getMinutes();
+        const h = now.getHours() % 12;
+        const sec = root.querySelector('.clock-sec');
+        const min = root.querySelector('.clock-min');
+        const hour = root.querySelector('.clock-hour');
+        if (sec) sec.style.transform = `rotate(${s * 6}deg)`;
+        if (min) min.style.transform = `rotate(${m * 6 + s * 0.1}deg)`;
+        if (hour) hour.style.transform = `rotate(${h * 30 + m * 0.5}deg)`;
+      }
+      function tickAll() {
+        document.querySelectorAll('.clock-face').forEach(applyTime);
+      }
+      tickAll();
+      setInterval(tickAll, 1000);
+    })();
+  </script>
+
+</body>
+</html>
