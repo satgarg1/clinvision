@@ -636,27 +636,112 @@ a { color: inherit; }
   .hero-glow, .hero-scroll-cue .dot::after { animation: none !important; }
 }
 
-/* Trust band -- reuses the existing .mkt-section.dark surface. Every claim
-   here is real and checkable today (RLS isolation, the shipped Billing
-   Audit page, BYOD display, the ABDM schema work in progress) -- no
-   fabricated stats or customer logos, since there are no paying customers
-   on record yet to quote honestly. */
-.trust-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 40px;
-  text-align: left;
-  margin-top: 12px;
+/* Trust band, v2 -- replaces the dark-surface version above. Same
+   --mkt-paper canvas as the hero (no section-to-section color switch, so
+   scrolling from hero into this reads as one continuous surface), side by
+   side not stacked, no cards anywhere: five columns separated only by a
+   hairline, each anchored by a big Fraunces numeral -- this genuinely is
+   an enumerated list of five facts, so numbering carries real information
+   here, not decoration. Every claim is real and checkable today (RLS
+   isolation, Billing Audit, the ABDM schema work in progress, the
+   existing name-search check-in flow) -- no fabricated stats, since there
+   are no paying customers on record yet to quote honestly. Confirmed via
+   grep that no other page uses .trust/.trust-grid/.trust-item/.trust-icon,
+   so the old dark version's classes below are safely fully replaced, not
+   left as orphaned dead rules alongside these. */
+.trust {
+  position: relative;
+  background: var(--mkt-paper);
+  padding: 70px 6vw 130px;
+  border-top: 1px solid var(--grey-300);
+  overflow: hidden;
 }
-.trust-item { display: flex; flex-direction: column; gap: 10px; }
-/* Inline SVG, not emoji -- emoji glyph coverage/rendering is inconsistent
-   across OSes (a flag emoji silently falls back to raw letters on some
-   Windows font stacks, other glyphs render as a blank box), which is
-   exactly the kind of rough edge a "premium feel" pass exists to remove. */
-.trust-item .trust-icon { color: var(--accent); }
-.trust-item .trust-icon svg { display: block; }
-.trust-item p { font-family: var(--font); font-size: 15px; line-height: 1.5; color: var(--grey-300); margin: 0; }
-.trust-item strong { color: var(--white); }
+.trust-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 85% 90% at 50% 45%, rgba(21, 128, 61, 0.12) 0%, rgba(21, 128, 61, 0.05) 45%, rgba(21, 128, 61, 0) 80%);
+}
+.trust-head { position: relative; z-index: 1; max-width: 640px; margin: 0 auto 64px; text-align: center; }
+.trust-eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #3a7d55;
+  margin-bottom: 18px;
+}
+.trust-h2 {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  font-size: clamp(30px, 3.6vw, 44px);
+  margin: 0;
+  color: var(--black);
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 20;
+}
+.trust-row {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+}
+.trust-item {
+  padding: 0 28px;
+  text-align: left;
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.6s cubic-bezier(0.19, 1, 0.22, 1), transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+}
+.trust-item.show { opacity: 1; transform: translateY(0); }
+.trust-item + .trust-item { border-left: 1px solid var(--grey-300); }
+.trust-num {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 600;
+  font-size: 40px;
+  line-height: 1;
+  color: #227a4c;
+  opacity: 0.65;
+  margin-bottom: 22px;
+  font-variant-numeric: tabular-nums;
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 30;
+}
+.trust-lead {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--black);
+  font-size: 20px;
+  line-height: 1.32;
+  margin: 0;
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 14;
+}
+.trust-support {
+  font-family: var(--font);
+  font-weight: 700;
+  color: var(--grey-700);
+  font-size: 14.5px;
+  line-height: 1.5;
+  margin: 10px 0 0;
+}
+@media (max-width: 1100px) {
+  .trust-row { grid-template-columns: repeat(3, 1fr); row-gap: 48px; }
+  .trust-item:nth-child(3n+1) { border-left: none; }
+}
+@media (max-width: 680px) {
+  .trust-row { grid-template-columns: 1fr; row-gap: 40px; }
+  .trust-item { border-left: none !important; padding: 0 4px; text-align: center; }
+  .trust-num { margin-left: auto; margin-right: auto; }
+}
 
 /* ---------------- Shared colorful accents (used across every logged-in page) ----------------
    Same 5-color palette as the landing page, applied consistently: each doctor
