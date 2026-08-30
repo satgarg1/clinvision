@@ -748,7 +748,12 @@ a { color: inherit; }
 .suite {
   position: relative;
   background: var(--mkt-paper);
-  padding: 70px 6vw 130px;
+  /* Bottom padding cut from 130px -- stacked against Compare's own
+     70px top padding right below, that read as ~200px of dead space
+     between the CTA row and "Without Qlinic vs With Qlinic" ("ultra
+     cheap" per feedback), more than any other section-to-section seam
+     on the page. */
+  padding: 70px 6vw 70px;
   border-top: 1px solid var(--grey-300);
   overflow: hidden;
 }
@@ -910,7 +915,9 @@ a { color: inherit; }
 .compare {
   position: relative;
   background: var(--mkt-paper);
-  padding: 70px 6vw 130px;
+  /* Top padding cut from 70px alongside Suite's own bottom-padding cut
+     just above -- see that section's comment for why. */
+  padding: 50px 6vw 130px;
   border-top: 1px solid var(--grey-300);
   /* No overflow:hidden here, unlike Trust/Suite -- this section's
      intro column is position:sticky, and a clipped ancestor breaks
