@@ -1768,8 +1768,13 @@ input[type="number"] { -moz-appearance: textfield; }
    their own single-card layouts, untouched by this redesign. */
 .auth-shell { position: relative; display: flex; min-height: 100vh; }
 
+/* fixed, not absolute -- it overlays the sticky illustration pane
+   above, and on signup.html's much taller page, absolute (positioned
+   against .auth-shell, which scrolls with the document) would have
+   scrolled it away from that pane after the first 28px, while the pane
+   itself stayed pinned. Fixed keeps both stuck to the viewport together. */
 .auth-corner-brand {
-  position: absolute;
+  position: fixed;
   top: 28px;
   left: 32px;
   z-index: 5;
@@ -1787,8 +1792,20 @@ input[type="number"] { -moz-appearance: textfield; }
    the marketing site behind them. Ends on a still-tinted blue, never
    fading to white, so the seam with the white form pane on the right
    reads as a real edge instead of one wash bleeding into the other. */
+/* sticky + height:100vh, not just position:relative -- signup.html's
+   form runs well past one viewport tall, and without this the
+   illustration pane (a flex sibling) stretched to match that full
+   scroll height, leaving its own centered content stranded partway
+   down a much taller box instead of centered on screen like the other
+   three (shorter) auth pages. Pinning it to the viewport keeps it
+   looking the same everywhere regardless of how tall the form next to
+   it grows. Reset back to normal flow in the 900px mobile stack below,
+   where it's a compact banner above the form, not a fixed-height pane
+   beside it. */
 .auth-illustration {
-  position: relative;
+  position: sticky;
+  top: 0;
+  height: 100vh;
   flex: 1 1 66%;
   background: linear-gradient(160deg, #dceafc 0%, #eaf3fd 55%, #eaf3fd 100%);
   display: flex;
@@ -1933,7 +1950,9 @@ input[type="number"] { -moz-appearance: textfield; }
      flow, so it can't sit underneath (or collide with) the stacked
      illustration pane's own top padding. */
   .auth-corner-brand { position: static; margin: 20px 0 0 24px; }
-  .auth-illustration, .auth-shell.auth-wide .auth-illustration { flex: none; padding: 40px 24px; }
+  .auth-illustration, .auth-shell.auth-wide .auth-illustration {
+    position: static; height: auto; flex: none; padding: 40px 24px;
+  }
   .auth-headline { font-size: 30px; }
   .auth-form-pane, .auth-shell.auth-wide .auth-form-pane {
     flex: none; padding: 40px 24px; border-left: none; box-shadow: none; border-top: 1px solid var(--grey-300);
