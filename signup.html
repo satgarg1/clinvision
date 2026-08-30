@@ -6,107 +6,105 @@
 <title>Register your clinic: Qlinic</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=221" />
+<link rel="stylesheet" href="styles.css?v=222" />
 </head>
 <body>
-  <div class="login-wrap">
-    <div class="login-blob login-blob-teal"></div>
-    <div class="login-blob login-blob-coral"></div>
-    <div class="login-blob login-blob-purple"></div>
-    <a href="index.html" class="brand login-brand-corner">
-      <span class="brand-top">
-        <span class="brand-clock clock-face" id="navClock">
-          <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;color:var(--black);">
-            <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="5"></circle>
-            <line class="clock-hour" x1="50" y1="50" x2="50" y2="30" stroke="currentColor" stroke-width="6" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
-            <line class="clock-min" x1="50" y1="50" x2="50" y2="18" stroke="currentColor" stroke-width="4" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
-            <line class="clock-sec" x1="50" y1="50" x2="50" y2="14" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
-            <circle cx="50" cy="50" r="3" fill="currentColor"></circle>
-          </svg>
-        </span>
-        Qlinic
-      </span>
-      <span class="brand-tagline">Time is the one asset nobody gets back</span>
+  <div class="auth-shell auth-wide">
+    <a href="index.html" class="auth-corner-brand">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="#1d1d1f"/><line x1="50" y1="50" x2="50" y2="26" stroke="#fff" stroke-width="9" stroke-linecap="round"/><line x1="50" y1="50" x2="68" y2="58" stroke="#fff" stroke-width="9" stroke-linecap="round"/><circle cx="50" cy="50" r="6" fill="#0071e3"/></svg>
+      <div>
+        <div class="name">Qlinic</div>
+        <div class="tagline">Time is the one asset nobody gets back.</div>
+      </div>
     </a>
-    <div class="login-card login-card-compact">
-      <h1>Register your clinic</h1>
 
-      <div id="signupError" class="login-error"></div>
+    <div class="auth-illustration">
+      <div class="auth-glow" aria-hidden="true"></div>
+      <div class="auth-headline">One system for every part of your day.</div>
+    </div>
 
-      <form id="signupForm">
-        <div class="field">
-          <label for="clinicName">Clinic name</label>
-          <input type="text" id="clinicName" placeholder="e.g., Rao Family Clinic" required />
-        </div>
-        <div class="field">
-          <label for="pincode">Pincode</label>
-          <input type="text" id="pincode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit pincode" required />
-        </div>
-        <div class="field">
-          <label for="buildingLine">Flat, house no., building</label>
-          <input type="text" id="buildingLine" placeholder="e.g., Flat 4B, Sunrise Apartments" required />
-        </div>
-        <div class="field">
-          <label for="areaLine">Area, street, sector</label>
-          <input type="text" id="areaLine" placeholder="e.g., MG Road, Sector 12" required />
-        </div>
-        <div class="field">
-          <label for="landmark">Landmark <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
-          <input type="text" id="landmark" placeholder="e.g., near Apollo Hospital" />
-        </div>
-        <div style="display:flex;gap:12px;">
-          <div class="field" style="flex:1;min-width:0;">
-            <label for="city">City</label>
-            <input type="text" id="city" placeholder="From pincode" required />
+    <div class="auth-form-pane">
+      <div class="auth-form-inner">
+        <div class="auth-eyebrow">Welcome to <b>Qlinic</b></div>
+        <h1 class="auth-h1">Register your clinic</h1>
+
+        <div id="signupError" class="login-error"></div>
+
+        <form id="signupForm">
+          <div class="field">
+            <label for="clinicName">Clinic name</label>
+            <input type="text" id="clinicName" placeholder="e.g., Rao Family Clinic" required />
           </div>
-          <div class="field" style="flex:1;min-width:0;">
-            <label for="state">State</label>
-            <select id="state">
-              <option value="">From pincode</option>
-            </select>
+          <div class="field">
+            <label for="pincode">Pincode</label>
+            <input type="text" id="pincode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit pincode" required />
           </div>
-        </div>
-        <div class="field">
-          <label for="phoneNumber">Your mobile number</label>
-          <div style="display:flex;gap:8px;">
-            <input type="text" value="+91" disabled style="flex:0 0 76px;text-align:center;" />
-            <input type="tel" id="phoneNumber" inputmode="numeric" maxlength="10" placeholder="10-digit number" required style="flex:1;min-width:0;" />
+          <div class="field">
+            <label for="buildingLine">Flat, house no., building</label>
+            <input type="text" id="buildingLine" placeholder="e.g., Flat 4B, Sunrise Apartments" required />
           </div>
-          <div id="phoneError" style="display:none;color:var(--danger);font-size:13px;margin-top:6px;"></div>
-        </div>
-        <div class="field">
-          <label for="email">Your email</label>
-          <input type="email" id="email" required />
-        </div>
-        <div class="field">
-          <label for="password">Password</label>
-          <input type="password" id="password" minlength="6" required />
-        </div>
-        <div class="field">
-          <label>Clinic logo <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
-          <div class="logo-upload-row">
-            <div class="logo-preview empty" id="signupLogoPreview"></div>
-            <div>
-              <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" />
-              <button type="button" class="btn-sm primary" id="chooseLogoBtn">Choose file</button>
+          <div class="field">
+            <label for="areaLine">Area, street, sector</label>
+            <input type="text" id="areaLine" placeholder="e.g., MG Road, Sector 12" required />
+          </div>
+          <div class="field">
+            <label for="landmark">Landmark <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
+            <input type="text" id="landmark" placeholder="e.g., near Apollo Hospital" />
+          </div>
+          <div style="display:flex;gap:12px;">
+            <div class="field" style="flex:1;min-width:0;">
+              <label for="city">City</label>
+              <input type="text" id="city" placeholder="From pincode" required />
+            </div>
+            <div class="field" style="flex:1;min-width:0;">
+              <label for="state">State</label>
+              <select id="state">
+                <option value="">From pincode</option>
+              </select>
             </div>
           </div>
-          <div id="logoError" style="display:none;color:var(--danger);font-size:13px;margin-top:6px;"></div>
-        </div>
-        <button type="submit" class="btn btn-accent" id="signupBtn" style="width:100%;">Create account</button>
-      </form>
+          <div class="field">
+            <label for="phoneNumber">Your mobile number</label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" value="+91" disabled style="flex:0 0 76px;text-align:center;" />
+              <input type="tel" id="phoneNumber" inputmode="numeric" maxlength="10" placeholder="10-digit number" required style="flex:1;min-width:0;" />
+            </div>
+            <div id="phoneError" style="display:none;color:var(--danger);font-size:13px;margin-top:6px;"></div>
+          </div>
+          <div class="field">
+            <label for="email">Your email</label>
+            <input type="email" id="email" required />
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" minlength="6" required />
+          </div>
+          <div class="field">
+            <label>Clinic logo <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
+            <div class="logo-upload-row">
+              <div class="logo-preview empty" id="signupLogoPreview"></div>
+              <div>
+                <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" />
+                <button type="button" class="btn-sm primary" id="chooseLogoBtn">Choose file</button>
+              </div>
+            </div>
+            <div id="logoError" style="display:none;color:var(--danger);font-size:13px;margin-top:6px;"></div>
+          </div>
+          <button type="submit" class="btn btn-accent" id="signupBtn" style="width:100%;">Create account</button>
+        </form>
 
-      <div class="login-hint" id="signupHint">
-        Already registered? <a href="login.html">Log in</a> instead.
+        <div class="auth-hint" id="signupHint">
+          Already registered? <a href="login.html">Log in</a> instead.
+        </div>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=81"></script>
+  <script src="clinic-data.js?v=82"></script>
   <script>
     document.getElementById('state').innerHTML = '<option value="">Select state</option>' +
       Qlinic.INDIA_STATES_AND_UTS.map((s) => `<option value="${s}">${s}</option>`).join('');

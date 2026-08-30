@@ -6,58 +6,104 @@
 <title>Log in: Qlinic</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=221" />
+<link rel="stylesheet" href="styles.css?v=222" />
 </head>
 <body>
-  <div class="login-wrap">
-    <div class="login-blob login-blob-teal"></div>
-    <div class="login-blob login-blob-coral"></div>
-    <div class="login-blob login-blob-purple"></div>
-    <a href="index.html" class="brand login-brand-corner">
-      <span class="brand-top">
-        <span class="brand-clock clock-face" id="navClock">
-          <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;color:var(--black);">
-            <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="5"></circle>
-            <line class="clock-hour" x1="50" y1="50" x2="50" y2="30" stroke="currentColor" stroke-width="6" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
-            <line class="clock-min" x1="50" y1="50" x2="50" y2="18" stroke="currentColor" stroke-width="4" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
-            <line class="clock-sec" x1="50" y1="50" x2="50" y2="14" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
-            <circle cx="50" cy="50" r="3" fill="currentColor"></circle>
-          </svg>
-        </span>
-        Qlinic
-      </span>
-      <span class="brand-tagline">Time is the one asset nobody gets back</span>
+  <div class="auth-shell">
+    <a href="index.html" class="auth-corner-brand">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="#1d1d1f"/><line x1="50" y1="50" x2="50" y2="26" stroke="#fff" stroke-width="9" stroke-linecap="round"/><line x1="50" y1="50" x2="68" y2="58" stroke="#fff" stroke-width="9" stroke-linecap="round"/><circle cx="50" cy="50" r="6" fill="#0071e3"/></svg>
+      <div>
+        <div class="name">Qlinic</div>
+        <div class="tagline">Time is the one asset nobody gets back.</div>
+      </div>
     </a>
-    <div class="login-card">
-      <h1>Clinic admin login</h1>
 
-      <div id="loginError" class="login-error">Incorrect email or password.</div>
+    <div class="auth-illustration">
+      <div class="auth-glow" aria-hidden="true"></div>
+      <div class="auth-headline">One system for every part of your day.</div>
+    </div>
 
-      <form id="loginForm">
-        <div class="field">
-          <label for="email">Email</label>
-          <input type="email" id="email" required />
+    <div class="auth-form-pane">
+      <div class="auth-form-inner">
+        <div class="auth-eyebrow">Welcome back to <b>Qlinic</b></div>
+        <h1 class="auth-h1">Log in to your clinic</h1>
+
+        <div id="loginError" class="login-error">Incorrect email or password.</div>
+
+        <div class="id-pill mode-phone" id="idPill">
+          <div class="id-pill-thumb"></div>
+          <button type="button" class="active" data-mode="phone">Phone</button>
+          <button type="button" data-mode="email">Email</button>
         </div>
-        <div class="field">
-          <label for="password">Password</label>
-          <input type="password" id="password" required />
-        </div>
-        <button type="submit" class="btn btn-accent" id="loginBtn" style="width:100%;">Log in</button>
-      </form>
 
-      <div class="login-hint">
-        New clinic? <a href="signup.html">Register your clinic</a> instead.<br />
-        <a href="forgot-password.html">Forgot your password?</a>
+        <form id="loginForm">
+          <div class="field">
+            <label for="identifier" id="identifierLabel">Mobile number</label>
+            <input type="tel" id="identifier" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number" required />
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" required />
+          </div>
+          <div class="remember-row">
+            <input type="checkbox" id="rememberMe" checked />
+            <label for="rememberMe">Remember me on this device</label>
+          </div>
+          <button type="submit" class="btn btn-accent" id="loginBtn" style="width:100%;">Log in</button>
+        </form>
+
+        <div class="auth-hint">
+          New clinic? <a href="signup.html">Register your clinic</a> instead.<br />
+          <a href="forgot-password.html">Forgot your password?</a>
+        </div>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=81"></script>
+  <script src="clinic-data.js?v=82"></script>
   <script>
+    // Pill toggle: swaps the identifier field's type/placeholder/label
+    // along with the visible tab -- password field is shared either way.
+    (function () {
+      const pill = document.getElementById('idPill');
+      const idInput = document.getElementById('identifier');
+      const idLabel = document.getElementById('identifierLabel');
+      pill.querySelectorAll('button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          pill.querySelectorAll('button').forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          const mode = btn.dataset.mode;
+          pill.classList.toggle('mode-email', mode === 'email');
+          pill.classList.toggle('mode-phone', mode === 'phone');
+          idInput.value = '';
+          if (mode === 'phone') {
+            idLabel.textContent = 'Mobile number';
+            idInput.type = 'tel';
+            idInput.inputMode = 'numeric';
+            idInput.maxLength = 10;
+            idInput.placeholder = '10-digit mobile number';
+          } else {
+            idLabel.textContent = 'Email';
+            idInput.type = 'email';
+            idInput.removeAttribute('inputmode');
+            idInput.removeAttribute('maxlength');
+            idInput.placeholder = '';
+          }
+        });
+      });
+      // Strips anything non-numeric as they type, same as every other
+      // phone field sitewide (billing, Team, signup).
+      idInput.addEventListener('input', function () {
+        if (pill.classList.contains('mode-phone')) {
+          this.value = this.value.replace(/\D/g, '').slice(0, 10);
+        }
+      });
+    })();
+
     document.getElementById('loginForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       const btn = document.getElementById('loginBtn');
@@ -66,8 +112,35 @@
       btn.disabled = true;
       btn.textContent = 'Logging in…';
       try {
-        const email = document.getElementById('email').value;
+        const isPhoneMode = document.getElementById('idPill').classList.contains('mode-phone');
         const password = document.getElementById('password').value;
+        let email;
+        if (isPhoneMode) {
+          const phone = document.getElementById('identifier').value.trim();
+          if (!/^[0-9]{10}$/.test(phone)) {
+            throw new Error('Please enter a valid 10-digit mobile number.');
+          }
+          // Pre-login lookup: a temporary, non-persisted client, never
+          // the shared authenticated one -- same reasoning as Team's own
+          // staff-account creation using a throwaway client for signUp.
+          const tempClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
+            auth: { persistSession: false, autoRefreshToken: false },
+          });
+          const { data: resolvedEmail, error: lookupError } = await tempClient.rpc('email_for_staff_phone', { staff_phone: phone });
+          if (lookupError) throw lookupError;
+          if (!resolvedEmail) throw new Error('No account found for this phone number.');
+          email = resolvedEmail;
+        } else {
+          email = document.getElementById('identifier').value;
+        }
+
+        // Set BEFORE login() -- the shared client's storage adapter
+        // (clinic-data.js) reads this flag on every token read/write,
+        // so it has to be in place before the session is created, not
+        // after.
+        const rememberMe = document.getElementById('rememberMe').checked;
+        localStorage.setItem('qlinic_remember_me', rememberMe ? '1' : '0');
+
         await Qlinic.login(email, password);
         window.location.href = 'dashboard.html';
         return;

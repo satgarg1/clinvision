@@ -1761,6 +1761,186 @@ input[type="number"] { -moz-appearance: textfield; }
   display: none;
 }
 
+/* ---------------- Auth pages (login / signup / forgot / reset password) ----------------
+   Razorpay-inspired two-pane layout, scoped under its own .auth-*
+   classes rather than touching .login-wrap/.login-blob/.login-card
+   above -- queue.html and account-suspended.html still use those for
+   their own single-card layouts, untouched by this redesign. */
+.auth-shell { position: relative; display: flex; min-height: 100vh; }
+
+.auth-corner-brand {
+  position: absolute;
+  top: 28px;
+  left: 32px;
+  z-index: 5;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  text-decoration: none;
+}
+.auth-corner-brand svg { width: 22px; height: 22px; flex-shrink: 0; margin-top: 2px; }
+.auth-corner-brand .name { font-weight: 700; font-size: 19px; color: var(--black); }
+.auth-corner-brand .tagline { font-size: 11px; color: var(--grey-500); margin-top: 2px; }
+
+/* Ambient glow reuses the exact hero-glow blue rather than inventing a
+   new color, so these pages don't feel like a different product from
+   the marketing site behind them. Ends on a still-tinted blue, never
+   fading to white, so the seam with the white form pane on the right
+   reads as a real edge instead of one wash bleeding into the other. */
+.auth-illustration {
+  position: relative;
+  flex: 1 1 66%;
+  background: linear-gradient(160deg, #dceafc 0%, #eaf3fd 55%, #eaf3fd 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 60px;
+}
+.auth-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 70% 60% at 50% 30%, rgba(0, 113, 227, 0.18) 0%, rgba(0, 113, 227, 0.06) 45%, rgba(0, 113, 227, 0) 75%);
+}
+.auth-headline {
+  position: relative;
+  z-index: 1;
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 700;
+  font-size: clamp(38px, 4.2vw, 54px);
+  line-height: 1.22;
+  letter-spacing: -0.01em;
+  color: #227a4c;
+  text-align: center;
+  max-width: 480px;
+}
+
+/* Flat white, no separate bordered card inside it -- the pane itself
+   reads as the card, matching Razorpay's own right column. border-left
+   + a soft shadow give the two panes a real seam ("looks inseparable"
+   was the exact complaint against an earlier pass without them). */
+.auth-form-pane {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 34%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  background: var(--white);
+  border-left: 1px solid var(--grey-300);
+  box-shadow: -24px 0 48px rgba(0, 0, 0, 0.04);
+}
+.auth-form-inner { width: 100%; max-width: 420px; }
+/* signup.html's form runs to 9+ fields (address split into building/
+   area/landmark, city/state, phone, logo upload) -- cramped at the
+   other three pages' 420px, so it gets its own wider pane and column,
+   set via this one modifier on .auth-shell rather than a second copy
+   of every rule above. */
+.auth-shell.auth-wide .auth-illustration { flex: 1 1 50%; }
+.auth-shell.auth-wide .auth-form-pane { flex: 1 1 50%; }
+.auth-shell.auth-wide .auth-form-inner { max-width: 520px; }
+
+.auth-eyebrow { font-size: 20px; font-weight: 600; color: var(--grey-500); margin-bottom: 8px; }
+.auth-eyebrow b { color: var(--black); }
+.auth-h1 {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 600;
+  font-size: 32px;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin: 0 0 28px;
+  color: var(--black);
+}
+.auth-sub {
+  font-size: 14px;
+  color: var(--grey-700);
+  line-height: 1.5;
+  margin: -18px 0 22px;
+}
+
+/* Fields inside the auth form pane get a slightly bigger radius/border
+   than the sitewide bare .field default, matching the approved mockup
+   -- scoped here rather than touching .field itself, same pattern
+   .login-card-compact already uses for its own field-size tweaks. */
+.auth-form-pane .field input {
+  border: 1.5px solid var(--grey-300);
+  border-radius: var(--radius-md);
+  transition: border-color 0.15s ease;
+}
+.auth-form-pane .field input:focus { outline: none; border-color: var(--accent); }
+
+/* Gradient pill toggle -- Qlinic's own idea, not lifted from Razorpay
+   (their reference page merges email/phone into one field). Two
+   genuinely different flows deserve two visibly separate tabs. */
+.id-pill {
+  position: relative;
+  display: flex;
+  background: var(--grey-100);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
+.id-pill-thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  height: calc(100% - 8px);
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  transition: transform 0.28s cubic-bezier(0.65, 0, 0.35, 1);
+  box-shadow: 0 4px 14px rgba(0, 113, 227, 0.35);
+}
+.id-pill.mode-email .id-pill-thumb { transform: translateX(100%); }
+.id-pill button {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  border: none;
+  background: none;
+  padding: 10px 0;
+  font-family: var(--font);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--grey-500);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.id-pill button.active { color: var(--white); }
+
+.remember-row { display: flex; align-items: center; gap: 8px; margin: 4px 0 22px; }
+.remember-row input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
+.remember-row label { font-size: 14px; color: var(--grey-700); cursor: pointer; }
+
+.auth-hint {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--grey-300);
+  font-size: 14px;
+  color: var(--grey-700);
+  line-height: 1.7;
+}
+.auth-hint a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.auth-hint a:hover { text-decoration: underline; }
+
+@media (max-width: 900px) {
+  .auth-shell, .auth-shell.auth-wide { flex-direction: column; }
+  /* Same fallback the real .login-brand-corner already uses on a
+     narrow viewport: out of absolute positioning and into normal
+     flow, so it can't sit underneath (or collide with) the stacked
+     illustration pane's own top padding. */
+  .auth-corner-brand { position: static; margin: 20px 0 0 24px; }
+  .auth-illustration, .auth-shell.auth-wide .auth-illustration { flex: none; padding: 40px 24px; }
+  .auth-headline { font-size: 30px; }
+  .auth-form-pane, .auth-shell.auth-wide .auth-form-pane {
+    flex: none; padding: 40px 24px; border-left: none; box-shadow: none; border-top: 1px solid var(--grey-300);
+  }
+  .auth-shell.auth-wide .auth-form-inner { max-width: 420px; }
+}
+
 /* ---------------- App shell (dashboard / reception / doctor) ---------------- */
 
 .app-shell { display: flex; height: 100vh; }

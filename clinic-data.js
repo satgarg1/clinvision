@@ -13,7 +13,31 @@
     console.error('Qlinic: fill in clinic-config.js with your real Supabase project URL and anon key.');
   }
 
-  const sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  // "Remember me" (login.html) needs the session to land in localStorage
+  // (survives closing the browser -- today's only behavior, before this
+  // existed) when checked, or sessionStorage (cleared when the tab/
+  // browser closes) when unchecked. This ONE client is shared by every
+  // logged-in page, created long before any particular login attempt's
+  // checkbox state exists, so the choice can't be made at creation time
+  // -- it has to be deferred to read/write time instead. This adapter
+  // checks a small flag in localStorage (set by login.html right before
+  // calling login(), so it's already in place before the session is
+  // written) and delegates every actual read/write to whichever real
+  // Storage that flag currently points at. Any page that never sets the
+  // flag (signup, or a session already established before this existed)
+  // gets today's exact default: localStorage, remembered.
+  const authStorage = {
+    _target() {
+      return localStorage.getItem('qlinic_remember_me') === '0' ? sessionStorage : localStorage;
+    },
+    getItem(key) { return this._target().getItem(key); },
+    setItem(key, value) { this._target().setItem(key, value); },
+    removeItem(key) { this._target().removeItem(key); },
+  };
+
+  const sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
+    auth: { storage: authStorage },
+  });
 
   let currentClinicId = null;
   let currentClinic = null;
