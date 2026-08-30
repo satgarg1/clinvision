@@ -6,7 +6,7 @@ Everything pending that isn't tracked anywhere else in the repo. Kept in one fil
 
 - **About us page — real content.** `about-us.html` exists as a placeholder (nav link is live, page just says "still being written"). Needs the real story, mission, values, and team — written to build trust and credibility with a visitor deciding whether to book a demo. Waiting on the actual content, not a design or build blocker.
 - **Founder's note**, on `index.html`, placed after the Final CTA band and before the footer — a short first-person "why we built this" note. Needs the founder's own real story/voice; do not draft this unprompted.
-- **Login pages: premium redesign**, Razorpay-inspired. Scope: right-concentrated layout (login/register/forgot-password/reset-password all move their form onto the right side of the page, with an animated/illustrated left side), a gradient-pill email/phone toggle on login (phone default), a working "remember me", and login-with-phone as a real option. In progress as of 2026-08-30: the per-staff phone field (Settings → Team) is built and live; the login page's own two-pane redesign is still in mockup review (green "One system for every part of your day." headline, no clock/rotating claim), not yet built into the real site. Once approved, the same layout extends to signup/forgot-password/reset-password.
+- ~~**Login pages: premium redesign**~~ — **DONE**, shipped 2026-08-30. Razorpay-inspired two-pane layout (illustrated left panel, form concentrated on the right) across all four auth pages — login, signup ("Register your clinic"), forgot-password, reset-password — with a bold green "One system for every part of your day." headline on all four. Login gets a gradient-pill phone/email toggle (phone default, wired to a real `email_for_staff_phone` lookup) and a working "remember me" (a real storage adapter on the shared Supabase client, not cosmetic).
 
 ## Known bugs
 
@@ -43,6 +43,34 @@ Milestones A–C (schema, HFR/HPR capture, FHIR bundle builder, 7 Edge Functions
 6. Production access. Realistic timeline: 12–20 weeks end to end.
 
 Leaning toward using a third-party ABDM integration partner for the certification process itself rather than doing it in-house — it's a one-time compliance hurdle, not an area where in-house expertise compounds. The Milestone A–C code stays useful either way.
+
+## Qlinic subscription billing (Razorpay)
+
+Scoped 2026-08-30, not started — this is Qlinic charging **clinics** for using Qlinic (the SaaS subscription), a completely different thing from `billing.html`/`billing-consultation.html`, which is a clinic billing **its own patients**. Today `clinics.subscription_status` (migration `053_clinic_subscription_status.sql`) is flipped by hand; this feature is what would make that real.
+
+**The one hard rule this is scoped around: Qlinic's own servers/database must never see or store a raw card number, CVV, or full UPI-linked bank credential.** Every approach below routes actual payment-instrument capture through Razorpay's own hosted Checkout, and Qlinic only ever stores the *token* Razorpay hands back — this is both a PCI-DSS requirement and the only realistic path for a static-frontend app with no PCI-scoped infrastructure of its own.
+
+**How saving a payment method actually works:**
+1. Admin clicks "Add payment method" in the new Settings page below.
+2. Frontend calls a new Edge Function (`razorpay-create-token-order`) that creates a Razorpay Customer (if one doesn't exist yet for this clinic) and a zero/token-amount order server-side, using the Razorpay secret key — which never reaches the browser.
+3. Razorpay's own Checkout.js opens (hosted by Razorpay, not Qlinic) with `save=1`, collects the card or UPI details directly, and returns a `token_id`/payment method reference to the frontend.
+4. Frontend hands that token to another Edge Function (`razorpay-save-payment-method`), which verifies it server-side against Razorpay's API and stores only the safe-to-keep parts in a new `clinic_payment_methods` table: Razorpay's `customer_id` and `token_id`, the card network + last 4 digits (or masked UPI VPA), and an `is_default`/`autopay_enabled` flag. No PAN, no CVV, ever, at any point, in Qlinic's own database.
+5. Recurring charges (autopay) run entirely on Razorpay's side against that stored token, via Razorpay's Subscriptions API (cards) or UPI Autopay/e-mandate (UPI) — Qlinic's backend only reacts to Razorpay's webhooks (`payment.captured`, `subscription.charged`, `subscription.cancelled`, mandate revoked), which is what actually flips `clinics.subscription_status` automatically instead of by hand.
+
+**New backend pieces needed** (same Supabase Edge Functions pattern already used for ABDM, since this static-frontend app has no other place to put server-side code):
+- `razorpay-create-token-order` — creates/reuses the Razorpay Customer, returns an order for Checkout to open against.
+- `razorpay-save-payment-method` — verifies the returned token server-side, writes the safe fields to `clinic_payment_methods`.
+- `razorpay-webhook` — the one public endpoint Razorpay actually calls; validates Razorpay's webhook signature, updates `clinic_payment_methods.autopay_enabled` / `clinics.subscription_status` accordingly.
+- `razorpay-remove-payment-method` — cancels the mandate/token on Razorpay's side first, then deletes the local row — never delete-then-cancel, which would leave an orphaned live mandate still capable of charging the clinic.
+- Razorpay's key pair lives in Supabase secrets (`RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET`), same as the ABDM bridge credentials — never a database table.
+
+**New UI, per the user's own direction**: a new card on the Settings hub grid, styled with a gradient (like the login page's own gradient pill) rather than the plain white cards the other settings tiles use — "Subscription & Billing" stands out visually as the one settings item that's actually about money, matching how it's treated with more weight than "Appearance" or "Display screen." Opens a new settings sub-page with:
+- The current plan/subscription status (reusing `clinics.subscription_status` — active/trialing/suspended, same states `account-suspended.html` already gates on).
+- A payment-method card (the "card for payments" — a visual card UI showing the masked card/UPI info, network logo, "Default" badge) once one exists, or an empty state with "Add payment method" when none does.
+- Remove — calls `razorpay-remove-payment-method`, cancels on Razorpay's side first.
+- An Autopay toggle — enable/disable recurring auto-charge without removing the saved method entirely.
+
+**Explicitly not scoped/started yet**: any actual Razorpay account setup (business KYC, live API keys), the Edge Functions themselves, the `clinic_payment_methods` migration, or the Settings UI build. This is a scope to build from, not a partial build.
 
 ## Under consideration, not decided
 
