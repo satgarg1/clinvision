@@ -1836,17 +1836,22 @@ input[type="number"] { -moz-appearance: textfield; }
   letter-spacing: -0.01em;
   text-align: center;
   max-width: 480px;
-  background: linear-gradient(110deg, #1d1d1f 35%, #f5f5f7 48%, #ffffff 52%, #1d1d1f 65%);
-  background-size: 250% 100%;
+  /* Narrower band, and its peak is a mid-grey (#6b6b6f) rather than
+     near-white -- the previous white/near-white peak washed a big
+     chunk of a 3-line headline out to the point of being unreadable
+     against the light background. Grey keeps every word legible at
+     every point in the sweep, just visibly brighter as it passes. */
+  background: linear-gradient(110deg, #1d1d1f 44%, #6b6b6f 50%, #1d1d1f 56%);
+  background-size: 220% 100%;
   background-position: 200% 0;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: auth-headline-shine 5s ease-in-out infinite;
+  animation: auth-headline-shine 9s ease-in-out infinite;
 }
 @keyframes auth-headline-shine {
-  0%, 15% { background-position: 200% 0; }
-  85%, 100% { background-position: -200% 0; }
+  0%, 25% { background-position: 200% 0; }
+  75%, 100% { background-position: -200% 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .auth-headline { animation: none; background-position: 0 0; }
