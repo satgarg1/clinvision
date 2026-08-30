@@ -20,6 +20,8 @@
   --warning-bg: #fdf1dc;
   --danger: #c5221f;
   --danger-bg: #fce8e6;
+  --whatsapp: #1fa855;
+  --whatsapp-bg: #f0fbf4;
   --font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
   /* ---- Design tokens: visual polish pass (see robust-questing-walrus.md) ---- */
@@ -240,6 +242,17 @@ a { color: inherit; }
   border: 1px solid var(--grey-300);
 }
 .btn-ghost:hover { border-color: var(--black); }
+
+.btn-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--white);
+  color: var(--whatsapp);
+  border: 1.5px solid var(--whatsapp);
+}
+.btn-whatsapp:hover { background: var(--whatsapp-bg); }
+.btn-whatsapp svg { flex-shrink: 0; }
 
 .btn-large {
   font-size: 18px;

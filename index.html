@@ -38,7 +38,8 @@
   </nav>
 
   <!-- HERO -->
-  <section class="mkt-section" style="background:var(--mkt-paper);">
+  <div class="mkt-fullbleed" style="background:var(--mkt-paper);">
+  <section class="mkt-section tight" style="position:relative; z-index:1;">
     <div class="hero-stage">
       <div class="hero-glow" aria-hidden="true"></div>
       <div class="content">
@@ -70,7 +71,10 @@
 
         <div class="mkt-cta-row hero-fx" id="heroFxCta">
           <a href="contact.html" class="btn btn-accent btn-large">Book a Demo</a>
-          <a href="#" id="heroWhatsapp" class="btn btn-ghost btn-large">Chat on WhatsApp</a>
+          <a href="#" id="heroWhatsapp" class="btn btn-whatsapp btn-large">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.5A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 1 .9-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.2-.7.8-.8 1-.1.1-.3.2-.5.1-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5.1-.1.2-.3.4-.4.1-.1.2-.3.2-.4.1-.1 0-.3 0-.4-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.2 1.6 2.4 3.8 3.4.5.2.9.4 1.3.5.5.2 1 .1 1.4.1.4-.1 1.3-.5 1.5-1 .2-.5.2-.9.1-1z"/></svg>
+            Chat on WhatsApp
+          </a>
         </div>
       </div>
 
@@ -82,6 +86,7 @@
       <div class="hero-scroll-cue hero-fx" id="heroFxScroll">Scroll<div class="dot"></div></div>
     </div>
   </section>
+  </div>
 
   <script>
     // TODO before this goes live to real visitors: same placeholder number
