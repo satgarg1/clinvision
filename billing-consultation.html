@@ -401,7 +401,16 @@
           : match.todayDoctorId
           ? `Found ${match.name} — ${dateLabel}'s consultation details filled in, double-check before printing.`
           : usedRecentFallback
-          ? `Found ${match.name} — no visit on ${dateLabel}, filled in from their last visit (${Qlinic.formatDateLabel(match.mostRecentVisitDate)}) instead. Double-check before printing.`
+          // dateLabel is out for this one specifically -- it's read off
+          // bDate AFTER line 374 already overwrote it with
+          // mostRecentVisitDate, so "no visit on {dateLabel}" would
+          // silently quote the fallback date instead of the date that
+          // was actually searched (billingDate, captured before either
+          // mutation site runs). That's what produced "no visit on Fri,
+          // Aug 28 ... last visit (Fri, Aug 28)" for a today-dated
+          // search that fell back to a Aug 28 visit -- both clauses were
+          // reading the same, already-corrected field.
+          ? `Found ${match.name} — no visit on ${Qlinic.formatDateLabel(billingDate)}, filled in from their last visit (${Qlinic.formatDateLabel(match.mostRecentVisitDate)}) instead. Double-check before printing.`
           : `Found ${match.name}, details filled in, edit anything that's changed.`;
         hint.className = 'slot-hint ok';
       }
