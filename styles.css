@@ -519,7 +519,7 @@ a { color: inherit; }
   grid-template-columns: 0.95fr 1.1fr;
   align-items: start;
   gap: 56px;
-  padding: 60px 6vw 90px;
+  padding: 40px 6vw 90px;
   overflow: hidden;
 }
 .hero-stage .content { max-width: 560px; text-align: left; }
@@ -564,6 +564,9 @@ a { color: inherit; }
   gap: 10px;
   margin-bottom: 32px;
   font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--grey-700);
   padding-left: 0;
 }
 /* The shared .eyebrow::before dot is positioned for a left-aligned label --
@@ -574,7 +577,7 @@ a { color: inherit; }
 
 .hero-stage .mkt-cta-row { justify-content: flex-start; margin-top: 38px; }
 
-.hero-stage .mkt-h1 { margin: 0; line-height: 1.16; }
+.hero-stage .mkt-h1 { margin: 0; line-height: 1.16; font-weight: 600; letter-spacing: -0.02em; }
 .hero-line { display: block; font-size: clamp(24px, 3vw, 38px); margin-bottom: 0.42em; }
 .hero-line.hero-line-last { margin-bottom: 0; }
 .hero-line-resolve {
@@ -590,7 +593,14 @@ a { color: inherit; }
   .hero-line-resolve { font-size: clamp(26px, 7.5vw, 36px); }
 }
 
-.hero-sub { margin: 34px 0 0; }
+.hero-sub {
+  margin: 34px 0 0;
+  font-size: clamp(16px, 1.7vw, 19px);
+  color: var(--grey-700);
+  line-height: 1.55;
+  max-width: 520px;
+  font-weight: 400;
+}
 
 .hero-visual img {
   width: 100%;
