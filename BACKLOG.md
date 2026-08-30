@@ -6,7 +6,11 @@ Everything pending that isn't tracked anywhere else in the repo. Kept in one fil
 
 - **About us page — real content.** `about-us.html` exists as a placeholder (nav link is live, page just says "still being written"). Needs the real story, mission, values, and team — written to build trust and credibility with a visitor deciding whether to book a demo. Waiting on the actual content, not a design or build blocker.
 - **Founder's note**, on `index.html`, placed after the Final CTA band and before the footer — a short first-person "why we built this" note. Needs the founder's own real story/voice; do not draft this unprompted.
-- **Login pages: premium redesign**, Razorpay-inspired. Scope: right-concentrated layout (login/register/forgot-password/reset-password all move their form onto the right side of the page, with an animated/illustrated left side), a gradient-pill email/phone toggle on login (phone default), a working "remember me", and login-with-phone as a real option. See the scope written up in chat when this was raised (2026-08-30) for the full breakdown — phone login's backend readiness needs checking before committing to it as more than UI.
+- **Login pages: premium redesign**, Razorpay-inspired. Scope: right-concentrated layout (login/register/forgot-password/reset-password all move their form onto the right side of the page, with an animated/illustrated left side), a gradient-pill email/phone toggle on login (phone default), a working "remember me", and login-with-phone as a real option. In progress as of 2026-08-30: the per-staff phone field (Settings → Team) is built and live; the login page's own two-pane redesign is still in mockup review (green "One system for every part of your day." headline, no clock/rotating claim), not yet built into the real site. Once approved, the same layout extends to signup/forgot-password/reset-password.
+
+## Known bugs
+
+- **Settings page layout flash on refresh** (raised 2026-08-30) — reloading `settings.html` briefly shows the full, un-grouped grid of setting cards, then the layout shifts/collapses into its actual grouped sections a moment later. Reads as broken and draws the eye to it. Not yet diagnosed — likely a client-side render/group-assignment step that runs after first paint; needs the actual grouping logic moved earlier (or the initial paint held back) so there's one correct layout, not two.
 
 ## Product features
 
