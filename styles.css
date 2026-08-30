@@ -526,7 +526,6 @@ a { color: inherit; }
 @media (max-width: 900px) {
   .hero-stage { grid-template-columns: 1fr; text-align: center; }
   .hero-stage .content { max-width: 640px; margin: 0 auto; text-align: center; }
-  .hero-stage .eyebrow, .hero-stage .mkt-cta-row { justify-content: center; }
   .hero-stage .hero-sub { margin: 34px auto 0; }
   .hero-stage .hero-visual { order: -1; max-width: 480px; margin: 0 auto; }
 }
@@ -558,10 +557,11 @@ a { color: inherit; }
 
 .hero-stage .eyebrow {
   display: flex;
-  width: 100%;
+  width: max-content;
+  max-width: none;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  justify-content: flex-start;
+  text-align: left;
   gap: 10px;
   margin-bottom: 32px;
   font-size: 18px;
@@ -578,6 +578,15 @@ a { color: inherit; }
 
 .hero-stage .mkt-cta-row { justify-content: flex-start; margin-top: 38px; }
 
+/* These two overrides must stay below the base .eyebrow/.mkt-cta-row rules
+   above -- both sides have equal selector specificity, so whichever comes
+   later in source order wins regardless of the media query; a version of
+   this block once sat above the base rules and silently never applied. */
+@media (max-width: 900px) {
+  .hero-stage .eyebrow { width: 100%; justify-content: center; text-align: center; }
+  .hero-stage .mkt-cta-row { justify-content: center; }
+}
+
 .hero-stage .mkt-h1 { margin: 0; line-height: 1.16; font-weight: 600; letter-spacing: -0.02em; }
 .hero-line { display: block; font-size: clamp(24px, 3vw, 38px); margin-bottom: 0.42em; }
 .hero-line.hero-line-last { margin-bottom: 0; }
@@ -585,7 +594,7 @@ a { color: inherit; }
   display: inline-block;
   margin-top: 0.55em;
   color: var(--accent);
-  font-size: clamp(26px, 3.1vw, 39px);
+  font-size: clamp(28px, 3.7vw, 46px);
   font-weight: 700;
   white-space: nowrap;
 }
