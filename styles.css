@@ -1086,6 +1086,112 @@ a { color: inherit; }
   .compare-col { display: block; grid-template-rows: none; grid-row: auto; }
 }
 
+/* ---------------- FAQ ---------------- */
+.faq {
+  position: relative;
+  background: var(--mkt-paper);
+  padding: 70px 6vw 130px;
+  border-top: 1px solid var(--grey-300);
+}
+.faq-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 90% 60% at 50% 0%, rgba(0, 113, 227, 0.14) 0%, rgba(0, 113, 227, 0.05) 45%, rgba(0, 113, 227, 0) 75%);
+}
+.faq-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 64px;
+  align-items: start;
+}
+.faq-heading {
+  position: sticky;
+  top: 100px;
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  font-size: clamp(34px, 4.2vw, 50px);
+  margin: 0;
+  color: var(--black);
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 20;
+}
+.faq-list { display: flex; flex-direction: column; border-top: 1px solid var(--grey-300); }
+.faq-item { border-bottom: 1px solid var(--grey-300); }
+.faq-question {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 4px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-family: var(--font);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--black);
+  cursor: pointer;
+}
+.faq-chevron {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: var(--grey-500);
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+.faq-item.open .faq-chevron { transform: rotate(180deg); color: var(--accent); }
+.faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+.faq-answer-inner { padding: 0 4px 24px; font-size: 16px; line-height: 1.65; color: var(--grey-700); max-width: 680px; }
+@media (max-width: 900px) {
+  .faq-inner { grid-template-columns: 1fr; gap: 32px; }
+  .faq-heading { position: static; text-align: center; }
+}
+
+/* ---------------- Final CTA band ---------------- */
+.final-cta {
+  position: relative;
+  background: var(--mkt-paper);
+  padding: 110px 6vw;
+  border-top: 1px solid var(--grey-300);
+}
+.final-cta-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 90% 60% at 50% 0%, rgba(0, 113, 227, 0.14) 0%, rgba(0, 113, 227, 0.05) 45%, rgba(0, 113, 227, 0) 75%);
+}
+.final-cta-inner { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; }
+.final-cta h2 {
+  /* Same family/weight as the FAQ heading (Fraunces, 600, not 700) --
+     "large font, not bold" per feedback, matching Razorpay's own
+     reference where the closing headline is big but not heavy. */
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  font-size: clamp(40px, 7vw, 88px);
+  margin: 0 0 32px;
+  color: var(--black);
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 20;
+}
+/* Sitewide .btn-large (18px/14px 32px, used everywhere else) reads as
+   tiny next to an 88px headline -- this section's button gets its own
+   scaled-up size so it complements the heading instead of looking like
+   an afterthought underneath it. */
+.final-cta .btn { font-size: 22px; padding: 20px 44px; }
+@media (max-width: 900px) {
+  .final-cta { text-align: center; }
+}
+
 /* ---------------- Shared colorful accents (used across every logged-in page) ----------------
    Same 5-color palette as the landing page, applied consistently: each doctor
    gets a stable color (by their position in the doctors list) shown as a top
