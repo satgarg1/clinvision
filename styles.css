@@ -1831,7 +1831,7 @@ input[type="number"] { -moz-appearance: textfield; }
   z-index: 1;
   font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   font-weight: 700;
-  font-size: clamp(38px, 4.2vw, 54px);
+  font-size: clamp(44px, 4.8vw, 62px);
   line-height: 1.22;
   letter-spacing: -0.01em;
   text-align: center;
@@ -1847,7 +1847,18 @@ input[type="number"] { -moz-appearance: textfield; }
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: auth-headline-shine 9s ease-in-out infinite;
+  /* will-change hints the browser to keep this on its own compositing
+     layer up front, rather than deciding dynamically whether a
+     background-position animation is "worth" promoting -- without it,
+     browsers sometimes demote it back to the main thread mid-session
+     under other page work, which reads as the effect stalling and
+     restarting rather than running continuously. alternate (playing
+     the keyframes forward then in reverse, not jumping back to the
+     start) is what actually keeps the sweep's speed and direction
+     consistent loop to loop -- forward ends where reverse begins, so
+     there's no snap at the loop boundary either. */
+  will-change: background-position;
+  animation: auth-headline-shine 9s ease-in-out infinite alternate;
 }
 @keyframes auth-headline-shine {
   0%, 25% { background-position: 200% 0; }

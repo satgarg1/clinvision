@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=225" />
+<link rel="stylesheet" href="styles.css?v=226" />
 </head>
 <body>
   <div class="auth-shell">
@@ -39,13 +39,26 @@
         </div>
 
         <form id="loginForm">
-          <div class="field">
-            <label for="identifier" id="identifierLabel">Mobile number</label>
-            <input type="tel" id="identifier" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number" required />
+          <!-- Two separate, stable inputs -- never one input whose type
+               gets swapped by the pill toggle. A browser keys saved
+               credentials off a field's own type/name/autocomplete, so
+               mutating those mid-session on one shared input confused
+               that matching: a saved email+password combo was landing
+               inside the phone field, with no way for autofill to know
+               it no longer meant the same thing. Each field now keeps
+               its own identity for the page's whole lifetime; only
+               which one is VISIBLE changes. -->
+          <div class="field" id="phoneField">
+            <label for="identifierPhone">Mobile number</label>
+            <input type="tel" id="identifierPhone" name="phone" autocomplete="tel" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number" />
+          </div>
+          <div class="field" id="emailField" style="display:none;">
+            <label for="identifierEmail">Email</label>
+            <input type="email" id="identifierEmail" name="email" autocomplete="username" />
           </div>
           <div class="field">
             <label for="password">Password</label>
-            <input type="password" id="password" required />
+            <input type="password" id="password" name="password" autocomplete="current-password" required />
           </div>
           <div class="remember-row">
             <input type="checkbox" id="rememberMe" checked />
@@ -66,12 +79,18 @@
   <script src="clinic-config.js"></script>
   <script src="clinic-data.js?v=82"></script>
   <script>
-    // Pill toggle: swaps the identifier field's type/placeholder/label
-    // along with the visible tab -- password field is shared either way.
+    // Pill toggle: shows/hides the two separate identifier fields --
+    // never mutates either one's type. required moves with visibility,
+    // so the hidden field never blocks submit and the visible one still
+    // enforces itself.
     (function () {
       const pill = document.getElementById('idPill');
-      const idInput = document.getElementById('identifier');
-      const idLabel = document.getElementById('identifierLabel');
+      const phoneField = document.getElementById('phoneField');
+      const emailField = document.getElementById('emailField');
+      const phoneInput = document.getElementById('identifierPhone');
+      const emailInput = document.getElementById('identifierEmail');
+      phoneInput.required = true;
+
       pill.querySelectorAll('button').forEach(function (btn) {
         btn.addEventListener('click', function () {
           pill.querySelectorAll('button').forEach(function (b) { b.classList.remove('active'); });
@@ -79,28 +98,23 @@
           const mode = btn.dataset.mode;
           pill.classList.toggle('mode-email', mode === 'email');
           pill.classList.toggle('mode-phone', mode === 'phone');
-          idInput.value = '';
           if (mode === 'phone') {
-            idLabel.textContent = 'Mobile number';
-            idInput.type = 'tel';
-            idInput.inputMode = 'numeric';
-            idInput.maxLength = 10;
-            idInput.placeholder = '10-digit mobile number';
+            phoneField.style.display = '';
+            emailField.style.display = 'none';
+            phoneInput.required = true;
+            emailInput.required = false;
           } else {
-            idLabel.textContent = 'Email';
-            idInput.type = 'email';
-            idInput.removeAttribute('inputmode');
-            idInput.removeAttribute('maxlength');
-            idInput.placeholder = '';
+            phoneField.style.display = 'none';
+            emailField.style.display = '';
+            phoneInput.required = false;
+            emailInput.required = true;
           }
         });
       });
       // Strips anything non-numeric as they type, same as every other
       // phone field sitewide (billing, Team, signup).
-      idInput.addEventListener('input', function () {
-        if (pill.classList.contains('mode-phone')) {
-          this.value = this.value.replace(/\D/g, '').slice(0, 10);
-        }
+      phoneInput.addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').slice(0, 10);
       });
     })();
 
@@ -116,7 +130,7 @@
         const password = document.getElementById('password').value;
         let email;
         if (isPhoneMode) {
-          const phone = document.getElementById('identifier').value.trim();
+          const phone = document.getElementById('identifierPhone').value.trim();
           if (!/^[0-9]{10}$/.test(phone)) {
             throw new Error('Please enter a valid 10-digit mobile number.');
           }
@@ -131,7 +145,7 @@
           if (!resolvedEmail) throw new Error('No account found for this phone number.');
           email = resolvedEmail;
         } else {
-          email = document.getElementById('identifier').value;
+          email = document.getElementById('identifierEmail').value;
         }
 
         // Set BEFORE login() -- the shared client's storage adapter
