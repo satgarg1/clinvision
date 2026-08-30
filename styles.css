@@ -940,6 +940,127 @@ a { color: inherit; }
   .suite-desc { margin-left: auto; margin-right: auto; }
 }
 
+/* Comparison, v1: "Without Qlinic vs. With Qlinic" -- plain paper canvas,
+   no ambient glow (the two bordered cards are already the visual
+   interest here, a glow behind them would just compete). Sits between
+   Full Suite and Explore Qlinic. Top padding kept modest (70px) against
+   Full Suite's own 130px bottom padding, same reasoning as Full Suite's
+   own port: stacking two full paddings here would reproduce the
+   "too much space between sections" mistake from the hero-to-trust port. */
+.compare {
+  position: relative;
+  background: var(--mkt-paper);
+  padding: 70px 6vw 130px;
+  border-top: 1px solid var(--grey-300);
+}
+.compare-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  /* 380px, not a smaller number -- "Without Qlinic" alone needs ~342px
+     at this column's largest font-size (measured via canvas during
+     mockup review), so anything narrower forces it to wrap mid-phrase
+     instead of breaking cleanly at the "vs." line the explicit <br>s
+     intend. */
+  grid-template-columns: 380px 1fr;
+  gap: 56px;
+  align-items: start;
+}
+.compare-intro { position: sticky; top: 100px; }
+.compare-intro h2 {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  font-size: clamp(34px, 4.2vw, 50px);
+  margin: 0 0 40px;
+  color: var(--black);
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 20;
+}
+.compare-intro p {
+  font-size: clamp(18px, 2vw, 22px);
+  line-height: 1.65;
+  color: var(--grey-700);
+  margin: 0;
+}
+
+/* Two genuinely separate cards, not one shared box with a divider line --
+   a real gap plus each card's own color-matched border is what actually
+   reads as "two things" instead of one merged block. Built as a single
+   CSS grid with subgrid rows so every row's height still comes from
+   whichever side's sentence is longer (same fix as Trust's subheads),
+   while each side still LOOKS like its own bordered card. */
+.compare-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(7, auto);
+  column-gap: 40px;
+}
+.compare-col {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: 1 / span 7;
+  background: var(--white);
+  border: 2px solid var(--grey-300);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.compare-col.without { grid-column: 1; border-color: var(--danger); }
+.compare-col.with { grid-column: 2; border-color: var(--success); }
+.compare-head {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 700;
+  font-size: 21px;
+  padding: 22px 28px;
+  border-bottom: 1px solid var(--grey-300);
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 18;
+}
+.compare-head.without { color: var(--danger); background: var(--danger-bg); }
+.compare-head.with { color: var(--success); background: var(--success-bg); }
+.compare-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 28px;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--black);
+  border-bottom: 1px solid var(--grey-100);
+}
+.compare-col > .compare-row:last-child { border-bottom: none; }
+.compare-col.with .compare-text { font-weight: 600; }
+.compare-icon {
+  /* Bumped up from the mockup's 24px/14px -- explicit ask when porting:
+     the check/cross needed to read clearly at a glance, not just be
+     technically present. */
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: -1px;
+}
+.compare-icon.x { background: var(--danger-bg); color: var(--danger); }
+.compare-icon.check { background: var(--success-bg); color: var(--success); }
+@media (max-width: 900px) {
+  .compare-inner { grid-template-columns: 1fr; gap: 40px; }
+  .compare-intro { position: static; text-align: center; }
+  /* Stacked, the two cards no longer need to share row tracks -- with
+     only one column left, both cards trying to occupy the same
+     grid-row: 1 / span 7 would overlap directly on top of each other.
+     Drop the subgrid/shared-row setup entirely here and let each card
+     flow as its own independent block instead, same as how Full Suite's
+     own rows fall back to plain stacking on mobile. */
+  .compare-columns { display: flex; flex-direction: column; gap: 32px; }
+  .compare-col { display: block; grid-template-rows: none; grid-row: auto; }
+}
+
 /* ---------------- Shared colorful accents (used across every logged-in page) ----------------
    Same 5-color palette as the landing page, applied consistently: each doctor
    gets a stable color (by their position in the doctors list) shown as a top
