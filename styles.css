@@ -569,6 +569,12 @@ a { color: inherit; }
   letter-spacing: 0.03em;
   color: var(--grey-700);
   padding-left: 0;
+  /* Toned down so it recedes behind the headline instead of competing
+     with it for attention right above three bold statements -- the
+     entrance-fade .hero-fx.show rule above sets opacity:1 at the same
+     specificity, so this wins on source order and becomes the eyebrow's
+     actual resting opacity once shown. */
+  opacity: 0.65;
 }
 /* The shared .eyebrow::before dot is positioned for a left-aligned label --
    left:0 reads as a stray floating dot once this one specific eyebrow is
