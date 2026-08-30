@@ -3765,8 +3765,21 @@ th.th-filterable { position: relative; }
   border-color: var(--grey-300);
 }
 
-.btn:hover, .btn-sm:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
-.btn:active, .btn-sm:active { transform: translateY(0); box-shadow: none; }
+/* Gated to real pointer devices, same fix already applied to the
+   sidebar nav links and billing option cards -- and the :active
+   counter-transform below them is gone entirely, not just gated.
+   With both a hover-lift and an active-flatten each transitioning on
+   their own, clicking (mouse down applies :active, mouse up while
+   still hovering re-applies :hover) played the lift animation
+   backwards then forwards again in well under a second, which read as
+   the button shaking rather than a clean press. The other two fixes
+   solved a stuck-hover-on-tap bug and never had an :active rule to
+   begin with; removing this one's :active brings it in line with
+   that same pattern -- hover still lifts the button on a real pointer,
+   nothing animates back down again on click. */
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover, .btn-sm:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
+}
 
 table.qtable tbody tr { transition: background 0.12s ease; }
 table.qtable tbody tr:hover { background: var(--grey-100); }
