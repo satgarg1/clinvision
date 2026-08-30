@@ -435,51 +435,6 @@ a { color: inherit; }
 .icon-purple { background: var(--mkt-purple-bg); }
 .icon-pink { background: var(--mkt-pink-bg); }
 
-/* Homepage teaser cards, linking out to the three deep-dive pages */
-.mkt-teasers {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 28px;
-  margin-top: 56px;
-  text-align: left;
-}
-.teaser-card {
-  background: var(--white);
-  border: 1px solid var(--grey-300);
-  border-radius: var(--radius-lg);
-  padding: 36px 32px;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-  display: flex;
-  flex-direction: column;
-}
-.teaser-card:hover {
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08);
-  transform: translateY(-4px);
-}
-.teaser-card .feature-icon { margin-bottom: 22px; }
-.teaser-card h3 {
-  font-size: 21px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin: 0 0 10px;
-}
-.teaser-card p {
-  font-size: 15px;
-  color: var(--grey-700);
-  line-height: 1.5;
-  margin: 0 0 20px;
-  flex: 1;
-}
-.teaser-card .teaser-link {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--accent);
-  text-decoration: none;
-  display: inline-block;
-  transition: transform 0.15s ease;
-}
-.teaser-card .teaser-link:hover { text-decoration: underline; transform: scale(1.08); }
-
 /* ---------------- Premium marketing pass ----------------
    A second, display-only typeface (Fraunces, a warm variable serif) reserved
    for headlines and big numerals across index/how-it-works/whats-inside/
@@ -1190,6 +1145,125 @@ a { color: inherit; }
 .final-cta .btn { font-size: 22px; padding: 20px 44px; }
 @media (max-width: 900px) {
   .final-cta { text-align: center; }
+}
+
+/* ---------------- Explore Qlinic ----------------
+   Restyled off its old flat grey block onto the same paper+glow pattern
+   as every other section. Purple, not blue -- Hero, Compare, FAQ, and
+   the Final CTA band are already all blue, and this section sits right
+   in the middle of that run (Compare -> Explore -> FAQ -> Final CTA),
+   so a blue glow here would have made four sections in a row the same
+   color. Purple was already in the palette and already used on this
+   section's own "What's inside" icon before this restyle, so it ties
+   back rather than introducing a new hue cold. */
+.explore {
+  position: relative;
+  background: var(--mkt-paper);
+  padding: 100px 6vw 130px;
+  border-top: 1px solid var(--grey-300);
+  overflow: hidden;
+}
+.explore-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 85% 70% at 50% 0%, rgba(124, 58, 237, 0.13) 0%, rgba(124, 58, 237, 0.05) 45%, rgba(124, 58, 237, 0) 75%);
+}
+.explore-head { position: relative; z-index: 1; max-width: 640px; margin: 0 auto 64px; text-align: center; }
+.explore-eyebrow {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--mkt-purple);
+  margin-bottom: 18px;
+}
+.explore-h2 {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  font-size: clamp(30px, 3.6vw, 44px);
+  margin: 0;
+  color: var(--black);
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 20;
+}
+.explore-grid {
+  position: relative;
+  z-index: 1;
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+.explore-card {
+  background: var(--white);
+  border: 1px solid var(--grey-300);
+  border-radius: var(--radius-lg);
+  padding: 38px 34px 34px;
+  display: flex;
+  flex-direction: column;
+  /* Scroll-triggered reveal, staggered per card -- same pattern as the
+     Comparison section's two columns. */
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.6s cubic-bezier(0.19, 1, 0.22, 1), transform 0.6s cubic-bezier(0.19, 1, 0.22, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.explore-card.show { opacity: 1; transform: translateY(0); }
+.explore-card:hover { box-shadow: 0 16px 36px rgba(124, 58, 237, 0.12); border-color: #d8c8fb; }
+.explore-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 26px;
+}
+/* Razorpay's own card pattern: the product name sits small and plain up
+   top -- it's a label, not the point -- while the sentence underneath
+   carries the actual claim, so that's the one built bold. Inverts this
+   card's own previous weighting (bold h3 / plain p). */
+.explore-label {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--grey-700);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.explore-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  background: var(--mkt-purple-bg);
+  color: var(--mkt-purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.explore-icon svg { width: 22px; height: 22px; display: block; }
+.explore-lead {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.45;
+  color: var(--black);
+  margin: 0 0 26px;
+  flex: 1;
+}
+.explore-lead .hl { color: var(--mkt-purple); }
+.explore-link {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--mkt-purple);
+  text-decoration: none;
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+.explore-link:hover { text-decoration: underline; transform: scale(1.06); }
+@media (max-width: 900px) {
+  .explore-grid { grid-template-columns: 1fr; }
 }
 
 /* ---------------- Shared colorful accents (used across every logged-in page) ----------------
