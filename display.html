@@ -3,27 +3,24 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Waiting Room Display: Qlinic</title>
+<title>Waiting Room Display: ClinVision</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=231" />
+<link rel="stylesheet" href="styles.css?v=232" />
 </head>
 <body class="display-body">
 
   <div class="display-header">
     <div class="brand">
-      <!-- Same mark as the favicon/login corner brand, but light-on-dark:
-           this board's background is the app's --black (#1d1d1f) fixed
-           permanently, the exact same value the mark's circle is normally
-           filled with elsewhere — on a light page that dark disc reads
-           fine, but here it was disappearing into the background outright,
-           leaving only the white hands and blue dot floating with no
-           visible circle at all. Inverted (white disc, dark hands) so it
-           actually shows up against this screen's own dark canvas. -->
-      <svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="#fff"/><line x1="50" y1="50" x2="50" y2="26" stroke="#1d1d1f" stroke-width="9" stroke-linecap="round"/><line x1="50" y1="50" x2="68" y2="58" stroke="#1d1d1f" stroke-width="9" stroke-linecap="round"/><circle cx="50" cy="50" r="6" fill="#0071e3"/></svg>
-      Qlinic <span id="taglineText" style="color:var(--grey-500);font-weight:400;font-size:17px;margin-left:6px;">· live queue</span>
+      <!-- Wordmark-led sitewide now, no icon -- the old inverted clock
+           mark (needed only because this board's background is
+           permanently dark) is gone along with the icon concept
+           itself. White fill on brand-word specifically, since the
+           usual navy ink would disappear into this dark background
+           exactly the way the old dark-filled icon used to. -->
+      <span class="brand-word">ClinVision</span> <span id="taglineText" style="color:var(--grey-500);font-weight:400;font-size:17px;margin-left:6px;">· live queue</span>
     </div>
     <div style="text-align:right;">
       <div class="clock"><span class="live-dot" aria-hidden="true"></span><span id="clockTime">--</span></div>

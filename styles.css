@@ -1807,12 +1807,13 @@ input[type="number"] { -moz-appearance: textfield; }
   left: 32px;
   z-index: 5;
   display: flex;
+  /* Column now that there's no icon sitting beside the wordmark --
+     word and tagline stack, same as every other page's brand corner. */
+  flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
   text-decoration: none;
 }
-.auth-corner-brand svg { width: 22px; height: 22px; flex-shrink: 0; margin-top: 2px; }
-.auth-corner-brand .name { font-weight: 700; font-size: 19px; color: var(--black); }
+.auth-corner-brand .brand-word { font-size: 19px; }
 .auth-corner-brand .tagline { font-size: 11px; color: var(--grey-500); margin-top: 2px; }
 
 /* Ambient glow reuses the exact hero-glow blue rather than inventing a
@@ -3676,12 +3677,10 @@ th.th-filterable { position: relative; }
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 .display-header .brand { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
-.brand-mark {
-  /* The real Qlinic mark (dark circle, clock hands, blue dot) — same
-     SVG as the favicon and every other page's own brand corner, not
-     a standalone placeholder glyph like the plain "Q" this used to be. */
-  width: 34px; height: 34px; display: block; flex-shrink: 0;
-}
+/* White, not the usual navy ink -- this board's background is
+   permanently dark, same reason the old icon needed inverting before
+   the wordmark-only rebrand dropped icons entirely. */
+.display-header .brand-word { color: #fff; }
 .display-header .clock { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--white); display: flex; align-items: center; }
 .clock-date { font-size: 12px; color: var(--grey-500); text-align: right; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
 
