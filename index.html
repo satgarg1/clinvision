@@ -3,30 +3,28 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Qlinic: No one should have to wait blind</title>
+<title>ClinVision: No one should have to wait blind</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=228" />
+<link rel="stylesheet" href="styles.css?v=229" />
 </head>
 <body>
 
   <nav class="mkt-nav">
+    <!-- ClinVision rebrand pilot (2026-08-31): wordmark-led, no icon --
+         the clock mark is gone on purpose, not missing. .brand-word/
+         .brand-word-bar are new, scoped only to this page for now; the
+         shared .brand-clock/.brand-tagline classes are untouched so
+         every other page keeps the old Qlinic branding until this is
+         confirmed and rolled out everywhere. -->
     <a href="index.html" class="brand">
       <span class="brand-top">
-        <span class="brand-clock clock-face" id="navClock">
-          <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;color:var(--black);">
-            <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="5"></circle>
-            <line class="clock-hour" x1="50" y1="50" x2="50" y2="30" stroke="currentColor" stroke-width="6" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
-            <line class="clock-min" x1="50" y1="50" x2="50" y2="18" stroke="currentColor" stroke-width="4" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
-            <line class="clock-sec" x1="50" y1="50" x2="50" y2="14" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="transform-origin:50px 50px;"></line>
-            <circle cx="50" cy="50" r="3" fill="currentColor"></circle>
-          </svg>
-        </span>
-        Qlinic
+        <span class="brand-word">ClinVision</span>
       </span>
-      <span class="brand-tagline">Time is the one asset nobody gets back</span>
+      <span class="brand-word-bar"></span>
+      <span class="brand-tagline">Where clinics run better</span>
     </a>
     <div class="mkt-nav-links">
       <a href="who-its-for.html" style="font-weight:600;font-size:15px;color:var(--black);text-decoration:none;">Who it's for</a>
@@ -80,7 +78,7 @@
 
       <div class="hero-visual hero-fx" id="heroFxImage">
         <img src="hero.png" alt="A calm clinic waiting room: the doctor's door shows a green status light, the receptionist is relaxed, and the patient checks her phone knowing her number is up next." />
-        <div class="hero-visual-caption hero-fx" id="heroFxCaption">Illustrative &mdash; a clinic already running on Qlinic</div>
+        <div class="hero-visual-caption hero-fx" id="heroFxCaption">Illustrative &mdash; a clinic already running on ClinVision</div>
       </div>
 
       <div class="hero-scroll-cue hero-fx" id="heroFxScroll" aria-hidden="true"><div class="dot"></div></div>
@@ -93,7 +91,7 @@
     // WhatsApp number, in one place, once it exists.
     (function () {
       var WHATSAPP_NUMBER = '91XXXXXXXXXX';
-      var msg = "Hi, I saw your website and want to know more about Qlinic.";
+      var msg = "Hi, I saw your website and want to know more about ClinVision.";
       var link = document.getElementById('heroWhatsapp');
       if (link) link.href = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(msg);
     })();
@@ -310,13 +308,13 @@
     <div class="compare-glow" aria-hidden="true"></div>
     <div class="compare-inner">
       <div class="compare-intro">
-        <h2>Without Qlinic<br />vs.<br />With Qlinic</h2>
-        <p>Running a clinic without a system means carrying it all in your head, a register, or a WhatsApp group. Qlinic gives your reception, doctors, and you the same picture at the same time, automatically.</p>
+        <h2>Without ClinVision<br />vs.<br />With ClinVision</h2>
+        <p>Running a clinic without a system means carrying it all in your head, a register, or a WhatsApp group. ClinVision gives your reception, doctors, and you the same picture at the same time, automatically.</p>
       </div>
 
       <div class="compare-columns">
         <div class="compare-col without">
-          <div class="compare-head without">Without Qlinic</div>
+          <div class="compare-head without">Without ClinVision</div>
           <div class="compare-row"><span class="compare-icon x">&times;</span><span class="compare-text">Patients repeatedly ask "How long will it take?", and staff end up giving the same answer several times a day.</span></div>
           <div class="compare-row"><span class="compare-icon x">&times;</span><span class="compare-text">The doctor has to rely on reception to know who's arrived, who's waiting, and who's next.</span></div>
           <div class="compare-row"><span class="compare-icon x">&times;</span><span class="compare-text">Reception, assistants, and the doctor coordinate verbally or over WhatsApp, and updates get missed.</span></div>
@@ -326,7 +324,7 @@
         </div>
 
         <div class="compare-col with">
-          <div class="compare-head with">With Qlinic</div>
+          <div class="compare-head with">With ClinVision</div>
           <div class="compare-row"><span class="compare-icon check">&check;</span><span class="compare-text">Patients can see where they stand in the queue themselves, without needing to ask.</span></div>
           <div class="compare-row"><span class="compare-icon check">&check;</span><span class="compare-text">The doctor has a live view of the queue and can move through patients without asking reception each time.</span></div>
           <div class="compare-row"><span class="compare-icon check">&check;</span><span class="compare-text">Everyone works off the same live system, so nothing depends on someone remembering to pass it along.</span></div>
@@ -361,7 +359,7 @@
   <section class="explore">
     <div class="explore-glow" aria-hidden="true"></div>
     <div class="explore-head reveal">
-      <div class="explore-eyebrow">Explore Qlinic</div>
+      <div class="explore-eyebrow">Explore ClinVision</div>
       <h2 class="explore-h2">Wherever you want to start.</h2>
     </div>
     <div class="explore-grid" id="exploreGrid">
@@ -440,24 +438,24 @@
       <div class="faq-list" id="faqList">
         <div class="faq-item">
           <button class="faq-question" type="button">
-            What is Qlinic?
+            What is ClinVision?
             <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
-          <div class="faq-answer"><div class="faq-answer-inner">Qlinic is a clinic management system built for how Indian clinics run day to day, bringing the queue, billing, records, and reporting into one place instead of several disconnected ones.</div></div>
+          <div class="faq-answer"><div class="faq-answer-inner">ClinVision is a clinic management system built for how Indian clinics run day to day, bringing the queue, billing, records, and reporting into one place instead of several disconnected ones.</div></div>
         </div>
         <div class="faq-item">
           <button class="faq-question" type="button">
-            Who is Qlinic for?
+            Who is ClinVision for?
             <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
-          <div class="faq-answer"><div class="faq-answer-inner">Qlinic works for clinics of any size and structure, from a solo practice to a polyclinic, nursing home, or hospital OPD.</div></div>
+          <div class="faq-answer"><div class="faq-answer-inner">ClinVision works for clinics of any size and structure, from a solo practice to a polyclinic, nursing home, or hospital OPD.</div></div>
         </div>
         <div class="faq-item">
           <button class="faq-question" type="button">
             Does my reception staff need training to use it?
             <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
-          <div class="faq-answer"><div class="faq-answer-inner">Very little. Reception staff can keep working the way they already do; Qlinic fits around that instead of asking them to learn something new.</div></div>
+          <div class="faq-answer"><div class="faq-answer-inner">Very little. Reception staff can keep working the way they already do; ClinVision fits around that instead of asking them to learn something new.</div></div>
         </div>
         <div class="faq-item">
           <button class="faq-question" type="button">
@@ -482,21 +480,21 @@
         </div>
         <div class="faq-item">
           <button class="faq-question" type="button">
-            Is Qlinic ready for ABDM?
+            Is ClinVision ready for ABDM?
             <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
-          <div class="faq-answer"><div class="faq-answer-inner">Yes, Qlinic is built ABDM ready from the ground up.</div></div>
+          <div class="faq-answer"><div class="faq-answer-inner">Yes, ClinVision is built ABDM ready from the ground up.</div></div>
         </div>
         <div class="faq-item">
           <button class="faq-question" type="button">
-            Does Qlinic handle billing?
+            Does ClinVision handle billing?
             <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
           <div class="faq-answer"><div class="faq-answer-inner">Yes. A consultation can be billed in seconds, with a printed receipt ready before the patient reaches the door.</div></div>
         </div>
         <div class="faq-item">
           <button class="faq-question" type="button">
-            Can multiple doctors use Qlinic at the same clinic?
+            Can multiple doctors use ClinVision at the same clinic?
             <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
           <div class="faq-answer"><div class="faq-answer-inner">Yes. Multiple doctors, staff roles, holidays, and closed dates are all managed from one place.</div></div>
@@ -513,11 +511,11 @@
             Do I need any special hardware?
             <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
-          <div class="faq-answer"><div class="faq-answer-inner">No. Qlinic works on the devices your clinic already has; there's nothing special to buy.</div></div>
+          <div class="faq-answer"><div class="faq-answer-inner">No. ClinVision works on the devices your clinic already has; there's nothing special to buy.</div></div>
         </div>
         <div class="faq-item">
           <button class="faq-question" type="button">
-            How much does Qlinic cost?
+            How much does ClinVision cost?
             <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
           <div class="faq-answer"><div class="faq-answer-inner">Pricing depends on your clinic's size and needs. Book a demo and we'll work out the right number with you directly.</div></div>
@@ -550,13 +548,13 @@
   <section class="final-cta reveal">
     <div class="final-cta-glow" aria-hidden="true"></div>
     <div class="final-cta-inner">
-      <h2>Bring calm to your clinic<br />with Qlinic</h2>
+      <h2>Bring calm to your clinic<br />with ClinVision</h2>
       <a href="contact.html" class="btn btn-accent">Book a Demo</a>
     </div>
   </section>
 
   <footer class="mkt-footer">
-    Qlinic: Intelligent Clinic Flow Management &nbsp;·&nbsp; Prototype build, not for clinical or production use &nbsp;·&nbsp;
+    ClinVision: Intelligent Clinic Flow Management &nbsp;·&nbsp; Prototype build, not for clinical or production use &nbsp;·&nbsp;
     <a href="contact.html">Contact us</a> &nbsp;·&nbsp;
     <a href="login.html">Clinic admin login</a>
   </footer>

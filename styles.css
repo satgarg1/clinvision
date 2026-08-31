@@ -217,6 +217,30 @@ a { color: inherit; }
   vertical-align: middle;
 }
 
+/* ClinVision rebrand pilot (2026-08-31) -- index.html's nav wordmark
+   only. Deliberately new classes, not edits to .brand/.brand-clock/
+   .brand-tagline above: every other page still uses the old Qlinic
+   branding until this pilot is confirmed and rolled out everywhere,
+   and those shared classes can't change out from under them yet.
+   Same Fraunces/weight/tracking as the real hero headline (.mkt-h1
+   inside .hero-stage) so the wordmark reads as the same typographic
+   voice as the rest of the page, not a bolted-on logo font. */
+.brand-word {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #1e1b4b;
+}
+.brand-word-bar {
+  display: block;
+  width: 28px;
+  height: 3px;
+  border-radius: 2px;
+  background: #c9973e;
+  margin: 5px 0 4px;
+}
+
 .btn {
   display: inline-block;
   font-family: var(--font);
