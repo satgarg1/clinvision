@@ -234,11 +234,11 @@ a { color: inherit; }
 }
 .brand-word-bar {
   display: block;
-  width: 28px;
+  width: 2em;
   height: 3px;
   border-radius: 2px;
   background: #c9973e;
-  margin: 5px 0 4px;
+  margin: 2px 0 5px;
 }
 
 .btn {
