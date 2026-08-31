@@ -225,7 +225,11 @@ a { color: inherit; }
    Same Fraunces/weight/tracking as the real hero headline (.mkt-h1
    inside .hero-stage) so the wordmark reads as the same typographic
    voice as the rest of the page, not a bolted-on logo font. */
+.brand-word-wrap {
+  display: inline-block;
+}
 .brand-word {
+  display: block;
   font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   font-optical-sizing: auto;
   font-weight: 600;
@@ -238,7 +242,7 @@ a { color: inherit; }
   height: 3px;
   border-radius: 2px;
   background: #c9973e;
-  margin: 2px 0 5px;
+  margin: 2px auto 5px;
 }
 
 .btn {
