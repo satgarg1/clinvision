@@ -8,13 +8,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=226" />
+<link rel="stylesheet" href="styles.css?v=227" />
 </head>
 <body class="display-body">
 
   <div class="display-header">
     <div class="brand">
-      <div class="brand-mark" aria-hidden="true">Q</div>
+      <svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="#1d1d1f"/><line x1="50" y1="50" x2="50" y2="26" stroke="#fff" stroke-width="9" stroke-linecap="round"/><line x1="50" y1="50" x2="68" y2="58" stroke="#fff" stroke-width="9" stroke-linecap="round"/><circle cx="50" cy="50" r="6" fill="#0071e3"/></svg>
       Qlinic <span id="taglineText" style="color:var(--grey-500);font-weight:400;font-size:17px;margin-left:6px;">· live queue</span>
     </div>
     <div style="text-align:right;">
@@ -48,7 +48,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=82"></script>
+  <script src="clinic-data.js?v=83"></script>
   <script>
     (async function () {
       await Qlinic.requireLogin('login.html');
@@ -120,6 +120,8 @@
           acrossAllDoctors: (n) => `(${n} across all doctors)`,
           allClosedTitle: 'No doctor is available right now',
           allClosedSub: 'All doctors have closed for the day. Please check back tomorrow.',
+          clinicClosedTitle: "We're closed for the day",
+          clinicClosedSub: 'Thanks for your patience today — the clinic will reopen tomorrow.',
           notArrived: 'Not arrived yet',
           notArrivedSub: 'Queue will start once they arrive',
           calledAtLabel: (t) => `called in at ${t}`,
@@ -149,6 +151,8 @@
           acrossAllDoctors: (n) => `(सभी डॉक्टरों को मिलाकर ${n})`,
           allClosedTitle: 'अभी कोई डॉक्टर उपलब्ध नहीं है',
           allClosedSub: 'आज सभी डॉक्टर बंद हो चुके हैं। कृपया कल फिर देखें।',
+          clinicClosedTitle: 'आज के लिए बंद हैं',
+          clinicClosedSub: 'आज आपके धैर्य के लिए धन्यवाद — क्लिनिक कल फिर खुलेगा।',
           notArrived: 'अभी नहीं पहुंचे',
           notArrivedSub: 'डॉक्टर के आते ही कतार शुरू होगी',
           calledAtLabel: (t) => `${t} पर बुलाया गया`,
@@ -576,13 +580,20 @@
         // filter above rather than a separate calendar check: the message
         // clears itself the instant even one doctor has something to show
         // (available, or past their reset showing "Not arrived yet").
-        const allClosedToday = allQueues.length > 0 && all.length === 0;
+        //
+        // The admin's own clinic-wide "End of day" closure overrides all
+        // of that outright — it's checked first and wins regardless of
+        // what any individual doctor's own status says, since admin
+        // closing the whole clinic doesn't require every doctor to have
+        // separately tapped "close my day" first.
+        const clinicClosedNow = Qlinic.isClinicClosedToday(clinic);
+        const allClosedToday = clinicClosedNow || (allQueues.length > 0 && all.length === 0);
         document.getElementById('doctorStrip').style.display = allClosedToday ? 'none' : '';
         document.getElementById('boardPanel').style.display = allClosedToday ? 'none' : '';
         document.getElementById('allClosedMessage').style.display = allClosedToday ? 'block' : 'none';
         if (allClosedToday) {
-          document.getElementById('allClosedTitle').textContent = T.allClosedTitle;
-          document.getElementById('allClosedSub').textContent = T.allClosedSub;
+          document.getElementById('allClosedTitle').textContent = clinicClosedNow ? T.clinicClosedTitle : T.allClosedTitle;
+          document.getElementById('allClosedSub').textContent = clinicClosedNow ? T.clinicClosedSub : T.allClosedSub;
         }
 
         renderDoctorStrip(all);

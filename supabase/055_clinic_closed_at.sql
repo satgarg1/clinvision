@@ -1,0 +1,27 @@
+-- ============================================================
+-- Qlinic — migration 055: clinic-wide "closed for today" timestamp
+--
+-- Why: the admin's "End of day" action (closeDayNoShows in
+-- clinic-data.js) only ever stamped clinics.last_closed_date, a plain
+-- DATE the End of day page used purely to grey its own button out.
+-- Nothing else in the app ever read it — the waiting-room display
+-- board and a patient's own queue.html link only ever knew about a
+-- closed clinic by checking each individual doctor's own
+-- day_closed_at, so an admin closing the whole clinic without every
+-- doctor separately tapping "close my day" left both screens still
+-- showing doctors as available.
+--
+-- closed_at is a TIMESTAMP, not a date, specifically so the display
+-- board and queue.html can apply the exact same 4am-reset rule
+-- already used for doctors.day_closed_at (see clinic-data.js's
+-- isClosedUntilReset / display.html's own nextResetAfter) instead of
+-- flipping back "open" at the stroke of midnight while a clinic that
+-- closed at 11pm is still very much closed.
+--
+-- last_closed_date is left in place untouched (never drop a shipped
+-- column) — the End of day page keeps using it for its own button
+-- state, unchanged; only the new clinic-wide override on the display
+-- board and queue.html reads closed_at.
+-- ============================================================
+
+alter table public.clinics add column closed_at timestamptz null;

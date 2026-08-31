@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d1d1f'/%3E%3Cline x1='50' y1='50' x2='50' y2='26' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='68' y2='58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230071e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=226" />
+<link rel="stylesheet" href="styles.css?v=227" />
 </head>
 <body>
   <div class="login-wrap">
@@ -125,7 +125,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=82"></script>
+  <script src="clinic-data.js?v=83"></script>
   <script>
     (async function () {
       const params = new URLSearchParams(window.location.search);
@@ -281,6 +281,8 @@
           linkNotFoundBody: "We couldn't find a booking for this link. Please double-check the message you received, or contact the clinic directly.",
           closedTitle: 'Doctor has closed for the day',
           closedBody: 'Please check back tomorrow, or contact the clinic directly.',
+          clinicClosedTitle: "We're closed for the day",
+          clinicClosedBody: 'Thanks for your patience today — the clinic will reopen tomorrow.',
           notYetNote: (dateLabel) => `This link isn't active yet — please come back and open it again on the morning of ${dateLabel} to see your live position in the queue.`,
           // Full sentences, not fragments — Hindi needs the doctor's
           // name before the postposition ("X ke saath"), the opposite
@@ -343,6 +345,8 @@
           linkNotFoundBody: 'हमें इस लिंक के लिए कोई बुकिंग नहीं मिली। कृपया अपना प्राप्त संदेश दोबारा जांचें, या सीधे क्लिनिक से संपर्क करें।',
           closedTitle: 'डॉक्टर आज के लिए बंद हो चुके हैं',
           closedBody: 'कृपया कल फिर से देखें, या सीधे क्लिनिक से संपर्क करें।',
+          clinicClosedTitle: 'आज के लिए बंद हैं',
+          clinicClosedBody: 'आज आपके धैर्य के लिए धन्यवाद — क्लिनिक कल फिर खुलेगा।',
           notYetNote: (dateLabel) => `यह लिंक अभी सक्रिय नहीं है — कृपया ${dateLabel} की सुबह वापस आकर इसे दोबारा खोलें, ताकि आप कतार में अपनी लाइव स्थिति देख सकें।`,
           // Name (+ specialty) leads, then "ke saath" right after it,
           // then the time-plus-verb together on their own line ("at
@@ -531,7 +535,12 @@
       // is checked earlier in render() and shown via showDone() instead,
       // since "closed for the day" would be a confusing thing to see on an
       // old link once the visit is already over.
-      function showClosed(data) {
+      // isClinicClosed distinguishes the admin's own clinic-wide "End of
+      // day" closure (migration 055/056's clinicClosedAt) from a single
+      // doctor closing their own day — same panel, but the doctor's name
+      // line is dropped (this isn't about any one doctor) and the
+      // title/body swap to the clinic-wide wording.
+      function showClosed(data, isClinicClosed) {
         loadingEl.style.display = 'none';
         errorEl.style.display = 'none';
         statusEl.style.display = 'none';
@@ -539,7 +548,11 @@
         footerEl.style.display = 'block';
         closedEl.style.display = 'block';
         document.getElementById('closedClinicName').textContent = localizeName(data.clinicName);
-        document.getElementById('closedDoctorName').textContent = localizeName(data.doctorName);
+        const doctorNameEl = document.getElementById('closedDoctorName');
+        doctorNameEl.style.display = isClinicClosed ? 'none' : '';
+        doctorNameEl.textContent = isClinicClosed ? '' : localizeName(data.doctorName);
+        document.getElementById('closedTitle').textContent = isClinicClosed ? T.clinicClosedTitle : T.closedTitle;
+        document.getElementById('closedBody').textContent = isClinicClosed ? T.clinicClosedBody : T.closedBody;
       }
 
       // An appointment days out shouldn't show today's queue mechanics
@@ -611,10 +624,15 @@
 
         // Mirrors the waiting-room display screen: a patient who hasn't
         // been seen yet should know the doctor closed for the day just
-        // as clearly as someone sitting in the waiting room would.
-        const isClosed = Qlinic.isDoctorClosedToday({ dayClosedAt: data.doctorDayClosedAt });
-        if (isClosed && (data.status === 'booked' || data.status === 'waiting')) {
-          showClosed(data);
+        // as clearly as someone sitting in the waiting room would. The
+        // clinic-wide closure (admin's "End of day") is checked first and
+        // wins regardless of this specific doctor's own status — closing
+        // the whole clinic doesn't require every doctor to have separately
+        // tapped "close my day" too.
+        const isClinicClosed = Qlinic.isClosedUntilReset(data.clinicClosedAt);
+        const isDoctorClosed = Qlinic.isDoctorClosedToday({ dayClosedAt: data.doctorDayClosedAt });
+        if ((isClinicClosed || isDoctorClosed) && (data.status === 'booked' || data.status === 'waiting')) {
+          showClosed(data, isClinicClosed);
           return;
         }
 

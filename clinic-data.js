@@ -2015,9 +2015,14 @@
       .eq('status', 'booked')
       .eq('booked_date', todayDateStr());
     if (error) throw error;
+    // closed_at (a timestamp, not just last_closed_date's plain date) is
+    // what the waiting-room display board and a patient's own queue.html
+    // link now check to show "we're closed for the day" clinic-wide, even
+    // when individual doctors never separately tapped "close my day" —
+    // see isClosedUntilReset below for why this needs a real timestamp.
     const { error: clinicError } = await sb
       .from('clinics')
-      .update({ last_closed_date: todayDateStr() })
+      .update({ last_closed_date: todayDateStr(), closed_at: new Date().toISOString() })
       .eq('id', clinicId);
     if (clinicError) throw clinicError;
     currentClinic = null;
@@ -2031,7 +2036,7 @@
     const clinicId = await ensureClinicContext();
     const { error } = await sb
       .from('clinics')
-      .update({ last_closed_date: null })
+      .update({ last_closed_date: null, closed_at: null })
       .eq('id', clinicId);
     if (error) throw error;
     currentClinic = null;
@@ -2093,6 +2098,33 @@
     const m = String(closed.getMonth() + 1).padStart(2, '0');
     const d = String(closed.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}` === todayDateStr();
+  }
+
+  // Shared with display.html's own per-doctor fade/reset math (previously
+  // duplicated there as a private nextResetAfter/RESET_HOUR) — 4am, not
+  // midnight, so a clinic (or doctor) that closed at 11:58pm and one that
+  // closed at 12:03am land on the SAME side of "still closed" purely
+  // because the clock ticked over, rather than one flipping back "open"
+  // within minutes. No clinic operates through 4am, so anchoring the
+  // reset there means every closure waits for the same next checkpoint
+  // regardless of what time it actually happened.
+  const CLOSED_RESET_HOUR = 4;
+  function isClosedUntilReset(closedAtIso) {
+    if (!closedAtIso) return false;
+    const closedAt = new Date(closedAtIso);
+    const reset = new Date(closedAt);
+    reset.setHours(CLOSED_RESET_HOUR, 0, 0, 0);
+    if (reset <= closedAt) reset.setDate(reset.getDate() + 1);
+    return Date.now() < reset.getTime();
+  }
+
+  // The admin's clinic-wide "End of day" closure (closed_at, migration
+  // 055) — separate from, and overriding, any individual doctor's own
+  // day_closed_at: the display board and queue.html both need to show
+  // "we're closed" the moment admin closes the day, even if not every
+  // doctor happened to tap "close my day" themselves first.
+  function isClinicClosedToday(clinic) {
+    return !!clinic && isClosedUntilReset(clinic.closed_at);
   }
 
   // ---------------- auth ----------------
@@ -2432,6 +2464,8 @@
     closeDoctorDay,
     reopenDoctorDay,
     isDoctorClosedToday,
+    isClosedUntilReset,
+    isClinicClosedToday,
     isRealStatusReason,
     escapeHtml,
     confirmDialog,
