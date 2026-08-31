@@ -12,6 +12,31 @@ framework. The backend is a real [Supabase](https://supabase.com) project
 below) adding a small set of Supabase Edge Functions on top. The site itself
 deploys to GitHub Pages.
 
+## Pending rebrand: Qlinic -> ClinVision (not yet shipped)
+
+Decided 2026-08-31, not executed yet - name and tagline only, nothing in the
+codebase has changed:
+
+- **New name: ClinVision.** The `.in` domain is available and being
+  purchased; name is locked (do the usual exact-match trademark search +
+  professional opinion before filing anything, same as was scoped for the
+  earlier "Linearr" rename idea this replaces).
+- **New tagline: "Where Clinics Run Better"** - replaces "Time is the one
+  asset nobody gets back" everywhere it appears (corner-brand illustration
+  on the four auth pages, marketing site hero/footer, anywhere else it's
+  hardcoded). Chosen specifically because the subject is the clinic as a
+  whole operation, not any one role, matching the existing rule that a
+  Qlinic/ClinVision tagline has to read the same to an owner, doctor, staff
+  member, and patient - never landing as speaking to just one of them.
+- **Logo: still undecided.** The current mark (dark circle, clock hands,
+  blue dot) is tied to Qlinic's own "time" concept; a new one for
+  ClinVision hasn't been designed.
+
+This needs one deliberate site-wide pass once the rebrand actually happens
+- swapping the tagline (and eventually the name/logo) piecemeal, page by
+page, is how a rebrand ships half-done. Until that pass happens, the live
+site keeps saying "Qlinic" / the old tagline everywhere, on purpose.
+
 ## Pages
 
 Grouped by who uses them - most pages redirect based on role
