@@ -35,6 +35,25 @@ Everything pending that isn't tracked anywhere else in the repo. Kept in one fil
 
 **Explicitly out of scope for Qlinic:** EHR/FHIR beyond the ABDM work already shipped, pharmacy/lab modules, IPD/OT scheduling, HR/payroll, AI scribe/radiology AI, insurance/TPA claims, international-patient features — all hospital-scale scope that doesn't fit a solo/small-clinic queue-and-billing tool.
 
+## Rebrand: ClinVision
+
+Name and tagline decided 2026-08-31 (dropped the earlier "Linearr" idea, see the now-superseded item this replaces). Domain and hosting are live; the actual site-wide content swap has not started.
+
+**Decided:**
+- Name: **ClinVision** — written "ClinVision" (capital C, capital V) anywhere a person reads it as the brand name (logo, headers, hero copy). Lowercase "clinvision" only in technical strings (domain, email, repo/file names) — that's just standard convention for those, not a separate style choice.
+- Tagline: **"Where Clinics Run Better"** — replaces "Time is the one asset nobody gets back" everywhere. Chosen over "Where Best Clinics Begin" (rejected — reads as aimed at clinics *opening*, a small slice of the real buyer, and is vaguer about what the product does). Checked and clean grammatically (plural subject "clinics," correctly unconjugated verb "run," adverb "better" modifying it — no error). Passes the same standing rule as always: must read the same to owner/doctor/staff/patient, never patient-only.
+- Trademark: do an exact-match search + get a professional opinion before filing anything — same caution that applied to "Linearr," not yet done for "ClinVision."
+
+**Done:**
+- Domain `clinvision.in` registered on Namecheap, DNS pointed at GitHub Pages (4 A records + CNAME), WHOIS-verified, redacted in public lookups, live and serving.
+- Repo renamed from `qlinic-prototype` to `clinvision`.
+
+**Hosting decision (2026-08-31):** repo stays **public** for now. GitHub Pages does not serve from a private repository on GitHub's Free plan for a personal account — confirmed the hard way (making the repo private took the live site down; reverted immediately). Plan: upgrade to **GitHub Pro** ($48/year) once there's an active paying clinic — it adds "Pages in private repos," and the deployed site stays public either way, only the source becomes private. A free alternative exists if Pro ever feels like the wrong tradeoff: migrate the deploy target to **Cloudflare Pages** (or Netlify/Vercel), which serves a static site from a private GitHub repo at no cost — not done, since it's real migration work (re-pointing DNS, reconnecting the custom domain), not a toggle.
+
+**Not started — the actual rebrand pass, scoped 2026-08-31:**
+- Site-wide swap across every page: "Qlinic" → "ClinVision", the old tagline → "Where Clinics Run Better", remove the clock/circle logo mark. Per the usual convention here — scope → mockup → review → only then touch the real files — this hasn't been mocked up yet.
+- **Logo — not designed.** Leading direction: an eye/lens mark (a vesica-shaped aperture outline with a single accent-colored dot at its center) — plays on "Vision," distinct, reads clearly at favicon size the way the current clock mark does. Two alternates considered: an ascending-sightline mark (a rising line ending in a focal dot), and a cross-that-opens-into-a-lens hybrid (weaker — risks reading as a generic medical cross). Full creative brief and an AI-generation prompt for all three were given directly to the user in chat on 2026-08-31, alongside a rendered sketch of all three — not duplicated here in full; ask again if it's needed and not in recent history.
+
 ## ABDM / ABHA integration
 
 Milestones A–C (schema, HFR/HPR capture, FHIR bundle builder, 7 Edge Functions) are built and deployed, running in `ABDM_MOCK=true`. Full technical plan lives in `plans/robust-questing-walrus.md`.
@@ -76,7 +95,3 @@ Scoped 2026-08-30, not started — this is Qlinic charging **clinics** for using
 - An Autopay toggle — enable/disable recurring auto-charge without removing the saved method entirely.
 
 **Explicitly not scoped/started yet**: any actual Razorpay account setup (business KYC, live API keys), the Edge Functions themselves, the `clinic_payment_methods` migration, or the Settings UI build. This is a scope to build from, not a partial build.
-
-## Under consideration, not decided
-
-- **Rebrand to "Linearr"** (LINE + ARR(ival)) — checked available in trademark classes 9, 42, 44, and the domain is free, but only via an imprecise "contains" search; needs an exact-match search and a professional opinion before filing anything. Current tagline ("Time is the one asset nobody gets back") is considered strong enough to keep through a rename. If a new tagline is wanted, the leading candidate is "Everyone's day, in order." Any positioning copy must serve clinic owner, doctor, staff, and patient roughly equally — never read as patient-only.
