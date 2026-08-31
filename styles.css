@@ -192,7 +192,7 @@ a { color: inherit; }
   align-items: center;
 }
 .brand-tagline {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 400;
   letter-spacing: 0;
   color: var(--grey-500);
@@ -201,30 +201,17 @@ a { color: inherit; }
 /* The sidebar is much narrower than the marketing nav, so the tagline
    needs its own smaller size to stay on one line instead of wrapping. */
 .app-sidebar .brand-tagline {
-  font-size: 9px;
+  font-size: 11px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
 }
 
-/* Clock icon next to "Qlinic" in the nav, ticks to the real time */
-.brand-clock {
-  display: inline-block;
-  width: 22px;
-  height: 22px;
-  margin-right: 8px;
-  vertical-align: middle;
-}
-
-/* ClinVision rebrand pilot (2026-08-31) -- index.html's nav wordmark
-   only. Deliberately new classes, not edits to .brand/.brand-clock/
-   .brand-tagline above: every other page still uses the old Qlinic
-   branding until this pilot is confirmed and rolled out everywhere,
-   and those shared classes can't change out from under them yet.
-   Same Fraunces/weight/tracking as the real hero headline (.mkt-h1
-   inside .hero-stage) so the wordmark reads as the same typographic
-   voice as the rest of the page, not a bolted-on logo font. */
+/* ClinVision's nav wordmark, sitewide. Same Fraunces/weight/tracking as
+   the real hero headline (.mkt-h1 inside .hero-stage) so the wordmark
+   reads as the same typographic voice as the rest of the page, not a
+   bolted-on logo font. */
 .brand-word-wrap {
   display: inline-block;
 }
@@ -1647,7 +1634,7 @@ a { color: inherit; }
   margin-right: 8px;
 }
 .login-brand-corner .brand-tagline {
-  font-size: 11px;
+  font-size: 13px;
   margin-top: 2px;
 }
 /* On a narrow/short viewport the card grows nearly full-bleed (see
@@ -1814,7 +1801,7 @@ input[type="number"] { -moz-appearance: textfield; }
   text-decoration: none;
 }
 .auth-corner-brand .brand-word { font-size: 19px; }
-.auth-corner-brand .tagline { font-size: 11px; color: var(--grey-500); margin-top: 2px; }
+.auth-corner-brand .tagline { font-size: 13px; color: var(--grey-500); margin-top: 2px; }
 
 /* Ambient glow reuses the exact hero-glow blue rather than inventing a
    new color, so these pages don't feel like a different product from
