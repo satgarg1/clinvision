@@ -1619,7 +1619,11 @@ a { color: inherit; }
   z-index: 2;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  /* Centered, not flex-start: "ClinVision" is much shorter than "Where
+     clinics run better" underneath it, so sharing a left edge left the
+     wordmark looking shoved off to one side instead of sitting centered
+     over the tagline the way it visually should. */
+  align-items: center;
   text-decoration: none;
   /* An absolutely-positioned column flex box with no explicit width
      shrink-to-fits against its NARROWEST child's content here, not the
@@ -1804,7 +1808,11 @@ input[type="number"] { -moz-appearance: textfield; }
   /* Column now that there's no icon sitting beside the wordmark --
      word and tagline stack, same as every other page's brand corner. */
   flex-direction: column;
-  align-items: flex-start;
+  /* Centered, not flex-start: "ClinVision" is much shorter than "Where
+     clinics run better" underneath it, so sharing a left edge left the
+     wordmark looking shoved off to one side instead of centered over
+     the tagline. */
+  align-items: center;
   text-decoration: none;
   /* Same fix as .login-brand-corner: a fixed-position column flex box
      with no explicit width shrink-to-fits against the wordmark's
