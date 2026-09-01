@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=238" />
+<link rel="stylesheet" href="styles.css?v=239" />
 </head>
 <body class="display-body">
   <!-- Applied synchronously, before anything else renders, so a device
@@ -92,7 +92,11 @@
     </div>
   </div>
 
-  <p class="section-label" id="doctorStatusLabel">Doctor status</p>
+  <!-- "Doctor status" label removed -- each row already shows a name and
+       an AVAILABLE/ON A BREAK pill, so the section heading was just
+       taking up a line without telling a patient anything the rows
+       don't already say. Freed-up space lets the strip sit closer to
+       the header, leaving more room for the waiting-list rows below. -->
   <div class="display-strip" id="doctorStrip"></div>
 
   <div class="display-all-closed" id="allClosedMessage" style="display:none;">
@@ -150,7 +154,6 @@
         en: {
           taglineFull: 'Where clinics run better',
           liveStatusLabel: 'Live queue',
-          doctorStatusLabel: 'Doctor status',
           waitingLabel: 'Waiting',
           nextLabel: 'Next',
           othersLabel: (n) => `+${n} others`,
@@ -183,7 +186,6 @@
         hi: {
           taglineFull: 'जहाँ क्लीनिक बेहतर चलते हैं',
           liveStatusLabel: 'लाइव कतार',
-          doctorStatusLabel: 'डॉक्टर स्थिति',
           waitingLabel: 'प्रतीक्षा में',
           nextLabel: 'अगले',
           othersLabel: (n) => `+${n} और`,
@@ -543,7 +545,6 @@
       function applyStaticStrings() {
         document.getElementById('taglineText').textContent = T.taglineFull;
         document.getElementById('liveStatusText').textContent = T.liveStatusLabel;
-        document.getElementById('doctorStatusLabel').textContent = T.doctorStatusLabel;
         document.getElementById('waitingNowText').textContent = T.waitingNow;
         document.getElementById('colPos').textContent = T.colPos;
         document.getElementById('colPatient').textContent = T.colPatient;

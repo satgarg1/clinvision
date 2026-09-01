@@ -3713,18 +3713,22 @@ th.th-filterable { position: relative; }
 /* Departure-board style: one row per doctor, not a card grid — this is
    what actually got redesigned. Row order/content is exactly what
    renderDoctorStrip in display.html computes; this is purely the visual
-   layer, none of the underlying refresh/fade/sort logic changed. */
-.display-strip { border-radius: 14px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 28px; }
+   layer, none of the underlying refresh/fade/sort logic changed.
+   Each row is its own bordered card now (was one shared outer border
+   with a faint divider between rows) -- easier to tell doctors apart
+   at a glance from across a room. */
+.display-strip { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
 .dboard-row {
   display: grid;
   grid-template-columns: minmax(190px, 0.9fr) 150px 220px 90px 1fr;
   align-items: center;
   background: var(--grey-900);
-  padding: 16px 20px;
+  padding: 14px 20px;
   gap: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-left: 4px solid transparent;
+  border-radius: 10px;
 }
-.dboard-row + .dboard-row { border-top: 1px solid rgba(255, 255, 255, 0.08); }
 .dboard-row.accent-teal { border-left-color: var(--mkt-teal); }
 .dboard-row.accent-blue { border-left-color: var(--mkt-blue); }
 .dboard-row.accent-purple { border-left-color: var(--mkt-purple); }
@@ -3802,20 +3806,27 @@ th.th-filterable { position: relative; }
 
 .board-rows {
   min-height: 300px;
+  padding: 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 .board-rows.flip-out { opacity: 0; transform: translateY(-8px); }
 
+/* Each patient row is its own bordered card now, same treatment as the
+   doctor-status rows above -- was a shared box with a faint line
+   between names, harder to pick out one row from the next at a glance. */
 .board-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 10px;
   align-items: center;
-  padding: 13px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 11px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
   font-variant-numeric: tabular-nums;
 }
-.board-row:last-child { border-bottom: none; }
 .board-pos { font-size: 17px; font-weight: 800; color: var(--grey-500); }
 .board-name { font-size: 17px; font-weight: 600; display: flex; flex-direction: column; }
 .board-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -3905,8 +3916,9 @@ body[data-board-mode="light"] .display-header { border-bottom-color: rgba(0, 0, 
 body[data-board-mode="light"] .display-header .brand-word { color: #1e1b4b; }
 body[data-board-mode="light"] .display-live-line { color: #1e8e3e; }
 body[data-board-mode="light"] .display-live-line .dot { background: #1e8e3e; }
-body[data-board-mode="light"] .display-strip { border-color: #e3e3e6; }
-body[data-board-mode="light"] .dboard-row + .dboard-row { border-top-color: #e3e3e6; }
+/* Only the top/right/bottom sides -- border-left stays whatever the
+   row's own accent-color class set it to. */
+body[data-board-mode="light"] .dboard-row { border-top-color: #d6d6da; border-right-color: #d6d6da; border-bottom-color: #d6d6da; }
 body[data-board-mode="light"] .dboard-pill-ok { background: rgba(30, 142, 62, 0.12); color: #1e8e3e; }
 body[data-board-mode="light"] .dboard-pill-warn { background: rgba(178, 106, 0, 0.14); color: #b26a00; }
 body[data-board-mode="light"] .dboard-detail-line { color: #b26a00; }
@@ -3914,7 +3926,7 @@ body[data-board-mode="light"] .dboard-next-chip { background: #f0f0f2; border-co
 body[data-board-mode="light"] .dboard-next-chip.more { color: #8a6a2f; }
 body[data-board-mode="light"] .board-page-indicator .dot { background: rgba(0, 0, 0, 0.12); }
 body[data-board-mode="light"] .board-cols { border-top-color: #e3e3e6; border-bottom-color: #e3e3e6; }
-body[data-board-mode="light"] .board-row { border-bottom-color: #ececef; }
+body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
 
 @media (max-width: 720px) {
   .app-shell { flex-direction: column; }
