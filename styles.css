@@ -3747,7 +3747,12 @@ th.th-filterable { position: relative; }
 .dboard-next { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .dboard-next-label { font-size: 11px; color: var(--grey-500); text-transform: uppercase; letter-spacing: 0.06em; margin-right: 2px; }
 .dboard-next-chip { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; background: rgba(255, 255, 255, 0.06); color: var(--grey-300); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 3px 9px; }
-.dboard-next-chip.more { color: var(--grey-500); border-style: dashed; }
+/* Distinct from the plain token chips on purpose -- this one isn't a
+   specific upcoming token, it's a count of everyone past the first 3,
+   so it reads as its own category rather than a fourth token at a
+   glance. Gold ties it to the brand accent already used for the
+   wordmark's underline elsewhere. */
+.dboard-next-chip.more { color: #c9973e; background: rgba(201, 151, 62, 0.14); border-color: rgba(201, 151, 62, 0.4); }
 
 /* Airport-departures-style rotating board */
 .board {
