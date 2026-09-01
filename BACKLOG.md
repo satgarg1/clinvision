@@ -1,4 +1,4 @@
-# Qlinic backlog
+# ClinVision backlog
 
 Everything pending that isn't tracked anywhere else in the repo. Kept in one file, on GitHub, so it survives across sessions instead of living only in chat history. Add to it as things come up. Once an item fully ships, delete it outright rather than leaving a struck-through "DONE" marker behind — the code and git history are the record of what shipped; this file is only for what's still open. An item that's only partly done (one half shipped, the rest gated or deliberately deferred) stays, describing just the remaining work.
 
