@@ -1800,7 +1800,7 @@ input[type="number"] { -moz-appearance: textfield; }
   align-items: flex-start;
   text-decoration: none;
 }
-.auth-corner-brand .brand-word { font-size: 19px; }
+.auth-corner-brand .brand-word-wrap { font-size: 19px; }
 .auth-corner-brand .tagline { font-size: 13px; color: var(--grey-500); margin-top: 2px; }
 
 /* Ambient glow reuses the exact hero-glow blue rather than inventing a
@@ -3674,7 +3674,14 @@ th.th-filterable { position: relative; }
    permanently dark, same reason the old icon needed inverting before
    the wordmark-only rebrand dropped icons entirely. Sized up from the
    nav's own 20px -- this is a TV board meant to be read across a room. */
-.display-header .brand-word { color: #fff; font-size: 26px; }
+/* font-size lives on the wrap, not the word -- .brand-word-bar is a
+   sibling of .brand-word, not a child, so its own 2em width only tracks
+   a font-size override set here on their shared parent. Putting it on
+   .brand-word alone (as this used to) left the bar sized off whatever
+   smaller ambient font-size flowed into the wrap instead, so the gold
+   bar came out far too short next to the enlarged wordmark. */
+.display-header .brand-word-wrap { font-size: 26px; }
+.display-header .brand-word { color: #fff; }
 .display-header .brand-tagline { font-size: 14px; margin-top: 5px; }
 .display-header .clock { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--white); display: flex; align-items: center; }
 /* Same green-dot-blinks pattern as queue.html's own .queue-live-line,

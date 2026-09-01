@@ -2196,15 +2196,25 @@
     return false;
   }
 
+  // Returns true if the caller should keep going, false if it just
+  // redirected (not logged in, or a suspended subscription) - the caller
+  // is expected to check this and `return;` immediately on false, so the
+  // rest of that page's script never runs during the moment before the
+  // browser actually navigates away. Every call site across the app was
+  // updated to do this when this contract changed (2026-09-01) - a new
+  // page's script must do the same, not just `await Qlinic.requireLogin(...)`
+  // on its own.
   async function requireLogin(loginPagePath) {
     if (!(await isLoggedIn())) {
       window.location.href = loginPagePath || 'login.html';
-      return;
+      return false;
     }
     const clinic = await getClinic();
     if (!isSubscriptionActive(clinic)) {
       window.location.href = 'account-suspended.html';
+      return false;
     }
+    return true;
   }
 
   async function getCurrentUserEmail() {
