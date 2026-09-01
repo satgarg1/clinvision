@@ -1621,6 +1621,13 @@ a { color: inherit; }
   flex-direction: column;
   align-items: flex-start;
   text-decoration: none;
+  /* An absolutely-positioned column flex box with no explicit width
+     shrink-to-fits against its NARROWEST child's content here, not the
+     widest -- so the wider tagline ("Where clinics run better") was
+     getting squeezed down to the wordmark's own width and wrapping,
+     instead of sitting on one line under it. width: max-content forces
+     the box to actually size off its widest child. */
+  width: max-content;
 }
 .login-brand-corner .brand-top {
   font-size: 19px;
@@ -1799,6 +1806,12 @@ input[type="number"] { -moz-appearance: textfield; }
   flex-direction: column;
   align-items: flex-start;
   text-decoration: none;
+  /* Same fix as .login-brand-corner: a fixed-position column flex box
+     with no explicit width shrink-to-fits against the wordmark's
+     narrower width here, not the wider tagline, collapsing the box to
+     effectively 0 and forcing the tagline to wrap across several lines
+     instead of sitting on one under the word. */
+  width: max-content;
 }
 .auth-corner-brand .brand-word-wrap { font-size: 19px; }
 .auth-corner-brand .tagline { font-size: 13px; color: var(--grey-500); margin-top: 2px; }
