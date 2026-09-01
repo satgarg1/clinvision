@@ -1655,13 +1655,22 @@
     ]);
     const current = mine.find((p) => p.status === 'in_consult');
     if (current) {
+      const doneAt = new Date();
+      const updatePayload = { status: 'done', done_at: doneAt.toISOString() };
+      // Data collection for the wait-time-estimation backlog item --
+      // recorded here and nowhere else read from yet. calledAt should
+      // always be set on a genuinely in_consult patient (set atomically
+      // below when they're called), but guarded rather than assumed.
+      if (current.calledAt) {
+        updatePayload.consultation_duration_seconds = Math.max(0, Math.round((doneAt.getTime() - new Date(current.calledAt).getTime()) / 1000));
+      }
       // Both writes below used to go unchecked - a failed one (a dropped
       // connection, a stale session) meant this function returned as if
       // nothing went wrong, and the caller's toast said "Next patient
       // called in" even though nobody actually moved. Thrown here so the
       // caller's own error handling (or lack of it) is what decides what
       // the doctor sees, instead of a silent false positive.
-      const { error } = await sb.from('patients').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', current.id);
+      const { error } = await sb.from('patients').update(updatePayload).eq('id', current.id);
       if (error) throw error;
     }
     const waiting = mine.filter((p) => p.status === 'waiting').sort((a, b) => compareQueueOrder(a, b, doctor));
@@ -1683,10 +1692,17 @@
     const mine = await fetchPatientsForDoctorAndDate(doctorId, today);
     const current = mine.find((p) => p.status === 'in_consult');
     if (current) {
+      const doneAt = new Date();
+      const updatePayload = { status: 'done', done_at: doneAt.toISOString() };
+      // Same data collection as callNextPatient - see its identical
+      // comment.
+      if (current.calledAt) {
+        updatePayload.consultation_duration_seconds = Math.max(0, Math.round((doneAt.getTime() - new Date(current.calledAt).getTime()) / 1000));
+      }
       // See callNextPatient's identical comment - this used to go
       // unchecked, so a failed write here still showed "Visit marked as
       // done" at every call site.
-      const { error } = await sb.from('patients').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', current.id);
+      const { error } = await sb.from('patients').update(updatePayload).eq('id', current.id);
       if (error) throw error;
     }
   }
