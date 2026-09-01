@@ -60,10 +60,6 @@
     <div class="board-rows" id="boardRows"></div>
   </div>
 
-  <div style="position:fixed;bottom:16px;left:60px;right:60px;text-align:center;">
-    <a href="dashboard.html" id="backToAppLink" style="color:var(--grey-500);font-size:13px;text-decoration:none;">&larr; Back to app (this screen is meant to run on a TV/monitor in the waiting room)</a>
-  </div>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
   <script src="clinic-data.js?v=84"></script>
@@ -81,19 +77,6 @@
       // is meant to run unattended on a waiting-room TV, so it's escaped
       // before going into innerHTML anywhere it appears.
       const escapeHtml = Qlinic.escapeHtml;
-
-      // Whatever app page sent someone here (Reception, Doctor View,
-      // Dashboard, ...) is where "back" should return them to — a fixed
-      // dashboard.html link ignored where they actually came from. Only
-      // falls back to the plain href (dashboard) when there's genuinely
-      // no in-app history to go back to, e.g. this tab was opened
-      // directly at display.html.
-      if (window.history.length > 1) {
-        document.getElementById('backToAppLink').addEventListener('click', (e) => {
-          e.preventDefault();
-          window.history.back();
-        });
-      }
 
       const PAGE_SIZE = 8;
       const ROTATE_MS = 6000;
