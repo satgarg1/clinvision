@@ -193,18 +193,25 @@
       // background/push notification (nothing in this app sends those).
       const LONG_CONSULT_THRESHOLD_MINS = 30;
       const LONG_CONSULT_REPEAT_MINS = 15; // re-prompt this often past the threshold if still not marked done
-      let longConsultPromptedFor = null; // `${patientId}::${bucket}` - guards against re-asking on every tick once already prompted for this bucket
+      // `${patientId}::${bucket}` - guards against re-asking on every tick
+      // once already prompted for this bucket. Kept in sessionStorage, not
+      // just a plain variable, so a page reload mid-consultation doesn't
+      // forget it already asked and prompt again immediately - it now
+      // survives exactly as long as the tab does, same as the guard is
+      // meant to. sessionStorage (not localStorage) on purpose: this
+      // shouldn't linger into tomorrow if the tab happens to stay open.
+      const LONG_CONSULT_PROMPT_KEY = 'clinvision_long_consult_prompted';
       let longConsultDialogOpen = false;
       async function checkLongConsultation() {
         if (longConsultDialogOpen) return;
         const serving = currentQueue && currentQueue.nowServing;
-        if (!serving || !serving.calledAt) { longConsultPromptedFor = null; return; }
+        if (!serving || !serving.calledAt) { sessionStorage.removeItem(LONG_CONSULT_PROMPT_KEY); return; }
         const mins = Math.floor((Date.now() - new Date(serving.calledAt)) / 60000);
-        if (mins < LONG_CONSULT_THRESHOLD_MINS) { longConsultPromptedFor = null; return; }
+        if (mins < LONG_CONSULT_THRESHOLD_MINS) { sessionStorage.removeItem(LONG_CONSULT_PROMPT_KEY); return; }
         const bucket = Math.floor((mins - LONG_CONSULT_THRESHOLD_MINS) / LONG_CONSULT_REPEAT_MINS);
         const key = `${serving.id}::${bucket}`;
-        if (longConsultPromptedFor === key) return;
-        longConsultPromptedFor = key;
+        if (sessionStorage.getItem(LONG_CONSULT_PROMPT_KEY) === key) return;
+        sessionStorage.setItem(LONG_CONSULT_PROMPT_KEY, key);
         longConsultDialogOpen = true;
         try {
           const shouldFinish = await Qlinic.confirmDialog({
