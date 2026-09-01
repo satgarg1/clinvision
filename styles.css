@@ -3683,9 +3683,9 @@ th.th-filterable { position: relative; }
    brighter green already proven to work on this board's own fixed-dark
    background (the old live-dot's #34c759), not --success (#1e8e3e),
    which was tuned for light backgrounds and reads duller here. */
-.display-live-line { display: flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 12px; font-weight: 700; color: #34c759; margin-top: 4px; }
+.display-live-line { display: flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 13px; font-weight: 700; color: #34c759; margin-top: 4px; }
 .display-live-line .dot { width: 6px; height: 6px; border-radius: 50%; background: #34c759; animation: queue-pulse 1.4s infinite; }
-.clock-date { font-size: 12px; color: var(--grey-500); text-align: right; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
+.clock-date { font-size: 14px; color: var(--grey-500); text-align: right; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
 
 .live-dot {
   display: inline-block;
