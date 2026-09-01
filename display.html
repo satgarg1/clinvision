@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=235" />
+<link rel="stylesheet" href="styles.css?v=236" />
 </head>
 <body class="display-body">
 
@@ -27,10 +27,14 @@
         <span class="brand-word">ClinVision</span>
         <span class="brand-word-bar"></span>
       </span>
-      <span class="brand-tagline" id="taglineText">Where clinics run better · live queue</span>
+      <span class="brand-tagline" id="taglineText">Where clinics run better</span>
     </div>
     <div style="text-align:right;">
-      <div class="clock"><span class="live-dot" aria-hidden="true"></span><span id="clockTime">--</span></div>
+      <div class="clock"><span id="clockTime">--</span></div>
+      <!-- Same green-dot-blinks pattern as queue.html's own live
+           indicator, not the old bare live-dot pulse next to the
+           clock (unlabeled, and now redundant next to this). -->
+      <div class="display-live-line"><span class="dot" aria-hidden="true"></span><span id="liveStatusText">Live queue</span></div>
       <div class="clock-date" id="clockDate"></div>
     </div>
   </div>
@@ -108,8 +112,8 @@
       // real data, never translated; only these fixed UI labels are.
       const STRINGS = {
         en: {
-          tagline: 'live queue',
           taglineFull: 'Where clinics run better',
+          liveStatusLabel: 'Live queue',
           doctorStatusLabel: 'Doctor status',
           waitingLabel: 'Waiting',
           nextLabel: 'Next',
@@ -141,8 +145,8 @@
           calledAtLabel: (t) => `called in at ${t}`,
         },
         hi: {
-          tagline: 'लाइव कतार',
           taglineFull: 'जहाँ क्लीनिक बेहतर चलते हैं',
+          liveStatusLabel: 'लाइव कतार',
           doctorStatusLabel: 'डॉक्टर स्थिति',
           waitingLabel: 'प्रतीक्षा में',
           nextLabel: 'अगले',
@@ -501,7 +505,8 @@
       }
 
       function applyStaticStrings() {
-        document.getElementById('taglineText').textContent = T.taglineFull + ' · ' + T.tagline;
+        document.getElementById('taglineText').textContent = T.taglineFull;
+        document.getElementById('liveStatusText').textContent = T.liveStatusLabel;
         document.getElementById('doctorStatusLabel').textContent = T.doctorStatusLabel;
         document.getElementById('waitingNowText').textContent = T.waitingNow;
         document.getElementById('colPos').textContent = T.colPos;

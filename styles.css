@@ -3652,7 +3652,10 @@ th.th-filterable { position: relative; }
   background: var(--black);
   color: var(--white);
   min-height: 100vh;
-  padding: 34px 44px 44px;
+  /* Top cut roughly in half (was 34px) -- the header block itself
+     already carries enough breathing room via its own margin/padding,
+     so this was just dead space above the wordmark. */
+  padding: 18px 44px 44px;
   font-family: var(--font);
 }
 .display-header {
@@ -3674,6 +3677,14 @@ th.th-filterable { position: relative; }
 .display-header .brand-word { color: #fff; font-size: 26px; }
 .display-header .brand-tagline { font-size: 14px; margin-top: 5px; }
 .display-header .clock { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--white); display: flex; align-items: center; }
+/* Same green-dot-blinks pattern as queue.html's own .queue-live-line,
+   not the old bare live-dot pulse this used to sit next to -- that one
+   had no label and is redundant once this exists. Color is the
+   brighter green already proven to work on this board's own fixed-dark
+   background (the old live-dot's #34c759), not --success (#1e8e3e),
+   which was tuned for light backgrounds and reads duller here. */
+.display-live-line { display: flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 12px; font-weight: 700; color: #34c759; margin-top: 4px; }
+.display-live-line .dot { width: 6px; height: 6px; border-radius: 50%; background: #34c759; animation: queue-pulse 1.4s infinite; }
 .clock-date { font-size: 12px; color: var(--grey-500); text-align: right; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
 
 .live-dot {
