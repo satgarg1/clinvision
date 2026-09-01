@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=234" />
+<link rel="stylesheet" href="styles.css?v=235" />
 </head>
 <body class="display-body">
 
@@ -19,8 +19,15 @@
            permanently dark) is gone along with the icon concept
            itself. White fill on brand-word specifically, since the
            usual navy ink would disappear into this dark background
-           exactly the way the old dark-filled icon used to. -->
-      <span class="brand-word">ClinVision</span> <span id="taglineText" style="color:var(--grey-500);font-weight:400;font-size:17px;margin-left:6px;">· live queue</span>
+           exactly the way the old dark-filled icon used to. Full
+           wordmark+bar+tagline stack now, same as every other page --
+           this board had been left as a bare single-line wordmark,
+           which was the one place the rebrand didn't actually land. -->
+      <span class="brand-word-wrap">
+        <span class="brand-word">ClinVision</span>
+        <span class="brand-word-bar"></span>
+      </span>
+      <span class="brand-tagline" id="taglineText">Where clinics run better · live queue</span>
     </div>
     <div style="text-align:right;">
       <div class="clock"><span class="live-dot" aria-hidden="true"></span><span id="clockTime">--</span></div>
@@ -102,6 +109,7 @@
       const STRINGS = {
         en: {
           tagline: 'live queue',
+          taglineFull: 'Where clinics run better',
           doctorStatusLabel: 'Doctor status',
           waitingLabel: 'Waiting',
           nextLabel: 'Next',
@@ -134,6 +142,7 @@
         },
         hi: {
           tagline: 'लाइव कतार',
+          taglineFull: 'जहाँ क्लीनिक बेहतर चलते हैं',
           doctorStatusLabel: 'डॉक्टर स्थिति',
           waitingLabel: 'प्रतीक्षा में',
           nextLabel: 'अगले',
@@ -492,7 +501,7 @@
       }
 
       function applyStaticStrings() {
-        document.getElementById('taglineText').textContent = '· ' + T.tagline;
+        document.getElementById('taglineText').textContent = T.taglineFull + ' · ' + T.tagline;
         document.getElementById('doctorStatusLabel').textContent = T.doctorStatusLabel;
         document.getElementById('waitingNowText').textContent = T.waitingNow;
         document.getElementById('colPos').textContent = T.colPos;
