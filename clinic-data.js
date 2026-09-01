@@ -1644,6 +1644,23 @@
     return data;
   }
 
+  // Post-visit rating of ClinVision itself (the queue/status-checking
+  // experience), not the clinic — internal product feedback, see
+  // BACKLOG.md and migration 058. Same anonymous trust model as
+  // getQueueStatus: the patient's own id is the only credential this
+  // runs on. Idempotent server-side (migration 058's ON CONFLICT), so
+  // calling this twice for the same visit never double-inserts — the
+  // returned alreadySubmitted flag just reports which happened.
+  async function submitProductFeedback(patientId, rating, feedbackText) {
+    const { data, error } = await sb.rpc('submit_product_feedback', {
+      p_patient_id: patientId,
+      p_rating: rating,
+      p_feedback_text: feedbackText || null,
+    });
+    if (error) throw error;
+    return data;
+  }
+
   async function callNextPatient(doctorId) {
     const today = todayDateStr();
     // Independent fetches (neither needs the other's result) — run in
@@ -2497,6 +2514,7 @@
     confirmDialog,
     attachDatePicker,
     getQueueStatus,
+    submitProductFeedback,
 
     signUp,
     login,

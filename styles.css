@@ -1593,6 +1593,34 @@ a { color: inherit; }
 .queue-done-banner.is-noshow ~ .queue-done-body .queue-done-token .num { color: var(--warning); }
 .queue-done-footer { text-align: center; font-size: 14px; color: var(--grey-500); margin: 18px 0 0; padding-top: 16px; border-top: 1px solid var(--grey-100); }
 
+/* Internal ClinVision product feedback on the visit-complete screen —
+   never a review of the clinic/doctor, see BACKLOG.md and migration
+   058. Sits below the token, above .queue-done-footer, sharing that
+   same hairline-divider treatment above it instead of adding a second
+   visual seam. */
+.queue-feedback { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--grey-100); text-align: center; }
+.queue-feedback-q { font-size: 14px; font-weight: 600; color: var(--black); margin: 0 0 12px; }
+.queue-feedback-stars { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.queue-feedback-star { width: 34px; height: 34px; border: none; background: none; cursor: pointer; padding: 0; color: var(--grey-300); transition: color 0.15s ease, transform 0.1s ease; }
+.queue-feedback-star svg { width: 100%; height: 100%; display: block; }
+.queue-feedback-star:hover { transform: scale(1.08); }
+.queue-feedback-star.lit { color: #f0a83c; }
+/* Progressive disclosure — collapsed until a star is tapped, so the
+   optional text box and Send button don't compete for attention with
+   the actual ask (the rating) until there's a reason to show them. */
+.queue-feedback-extra { overflow: hidden; max-height: 0; opacity: 0; transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease; }
+.queue-feedback-extra.open { max-height: 220px; opacity: 1; margin-top: 16px; }
+.queue-feedback-textarea { width: 100%; min-height: 64px; resize: vertical; border: 1px solid var(--grey-300); border-radius: var(--radius-md); padding: 12px 14px; font-family: inherit; font-size: 14px; color: var(--black); background: var(--white); }
+.queue-feedback-textarea::placeholder { color: var(--grey-500); }
+.queue-feedback-textarea:focus { outline: none; border-color: var(--accent); }
+.queue-feedback-send { margin-top: 12px; width: 100%; }
+.queue-feedback-thanks { display: none; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--success); }
+.queue-feedback-thanks svg { width: 18px; height: 18px; flex: none; }
+.queue-feedback.submitted .queue-feedback-q,
+.queue-feedback.submitted .queue-feedback-stars,
+.queue-feedback.submitted .queue-feedback-extra { display: none; }
+.queue-feedback.submitted .queue-feedback-thanks { display: flex; }
+
 /* Registration has 10 fields (address split into 3 rows) where every
    other login-card page has 1-4, so it alone gets a denser tier on top
    of the shared login-card scale — not applied to login/forgot/reset,

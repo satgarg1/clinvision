@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=242" />
+<link rel="stylesheet" href="styles.css?v=243" />
 </head>
 <body>
   <div class="login-wrap">
@@ -68,6 +68,29 @@
             <div class="label" id="doneTokenLabel"></div>
             <div class="num" id="doneTokenNumber"></div>
           </div>
+
+          <!-- Internal ClinVision product feedback, not a review of the
+               clinic/doctor -- see BACKLOG.md and migration 058. Only
+               ever shown for a genuinely completed visit, never no-show
+               (toggled in showDone() below). -->
+          <div class="queue-feedback" id="feedbackBlock" style="display:none;">
+            <p class="queue-feedback-q" id="feedbackQuestion"></p>
+            <div class="queue-feedback-stars" id="feedbackStars">
+              <button type="button" class="queue-feedback-star" data-val="1" aria-label="1"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-4-6.3 4 1.7-7L2 9.5l7.1-.6z"/></svg></button>
+              <button type="button" class="queue-feedback-star" data-val="2" aria-label="2"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-4-6.3 4 1.7-7L2 9.5l7.1-.6z"/></svg></button>
+              <button type="button" class="queue-feedback-star" data-val="3" aria-label="3"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-4-6.3 4 1.7-7L2 9.5l7.1-.6z"/></svg></button>
+              <button type="button" class="queue-feedback-star" data-val="4" aria-label="4"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-4-6.3 4 1.7-7L2 9.5l7.1-.6z"/></svg></button>
+              <button type="button" class="queue-feedback-star" data-val="5" aria-label="5"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-4-6.3 4 1.7-7L2 9.5l7.1-.6z"/></svg></button>
+            </div>
+            <div class="queue-feedback-extra" id="feedbackExtra">
+              <textarea class="queue-feedback-textarea" id="feedbackTextInput"></textarea>
+              <button type="button" class="btn-sm primary queue-feedback-send" id="feedbackSendBtn"></button>
+            </div>
+            <div class="queue-feedback-thanks" id="feedbackThanks">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6"/></svg>
+              <span id="feedbackThanksText"></span>
+            </div>
+          </div>
         </div>
         <p class="queue-done-footer" id="doneFooterText"></p>
       </div>
@@ -119,7 +142,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=85"></script>
+  <script src="clinic-data.js?v=86"></script>
   <script>
     (async function () {
       const params = new URLSearchParams(window.location.search);
@@ -322,6 +345,13 @@
           visitCompleteSub: (doctorName, specialty) => `You were seen by ${doctorName}${specialty}.<br>Thank you for visiting: This link has now expired.`,
           tokenWas: 'Your token was',
           needAnythingElse: 'Need anything else? Please contact the clinic directly.',
+          // Internal ClinVision product feedback, not a review of the
+          // clinic/doctor — deliberately never names either. See
+          // BACKLOG.md ("Post-visit rating of ClinVision itself").
+          feedbackQuestion: 'How was checking your status today?',
+          feedbackPlaceholder: "Anything you'd like to add? (optional)",
+          feedbackSend: 'Send feedback',
+          feedbackThanks: 'Thanks for letting us know!',
           detailsTitle: 'Queue details',
           detailsInConsult: (nowStr) => `You're currently with the doctor — here's how the rest of today's queue looks right now (${nowStr}).`,
           detailsWaiting: (nowStr) => `You've checked in and are waiting — here's how today's queue looks right now (${nowStr}).`,
@@ -386,6 +416,10 @@
           visitCompleteSub: (doctorName, specialty) => `आपको ${doctorName}${specialty} ने देखा।<br>मिलने के लिए धन्यवाद: यह लिंक अब समाप्त हो गया है।`,
           tokenWas: 'आपका टोकन था',
           needAnythingElse: 'कुछ और चाहिए? कृपया सीधे क्लिनिक से संपर्क करें।',
+          feedbackQuestion: 'आज अपनी स्थिति जांचना कैसा रहा?',
+          feedbackPlaceholder: 'कुछ और जोड़ना चाहेंगे? (वैकल्पिक)',
+          feedbackSend: 'फ़ीडबैक भेजें',
+          feedbackThanks: 'हमें बताने के लिए धन्यवाद!',
           detailsTitle: 'कतार का विवरण',
           detailsInConsult: (nowStr) => `आप अभी डॉक्टर के साथ हैं — अभी (${nowStr}) बाकी कतार ऐसी दिख रही है।`,
           detailsWaiting: (nowStr) => `आपने चेक-इन कर लिया है और प्रतीक्षा कर रहे हैं — अभी (${nowStr}) कतार ऐसी दिख रही है।`,
@@ -522,6 +556,24 @@
         document.getElementById('doneTokenLabel').textContent = T.tokenWas;
         document.getElementById('doneTokenNumber').textContent = data.tokenDisplay || '·';
         document.getElementById('doneFooterText').textContent = T.needAnythingElse;
+
+        // Never for a no-show — there's no experience to rate on a visit
+        // that never happened. feedbackSubmitted comes from
+        // get_queue_status() itself (migration 058) rather than a direct
+        // select on product_feedback, which this page has no access to
+        // by design — see that table's own RLS comment.
+        const feedbackBlock = document.getElementById('feedbackBlock');
+        if (isNoShow) {
+          feedbackBlock.style.display = 'none';
+        } else {
+          feedbackBlock.style.display = 'block';
+          document.getElementById('feedbackQuestion').textContent = T.feedbackQuestion;
+          document.getElementById('feedbackTextInput').placeholder = T.feedbackPlaceholder;
+          document.getElementById('feedbackSendBtn').textContent = T.feedbackSend;
+          document.getElementById('feedbackThanksText').textContent = T.feedbackThanks;
+          feedbackBlock.classList.toggle('submitted', !!data.feedbackSubmitted);
+        }
+
         if (pollIntervalId) { clearInterval(pollIntervalId); pollIntervalId = null; }
       }
 
@@ -791,6 +843,40 @@
       }
 
       document.getElementById('detailsOpenBtn').addEventListener('click', openDetailsModal);
+
+      // Post-visit ClinVision product feedback (BACKLOG.md, migration
+      // 058) — attached once here, not inside showDone() itself, since
+      // these elements are static markup rendered once, not regenerated
+      // per render() the way e.g. nearbyTokens is.
+      let feedbackPicked = 0;
+      function paintFeedbackStars(n) {
+        document.querySelectorAll('.queue-feedback-star').forEach((s) => {
+          s.classList.toggle('lit', parseInt(s.dataset.val, 10) <= n);
+        });
+      }
+      document.querySelectorAll('.queue-feedback-star').forEach((star) => {
+        star.addEventListener('mouseenter', () => paintFeedbackStars(parseInt(star.dataset.val, 10)));
+        star.addEventListener('mouseleave', () => paintFeedbackStars(feedbackPicked));
+        star.addEventListener('click', () => {
+          feedbackPicked = parseInt(star.dataset.val, 10);
+          paintFeedbackStars(feedbackPicked);
+          document.getElementById('feedbackExtra').classList.add('open');
+        });
+      });
+      document.getElementById('feedbackSendBtn').addEventListener('click', async () => {
+        if (!feedbackPicked) return;
+        const btn = document.getElementById('feedbackSendBtn');
+        btn.disabled = true;
+        try {
+          await Qlinic.submitProductFeedback(patientId, feedbackPicked, document.getElementById('feedbackTextInput').value);
+          document.getElementById('feedbackBlock').classList.add('submitted');
+        } catch (err) {
+          // Best-effort — a failed submit here shouldn't block or alarm a
+          // patient reading "your visit is complete"; just leave the
+          // form up so they can try again.
+          btn.disabled = false;
+        }
+      });
 
       if (!patientId) {
         showError();
