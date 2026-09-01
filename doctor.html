@@ -33,7 +33,7 @@
         <a href="doctor.html" class="nav-link active">Doctor View</a>
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
-        <a href="trends.html" class="nav-link" id="trendsNavLink">Analytics</a>
+        <a href="trends.html" class="nav-link" id="trendsNavLink">Insights</a>
         <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
         <a href="display.html" class="nav-link" id="displayNavLink">Display Screen</a>
         <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
@@ -162,7 +162,7 @@
         document.getElementById('displayNavLink').style.display = 'none';
         // A doctor only ever sees their own queue — no dropdown, no way
         // to pick someone else's data, matching the same restriction
-        // already enforced on Dashboard/Analytics for a linked doctor.
+        // already enforced on Dashboard/Insights for a linked doctor.
         document.getElementById('viewingPanel').style.display = 'none';
       }
       if (!amAdmin) {
@@ -727,7 +727,7 @@
         const myRenderToken = ++renderToken;
         // A doctor login not yet linked to a doctors row (Team settings)
         // has no data to scope to — same guard already used on
-        // Dashboard/Analytics for this exact case.
+        // Dashboard/Insights for this exact case.
         if (amDoctor && !myDoctorId) {
           document.getElementById('doctorPanels').style.display = 'none';
           document.getElementById('noDoctorsPanel').style.display = 'block';

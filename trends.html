@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Analytics: ClinVision</title>
+<title>Insights: ClinVision</title>
 <script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,7 +33,7 @@
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
-        <a href="trends.html" class="nav-link active" id="trendsNavLink">Analytics</a>
+        <a href="trends.html" class="nav-link active" id="trendsNavLink">Insights</a>
         <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
         <a href="display.html" class="nav-link" id="displayNavLink">Display Screen</a>
         <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
@@ -42,7 +42,7 @@
 
     <main class="app-main">
       <div class="app-topbar" id="trendsTopbar">
-        <h1>Analytics</h1>
+        <h1>Insights</h1>
         <div class="anomaly-chip-wrap" id="anomalyChipWrap">
           <button type="button" class="anomaly-chip calm" id="anomalyChipBtn" aria-expanded="false">
             <span aria-hidden="true" id="anomalyChipIcon">…</span>
@@ -1284,7 +1284,7 @@
             amDoctor ? Qlinic.getDoctor(myDoctorId) : Qlinic.getDoctors({ includeInactive: true }),
           ]);
         } catch (err) {
-          showToast(err.message || 'Could not load Analytics data — please try again.');
+          showToast(err.message || 'Could not load Insights data — please try again.');
           return;
         }
         const doctors = amDoctor ? (doctorsRaw ? [doctorsRaw] : []) : doctorsRaw;

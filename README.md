@@ -58,7 +58,7 @@ patient-facing, unauthenticated live-queue link sent out per booking)
 form + printed receipt), `revenue.html`, `billing-audit.html`
 (receipt-numbering integrity check)
 
-**Analytics:** `trends.html`
+**Insights:** `trends.html`
 
 **Settings:** `settings.html` (hub), `clinic-settings.html`,
 `manage-doctors.html`, `team.html`, `account-security.html`,
