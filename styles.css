@@ -3845,6 +3845,77 @@ th.th-filterable { position: relative; }
 .display-all-closed-title { font-size: 56px; font-weight: 700; color: var(--white); margin-bottom: 16px; letter-spacing: -0.01em; }
 .display-all-closed-sub { font-size: 22px; color: var(--grey-300); }
 
+/* Day/night toggle for the display board -- a per-device localStorage
+   preference set from this button, not the app's own Settings toggle
+   (which this board has always ignored on purpose, see .display-body
+   above). Deliberately outside the header's own flex row so it never
+   becomes a third column there; sits inside .display-body's own top
+   padding instead, right above the clock, small enough to read as a
+   faint mark rather than a control a patient would notice. */
+.display-body { position: relative; }
+.display-theme-toggle {
+  position: absolute; top: 2px; right: 44px;
+  width: 17px; height: 17px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: none; cursor: pointer; padding: 0;
+  background: rgba(255, 255, 255, 0.14); color: #fff;
+  opacity: 0.45;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+.display-theme-toggle:hover { opacity: 0.85; }
+.display-theme-toggle svg { width: 11px; height: 11px; display: block; transition: transform 0.25s ease; }
+.display-theme-toggle.open svg { transform: rotate(180deg); }
+.display-theme-menu {
+  position: absolute; top: 2px; right: 65px;
+  display: flex; gap: 3px; padding: 2px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  opacity: 0; transform: translateX(4px); pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.display-theme-menu.open { opacity: 1; transform: translateX(0); pointer-events: auto; }
+.display-theme-menu button {
+  width: 17px; height: 17px; border-radius: 50%; border: none; cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; color: #fff; opacity: 0.55;
+}
+.display-theme-menu button svg { width: 11px; height: 11px; display: block; }
+.display-theme-menu button.active { background: rgba(255, 255, 255, 0.9); color: #1d1d1f; opacity: 1; }
+
+/* ---------------- Waiting-room display screen: light mode ----------------
+   A deliberate second hand-built skin, not a token flip. Most of this
+   page's own rules already read through --white/--black/--grey-900/
+   --grey-500/--grey-300 -- redefined here exactly the way the app's own
+   day/night toggle already inverts those same names elsewhere -- so
+   redefining them once, scoped to this board, is enough for most of the
+   page. The handful of rules below are the exceptions: colors that were
+   hardcoded when this board was built dark-only, which need their own
+   explicit light-mode value since there's no shared token to redefine. */
+body[data-board-mode="light"].display-body {
+  --black: #f5f5f7;
+  --white: #1d1d1f;
+  --grey-900: #ffffff;
+  --grey-500: #6e6e73;
+  --grey-300: #48484a;
+}
+body[data-board-mode="light"] .display-theme-toggle { background: rgba(0, 0, 0, 0.08); color: #1d1d1f; }
+body[data-board-mode="light"] .display-theme-menu { background: rgba(0, 0, 0, 0.08); }
+body[data-board-mode="light"] .display-theme-menu button { color: #1d1d1f; }
+body[data-board-mode="light"] .display-theme-menu button.active { background: #1d1d1f; color: #fff; }
+body[data-board-mode="light"] .display-header { border-bottom-color: rgba(0, 0, 0, 0.08); }
+body[data-board-mode="light"] .display-header .brand-word { color: #1e1b4b; }
+body[data-board-mode="light"] .display-live-line { color: #1e8e3e; }
+body[data-board-mode="light"] .display-live-line .dot { background: #1e8e3e; }
+body[data-board-mode="light"] .display-strip { border-color: #e3e3e6; }
+body[data-board-mode="light"] .dboard-row + .dboard-row { border-top-color: #e3e3e6; }
+body[data-board-mode="light"] .dboard-pill-ok { background: rgba(30, 142, 62, 0.12); color: #1e8e3e; }
+body[data-board-mode="light"] .dboard-pill-warn { background: rgba(178, 106, 0, 0.14); color: #b26a00; }
+body[data-board-mode="light"] .dboard-detail-line { color: #b26a00; }
+body[data-board-mode="light"] .dboard-next-chip { background: #f0f0f2; border-color: #e3e3e6; }
+body[data-board-mode="light"] .dboard-next-chip.more { color: #8a6a2f; }
+body[data-board-mode="light"] .board-page-indicator .dot { background: rgba(0, 0, 0, 0.12); }
+body[data-board-mode="light"] .board-cols { border-top-color: #e3e3e6; border-bottom-color: #e3e3e6; }
+body[data-board-mode="light"] .board-row { border-bottom-color: #ececef; }
+
 @media (max-width: 720px) {
   .app-shell { flex-direction: column; }
   .app-sidebar { width: 100%; flex-direction: row; overflow-x: auto; align-items: center; }
