@@ -191,8 +191,8 @@
       // calledAt already in memory. Client-side only: this fires while
       // someone happens to have this doctor's page open, not as a
       // background/push notification (nothing in this app sends those).
-      const LONG_CONSULT_THRESHOLD_MINS = 30;
-      const LONG_CONSULT_REPEAT_MINS = 15; // re-prompt this often past the threshold if still not marked done
+      const LONG_CONSULT_THRESHOLD_MINS = 25;
+      const LONG_CONSULT_REPEAT_MINS = 10; // re-prompt this often past the threshold if still not marked done
       // `${patientId}::${bucket}` - guards against re-asking on every tick
       // once already prompted for this bucket. Kept in sessionStorage, not
       // just a plain variable, so a page reload mid-consultation doesn't
