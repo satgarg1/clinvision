@@ -206,7 +206,7 @@ a { color: inherit; }
 /* The sidebar is much narrower than the marketing nav, so the tagline
    needs its own smaller size to stay on one line instead of wrapping. */
 .app-sidebar .brand-tagline {
-  font-size: 11px;
+  font-size: 10px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1595,7 +1595,12 @@ a { color: inherit; }
    same hairline-divider treatment above it instead of adding a second
    visual seam. */
 .queue-feedback { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--grey-100); text-align: center; }
-.queue-feedback-q { font-size: 14px; font-weight: 600; color: var(--black); margin: 0 0 12px; }
+/* Was 14px -- same size as the card's fine print around it, so the
+   actual question read as a caption instead of the one thing on the
+   card a patient is meant to act on. Fraunces stays marketing-only (see
+   the "Premium marketing pass" comment above), so the lift here is
+   plain size/weight/spacing, not a typeface swap. */
+.queue-feedback-q { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.4; color: var(--black); margin: 0 0 14px; }
 .queue-feedback-stars { display: flex; align-items: center; justify-content: center; gap: 6px; }
 .queue-feedback-star { width: 34px; height: 34px; border: none; background: none; cursor: pointer; padding: 0; color: var(--grey-300); transition: color 0.15s ease, transform 0.1s ease; }
 .queue-feedback-star svg { width: 100%; height: 100%; display: block; }
@@ -2065,17 +2070,18 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 
 .app-sidebar .brand {
-  font-size: 17px;
+  /* Was 17px -- against a 224px-wide column that's the same size as
+     running body text, it read as heavy and a little crude rather than
+     like a wordmark sitting at the top of its own space. */
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--black);
   text-decoration: none;
   padding: 0 10px;
-  /* Was 28px -- with the wordmark now centered over its (shorter)
-     tagline instead of sprawled left, that much space below it read as
-     a gap, not breathing room. Tightened so the clinic name/logo row
-     sits right under the brand block instead of floating below it. */
-  margin-bottom: 14px;
+  /* Was 28px, then 14px -- still read as a gap once the clinic row
+     below got its own margin tightened too. */
+  margin-bottom: 8px;
   display: flex;
   flex-direction: column;
   /* Centered, not flex-start -- same wordmark-shoved-to-one-side bug
@@ -2092,7 +2098,10 @@ input[type="number"] { -moz-appearance: textfield; }
   border-radius: var(--radius-sm);
   color: var(--grey-700);
   text-decoration: none;
-  font-size: 14px;
+  /* Was 14px -- next to the brand wordmark above it shrinking to 14px
+     too, the nav read as an undifferentiated block instead of a list of
+     clearly-tappable destinations. */
+  font-size: 15px;
   font-weight: 500;
   border-left: 2px solid transparent;
   transition: background 0.12s ease, color 0.12s ease, transform 0.12s ease, border-color 0.12s ease;
@@ -2126,7 +2135,10 @@ input[type="number"] { -moz-appearance: textfield; }
   align-items: center;
   gap: 8px;
   padding: 0 10px;
-  margin-bottom: 18px;
+  /* Was 18px -- with the brand block above it now sitting close (see
+     .app-sidebar .brand's own margin), this was the last big gap left
+     between the clinic identity and the first nav link. */
+  margin-bottom: 8px;
 }
 /* Was a 12px grey caption — read as an afterthought once the logo
    beside it grew to its real size (see .clinic-logo-thumb below). A

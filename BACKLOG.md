@@ -5,6 +5,7 @@ Everything pending that isn't tracked anywhere else in the repo. Kept in one fil
 ## Marketing site
 
 - **About us page — real content.** `about-us.html` exists as a placeholder (nav link is live, page just says "still being written"). Needs the real story, mission, values, and team — written to build trust and credibility with a visitor deciding whether to book a demo. Waiting on the actual content, not a design or build blocker.
+- **Pricing page** (raised 2026-09-02) — a new `pricing.html`, linked from the marketing nav next to the existing "About us" link (`index.html`, and every other marketing page's nav — check `whats-inside.html`/`who-its-for`/`contact.html` for the same nav block). Per the existing copy-style rule, pricing lives on its own page, never folded into `index.html`. Scope not decided yet: plan/tier structure, actual rupee figures, monthly vs. annual, whether a free tier or trial exists — none of that is settled, this is a placeholder-page-plus-nav-link scope only, same shape as `about-us.html` today.
 - **Founder's note**, on `index.html`, placed after the Final CTA band and before the footer — a short first-person "why we built this" note. Needs the founder's own real story/voice; do not draft this unprompted.
 
 ## Known bugs
