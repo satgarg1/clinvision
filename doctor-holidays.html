@@ -121,14 +121,13 @@
         <div class="active-filter-chips" id="allHolidaysChips"></div>
 
         <table class="qtable qtable-fixed">
-          <!-- Fixed, content-sized widths for Date/Role and Name --
-               percentages of a wide panel left huge unused space inside
-               those two columns (their actual content is far narrower
-               than 30%/28% of a 1500px+ table), which is what was
-               swallowing the cell-padding gutter increase below.
-               Reason is left unspecified so it takes whatever's left. -->
+          <!-- Equal thirds -- the panel is now capped to what these 3
+               columns need (see #allHolidaysPanel max-width), so
+               splitting the table itself evenly across Date/Role and
+               Name/Reason is what actually makes them read as filling
+               it, rather than sizing each column to its own content. -->
           <colgroup>
-            <col style="width:340px;"><col style="width:300px;"><col>
+            <col style="width:33.33%;"><col style="width:33.33%;"><col style="width:33.34%;">
           </colgroup>
           <thead><tr>
             <th>Date</th>
