@@ -2070,10 +2070,10 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 
 .app-sidebar .brand {
-  /* Was 17px -- against a 224px-wide column that's the same size as
-     running body text, it read as heavy and a little crude rather than
-     like a wordmark sitting at the top of its own space. */
-  font-size: 14px;
+  /* Was 17px, then 14px -- 14px read as too close to the nav links
+     below it once those grew to 15px, so the wordmark stopped reading
+     as its own distinct thing at the top of the column. */
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--black);
