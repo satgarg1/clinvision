@@ -4341,6 +4341,11 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
 #allHolidaysTableWrap tr.is-today td { font-weight: 700; }
 .today-badge { margin-left: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #fff; background: var(--accent-dark); padding: 2px 8px; border-radius: var(--radius-pill); }
 .soon-badge { margin-left: 8px; font-size: 11px; font-weight: 600; color: var(--accent-dark); background: var(--mkt-blue-bg); padding: 2px 8px; border-radius: var(--radius-pill); white-space: nowrap; }
+/* Fixed width so the badge that follows starts at the same x on every
+   row, regardless of how long that row's own date string happens to
+   be ("Sat, 29 Aug, 2026" vs "Wed, 16 Sept, 2026") -- without this the
+   badges drift left/right by a few px per row and read as misaligned. */
+#allHolidaysTableWrap .holiday-date-text { display: inline-block; width: 132px; }
 
 #allHolidaysPager .pager-controls { display: flex; align-items: center; gap: 14px; }
 

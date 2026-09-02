@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=269" />
+<link rel="stylesheet" href="styles.css?v=270" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -120,16 +120,19 @@
 
         <div class="active-filter-chips" id="allHolidaysChips"></div>
 
-        <table class="qtable">
+        <table class="qtable qtable-fixed">
+          <colgroup>
+            <col style="width:30%;"><col style="width:28%;"><col style="width:42%;">
+          </colgroup>
           <thead><tr>
             <th>Date</th>
             <th class="th-filterable">
               <span class="th-filter-trigger" id="whoFilterTrigger" title="Click to filter by name">
-                Who
+                Role and Name
                 <svg class="th-filter-icon" id="whoFilterIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
               </span>
             </th>
-            <th>Note</th>
+            <th>Reason</th>
           </tr></thead>
           <tbody id="allHolidaysTableWrap"></tbody>
         </table>
@@ -368,9 +371,9 @@
           const badge = r.date === TODAY_STR ? '<span class="today-badge">Today</span>' : relativeSoonBadge(r.date);
           return `
             <tr class="${cls}">
-              <td>${fmtDate(r.date)}${badge}</td>
-              <td><span class="role-tag ${roleTagClass(r.role)}">${roleLabel(r.role)}</span> ${Qlinic.escapeHtml(r.name)}</td>
-              <td>${r.note ? Qlinic.escapeHtml(r.note) : '<span class="sub-line">No note</span>'}</td>
+              <td class="qtable-wrap"><span class="holiday-date-text">${fmtDate(r.date)}</span>${badge}</td>
+              <td class="qtable-wrap"><span class="role-tag ${roleTagClass(r.role)}">${roleLabel(r.role)}</span> ${Qlinic.escapeHtml(r.name)}</td>
+              <td class="qtable-wrap">${r.note ? Qlinic.escapeHtml(r.note) : '<span class="sub-line">No note</span>'}</td>
             </tr>
           `;
         }).join('');
@@ -613,17 +616,26 @@
           });
         }
 
-        document.getElementById('viewModeToggle').addEventListener('click', (e) => {
-          const btn = e.target.closest('.mode-btn');
-          if (!btn) return;
-          const view = btn.getAttribute('data-view');
+        // Persisted per device (same pattern qlinic_theme already uses)
+        // so a refresh lands back on whichever tab the admin was
+        // actually looking at, instead of always resetting to Add/manage.
+        const VIEW_MODE_KEY = 'qlinic_team_holidays_view';
+        function applyViewMode(view) {
           document.querySelectorAll('#viewModeToggle .mode-btn').forEach((b) =>
             b.classList.toggle('active', b.getAttribute('data-view') === view)
           );
           document.getElementById('holidaysPanel').style.display = view === 'manage' ? 'block' : 'none';
           document.getElementById('allHolidaysPanel').style.display = view === 'all' ? 'block' : 'none';
+          localStorage.setItem(VIEW_MODE_KEY, view);
           if (view === 'all') loadAllHolidays();
+        }
+        document.getElementById('viewModeToggle').addEventListener('click', (e) => {
+          const btn = e.target.closest('.mode-btn');
+          if (!btn) return;
+          applyViewMode(btn.getAttribute('data-view'));
         });
+        const storedView = localStorage.getItem(VIEW_MODE_KEY);
+        if (storedView === 'all') applyViewMode('all');
       }
 
       const clinic = await Qlinic.getClinic();
