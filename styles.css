@@ -4348,9 +4348,10 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
 #allHolidaysTableWrap .holiday-date-text, #holidaysTableWrap .holiday-date-text { display: inline-block; width: 150px; white-space: nowrap; }
 /* Pinning the columns (qtable-fixed) moved Role and Name into place,
    but the default 10px cell padding then read as cramped against a
-   fixed-width column instead of an auto one -- widen the gutter so the
-   table reads as properly filling its columns, not squeezed. */
-#allHolidaysPanel th, #allHolidaysPanel td, #holidaysPanel th, #holidaysPanel td { padding-left: 20px; padding-right: 20px; }
+   fixed-width column instead of an auto one -- widen the gutter so
+   Date / Role and Name / Reason read as three clearly separated
+   columns rather than bunched toward the left. */
+#allHolidaysPanel th, #allHolidaysPanel td, #holidaysPanel th, #holidaysPanel td { padding-left: 32px; padding-right: 32px; }
 #allHolidaysPanel th:first-child, #allHolidaysPanel td:first-child, #holidaysPanel th:first-child, #holidaysPanel td:first-child { padding-left: 10px; }
 
 #allHolidaysPager .pager-controls { display: flex; align-items: center; gap: 14px; }
