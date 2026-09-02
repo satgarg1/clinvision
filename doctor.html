@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=262" />
+<link rel="stylesheet" href="styles.css?v=263" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -84,16 +84,16 @@
                  just to see their own current status. Kept updated in
                  render() regardless of visibility, so it's never stale
                  the moment the panel is opened. -->
-            <span class="status-pill status-header-pill" id="statusHeaderPill" style="margin-left:8px;"></span>
+            <span class="status-header-pill" id="statusHeaderPill" style="margin-left:8px;"></span>
             <button type="button" class="panel-toggle-btn" id="statusToggleBtn" aria-expanded="false" aria-controls="statusPanelBody" aria-label="Show status controls" style="margin-left:auto;">
               <svg class="panel-toggle-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
             </button>
           </div>
           <div id="statusPanelBody" style="display:none;">
-            <div class="doctor-identity">
-              <div class="doctor-identity-name" id="statusDoctorName"></div>
-              <div class="doctor-identity-specialty" id="statusDoctorSpecialty"></div>
-            </div>
+            <!-- Was a doctor-identity block (name/specialty) here -- a
+                 doctor already knows who they are; the sidebar and the
+                 panel header already carry that context, so this was
+                 pure redundancy every time the panel opened. -->
             <p style="font-size:13px;color:var(--grey-500);margin:0 0 16px;">
               One tap updates every waiting patient's estimate and the waiting-room screen, no one needs to interrupt you to ask.
             </p>
@@ -828,17 +828,19 @@
         applyDoctorAccent(doctorId);
         renderNextAppointment(q);
 
-        document.getElementById('statusDoctorName').textContent = doc.name;
-        document.getElementById('statusDoctorSpecialty').textContent = doc.specialty;
-
         const statusNoteHtml = Qlinic.isRealStatusReason(doc.statusNote) ? ' · "' + Qlinic.escapeHtml(doc.statusNote) + '"' : '';
-        // formatDateTime, not formatTimestamp -- a status left unset
-        // since a prior day (nothing ever automatically clears it) used
-        // to show a bare time with no date, reading as if it happened
-        // today. The date matters here precisely because it might not be.
+        // Was a colored .status-pill chip here, same purple/red as the
+        // away banner above it -- one status shown two different ways
+        // right next to each other read as inconsistent rather than
+        // reinforcing. Plain bold text instead; the banner above is
+        // still the colored one. formatDateTime (not formatTimestamp)
+        // -- a status left unset since a prior day (nothing ever
+        // automatically clears it) used to show a bare time with no
+        // date, reading as if it happened today. The date matters here
+        // precisely because it might not be. ", " -> " at " to read as
+        // a sentence rather than a comma-spliced fragment.
         document.getElementById('currentStatusLine').innerHTML =
-          `Currently: <span class="status-pill status-${doc.status}">${statusLabel(doc.status)}${doc.delayMins ? ' · ' + doc.delayMins + ' min' : ''}</span>
-           <span style="color:var(--grey-500);"> · updated ${Qlinic.formatDateTime(doc.statusUpdatedAt)}${statusNoteHtml}</span>`;
+          `Currently: <b>${statusLabel(doc.status)}${doc.delayMins ? ' for ' + doc.delayMins + ' min' : ''}</b>${statusNoteHtml}. Updated: ${Qlinic.formatDateTime(doc.statusUpdatedAt).replace(', ', ' at ')}`;
 
         // Once the day is closed, the status actions (Take a break/
         // Declare emergency/I'm back) and "Call next patient" are
@@ -856,17 +858,11 @@
         // collapsed right now — CSS alone decides visibility (see
         // #statusPanel:not(.panel-collapsed) .status-header-pill in
         // styles.css), so there's no risk of this showing a stale
-        // status from before the panel was last opened/closed.
-        const headerPill = document.getElementById('statusHeaderPill');
-        if (dayIsClosed) {
-          // .status-closed already exists (neutral grey, not warning/
-          // danger-toned) for exactly this "day closed" case elsewhere.
-          headerPill.className = 'status-pill status-header-pill status-closed';
-          headerPill.textContent = 'Day closed';
-        } else {
-          headerPill.className = `status-pill status-header-pill status-${doc.status}`;
-          headerPill.textContent = statusLabel(doc.status) + (doc.delayMins ? ' · ' + doc.delayMins + ' min' : '');
-        }
+        // status from before the panel was last opened/closed. Plain
+        // text, not a colored .status-pill chip, and no delay minutes
+        // -- this is a quick "what's my status" glance next to the
+        // title, not a restatement of the full detail underneath.
+        document.getElementById('statusHeaderPill').textContent = dayIsClosed ? 'Day closed' : statusLabel(doc.status);
         // Each button also gets a plain-language title explaining what
         // clicking it actually does — the label alone says the action
         // but not who sees it or what changes.
@@ -898,10 +894,15 @@
           awayBanner.style.display = 'none';
         } else if (isAway) {
           availableActions.style.display = 'none';
-          awayBanner.style.display = 'flex';
+          // inline-flex, matching .status-away-banner's own CSS -- was
+          // 'flex' here, which as an inline style beat the stylesheet's
+          // inline-flex regardless of specificity, silently undoing the
+          // width fix and stretching the banner across the panel's full
+          // width again.
+          awayBanner.style.display = 'inline-flex';
           awayBanner.className = 'status-away-banner ' + doc.status;
           document.getElementById('statusAwayText').textContent =
-            statusLabel(doc.status) + (doc.delayMins ? ' · ' + doc.delayMins + ' min' : '');
+            statusLabel(doc.status) + (doc.delayMins ? ' for ' + doc.delayMins + ' min' : '');
           document.getElementById('statusAwaySub').textContent =
             'Since ' + Qlinic.formatTimestamp(doc.statusUpdatedAt)
             + (Qlinic.isRealStatusReason(doc.statusNote) ? ' · "' + doc.statusNote + '"' : '')

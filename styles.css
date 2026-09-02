@@ -2492,9 +2492,6 @@ input[type="number"] { -moz-appearance: textfield; }
 #statusPanel.panel-collapsed { padding: 14px 20px; }
 #statusPanel.panel-collapsed .panel-header { margin-bottom: 0; }
 
-.doctor-identity { margin-bottom: 14px; }
-.doctor-identity-name { font-size: 15px; font-weight: 700; }
-.doctor-identity-specialty { font-size: 13px; color: var(--grey-500); }
 #statusSummaryLines div { margin-bottom: 4px; }
 
 .billing-option-card { transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease; }
@@ -3802,12 +3799,16 @@ th.th-filterable { position: relative; }
    normal end of a shift, not something wrong. */
 .status-closed { background: var(--grey-300); color: var(--grey-700); }
 
-/* Collapsed-only status pill in #statusPanel's header — kept updated
-   in render() regardless of collapse state; visibility is the only
-   thing toggled here, and by CSS rather than JS, so there's no risk of
-   the two ever disagreeing. Once expanded, the full detail ("Currently:
-   ..." plus the away banner/actions) already covers this, so showing
-   the pill too would just be the same fact said twice. */
+/* Collapsed-only status text in #statusPanel's header — plain text, not
+   a colored .status-pill chip: this is a quick glance next to the
+   title ("Your status  On a break"), not a restatement of the full
+   colored detail underneath. Kept updated in render() regardless of
+   collapse state; visibility is the only thing toggled here, and by
+   CSS rather than JS, so there's no risk of the two ever disagreeing.
+   Once expanded, the full detail (the away banner, or "Currently: ...")
+   already covers this, so showing it too would just be the same fact
+   said twice. */
+.status-header-pill { font-size: 14px; font-weight: 400; color: var(--grey-500); }
 #statusPanel:not(.panel-collapsed) .status-header-pill { display: none; }
 
 /* A doctor who isn't on time gets the whole row tinted + a left border
@@ -4297,7 +4298,7 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
 .status-away-text { font-size: 14px; font-weight: 700; }
 .status-away-banner.on_break .status-away-text { color: #5b3ec9; }
 .status-away-banner.emergency .status-away-text { color: var(--danger); }
-.status-away-sub { font-size: 12px; color: var(--grey-500); font-weight: 400; margin-top: 1px; }
+.status-away-sub { font-size: 14px; color: var(--grey-500); font-weight: 400; margin-top: 1px; }
 /* Solid, not outline like every other .btn-sm here — this is the one
    button in the panel that matters most while it's showing (it's the
    only way "Call next patient" comes back), so it gets the strongest
