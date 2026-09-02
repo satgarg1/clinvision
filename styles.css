@@ -146,7 +146,12 @@ a { color: inherit; }
   color: var(--black);
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  /* Centered, not flex-start: "ClinVision" is much shorter than "Where
+     clinics run better" underneath it, so sharing a left edge left the
+     wordmark looking shoved off to one side instead of centered over
+     the tagline -- same bug already fixed on .login-brand-corner and
+     .auth-corner-brand. */
+  align-items: center;
   transition: transform 0.15s ease;
 }
 .mkt-nav .brand:hover { transform: scale(1.04); }
@@ -2078,7 +2083,9 @@ input[type="number"] { -moz-appearance: textfield; }
   margin-bottom: 28px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  /* Centered, not flex-start -- same wordmark-shoved-to-one-side bug
+     already fixed on every other brand corner on the site. */
+  align-items: center;
   transition: transform 0.15s ease;
 }
 .app-sidebar .brand:hover { transform: scale(1.04); }
@@ -3718,7 +3725,9 @@ th.th-filterable { position: relative; }
 /* Column now, not a horizontal row -- the old layout was tuned for a
    single line of "ClinVision · live queue" text; now it's the full
    wordmark+bar+tagline stack every other page already has. */
-.display-header .brand { display: flex; flex-direction: column; align-items: flex-start; }
+/* Centered, not flex-start -- same wordmark-shoved-to-one-side bug
+   already fixed on every other brand corner on the site. */
+.display-header .brand { display: flex; flex-direction: column; align-items: center; }
 /* White, not the usual navy ink -- this board's background is
    permanently dark, same reason the old icon needed inverting before
    the wordmark-only rebrand dropped icons entirely. Sized up from the
