@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=260" />
+<link rel="stylesheet" href="styles.css?v=261" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -91,10 +91,27 @@
             <p style="font-size:13px;color:var(--grey-500);margin:0 0 16px;">
               One tap updates every waiting patient's estimate and the waiting-room screen, no one needs to interrupt you to ask.
             </p>
-            <div class="inline-form" id="statusActionSeg" style="margin-bottom:10px;">
-              <button class="btn-sm success-outline" data-status="on_time">Clear status</button>
-              <button class="btn-sm accent-outline" data-status="on_break">On a break</button>
-              <button class="btn-sm danger-outline" data-status="emergency">Emergency</button>
+            <!-- Was one gradient-track pill holding all three actions --
+                 that shared capsule made "Clear status" read as a peer
+                 of "On a break"/"Emergency" even though it's a
+                 different kind of action (undoing a state, not
+                 declaring one). Now exactly one of these two blocks
+                 shows at a time, toggled in render(): the two real
+                 actions while available, or the away banner below once
+                 one's been set. -->
+            <div class="inline-form" id="statusAvailableActions" style="margin-bottom:10px;">
+              <button class="btn-sm accent-outline" data-status="on_break">Take a break</button>
+              <button class="btn-sm danger-outline" data-status="emergency">Declare emergency</button>
+            </div>
+            <div class="status-away-banner" id="statusAwayBanner" style="display:none;margin-bottom:10px;">
+              <div class="status-away-left">
+                <span class="status-away-dot" aria-hidden="true"></span>
+                <div>
+                  <div class="status-away-text" id="statusAwayText"></div>
+                  <div class="status-away-sub" id="statusAwaySub"></div>
+                </div>
+              </div>
+              <button class="btn-sm status-away-btn" data-status="on_time">I'm back</button>
             </div>
             <div id="statusLockedNote" class="field-hint" style="display:none;"></div>
             <div id="delayInputWrap" style="display:none;margin-top:10px;">
@@ -817,24 +834,22 @@
           `Currently: <span class="status-pill status-${doc.status}">${statusLabel(doc.status)}${doc.delayMins ? ' · ' + doc.delayMins + ' min' : ''}</span>
            <span style="color:var(--grey-500);"> · updated ${Qlinic.formatDateTime(doc.statusUpdatedAt)}${statusNoteHtml}</span>`;
 
-        // Once the day is closed, status buttons (Clear status/On a
-        // break/Emergency) and "Call next patient" are locked —
-        // broadcasting a new delay, or calling someone in, to patients
-        // who've already been told you're done for the day doesn't make
-        // sense. "I'm back" is the only way out. A persistent note (not a
-        // hover tooltip: with 3 tightly-packed buttons and only 16px of
-        // room above them, a floating tooltip long enough to be
-        // descriptive reliably overlapped the paragraph above and spilled
-        // past the panel edge) explains why, plus a native title attribute
-        // as a light hover reinforcement.
+        // Once the day is closed, the status actions (Take a break/
+        // Declare emergency/I'm back) and "Call next patient" are
+        // locked — broadcasting a new delay, or calling someone in, to
+        // patients who've already been told you're done for the day
+        // doesn't make sense. The separate #reopenDoctorDayBtn ("I'm
+        // back", in the End of day panel below) is the only way out of
+        // a closed day. A persistent note (not a hover tooltip alone)
+        // explains why, plus a native title attribute as a light hover
+        // reinforcement.
         const dayIsClosed = !!doc.dayClosedAt;
-        const lockTitle = dayIsClosed ? 'Day closed — press "I\'m back" to regain control.' : '';
+        const lockTitle = dayIsClosed ? 'Day closed — press "I\'m back" below to regain control.' : '';
         // Each button also gets a plain-language title explaining what
-        // clicking it actually does — the label alone says the status
-        // name but not who sees it or what changes. Overridden below by
-        // the disabled-state reason whenever one applies.
+        // clicking it actually does — the label alone says the action
+        // but not who sees it or what changes.
         const STATUS_BTN_TITLES = {
-          on_time: 'Return to available — clears On a break or Emergency.',
+          on_time: 'Return to available.',
           on_break: 'Broadcasts a delay and reason to every waiting patient and the display screen.',
           emergency: 'Flags you unavailable for non-urgent cases, right now.',
         };
@@ -843,23 +858,42 @@
           btn.title = dayIsClosed ? lockTitle : STATUS_BTN_TITLES[btn.getAttribute('data-status')];
         });
 
-        // "Clear status" only means something once something's been set
-        // (running late/on a break/emergency) — greyed out rather than a
-        // no-op click when the doctor is already available, so the
-        // button's state itself signals there's nothing to clear.
-        if (!dayIsClosed) {
-          const clearStatusBtn = document.querySelector('[data-status="on_time"]');
-          const nothingToClear = doc.status === 'on_time';
-          clearStatusBtn.disabled = nothingToClear;
-          if (nothingToClear) clearStatusBtn.title = "Already available — nothing to clear.";
+        // Was a permanently-visible "Clear status" button, disabled
+        // whenever there was nothing to clear — read as a peer of "On a
+        // break"/"Emergency" even though it's a different kind of
+        // action (undoing a state, not declaring one), and a doctor
+        // coming back to a disabled Call next patient had to correctly
+        // guess that this greyed-out button was the fix. Now exactly
+        // one of these two blocks shows: the two real actions while
+        // available, or a colored banner naming the away state with one
+        // obvious "I'm back" button — never three controls competing,
+        // never a button that's sometimes a no-op.
+        const isAway = doc.status === 'on_break' || doc.status === 'emergency';
+        const availableActions = document.getElementById('statusAvailableActions');
+        const awayBanner = document.getElementById('statusAwayBanner');
+        if (dayIsClosed) {
+          availableActions.style.display = 'none';
+          awayBanner.style.display = 'none';
+        } else if (isAway) {
+          availableActions.style.display = 'none';
+          awayBanner.style.display = 'flex';
+          awayBanner.className = 'status-away-banner ' + doc.status;
+          document.getElementById('statusAwayText').textContent =
+            statusLabel(doc.status) + (doc.delayMins ? ' · ' + doc.delayMins + ' min' : '');
+          document.getElementById('statusAwaySub').textContent =
+            'Since ' + Qlinic.formatTimestamp(doc.statusUpdatedAt)
+            + (Qlinic.isRealStatusReason(doc.statusNote) ? ' · "' + doc.statusNote + '"' : '')
+            + ' · Call next patient is off';
+        } else {
+          availableActions.style.display = 'flex';
+          awayBanner.style.display = 'none';
         }
 
         // Call next patient also locks while on a break or in an
-        // emergency — not the status buttons themselves, since "Clear
-        // status" is exactly how a doctor gets back out of either state.
+        // emergency — not the status actions themselves, since "I'm
+        // back" is exactly how a doctor gets back out of either state.
         // Otherwise nothing stopped a new patient from being pulled in
         // while the doctor had just said they're unavailable.
-        const isAway = doc.status === 'on_break' || doc.status === 'emergency';
         const awayPhrase = doc.status === 'on_break' ? "you're on a break" : "you're in an emergency";
         const noOneWaiting = q.waiting.length === 0;
         const callNextBtn = document.getElementById('callNextBtn');

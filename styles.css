@@ -4255,47 +4255,44 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
   border-color: rgba(255, 255, 255, 0.9); box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35);
 }
 
-/* Doctor View's status row (Clear status/On a break/Emergency) - same
-   gradient-track look as the toggles above, scoped by id rather than
-   changed on .success-outline/.accent-outline/.danger-outline themselves
-   (those are generic outline-button classes used elsewhere in the app
-   that never asked for this treatment). Unlike a real toggle these three
-   are independent actions, not mutually-exclusive selections, so there's
-   no single "active" pill to highlight - each button stays outlined
-   (green/blue/red, matching their existing outline colors) and only
-   fills with its gradient on hover, so it reads as a real pressable
-   control rather than three permanently-lit status lights. Disabled
-   state (nothing to clear, or the day is closed) still dims normally via
-   the base .btn-sm:disabled opacity rule - untouched here. */
-#statusActionSeg {
-  display: inline-flex; background: linear-gradient(180deg, var(--grey-100), var(--white));
-  border: 1px solid var(--grey-300); border-radius: var(--radius-pill); padding: 4px; gap: 2px;
-  box-shadow: var(--shadow-resting), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+/* Doctor View's away banner replaces the old #statusActionSeg
+   gradient-track pill (Clear status/On a break/Emergency, all three
+   crammed into one shared toggle-look capsule). That shared background
+   was exactly what made "Clear status" read as a peer of the other two
+   even though it's a different kind of action — undoing a state, not
+   declaring one. Now the panel shows exactly one thing at a time: two
+   plain standalone .btn-sm buttons (#statusAvailableActions, no
+   special CSS of their own — same outline-button look used everywhere
+   else) while available, or this banner, entirely replacing them, once
+   a status is actually set. */
+.status-away-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
 }
-/* Outlined by default (transparent fill, colored border+text) and only
-   fills with the full gradient on hover — reads as a real pressable
-   control rather than three permanently-lit status lights. Border stays
-   1.5px on hover too (colored -> crisp white, never "none") so nothing
-   shifts size; the white ring on fill matches the same treatment used
-   on every other active gradient pill in the app (Analytics tabs, the
-   mode toggles, Revenue/No-shows' day-range pills). */
-#statusActionSeg .btn-sm {
-  border: 1.5px solid transparent; border-radius: var(--radius-pill); font-weight: 700; letter-spacing: 0.01em;
-  background: transparent;
-  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
-}
-#statusActionSeg .btn-sm.success-outline { border-color: var(--success); color: var(--success); }
-#statusActionSeg .btn-sm.success-outline:hover {
-  border-color: rgba(255, 255, 255, 0.9); background: linear-gradient(135deg, var(--success), #166a2e); color: #ffffff; box-shadow: 0 3px 10px rgba(30, 142, 62, 0.3);
-}
-#statusActionSeg .btn-sm.accent-outline { border-color: var(--accent); color: var(--accent); }
-#statusActionSeg .btn-sm.accent-outline:hover {
-  border-color: rgba(255, 255, 255, 0.9); background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #ffffff; box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35);
-}
-#statusActionSeg .btn-sm.danger-outline { border-color: var(--danger); color: var(--danger); }
-#statusActionSeg .btn-sm.danger-outline:hover {
-  border-color: rgba(255, 255, 255, 0.9); background: linear-gradient(135deg, #e0433d, var(--danger)); color: #ffffff; box-shadow: 0 3px 10px rgba(197, 34, 31, 0.35);
-}
+.status-away-banner.on_break { background: #ece9fc; }
+.status-away-banner.emergency { background: var(--danger-bg); }
+.status-away-left { display: flex; align-items: center; gap: 10px; }
+.status-away-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.status-away-banner.on_break .status-away-dot { background: #5b3ec9; }
+.status-away-banner.emergency .status-away-dot { background: var(--danger); }
+.status-away-text { font-size: 14px; font-weight: 700; }
+.status-away-banner.on_break .status-away-text { color: #5b3ec9; }
+.status-away-banner.emergency .status-away-text { color: var(--danger); }
+.status-away-sub { font-size: 12px; color: var(--grey-500); font-weight: 400; margin-top: 1px; }
+/* Solid, not outline like every other .btn-sm here — this is the one
+   button in the panel that matters most while it's showing (it's the
+   only way "Call next patient" comes back), so it gets the strongest
+   visual weight in the row rather than matching the outline buttons
+   it replaced. */
+.status-away-btn { flex-shrink: 0; color: #fff; border: none; }
+.status-away-banner.on_break .status-away-btn { background: #5b3ec9; }
+.status-away-banner.on_break .status-away-btn:hover { background: #4a32a8; }
+.status-away-banner.emergency .status-away-btn { background: var(--danger); }
+.status-away-banner.emergency .status-away-btn:hover { background: #a01b18; }
 
 .order-note {
   font-weight: 400;
