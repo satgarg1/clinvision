@@ -2746,12 +2746,16 @@ th.th-filterable { position: relative; }
   border: none;
   background: transparent;
   border-radius: var(--radius-sm);
-  color: var(--grey-500);
+  color: var(--black);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
 }
+/* Edit stays neutral black; delete/deactivate reads as red at rest, not
+   only on hover -- a destructive action should be identifiable at a
+   glance, not discovered by hovering over it. */
+.icon-btn.danger { color: var(--danger); }
 .icon-btn:hover { background: var(--grey-100); color: var(--black); }
 .icon-btn.danger:hover { background: var(--danger-bg); color: var(--danger); }
 
