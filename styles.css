@@ -4278,10 +4278,24 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
   background: linear-gradient(135deg, var(--grey-900), var(--black)); color: #ffffff;
   border-color: rgba(255, 255, 255, 0.9); box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
 }
-.mode-btn.active[data-mode="appointment"], .mode-btn.active[data-theme-choice="light"] {
+.mode-btn.active[data-mode="appointment"], .mode-btn.active[data-theme-choice="light"],
+/* Team Holidays' two toggles (Add/manage <-> View Holidays,
+   Doctor <-> Staff) use data-view/data-type, not data-mode -- the two
+   selectors above never matched them, which is why .active landed
+   with none of this gradient fill at all: just the bare transparent
+   .mode-btn look, inconsistent with every other gradient toggle in
+   the app. Same blue variant as data-mode="appointment", not a new
+   color, since neither toggle here is a light/dark-style choice. */
+.mode-btn.active[data-view], .mode-btn.active[data-type] {
   background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #ffffff;
   border-color: rgba(255, 255, 255, 0.9); box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35);
 }
+
+/* Team Holidays' two panels -- a blue-tinted border instead of the
+   plain grey every other .panel uses, scoped to this page specifically
+   rather than changed on .panel itself (which would touch every panel
+   sitewide). */
+#holidaysPanel, #allHolidaysPanel { border-color: var(--accent); }
 
 /* Doctor View's away banner replaces the old #statusActionSeg
    gradient-track pill (Clear status/On a break/Emergency, all three
