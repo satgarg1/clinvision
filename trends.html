@@ -464,10 +464,17 @@
 
       function makeAreaChart(canvasId, labels, data, color, formatter, onClickIndex, yAxisLabel) {
         const grid = cssVar('--grey-300');
+        // A normal multi-week range stays hover-only (pointRadius 0) so the
+        // line doesn't get cluttered with dots. But the first 1-3 days of a
+        // new week/month have almost nothing to draw a line with at all --
+        // an invisible-until-hover point on a near-empty chart reads as
+        // broken, not quiet. Below that threshold, show real dots instead.
+        const smallDataset = data.length <= 3;
         return new Chart(document.getElementById(canvasId), {
           type: 'line',
           data: { labels, datasets: [{
-            data, borderColor: color, borderWidth: 3, tension: 0.4, pointRadius: 0, pointHoverRadius: 5,
+            data, borderColor: color, borderWidth: 3, tension: 0.4,
+            pointRadius: smallDataset ? 4 : 0, pointHoverRadius: smallDataset ? 6 : 5,
             pointBackgroundColor: cssVar('--white'), pointBorderColor: color, pointBorderWidth: 2, fill: true,
             backgroundColor: (c) => { const { chart } = c; const { chartArea } = chart; if (!chartArea) return null;
               const g = chart.ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
