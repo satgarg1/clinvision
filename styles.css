@@ -4379,7 +4379,11 @@ table.qtable tbody tr.breakdown-row-link:hover { background: var(--mkt-blue-bg);
   flex-direction: column;
   align-items: center;
   text-align: center;
-  border-bottom: 3px solid var(--accent);
+  /* Was var(--accent) (blue) -- inconsistent against the only other
+     rule on this receipt (.receipt-items thead's 2px solid black),
+     and a printed receipt reads as a real document more than a piece
+     of branded UI, where an accent color has more reason to show up. */
+  border-bottom: 3px solid var(--black);
   padding-bottom: 16px;
   margin-bottom: 8px;
 }
@@ -4405,7 +4409,11 @@ table.qtable tbody tr.breakdown-row-link:hover { background: var(--mkt-blue-bg);
 
 .receipt-info-grid { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
 .receipt-info-grid td { width: 50%; padding: 0 20px 18px 0; vertical-align: top; }
-.receipt-info-grid td + td { padding-left: 20px; border-left: 1px solid var(--grey-100); }
+/* Was border-left: 1px solid var(--grey-100) -- a third rule on a
+   receipt that already has two (the header and the items table), and
+   the two info columns read fine as a plain two-column layout without
+   one dividing them. */
+.receipt-info-grid td + td { padding-left: 20px; }
 .receipt-label {
   font-size: 11px;
   font-weight: 700;
