@@ -2541,6 +2541,10 @@ input[type="number"] { -moz-appearance: textfield; }
 .account-section-header svg { color: var(--grey-500); flex-shrink: 0; }
 .account-section-header h2 { margin: 0; }
 .account-section-current { margin-left: auto; font-size: 13px; color: var(--grey-500); }
+/* The label reads as a callout distinguishing "this is what's actually
+   on file" from a plain caption -- the value itself stays unstyled so
+   it's still easy to read/copy at a glance. */
+.account-current-label { font-weight: 700; font-style: italic; }
 .account-section-divider { border-top: 1px solid var(--grey-100); margin: 24px 0; }
 
 table.qtable { width: 100%; border-collapse: collapse; font-size: 14px; }
