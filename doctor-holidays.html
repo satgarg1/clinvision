@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=267" />
+<link rel="stylesheet" href="styles.css?v=268" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -93,11 +93,48 @@
       </div>
 
       <!-- Admin-only combined view -- everyone's holidays, doctors and
-           staff together, one flat list sorted by date. -->
+           staff together. A role pill (All/Doctor/Staff/Admin) plus an
+           Excel-style filter on "Who" (same interaction as Revenue's
+           own column filters) so this stays findable once there are
+           genuinely 30+ doctors and 20+ staff, not just a flat list
+           that only works at a handful of people. -->
       <div class="panel" id="allHolidaysPanel" style="display:none;">
-        <div class="panel-header"><h2>View Holidays</h2></div>
+        <div class="panel-header">
+          <h2>View Holidays</h2>
+          <span class="total-count" id="allHolidaysTotal"></span>
+        </div>
         <p class="panel-note">Sorted by date, soonest first.</p>
-        <div id="allHolidaysTableWrap"></div>
+
+        <div class="mode-toggle sm" id="allHolidaysRoleToggle">
+          <button type="button" class="mode-btn sm active" data-role="all">All</button>
+          <button type="button" class="mode-btn sm" data-role="doctor">Doctor</button>
+          <button type="button" class="mode-btn sm" data-role="reception">Staff</button>
+          <button type="button" class="mode-btn sm" data-role="admin">Admin</button>
+        </div>
+
+        <div class="date-legend">
+          <span><span class="date-swatch past"></span> Past</span>
+          <span><span class="date-swatch today"></span> Today</span>
+          <span><span class="date-swatch future"></span> Upcoming</span>
+        </div>
+
+        <div class="active-filter-chips" id="allHolidaysChips"></div>
+
+        <table class="qtable">
+          <thead><tr>
+            <th>Date</th>
+            <th class="th-filterable">
+              <span class="th-filter-trigger" id="whoFilterTrigger" title="Click to filter by name">
+                Who
+                <svg class="th-filter-icon" id="whoFilterIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+              </span>
+            </th>
+            <th>Note</th>
+          </tr></thead>
+          <tbody id="allHolidaysTableWrap"></tbody>
+        </table>
+        <div class="empty-state" id="allHolidaysEmpty" style="display:none;">No holidays match this filter.</div>
+        <div class="pager" id="allHolidaysPager"></div>
       </div>
     </main>
   </div>
@@ -214,43 +251,160 @@
         renderHolidays();
       }
 
+      // "View Holidays" state -- separate from the Add/manage state
+      // above (personType/targetDoctorId/etc.), since this is admin
+      // browsing everyone's holidays, not managing one person's.
+      let allHolidaysRows = [];
+      let allHolidaysRole = 'all';
+      let allHolidaysNameFilter = new Set();
+      let allHolidaysPage = 1;
+      let allHolidaysFilterOpen = false;
+      const ALL_HOLIDAYS_PAGE_SIZE = 25;
+      const TODAY_STR = Qlinic.getTodayDate();
+
       async function loadAllHolidays() {
         const [docHolidays, staffHolidays] = await Promise.all([
           Qlinic.getDoctorHolidays(),
           Qlinic.getStaffHolidays(),
         ]);
-        const rows = docHolidays.map((h) => ({
+        allHolidaysRows = docHolidays.map((h) => ({
           date: h.date, note: h.note, role: 'doctor',
           name: doctorById[h.doctorId] ? doctorById[h.doctorId].name : 'Unknown doctor',
         })).concat(staffHolidays.map((h) => {
           const p = staffById[h.profileId];
           return { date: h.date, note: h.note, role: p ? p.role : 'reception', name: p ? (p.fullName || p.email) : 'Unknown' };
         }));
-        rows.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
-        renderAllHolidays(rows);
+        allHolidaysPage = 1;
+        allHolidaysNameFilter.clear();
+        renderAllHolidaysAll();
       }
 
-      function renderAllHolidays(rows) {
-        const wrap = document.getElementById('allHolidaysTableWrap');
-        if (rows.length === 0) {
-          wrap.innerHTML = '<div class="empty-state">No holidays added yet.</div>';
-          return;
-        }
-        wrap.innerHTML = `
-          <table class="qtable">
-            <thead><tr><th>Date</th><th>Who</th><th>Note</th></tr></thead>
-            <tbody>
-              ${rows.map((r) => `
-                <tr>
-                  <td>${fmtDate(r.date)}</td>
-                  <td><span class="role-tag ${roleTagClass(r.role)}">${roleLabel(r.role)}</span> ${Qlinic.escapeHtml(r.name)}</td>
-                  <td>${r.note ? Qlinic.escapeHtml(r.note) : '<span class="sub-line">No note</span>'}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
+      function allHolidaysRoleScoped() {
+        return allHolidaysRole === 'all' ? allHolidaysRows : allHolidaysRows.filter((r) => r.role === allHolidaysRole);
       }
+      function allHolidaysVisible() {
+        const scoped = allHolidaysRoleScoped();
+        const filtered = allHolidaysNameFilter.size === 0 ? scoped : scoped.filter((r) => allHolidaysNameFilter.has(r.name));
+        return filtered.slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+      }
+      // "12 holidays across the team" / "3 holidays across doctors" --
+      // scoped to the current role pill, not a fixed grand total, since
+      // the phrase names the scope it's counting.
+      function allHolidaysScopeLabel() {
+        if (allHolidaysRole === 'doctor') return 'across doctors';
+        if (allHolidaysRole === 'reception') return 'across staff';
+        if (allHolidaysRole === 'admin') return 'across admin';
+        return 'across the team';
+      }
+      function renderAllHolidaysTotal() {
+        const n = allHolidaysRoleScoped().length;
+        document.getElementById('allHolidaysTotal').textContent = `${n} holiday${n === 1 ? '' : 's'} ${allHolidaysScopeLabel()}`;
+      }
+      function renderAllHolidaysChips() {
+        const wrap = document.getElementById('allHolidaysChips');
+        if (allHolidaysNameFilter.size === 0) { wrap.innerHTML = ''; return; }
+        wrap.innerHTML = `<span class="filter-chip">Who: ${[...allHolidaysNameFilter].map((n) => Qlinic.escapeHtml(n)).join(', ')} <button type="button" id="allHolidaysClearWho">✕</button></span>`;
+        document.getElementById('allHolidaysClearWho').addEventListener('click', () => {
+          allHolidaysNameFilter.clear();
+          allHolidaysPage = 1;
+          renderAllHolidaysAll();
+        });
+      }
+      function renderAllHolidaysPager(total) {
+        const totalPages = Math.max(1, Math.ceil(total / ALL_HOLIDAYS_PAGE_SIZE));
+        if (allHolidaysPage > totalPages) allHolidaysPage = totalPages;
+        const start = (allHolidaysPage - 1) * ALL_HOLIDAYS_PAGE_SIZE;
+        const end = Math.min(start + ALL_HOLIDAYS_PAGE_SIZE, total);
+        const pager = document.getElementById('allHolidaysPager');
+        const summary = `Showing ${total === 0 ? 0 : start + 1}-${end} of ${total}`;
+        if (totalPages <= 1) { pager.innerHTML = `<span class="sub-line">${summary}</span>`; return; }
+        pager.innerHTML = `
+          <span class="sub-line">${summary}</span>
+          <div class="pager-controls">
+            <button type="button" class="btn-sm" id="allHolidaysPrev" ${allHolidaysPage === 1 ? 'disabled' : ''}>Previous</button>
+            <span class="pager-label">Page ${allHolidaysPage} of ${totalPages}</span>
+            <button type="button" class="btn-sm" id="allHolidaysNext" ${allHolidaysPage === totalPages ? 'disabled' : ''}>Next</button>
+          </div>
+        `;
+        document.getElementById('allHolidaysPrev').addEventListener('click', () => { allHolidaysPage -= 1; renderAllHolidaysRows(); });
+        document.getElementById('allHolidaysNext').addEventListener('click', () => { allHolidaysPage += 1; renderAllHolidaysRows(); });
+      }
+      // Past fades to reduced opacity, today gets a tinted background +
+      // left border stripe + bold text + a small badge (same "make the
+      // one row that matters findable while scanning" pattern Doctor
+      // View's own row highlights already use) -- meant to be
+      // unmissable at a glance, not read carefully to notice.
+      function renderAllHolidaysRows() {
+        const all = allHolidaysVisible();
+        const start = (allHolidaysPage - 1) * ALL_HOLIDAYS_PAGE_SIZE;
+        const pageRows = all.slice(start, start + ALL_HOLIDAYS_PAGE_SIZE);
+        const tbody = document.getElementById('allHolidaysTableWrap');
+        const empty = document.getElementById('allHolidaysEmpty');
+        if (all.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; renderAllHolidaysPager(0); return; }
+        empty.style.display = 'none';
+        tbody.innerHTML = pageRows.map((r) => {
+          const cls = r.date < TODAY_STR ? 'is-past' : r.date === TODAY_STR ? 'is-today' : '';
+          const badge = r.date === TODAY_STR ? '<span class="today-badge">Today</span>' : '';
+          return `
+            <tr class="${cls}">
+              <td>${fmtDate(r.date)}${badge}</td>
+              <td><span class="role-tag ${roleTagClass(r.role)}">${roleLabel(r.role)}</span> ${Qlinic.escapeHtml(r.name)}</td>
+              <td>${r.note ? Qlinic.escapeHtml(r.note) : '<span class="sub-line">No note</span>'}</td>
+            </tr>
+          `;
+        }).join('');
+        renderAllHolidaysPager(all.length);
+      }
+      function renderAllHolidaysAll() {
+        renderAllHolidaysTotal();
+        renderAllHolidaysChips();
+        renderAllHolidaysRows();
+        document.getElementById('whoFilterIcon').classList.toggle('active', allHolidaysNameFilter.size > 0);
+      }
+
+      function closeAllHolidaysFilter() {
+        allHolidaysFilterOpen = false;
+        document.querySelectorAll('.filter-dropdown').forEach((el) => el.remove());
+        document.getElementById('whoFilterIcon').classList.toggle('active', allHolidaysNameFilter.size > 0);
+      }
+      function openAllHolidaysFilter() {
+        closeAllHolidaysFilter();
+        allHolidaysFilterOpen = true;
+        const counts = {};
+        allHolidaysRoleScoped().forEach((r) => { counts[r.name] = (counts[r.name] || 0) + 1; });
+        const names = Object.keys(counts).sort();
+        const dropdown = document.createElement('div');
+        dropdown.className = 'filter-dropdown';
+        dropdown.innerHTML = names.map((n) =>
+          `<label><input type="checkbox" value="${Qlinic.escapeHtml(n)}" ${allHolidaysNameFilter.has(n) ? 'checked' : ''}/> ${Qlinic.escapeHtml(n)}<span class="fd-count">${counts[n]}</span></label>`
+        ).join('');
+        dropdown.addEventListener('click', (e) => e.stopPropagation());
+        dropdown.querySelectorAll('input').forEach((cb) => {
+          cb.addEventListener('change', () => {
+            if (cb.checked) allHolidaysNameFilter.add(cb.value); else allHolidaysNameFilter.delete(cb.value);
+            closeAllHolidaysFilter();
+            allHolidaysPage = 1;
+            renderAllHolidaysAll();
+          });
+        });
+        document.getElementById('whoFilterTrigger').closest('th').appendChild(dropdown);
+      }
+      document.getElementById('allHolidaysRoleToggle').addEventListener('click', (e) => {
+        const btn = e.target.closest('.mode-btn');
+        if (!btn) return;
+        allHolidaysRole = btn.getAttribute('data-role');
+        document.querySelectorAll('#allHolidaysRoleToggle .mode-btn').forEach((b) =>
+          b.classList.toggle('active', b.getAttribute('data-role') === allHolidaysRole)
+        );
+        allHolidaysNameFilter.clear();
+        allHolidaysPage = 1;
+        renderAllHolidaysAll();
+      });
+      document.getElementById('whoFilterTrigger').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (allHolidaysFilterOpen) closeAllHolidaysFilter(); else openAllHolidaysFilter();
+      });
+      document.addEventListener('click', () => closeAllHolidaysFilter());
 
       async function doDeleteHoliday(id) {
         if (!(await Qlinic.confirmDialog({ message: 'Remove this holiday?', confirmLabel: 'Remove', danger: true }))) return;

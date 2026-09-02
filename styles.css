@@ -2651,6 +2651,25 @@ th.th-filterable { position: relative; }
 .modal-message { font-size: 14px; color: var(--grey-700); line-height: 1.5; margin: 0 0 24px; white-space: pre-line; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
 
+/* Dashboard's day-of-holiday popup -- built on .modal-backdrop/
+   .modal-card above (same shell Qlinic.confirmDialog() uses); this is
+   the new content specific to this one popup's layout, not a general
+   change to .modal-card itself. Centered, with a small icon, since
+   this is a one-time heads-up rather than a decision to make. */
+.holiday-popup-modal { text-align: center; }
+.holiday-popup-modal .modal-title { text-align: center; }
+.holiday-popup-icon { width: 52px; height: 52px; margin: 0 auto 16px; border-radius: 50%; background: var(--mkt-blue-bg); display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.holiday-popup-who { text-align: left; background: var(--grey-100); border-radius: 12px; padding: 4px 16px; margin: 18px 0 22px; }
+/* Grid, not flex -- .role-tag's own width varies with its label
+   ("Reception" is wider than "Doctor"/"Admin"), which pushed each row's
+   name to a different starting x position under flex. A fixed first
+   column keeps every name aligned regardless of which role sits next
+   to it. */
+.holiday-popup-who-row { display: grid; grid-template-columns: 84px 1fr; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--grey-300); }
+.holiday-popup-who-row:last-child { border-bottom: none; }
+.holiday-popup-who-row .role-tag { justify-self: start; }
+.holiday-popup-who-name { font-weight: 700; font-size: 14px; text-align: left; }
+
 .badge {
   display: inline-block;
   white-space: nowrap;
@@ -4279,14 +4298,15 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
   border-color: rgba(255, 255, 255, 0.9); box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
 }
 .mode-btn.active[data-mode="appointment"], .mode-btn.active[data-theme-choice="light"],
-/* Team Holidays' two toggles (Add/manage <-> View Holidays,
-   Doctor <-> Staff) use data-view/data-type, not data-mode -- the two
+/* Team Holidays' three toggles (Add/manage <-> View Holidays,
+   Doctor <-> Staff, and View Holidays' own All/Doctor/Staff/Admin role
+   pill) use data-view/data-type/data-role, not data-mode -- the two
    selectors above never matched them, which is why .active landed
    with none of this gradient fill at all: just the bare transparent
    .mode-btn look, inconsistent with every other gradient toggle in
    the app. Same blue variant as data-mode="appointment", not a new
-   color, since neither toggle here is a light/dark-style choice. */
-.mode-btn.active[data-view], .mode-btn.active[data-type] {
+   color, since none of these are a light/dark-style choice. */
+.mode-btn.active[data-view], .mode-btn.active[data-type], .mode-btn.active[data-role] {
   background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #ffffff;
   border-color: rgba(255, 255, 255, 0.9); box-shadow: 0 3px 10px rgba(0, 113, 227, 0.35);
 }
@@ -4296,6 +4316,32 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
    rather than changed on .panel itself (which would touch every panel
    sitewide). */
 #holidaysPanel, #allHolidaysPanel { border-color: var(--accent); }
+
+/* "View Holidays"' own running total -- a solid badge, not plain grey
+   text, so it's easy to spot next to the heading rather than reading
+   as a caption. Text is scope-aware ("X holidays across doctors" once
+   a role pill is picked), set in JS. */
+.total-count { font-size: 15px; font-weight: 700; color: #fff; background: var(--accent); padding: 3px 12px; border-radius: var(--radius-pill); }
+
+.date-legend { display: flex; gap: 20px; margin: 4px 0 16px; font-size: 12.5px; color: var(--grey-500); }
+.date-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.date-swatch { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
+.date-swatch.past { background: var(--grey-300); opacity: 0.6; }
+.date-swatch.today { background: #e8f0fe; border-left: 3px solid var(--accent-dark); }
+.date-swatch.future { background: var(--white); border: 1px solid var(--grey-300); }
+
+/* Past/today/future needs to be unmissable at a glance while scanning
+   a long list, not a subtle color shift someone has to look closely to
+   notice. Today reuses the same tinted-row + left-border-stripe
+   pattern Doctor View's own row highlights already use elsewhere;
+   past fades hard rather than just dimming text color. */
+#allHolidaysTableWrap tr.is-past { opacity: 0.45; }
+#allHolidaysTableWrap tr.is-today { background: #e8f0fe; }
+#allHolidaysTableWrap tr.is-today td:first-child { border-left: 4px solid var(--accent-dark); padding-left: 10px; }
+#allHolidaysTableWrap tr.is-today td { font-weight: 700; }
+.today-badge { margin-left: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #fff; background: var(--accent-dark); padding: 2px 8px; border-radius: var(--radius-pill); }
+
+#allHolidaysPager .pager-controls { display: flex; align-items: center; gap: 14px; }
 
 /* Doctor View's away banner replaces the old #statusActionSeg
    gradient-track pill (Clear status/On a break/Emergency, all three
