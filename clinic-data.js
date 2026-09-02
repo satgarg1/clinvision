@@ -2426,6 +2426,15 @@
     if (error) throw error;
   }
 
+  // The self-service counterpart -- update_staff_phone above is
+  // deliberately admin-only, so a doctor or staff member changing their
+  // own phone needs its own RPC rather than calling that one on
+  // themselves (which the function itself rejects).
+  async function updateMyPhone(phone) {
+    const { error } = await sb.rpc('update_my_phone', { new_phone: phone || null });
+    if (error) throw error;
+  }
+
   // A second, independently-changing control from updateStaffRole above
   // (Team's per-row "Linked doctor" select, not the role select) — kept
   // as its own function rather than folded into updateStaffRole since
@@ -2586,6 +2595,7 @@
     updateStaffRole,
     updateStaffDoctorLink,
     updateStaffPhone,
+    updateMyPhone,
 
     getTheme,
     setTheme,
