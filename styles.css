@@ -3799,16 +3799,22 @@ th.th-filterable { position: relative; }
    normal end of a shift, not something wrong. */
 .status-closed { background: var(--grey-300); color: var(--grey-700); }
 
-/* Collapsed-only status text in #statusPanel's header — plain text, not
-   a colored .status-pill chip: this is a quick glance next to the
-   title ("Your status  On a break"), not a restatement of the full
-   colored detail underneath. Kept updated in render() regardless of
-   collapse state; visibility is the only thing toggled here, and by
-   CSS rather than JS, so there's no risk of the two ever disagreeing.
-   Once expanded, the full detail (the away banner, or "Currently: ...")
-   already covers this, so showing it too would just be the same fact
-   said twice. */
-.status-header-pill { font-size: 14px; font-weight: 400; color: var(--grey-500); }
+/* Collapsed-only status text in #statusPanel's header — bold and
+   colored (not a full .status-pill chip background) so it's actually
+   visible next to the title at a glance, without the weight of a pill
+   competing with "Your status" itself. Same three colors as the away
+   banner/.status-pill elsewhere, just applied to text rather than a
+   background. Kept updated in render() regardless of collapse state;
+   visibility is the only thing toggled here, and by CSS rather than
+   JS, so there's no risk of the two ever disagreeing. Once expanded,
+   the full detail (the away banner, or "Currently: ...") already
+   covers this, so showing it too would just be the same fact said
+   twice. */
+.status-header-pill { font-size: 14px; font-weight: 700; }
+.status-header-pill.on_time { color: var(--success); }
+.status-header-pill.on_break { color: #5b3ec9; }
+.status-header-pill.emergency { color: var(--danger); }
+.status-header-pill.closed { color: var(--grey-700); }
 #statusPanel:not(.panel-collapsed) .status-header-pill { display: none; }
 
 /* A doctor who isn't on time gets the whole row tinted + a left border
@@ -4291,11 +4297,20 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
 }
 .status-away-banner.on_break { background: #ece9fc; }
 .status-away-banner.emergency { background: var(--danger-bg); }
-.status-away-left { display: flex; align-items: center; gap: 10px; }
-.status-away-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+/* Was align-items: center -- centered the dot against the whole
+   two-line block (status + sub-line), which read as floating relative
+   to "Emergency"/"On a break" itself rather than marking it. flex-start
+   plus a small top nudge lines it up with the status text's own
+   cap-height instead. */
+.status-away-left { display: flex; align-items: flex-start; gap: 10px; }
+.status-away-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
 .status-away-banner.on_break .status-away-dot { background: #5b3ec9; }
 .status-away-banner.emergency .status-away-dot { background: var(--danger); }
-.status-away-text { font-size: 14px; font-weight: 700; }
+/* Was 14px, same as .status-away-sub below it -- the status name is
+   the thing that actually matters here, so it needs to read as bigger
+   than the "Since ... · Call next patient is off" detail underneath
+   it, not the same size. */
+.status-away-text { font-size: 16px; font-weight: 700; }
 .status-away-banner.on_break .status-away-text { color: #5b3ec9; }
 .status-away-banner.emergency .status-away-text { color: var(--danger); }
 .status-away-sub { font-size: 14px; color: var(--grey-500); font-weight: 400; margin-top: 1px; }
