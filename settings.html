@@ -218,7 +218,14 @@
         { slug: 'team-access', label: 'Team & Access' },
         { slug: 'preferences', label: 'Preferences' },
       ];
-      let activeSettingsGroup = null;
+      // Persisted, not just an in-memory variable - reading this back on
+      // a fresh load is what makes the browser's own back button return
+      // to whichever group tab was actually open, instead of always
+      // resetting to the first one. sessionStorage (not localStorage) on
+      // purpose: this is "where was I on this page," not a lasting
+      // preference worth carrying into a whole new session tomorrow.
+      const SETTINGS_GROUP_KEY = 'clinvision_settings_active_group';
+      let activeSettingsGroup = sessionStorage.getItem(SETTINGS_GROUP_KEY);
       function applySettingsGrouping() {
         const panels = Array.from(document.querySelectorAll('#settingsCardGrid .panel'));
         const visiblePanels = panels.filter((p) => !roleHiddenIds.has(p.id));
@@ -232,6 +239,7 @@
         document.querySelectorAll('#settingsGroupTabs [data-group-tab]').forEach((btn) => {
           btn.addEventListener('click', () => {
             activeSettingsGroup = btn.getAttribute('data-group-tab');
+            sessionStorage.setItem(SETTINGS_GROUP_KEY, activeSettingsGroup);
             applySettingsGrouping();
           });
         });
