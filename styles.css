@@ -4368,6 +4368,14 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
    inset -- the wider 32px gutter is reserved for the gaps *between*
    columns, not the table's edges against the panel border. */
 #allHolidaysPanel th:last-child, #allHolidaysPanel td:last-child, #holidaysPanel th:last-child, #holidaysPanel td:last-child { padding-right: 10px; }
+/* Matching padding-right to padding-left isn't enough on its own --
+   Reason is left-aligned, so a short reason ("Casual leave") leaves a
+   much bigger trailing gap before the panel edge than a long one
+   ("Friend Wedding"), varying row to row. Right-aligning is the only
+   way to make that trailing gap a fixed distance (equal to Date's
+   fixed leading gap) on every row, regardless of what the text says. */
+#allHolidaysTableWrap td:last-child { text-align: right; }
+#allHolidaysPanel table.qtable-fixed thead th:last-child { text-align: right; }
 
 #allHolidaysPager .pager-controls { display: flex; align-items: center; gap: 14px; }
 
