@@ -762,11 +762,21 @@
 
         currentData = data;
         const detailsOpenWrap = document.getElementById('detailsOpenWrap');
-        detailsOpenWrap.style.display = (data.windowBookedCount != null) ? 'block' : 'none';
-        // If the popup is already open when a poll refreshes the page, its
-        // numbers refresh right along with it — same live behavior as the
-        // rest of the page, not a stale snapshot from when it was opened.
-        if (document.getElementById('queueDetailsBackdrop')) renderDetailsModal(data);
+        // Never once the patient is actually with the doctor — the modal
+        // behind this button is entirely about queue position/timing
+        // relative to everyone else, and there's no queue left to check
+        // once you're already being seen.
+        detailsOpenWrap.style.display = (data.windowBookedCount != null && data.status !== 'in_consult') ? 'block' : 'none';
+        // If the popup is already open when a poll refreshes the page and
+        // the patient has since moved into consultation, close it rather
+        // than leave it open showing numbers that no longer apply.
+        if (document.getElementById('queueDetailsBackdrop')) {
+          if (data.status === 'in_consult') {
+            document.getElementById('queueDetailsBackdrop').remove();
+          } else {
+            renderDetailsModal(data);
+          }
+        }
       }
 
       // Scoped to "now through your own turn" — everyone still booked/
