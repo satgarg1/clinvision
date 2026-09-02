@@ -3802,6 +3802,14 @@ th.th-filterable { position: relative; }
    normal end of a shift, not something wrong. */
 .status-closed { background: var(--grey-300); color: var(--grey-700); }
 
+/* Collapsed-only status pill in #statusPanel's header — kept updated
+   in render() regardless of collapse state; visibility is the only
+   thing toggled here, and by CSS rather than JS, so there's no risk of
+   the two ever disagreeing. Once expanded, the full detail ("Currently:
+   ..." plus the away banner/actions) already covers this, so showing
+   the pill too would just be the same fact said twice. */
+#statusPanel:not(.panel-collapsed) .status-header-pill { display: none; }
+
 /* A doctor who isn't on time gets the whole row tinted + a left border
    in the same color as their pill, not just the small pill itself —
    findable at a glance scanning down the list, not only on close read. */
@@ -4265,11 +4273,18 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
    special CSS of their own — same outline-button look used everywhere
    else) while available, or this banner, entirely replacing them, once
    a status is actually set. */
+/* inline-flex, not flex -- flex on a block-level element stretches to
+   the full width of #statusPanelBody (much wider than the mockup's own
+   compact preview cards), which is what actually caused the "too much
+   width" complaint: space-between then had a huge gap to spread across
+   instead of sitting close to its own content. inline-flex keeps every
+   child's own layout (the gap, the alignment) but sizes the banner
+   itself to its content, same proportions as the mockup regardless of
+   how wide the panel around it is. */
 .status-away-banner {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
   padding: 14px 16px;
   border-radius: var(--radius-md);
 }
@@ -4289,10 +4304,15 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
    visual weight in the row rather than matching the outline buttons
    it replaced. */
 .status-away-btn { flex-shrink: 0; color: #fff; border: none; }
+/* color: #fff repeated on :hover, not left to inherit -- the base
+   .btn-sm:hover rule (background: var(--grey-300); color: var(--black);)
+   otherwise wins the color property on specificity, which is exactly
+   what made the hover state unreadable: dark text on top of the
+   already-dark hover background below. */
+.status-away-banner.on_break .status-away-btn:hover { background: #4a32a8; color: #fff; }
+.status-away-banner.emergency .status-away-btn:hover { background: #a01b18; color: #fff; }
 .status-away-banner.on_break .status-away-btn { background: #5b3ec9; }
-.status-away-banner.on_break .status-away-btn:hover { background: #4a32a8; }
 .status-away-banner.emergency .status-away-btn { background: var(--danger); }
-.status-away-banner.emergency .status-away-btn:hover { background: #a01b18; }
 
 .order-note {
   font-weight: 400;
