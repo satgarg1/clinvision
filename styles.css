@@ -2134,8 +2134,17 @@ input[type="number"] { -moz-appearance: textfield; }
   border-top: 1px solid var(--grey-300);
 }
 
+/* Was a side-by-side row (logo left, name right). A real uploaded logo
+   turned out just as often to be a tall lockup (icon + wordmark +
+   sub-tagline, stacked) as a wide one -- height-capping it to sit
+   inline with one line of text left it tiny and unreadable regardless
+   of how big that height cap was. Stacked instead: the logo sits on
+   its own line first, free to be shown at a real size, with the
+   clinic's name below it, wrapping full-width instead of being
+   squeezed into whatever space was left beside a small icon. */
 .app-sidebar .clinic-name-row {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 8px;
   padding: 0 10px;
@@ -2147,40 +2156,40 @@ input[type="number"] { -moz-appearance: textfield; }
 /* Was a 12px grey caption — read as an afterthought once the logo
    beside it grew to its real size (see .clinic-logo-thumb below). A
    clinic's own name is identity, not a footnote, so it gets real
-   weight now. flex/min-width still keep it from overflowing the
-   fixed-width sidebar; that used to be paired with nowrap+ellipsis to
-   force it onto one line, which was the actual bug reported against a
-   genuinely long name ("Ram Mittal Kinora Clinic and Diagnostic
-   Centre" cut down to "Ram Mittal Kinora ..."). Wrapping instead of
-   truncating needs no line-count branching — .clinic-name-row's own
-   align-items:center (unchanged, below) already centers the logo
-   correctly whether the name takes one line or several. break-word
-   guards the one remaining edge case a wrap-based approach has to
-   cover: a name with no spaces at all overflowing sideways instead of
-   wrapping. */
+   weight now. Centered to match the stacked logo above it and the
+   brand block above that, rather than left-aligned like the nav links
+   below (which read as a list of destinations, not identity). flex/
+   min-width still keep it from overflowing the fixed-width sidebar;
+   that used to be paired with nowrap+ellipsis to force it onto one
+   line, which was the actual bug reported against a genuinely long
+   name ("Ram Mittal Kinora Clinic and Diagnostic Centre" cut down to
+   "Ram Mittal Kinora ..."). break-word guards the one remaining edge
+   case a wrap-based approach has to cover: a name with no spaces at
+   all overflowing sideways instead of wrapping. */
 .app-sidebar .clinic-name {
   font-size: 15px;
   font-weight: 700;
   color: var(--black);
-  flex: 1;
+  text-align: center;
+  width: 100%;
   min-width: 0;
   overflow: hidden;
   white-space: normal;
   overflow-wrap: break-word;
   line-height: 1.3;
 }
-/* Height-capped, width-flexible instead of a forced square with
-   object-fit:cover — a real clinic logo is rarely square (a wide
-   icon+wordmark lockup is the common case), and cover was cropping most
-   of it away to force-fit a square box. contain keeps the whole logo
-   visible, just scaled to fit the same nav-row height as before. */
+/* Was height-capped at 34px to sit inline with the name beside it --
+   once the logo got its own line, it no longer has to share height
+   with a line of text, so it's sized by both width and height caps
+   instead (whichever the logo's own aspect ratio hits first) for a
+   real, legible size regardless of whether the source image is a wide
+   lockup or a tall stacked one. contain (not cover) still keeps the
+   whole logo visible rather than cropping it to force a fixed shape. */
 .clinic-logo-thumb {
-  /* Was 28px -- a real uploaded logo is usually a compact icon+wordmark
-     lockup, so 28px of it read as small and a little lost once a
-     2+-line clinic name gave it real height to sit next to. */
-  height: 34px;
+  max-width: 120px;
+  max-height: 64px;
   width: auto;
-  max-width: 150px;
+  height: auto;
   object-fit: contain;
   flex-shrink: 0;
 }
