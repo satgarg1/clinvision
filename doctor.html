@@ -993,7 +993,16 @@
           `
           : `
             <p class="panel-note">Let reception and the waiting screen know you're done for today. You'll disappear from the display screen 3 minutes after closing.</p>
-            <button class="btn-sm accent-outline" id="closeDoctorDayBtn" style="border-color:var(--danger);color:var(--danger);">Close my day</button>
+            <!-- Was .accent-outline with inline border/color overrides
+                 to fake red -- the base class's own :hover rule
+                 (background: var(--accent), blue) still applied since
+                 nothing inline overrode background, while the inline
+                 color:red always won regardless of hover state (inline
+                 styles beat any class rule, hover included) -- blue
+                 fill, red text/border on hover. .danger-outline already
+                 exists with the correct red default + red-fill-white-
+                 text hover built in; no inline overrides needed. -->
+            <button class="btn-sm danger-outline" id="closeDoctorDayBtn">Close my day</button>
           `;
         const closeBtn = document.getElementById('closeDoctorDayBtn');
         if (closeBtn) {
