@@ -1823,16 +1823,28 @@ input[type="number"] { -moz-appearance: textfield; }
    their own single-card layouts, untouched by this redesign. */
 .auth-shell { position: relative; display: flex; min-height: 100vh; }
 
-/* fixed, not absolute -- it overlays the sticky illustration pane
-   above, and on signup.html's much taller page, absolute (positioned
-   against .auth-shell, which scrolls with the document) would have
-   scrolled it away from that pane after the first 28px, while the pane
-   itself stayed pinned. Fixed keeps both stuck to the viewport together. */
-.auth-corner-brand {
+/* Wrapper for the corner brand AND the "Back to main site" link below
+   it -- fixed, not absolute, since it overlays the sticky illustration
+   pane above, and on signup.html's much taller page, absolute
+   (positioned against .auth-shell, which scrolls with the document)
+   would have scrolled it away from that pane after the first 28px,
+   while the pane itself stayed pinned. Fixed keeps both stuck to the
+   viewport together. Holds both links as centered flex siblings rather
+   than nesting the back-link inside .auth-corner-brand's own <a> (which
+   would be invalid HTML -- a link can't contain another link) or
+   positioning it independently (which would need a hand-measured
+   left-offset that silently drifts if either line's text ever
+   changes). */
+.auth-corner-wrap {
   position: fixed;
   top: 28px;
   left: 32px;
   z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.auth-corner-brand {
   display: flex;
   /* Column now that there's no icon sitting beside the wordmark --
      word and tagline stack, same as every other page's brand corner. */
@@ -1843,15 +1855,33 @@ input[type="number"] { -moz-appearance: textfield; }
      the tagline. */
   align-items: center;
   text-decoration: none;
-  /* Same fix as .login-brand-corner: a fixed-position column flex box
-     with no explicit width shrink-to-fits against the wordmark's
-     narrower width here, not the wider tagline, collapsing the box to
+  /* Same fix as .login-brand-corner: a column flex box with no
+     explicit width shrink-to-fits against the wordmark's narrower
+     width here, not the wider tagline, collapsing the box to
      effectively 0 and forcing the tagline to wrap across several lines
      instead of sitting on one under the word. */
   width: max-content;
 }
 .auth-corner-brand .brand-word-wrap { font-size: 19px; }
 .auth-corner-brand .tagline { font-size: 13px; color: var(--grey-500); margin-top: 2px; }
+
+/* Plain text, no arrow -- underline-on-hover is what actually reads as
+   "clickable" here without borrowing a directional icon. Accent blue
+   by default, not grey, so it reads as its own distinct link rather
+   than a third line of the brand block above it. Centered as a flex
+   sibling of .auth-corner-brand in .auth-corner-wrap, not independently
+   positioned, so it's guaranteed to share the same center regardless
+   of either line's text length. */
+.auth-back-link {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+}
+.auth-back-link:hover { color: var(--accent-dark); text-decoration: underline; }
 
 /* Ambient glow reuses the exact hero-glow blue rather than inventing a
    new color, so these pages don't feel like a different product from
@@ -2044,10 +2074,12 @@ input[type="number"] { -moz-appearance: textfield; }
 @media (max-width: 900px) {
   .auth-shell { flex-direction: column; }
   /* Same fallback the real .login-brand-corner already uses on a
-     narrow viewport: out of absolute positioning and into normal
-     flow, so it can't sit underneath (or collide with) the stacked
-     illustration pane's own top padding. */
-  .auth-corner-brand { position: static; margin: 20px 0 0 24px; }
+     narrow viewport: out of fixed positioning and into normal flow,
+     so it can't sit underneath (or collide with) the stacked
+     illustration pane's own top padding. Moved to the wrap (not
+     .auth-corner-brand directly) now that the back-link shares this
+     same positioning context. */
+  .auth-corner-wrap { position: static; margin: 20px 0 0 24px; }
   .auth-illustration { position: static; height: auto; flex: none; padding: 40px 24px; }
   .auth-headline { font-size: 30px; }
   .auth-form-pane { flex: none; padding: 40px 24px; border-left: none; box-shadow: none; border-top: 1px solid var(--grey-300); }
