@@ -43,7 +43,7 @@ Grouped by who uses them - most pages redirect based on role
 (`Qlinic.isAdmin()`/`isDoctor()`), so this is what exists, not what every
 signed-in user sees.
 
-**Public / marketing:** `index.html`, `contact.html`, `how-it-works.html`,
+**Public / marketing:** `index.html`, `contact.html`,
 `whats-inside.html`, `who-its-for.html`
 
 **Auth:** `login.html`, `signup.html` (real clinic registration, not a demo

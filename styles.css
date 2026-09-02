@@ -373,17 +373,6 @@ a { color: inherit; }
   margin-top: 8px;
 }
 
-/* Apple-style vertical step flow (how-it-works.html) — one big
-   statement per full-width section, read top to bottom rather than
-   scanned as a grid. */
-.step-flow-num {
-  font-size: clamp(44px, 6vw, 68px);
-  font-weight: 700;
-  line-height: 1;
-  margin-bottom: 14px;
-  font-variant-numeric: tabular-nums;
-}
-
 .mkt-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -457,7 +446,7 @@ a { color: inherit; }
 
 /* ---------------- Premium marketing pass ----------------
    A second, display-only typeface (Fraunces, a warm variable serif) reserved
-   for headlines and big numerals across index/how-it-works/whats-inside/
+   for headlines and big numerals across index/whats-inside/
    who-its-for/contact -- Inter alone at hero size reads as "template SaaS";
    Inter keeps doing every other job (nav, body copy, buttons, data) so the
    pairing stays deliberate rather than replacing the whole system. Scoped to
@@ -1224,7 +1213,9 @@ a { color: inherit; }
   max-width: 1180px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* Two cards now, not three -- "How it works" was removed outright,
+     not just unlinked. */
+  grid-template-columns: repeat(2, 1fr);
   gap: 28px;
 }
 .explore-card {
