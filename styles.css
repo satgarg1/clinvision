@@ -206,7 +206,7 @@ a { color: inherit; }
 /* The sidebar is much narrower than the marketing nav, so the tagline
    needs its own smaller size to stay on one line instead of wrapping. */
 .app-sidebar .brand-tagline {
-  font-size: 10px;
+  font-size: 11px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
