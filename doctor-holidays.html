@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Doctor Holidays: ClinVision</title>
+<title>Team Holidays: ClinVision</title>
 <script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=265" />
+<link rel="stylesheet" href="styles.css?v=266" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -43,8 +43,8 @@
     <main class="app-main">
       <div class="app-topbar">
         <div>
-          <div class="breadcrumb"><a href="settings.html">Settings</a> <span>/</span> Doctor Holidays</div>
-          <h1 id="pageHeading">Doctor holidays</h1>
+          <div class="breadcrumb"><a href="settings.html">Settings</a> <span>/</span> Team Holidays</div>
+          <h1 id="pageHeading">Team holidays</h1>
         </div>
       </div>
 
@@ -52,12 +52,32 @@
         <div class="empty-state">Your account isn't linked to a doctor profile yet — ask your admin to link it from Team settings.</div>
       </div>
 
+      <!-- Admin-only: switches between managing one person's holidays
+           and the combined cross-team view below. A doctor or staff
+           member managing only their own list never sees this -- one
+           person, one list, no reason for a mode to pick between. -->
+      <div class="mode-toggle" id="viewModeToggle" style="display:none;">
+        <button type="button" class="mode-btn active" data-view="manage">Add / manage</button>
+        <button type="button" class="mode-btn" data-view="all">View Holidays</button>
+      </div>
+
       <div class="panel" id="holidaysPanel" style="display:none;">
         <div class="panel-header"><h2 id="addHolidayHeading">Add a holiday</h2></div>
-        <p class="panel-note">Reception is warned before booking an appointment on any date listed below.</p>
-        <div class="field" id="doctorPickerField" style="max-width:280px;margin-bottom:16px;display:none;">
-          <label>Doctor</label>
-          <select id="doctorPicker"></select>
+        <!-- Only meaningful for a doctor's holiday -- reception's
+             booking-time warning (reception.html) has no staff
+             equivalent, since a patient never books a staff member's
+             time. Hidden in staff mode via updatePanelNoteVisibility(). -->
+        <p class="panel-note" id="panelNote">Reception is warned before booking an appointment on any date listed below.</p>
+
+        <!-- Admin-only: which roster this form/list is scoped to. -->
+        <div class="mode-toggle sm" id="personTypeToggle" style="display:none;">
+          <button type="button" class="mode-btn sm active" data-type="doctor">Doctor</button>
+          <button type="button" class="mode-btn sm" data-type="staff">Staff</button>
+        </div>
+
+        <div class="field" id="personPickerField" style="max-width:280px;margin-bottom:16px;display:none;">
+          <label id="personPickerLabel">Doctor</label>
+          <select id="personPicker"></select>
         </div>
         <form id="holidayForm" class="inline-form">
           <div class="field" style="max-width:200px;">
@@ -76,6 +96,14 @@
 
         <div id="holidaysTableWrap" style="margin-top:20px;"></div>
       </div>
+
+      <!-- Admin-only combined view -- everyone's holidays, doctors and
+           staff together, one flat list sorted by date. -->
+      <div class="panel" id="allHolidaysPanel" style="display:none;">
+        <div class="panel-header"><h2>View Holidays</h2></div>
+        <p class="panel-note">Sorted by date, soonest first.</p>
+        <div id="allHolidaysTableWrap"></div>
+      </div>
     </main>
   </div>
 
@@ -83,7 +111,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=86"></script>
+  <script src="clinic-data.js?v=87"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -96,10 +124,11 @@
       });
 
       const [amAdmin, amDoctor, myProfile] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor(), Qlinic.getMyProfile()]);
-      if (!amAdmin && !amDoctor) {
-        window.location.href = 'dashboard.html';
-        return;
-      }
+      // Was redirected away for reception role -- with only three roles
+      // total (admin/doctor/reception) and reception now managing their
+      // own holiday the same way a doctor does, everyone who can log in
+      // has a real reason to be on this page. No redirect left.
+      const amStaff = !amAdmin && !amDoctor;
       if (amDoctor) {
         document.getElementById('receptionNavLink').style.display = 'none';
         document.getElementById('billingNavLink').style.display = 'none';
@@ -109,10 +138,8 @@
         document.getElementById('revenueNavLink').style.display = 'none';
         document.getElementById('endOfDayNavLink').style.display = 'none';
       }
-      // Body starts hidden (see the <body> tag) so plain staff hitting
-      // this URL never see it flash before the redirect above fires,
-      // and so nobody sees the full nav for a moment before the
-      // role-based hiding above finishes.
+      // Body starts hidden (see the <body> tag) so nobody sees the full
+      // nav for a moment before the role-based hiding above finishes.
       document.body.style.visibility = 'visible';
 
       function showToast(msg) {
@@ -122,12 +149,34 @@
         setTimeout(() => t.classList.remove('show'), 2200);
       }
 
-      // A doctor manages only their own holidays (no picker, target is
-      // fixed); an admin can manage any doctor's on their behalf — e.g.
-      // a doctor calling in sick and unable to log in themselves.
+      // A doctor or staff member manages only their own holidays (no
+      // picker, target is fixed); an admin can manage anyone's on their
+      // behalf — e.g. a doctor calling in sick and unable to log in
+      // themselves. personType ('doctor' | 'staff') decides which API
+      // (Qlinic.*DoctorHoliday* vs *StaffHoliday*) and which target id
+      // is live -- admin is the only role that ever switches it.
+      let personType = amStaff ? 'staff' : 'doctor';
       let doctors = [];
+      let staffMembers = [];
+      let doctorById = {};
+      let staffById = {};
       let targetDoctorId = amDoctor ? myProfile.doctorId : null;
+      let targetProfileId = amStaff ? myProfile.id : null;
       let holidays = [];
+
+      function updatePanelNoteVisibility() {
+        // Only meaningful for a doctor's holiday -- reception's
+        // booking-time warning has no staff equivalent, since a
+        // patient never books a staff member's time.
+        document.getElementById('panelNote').style.display = personType === 'doctor' ? 'block' : 'none';
+      }
+
+      function roleLabel(role) {
+        return role === 'admin' ? 'Admin' : role === 'doctor' ? 'Doctor' : 'Reception';
+      }
+      function roleTagClass(role) {
+        return role === 'doctor' ? 'doctor' : role === 'admin' ? 'admin' : 'reception';
+      }
 
       function fmtDate(dateStr) {
         const [y, m, d] = dateStr.split('-').map(Number);
@@ -167,15 +216,59 @@
       }
 
       async function loadHolidays() {
-        if (!targetDoctorId) { holidays = []; renderHolidays(); return; }
-        holidays = await Qlinic.getDoctorHolidays(targetDoctorId);
+        if (personType === 'staff') {
+          if (!targetProfileId) { holidays = []; renderHolidays(); return; }
+          holidays = await Qlinic.getStaffHolidays(targetProfileId);
+        } else {
+          if (!targetDoctorId) { holidays = []; renderHolidays(); return; }
+          holidays = await Qlinic.getDoctorHolidays(targetDoctorId);
+        }
         renderHolidays();
+      }
+
+      async function loadAllHolidays() {
+        const [docHolidays, staffHolidays] = await Promise.all([
+          Qlinic.getDoctorHolidays(),
+          Qlinic.getStaffHolidays(),
+        ]);
+        const rows = docHolidays.map((h) => ({
+          date: h.date, note: h.note, role: 'doctor',
+          name: doctorById[h.doctorId] ? doctorById[h.doctorId].name : 'Unknown doctor',
+        })).concat(staffHolidays.map((h) => {
+          const p = staffById[h.profileId];
+          return { date: h.date, note: h.note, role: p ? p.role : 'reception', name: p ? (p.fullName || p.email) : 'Unknown' };
+        }));
+        rows.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+        renderAllHolidays(rows);
+      }
+
+      function renderAllHolidays(rows) {
+        const wrap = document.getElementById('allHolidaysTableWrap');
+        if (rows.length === 0) {
+          wrap.innerHTML = '<div class="empty-state">No holidays added yet.</div>';
+          return;
+        }
+        wrap.innerHTML = `
+          <table class="qtable">
+            <thead><tr><th>Date</th><th>Who</th><th>Note</th></tr></thead>
+            <tbody>
+              ${rows.map((r) => `
+                <tr>
+                  <td>${fmtDate(r.date)}</td>
+                  <td><span class="role-tag ${roleTagClass(r.role)}">${roleLabel(r.role)}</span> ${Qlinic.escapeHtml(r.name)}</td>
+                  <td>${r.note ? Qlinic.escapeHtml(r.note) : '<span class="sub-line">No note</span>'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
       }
 
       async function doDeleteHoliday(id) {
         if (!(await Qlinic.confirmDialog({ message: 'Remove this holiday?', confirmLabel: 'Remove', danger: true }))) return;
         try {
-          await Qlinic.deleteDoctorHoliday(id);
+          if (personType === 'staff') await Qlinic.deleteStaffHoliday(id);
+          else await Qlinic.deleteDoctorHoliday(id);
         } catch (err) {
           showToast(err.message || 'Could not remove holiday — please try again.');
           return;
@@ -229,7 +322,8 @@
           if (!date) { showToast('Pick a date first'); return; }
           if (holidays.some((h) => h.date === date && h.id !== holiday.id)) { showToast('That date is already on the list'); return; }
           try {
-            await Qlinic.updateDoctorHoliday(holiday.id, { date, note });
+            if (personType === 'staff') await Qlinic.updateStaffHoliday(holiday.id, { date, note });
+            else await Qlinic.updateDoctorHoliday(holiday.id, { date, note });
           } catch (err) {
             showToast(err.message || 'Could not update holiday — please try again.');
             return;
@@ -254,7 +348,11 @@
         if (!date) { showToast('Pick a date first'); return; }
         if (holidays.some((h) => h.date === date)) { showToast('That date is already on the list'); return; }
         try {
-          await Qlinic.addDoctorHoliday({ doctorId: targetDoctorId, date, note: noteInput.value.trim() });
+          if (personType === 'staff') {
+            await Qlinic.addStaffHoliday({ profileId: targetProfileId, date, note: noteInput.value.trim() });
+          } else {
+            await Qlinic.addDoctorHoliday({ doctorId: targetDoctorId, date, note: noteInput.value.trim() });
+          }
         } catch (err) {
           showToast(err.message || 'Could not add holiday — please try again.');
           return;
@@ -265,35 +363,107 @@
         loadHolidays();
       });
 
+      function populatePersonPicker() {
+        const label = document.getElementById('personPickerLabel');
+        const picker = document.getElementById('personPicker');
+        const heading = document.getElementById('addHolidayHeading');
+        if (personType === 'staff') {
+          label.textContent = 'Staff member';
+          picker.innerHTML = staffMembers.map((p) =>
+            `<option value="${p.id}">${Qlinic.escapeHtml(p.fullName || p.email)}, ${roleLabel(p.role)}</option>`
+          ).join('');
+          targetProfileId = staffMembers[0] ? staffMembers[0].id : null;
+          heading.textContent = staffMembers[0] ? `Add a holiday for ${staffMembers[0].fullName || staffMembers[0].email}` : 'Add a holiday';
+        } else {
+          label.textContent = 'Doctor';
+          picker.innerHTML = doctors.map((d) =>
+            `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}</option>`
+          ).join('');
+          targetDoctorId = doctors[0] ? doctors[0].id : null;
+          heading.textContent = doctors[0] ? `Add a holiday for ${doctors[0].name}` : 'Add a holiday';
+        }
+        updatePanelNoteVisibility();
+        loadHolidays();
+      }
+
       if (amDoctor) {
         document.getElementById('pageHeading').textContent = 'Your holidays';
         document.getElementById('addHolidayHeading').textContent = 'Add a holiday';
+        updatePanelNoteVisibility();
         if (!targetDoctorId) {
           document.getElementById('unlinkedPanel').style.display = 'block';
         } else {
           document.getElementById('holidaysPanel').style.display = 'block';
         }
+      } else if (amStaff) {
+        // Same no-picker, straight-to-"your own list" experience a
+        // doctor already gets -- self-service, target is fixed to this
+        // profile's own row, never a picker.
+        document.getElementById('pageHeading').textContent = 'Your holidays';
+        document.getElementById('addHolidayHeading').textContent = 'Add a holiday';
+        updatePanelNoteVisibility();
+        document.getElementById('holidaysPanel').style.display = 'block';
       } else {
-        document.getElementById('pageHeading').textContent = 'Doctor holidays';
-        doctors = await Qlinic.getDoctors({ includeInactive: true });
-        if (doctors.length === 0) {
-          document.getElementById('unlinkedPanel').querySelector('.empty-state').textContent = 'No doctors added yet.';
+        // Admin: the only role that sees the Add/manage <-> View Holidays
+        // toggle, the Doctor/Staff picker, and the combined view.
+        document.getElementById('pageHeading').textContent = 'Team holidays';
+        document.getElementById('viewModeToggle').style.display = 'inline-flex';
+        document.getElementById('personTypeToggle').style.display = 'inline-flex';
+
+        const [doctorsList, team] = await Promise.all([
+          Qlinic.getDoctors({ includeInactive: true }),
+          Qlinic.getTeam(),
+        ]);
+        doctors = doctorsList;
+        staffMembers = team.filter((p) => p.role !== 'doctor');
+        doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
+        staffById = Object.fromEntries(team.map((p) => [p.id, p]));
+
+        if (doctors.length === 0 && staffMembers.length === 0) {
+          document.getElementById('unlinkedPanel').querySelector('.empty-state').textContent = 'No doctors or staff added yet.';
           document.getElementById('unlinkedPanel').style.display = 'block';
         } else {
-          document.getElementById('doctorPickerField').style.display = '';
-          document.getElementById('doctorPicker').innerHTML = doctors.map((d) =>
-            `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}</option>`
-          ).join('');
-          targetDoctorId = doctors[0].id;
-          document.getElementById('addHolidayHeading').textContent = `Add a holiday for ${doctors[0].name}`;
+          document.getElementById('personPickerField').style.display = '';
           document.getElementById('holidaysPanel').style.display = 'block';
-          document.getElementById('doctorPicker').addEventListener('change', (e) => {
-            targetDoctorId = e.target.value;
-            const d = doctors.find((x) => x.id === targetDoctorId);
-            document.getElementById('addHolidayHeading').textContent = `Add a holiday for ${d ? d.name : ''}`;
+          populatePersonPicker();
+
+          document.getElementById('personTypeToggle').addEventListener('click', (e) => {
+            const btn = e.target.closest('.mode-btn');
+            if (!btn) return;
+            const type = btn.getAttribute('data-type');
+            if (type === personType) return;
+            personType = type;
+            document.querySelectorAll('#personTypeToggle .mode-btn').forEach((b) =>
+              b.classList.toggle('active', b.getAttribute('data-type') === type)
+            );
+            populatePersonPicker();
+          });
+
+          document.getElementById('personPicker').addEventListener('change', (e) => {
+            if (personType === 'staff') {
+              targetProfileId = e.target.value;
+              const p = staffMembers.find((x) => x.id === targetProfileId);
+              document.getElementById('addHolidayHeading').textContent = `Add a holiday for ${p ? (p.fullName || p.email) : ''}`;
+            } else {
+              targetDoctorId = e.target.value;
+              const d = doctors.find((x) => x.id === targetDoctorId);
+              document.getElementById('addHolidayHeading').textContent = `Add a holiday for ${d ? d.name : ''}`;
+            }
             loadHolidays();
           });
         }
+
+        document.getElementById('viewModeToggle').addEventListener('click', (e) => {
+          const btn = e.target.closest('.mode-btn');
+          if (!btn) return;
+          const view = btn.getAttribute('data-view');
+          document.querySelectorAll('#viewModeToggle .mode-btn').forEach((b) =>
+            b.classList.toggle('active', b.getAttribute('data-view') === view)
+          );
+          document.getElementById('holidaysPanel').style.display = view === 'manage' ? 'block' : 'none';
+          document.getElementById('allHolidaysPanel').style.display = view === 'all' ? 'block' : 'none';
+          if (view === 'all') loadAllHolidays();
+        });
       }
 
       const clinic = await Qlinic.getClinic();

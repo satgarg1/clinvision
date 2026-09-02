@@ -796,6 +796,49 @@
     if (error) throw error;
   }
 
+  // Staff (admin/reception) half of "Team Holidays" — same shape as
+  // the doctor_holidays functions above, just keyed to profiles.id
+  // (migration 059) instead of doctors.id. See that migration's own
+  // comment for why this is a separate table rather than a merged one.
+  function normalizeStaffHoliday(row) {
+    return { id: row.id, profileId: row.profile_id, date: row.holiday_date, note: row.note || '' };
+  }
+
+  // Omit profileId for every staff member's holidays clinic-wide (the
+  // "View Holidays" combined admin view); pass it to scope to one
+  // person's own list.
+  async function getStaffHolidays(profileId) {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId) return [];
+    let query = sb.from('staff_holidays').select('*').eq('clinic_id', clinicId);
+    if (profileId) query = query.eq('profile_id', profileId);
+    const { data, error } = await query.order('holiday_date');
+    if (error) throw error;
+    return data.map(normalizeStaffHoliday);
+  }
+
+  async function addStaffHoliday({ profileId, date, note }) {
+    const clinicId = await ensureClinicContext();
+    const { data, error } = await sb.from('staff_holidays').insert({
+      clinic_id: clinicId, profile_id: profileId, holiday_date: date, note: note || '',
+    }).select().single();
+    if (error) throw error;
+    return normalizeStaffHoliday(data);
+  }
+
+  async function updateStaffHoliday(holidayId, { date, note }) {
+    const { data, error } = await sb.from('staff_holidays').update({
+      holiday_date: date, note: note || '',
+    }).eq('id', holidayId).select().single();
+    if (error) throw error;
+    return normalizeStaffHoliday(data);
+  }
+
+  async function deleteStaffHoliday(holidayId) {
+    const { error } = await sb.from('staff_holidays').delete().eq('id', holidayId);
+    if (error) throw error;
+  }
+
   // Defaults to active doctors only: that's what every operational screen
   // (reception, doctor view, dashboard, display) should ever see. Settings
   // passes { includeInactive: true } since it's the one place that needs to
@@ -2462,6 +2505,10 @@
     addDoctorHoliday,
     updateDoctorHoliday,
     deleteDoctorHoliday,
+    getStaffHolidays,
+    addStaffHoliday,
+    updateStaffHoliday,
+    deleteStaffHoliday,
     getDoctors,
     getDoctor,
     addDoctor,

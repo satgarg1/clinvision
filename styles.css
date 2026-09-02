@@ -2674,6 +2674,16 @@ th.th-filterable { position: relative; }
 .badge-likely { background: var(--warning-bg); color: var(--warning); }
 .badge-booked { background: var(--grey-100); color: var(--grey-500); }
 
+/* Team Holidays' "View Holidays" combined list — tags who a row
+   belongs to (Doctor/Reception/Admin) so it's legible at a glance
+   without checking a legend. Own colors, not reused .badge-* classes:
+   those already carry a different meaning (visit status), and role
+   here isn't a status. */
+.role-tag { display: inline-flex; align-items: center; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: var(--radius-pill); }
+.role-tag.doctor { background: #e8f0fe; color: var(--accent-dark); }
+.role-tag.reception { background: var(--grey-100); color: var(--grey-700); }
+.role-tag.admin { background: #ece9fc; color: #5b3ec9; }
+
 /* Manage doctors: a self-contained form look (soft grey fill, no
    border) instead of reusing .field/.inline-form, which would have
    meant fighting .inline-form .field input's higher-specificity

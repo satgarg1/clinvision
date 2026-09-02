@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=265" />
+<link rel="stylesheet" href="styles.css?v=266" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -70,7 +70,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=86"></script>
+  <script src="clinic-data.js?v=87"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -171,21 +171,23 @@
         const next = upcoming[0];
         document.getElementById('holidayChipText').textContent =
           upcoming.length === 1
-            ? `${Qlinic.formatDateLabel(next.date)} — ${next.doctorName}`
+            ? `${Qlinic.formatDateLabel(next.date)} — ${next.name}`
             : `${upcoming.length} upcoming`;
         document.getElementById('holidayPopover').innerHTML = `
           <div class="holiday-popover-header">${upcoming.length} upcoming holiday${upcoming.length === 1 ? '' : 's'}</div>
           ${upcoming.map((h, i) => `
             <div class="holiday-row ${i === 0 ? 'soonest' : ''}">
-              <span class="board-doc-dot dot-${accentForDoctor(h.doctorId, doctors)}"></span>
+              ${h.role === 'doctor'
+                ? `<span class="board-doc-dot dot-${accentForDoctor(h.doctorId, doctors)}"></span>`
+                : `<span class="role-tag ${h.role === 'admin' ? 'admin' : 'reception'}">${h.role === 'admin' ? 'Admin' : 'Reception'}</span>`}
               <div class="info">
-                <div class="doc-name">${Qlinic.escapeHtml(h.doctorName)}</div>
+                <div class="doc-name">${Qlinic.escapeHtml(h.name)}</div>
                 ${h.note ? `<div class="doc-note">${Qlinic.escapeHtml(h.note)}</div>` : ''}
               </div>
               <span class="date-badge">${Qlinic.escapeHtml(Qlinic.formatDateLabel(h.date))}</span>
             </div>
           `).join('')}
-          <div class="holiday-popover-footer"><a href="doctor-holidays.html">Manage in Doctor Holidays →</a></div>
+          <div class="holiday-popover-footer"><a href="doctor-holidays.html">Manage in Team Holidays →</a></div>
         `;
       }
       function closeHolidayPopover() {
@@ -274,15 +276,32 @@
         const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
         const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id, undefined, d)));
 
-        // Admin-only: the "how do I keep track of 50 doctors' holidays
-        // without checking Settings" problem is an owner/admin concern,
-        // not something a doctor needs surfaced about their own colleagues.
+        // Admin-only: the "how do I keep track of 50 doctors'/staff's
+        // holidays without checking Settings" problem is an owner/admin
+        // concern, not something a doctor needs surfaced about their
+        // own colleagues. Doctor and staff holidays merged into one
+        // date-sorted list -- same shape Team Holidays' own "View
+        // Holidays" tab uses.
         if (amAdmin) {
-          const allHolidays = await Qlinic.getDoctorHolidays();
+          const [allDoctorHolidays, allStaffHolidays, team] = await Promise.all([
+            Qlinic.getDoctorHolidays(),
+            Qlinic.getStaffHolidays(),
+            Qlinic.getTeam(),
+          ]);
+          const staffById = Object.fromEntries(team.map((p) => [p.id, p]));
           const today = Qlinic.getTodayDate();
-          const upcoming = allHolidays
+          const upcoming = allDoctorHolidays
             .filter((h) => h.date >= today && doctorById[h.doctorId])
-            .map((h) => Object.assign({}, h, { doctorName: doctorById[h.doctorId].name }));
+            .map((h) => Object.assign({}, h, { name: doctorById[h.doctorId].name, role: 'doctor' }))
+            .concat(
+              allStaffHolidays
+                .filter((h) => h.date >= today && staffById[h.profileId])
+                .map((h) => Object.assign({}, h, {
+                  name: staffById[h.profileId].fullName || staffById[h.profileId].email,
+                  role: staffById[h.profileId].role,
+                }))
+            )
+            .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
           renderHolidayChip(upcoming, doctors);
         }
 
