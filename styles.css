@@ -206,7 +206,7 @@ a { color: inherit; }
 /* The sidebar is much narrower than the marketing nav, so the tagline
    needs its own smaller size to stay on one line instead of wrapping. */
 .app-sidebar .brand-tagline {
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2070,10 +2070,12 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 
 .app-sidebar .brand {
-  /* Was 17px, then 14px -- 14px read as too close to the nav links
-     below it once those grew to 15px, so the wordmark stopped reading
-     as its own distinct thing at the top of the column. */
-  font-size: 15px;
+  /* Was 17px, then 14px, then 15px -- still read as smaller than the
+     clinic name below it once that name started wrapping to 2 lines
+     (a 2-line bold block reads as "bigger" than a single short word
+     even at the same font-size). Bumped again, and the clinic name's
+     own size brought down to match -- see .app-sidebar .clinic-name. */
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--black);
@@ -2146,7 +2148,11 @@ input[type="number"] { -moz-appearance: textfield; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  /* Was 8px -- with the logo now a standalone element above the name
+     instead of sitting beside it, that read as a gap between two
+     separate things rather than a logo with its caption right under
+     it. */
+  gap: 3px;
   padding: 0 10px;
   /* Was 18px -- with the brand block above it now sitting close (see
      .app-sidebar .brand's own margin), this was the last big gap left
@@ -2167,7 +2173,12 @@ input[type="number"] { -moz-appearance: textfield; }
    case a wrap-based approach has to cover: a name with no spaces at
    all overflowing sideways instead of wrapping. */
 .app-sidebar .clinic-name {
-  font-size: 15px;
+  /* Was 15px, same as .app-sidebar .brand -- identical on paper, but a
+     name that wraps to 2 lines reads as visually louder than a single
+     short word at the same size. Brought down a notch (brand went up
+     one instead) so ClinVision reads as the more prominent of the two,
+     regardless of how many lines a given clinic's name takes. */
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--black);
   text-align: center;
