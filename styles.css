@@ -69,6 +69,15 @@
   --mkt-cyan: #0e7490;
   --mkt-rose: #be123c;
   --mkt-sky: #0369a1;
+
+  /* Sidebar clinic name — deliberately its own token, not --mkt-teal:
+     that one is #0d9488, only 3.7:1 on white (fine for a large icon
+     background, not for 13.5px bold text, which needs 4.5:1). This is
+     the darker teal-700 shade that actually clears AA at this size,
+     picked distinct from --accent so a clinic's own name can't be
+     mistaken for the active nav link's blue. One fixed value across
+     every clinic, not a per-clinic customization. */
+  --clinic-name-color: #0f766e;
 }
 
 /* Day/Night toggle (Settings page) — a personal, local-device preference
@@ -84,6 +93,12 @@
   --grey-300: #48484a;
   --grey-100: #232325;
   --white: #1c1c1e;
+  /* Light teal, not the same #0f766e as day mode -- that shade was
+     calibrated for contrast against a white sidebar; against the
+     sidebar's own dark background here (--white above) it would read
+     as barely-there. A lighter tint keeps the same hue with real
+     contrast against the inverted background (11.5:1 vs #1c1c1e). */
+  --clinic-name-color: #5eead4;
   --success-bg: rgba(30, 142, 62, 0.22);
   --warning-bg: rgba(178, 106, 0, 0.24);
   --danger-bg: rgba(197, 34, 31, 0.22);
@@ -2214,10 +2229,15 @@ input[type="number"] { -moz-appearance: textfield; }
      name that wraps to 2 lines reads as visually louder than a single
      short word at the same size. Brought down a notch (brand went up
      one instead) so ClinVision reads as the more prominent of the two,
-     regardless of how many lines a given clinic's name takes. */
+     regardless of how many lines a given clinic's name takes. Color
+     was var(--black) -- same as the nav links' hover/active text and
+     close enough to Dashboard-through-Settings' own dark grey that the
+     clinic name and the nav below it read as one undifferentiated
+     block. --clinic-name-color (teal, AA-checked, see :root) gives it
+     a clearly separate identity instead. */
   font-size: 13.5px;
   font-weight: 700;
-  color: var(--black);
+  color: var(--clinic-name-color);
   text-align: center;
   width: 100%;
   min-width: 0;
