@@ -2078,10 +2078,14 @@ input[type="number"] { -moz-appearance: textfield; }
   letter-spacing: -0.01em;
   color: var(--black);
   text-decoration: none;
-  padding: 0 10px;
+  padding: 0 10px 10px;
   /* Was 28px, then 14px -- still read as a gap once the clinic row
-     below got its own margin tightened too. */
-  margin-bottom: 8px;
+     below got its own margin tightened too, so ClinVision and the
+     clinic's own identity read as one merged block instead of two
+     distinct things. Same full-width-rule pattern the pinned-bottom
+     Settings link already uses lower in this same sidebar. */
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--grey-300);
   display: flex;
   flex-direction: column;
   /* Centered, not flex-start -- same wordmark-shoved-to-one-side bug
@@ -2171,9 +2175,12 @@ input[type="number"] { -moz-appearance: textfield; }
    of it away to force-fit a square box. contain keeps the whole logo
    visible, just scaled to fit the same nav-row height as before. */
 .clinic-logo-thumb {
-  height: 28px;
+  /* Was 28px -- a real uploaded logo is usually a compact icon+wordmark
+     lockup, so 28px of it read as small and a little lost once a
+     2+-line clinic name gave it real height to sit next to. */
+  height: 34px;
   width: auto;
-  max-width: 130px;
+  max-width: 150px;
   object-fit: contain;
   flex-shrink: 0;
 }
