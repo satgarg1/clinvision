@@ -2063,7 +2063,11 @@ input[type="number"] { -moz-appearance: textfield; }
   background: var(--white);
   border-right: 1px solid var(--grey-300);
   color: var(--black);
-  padding: 24px 14px;
+  /* Was 24px top/bottom -- with the brand block, hairline, and logo
+     all now stacked closer together below it, 24px of empty space
+     above "ClinVision" read as its own separate gap rather than
+     breathing room. */
+  padding: 16px 14px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -2080,13 +2084,14 @@ input[type="number"] { -moz-appearance: textfield; }
   letter-spacing: -0.01em;
   color: var(--black);
   text-decoration: none;
-  padding: 0 10px 10px;
-  /* Was 28px, then 14px -- still read as a gap once the clinic row
-     below got its own margin tightened too, so ClinVision and the
-     clinic's own identity read as one merged block instead of two
-     distinct things. Same full-width-rule pattern the pinned-bottom
-     Settings link already uses lower in this same sidebar. */
-  margin-bottom: 10px;
+  padding: 0 10px 6px;
+  /* Was 28px, then 14px, then 10px -- still read as a gap once the
+     clinic row below got its own margin tightened too, so ClinVision
+     and the clinic's own identity read as one merged block instead of
+     two distinct things. Same full-width-rule pattern the
+     pinned-bottom Settings link already uses lower in this same
+     sidebar. */
+  margin-bottom: 6px;
   border-bottom: 1px solid var(--grey-300);
   display: flex;
   flex-direction: column;
