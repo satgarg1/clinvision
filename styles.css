@@ -4364,6 +4364,10 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
    columns rather than bunched toward the left. */
 #allHolidaysPanel th, #allHolidaysPanel td, #holidaysPanel th, #holidaysPanel td { padding-left: 32px; padding-right: 32px; }
 #allHolidaysPanel th:first-child, #allHolidaysPanel td:first-child, #holidaysPanel th:first-child, #holidaysPanel td:first-child { padding-left: 10px; }
+/* Outer edges (Date's left, Reason's right) match the panel's own
+   inset -- the wider 32px gutter is reserved for the gaps *between*
+   columns, not the table's edges against the panel border. */
+#allHolidaysPanel th:last-child, #allHolidaysPanel td:last-child, #holidaysPanel th:last-child, #holidaysPanel td:last-child { padding-right: 10px; }
 
 #allHolidaysPager .pager-controls { display: flex; align-items: center; gap: 14px; }
 
