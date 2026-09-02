@@ -3802,19 +3802,22 @@ th.th-filterable { position: relative; }
 /* Collapsed-only status text in #statusPanel's header — bold and
    colored (not a full .status-pill chip background) so it's actually
    visible next to the title at a glance, without the weight of a pill
-   competing with "Your status" itself. Same three colors as the away
-   banner/.status-pill elsewhere, just applied to text rather than a
-   background. Kept updated in render() regardless of collapse state;
-   visibility is the only thing toggled here, and by CSS rather than
-   JS, so there's no risk of the two ever disagreeing. Once expanded,
-   the full detail (the away banner, or "Currently: ...") already
-   covers this, so showing it too would just be the same fact said
-   twice. */
-.status-header-pill { font-size: 14px; font-weight: 700; }
-.status-header-pill.on_time { color: var(--success); }
-.status-header-pill.on_break { color: #5b3ec9; }
-.status-header-pill.emergency { color: var(--danger); }
-.status-header-pill.closed { color: var(--grey-700); }
+   competing with "Your status" itself. Mocked up as bold colored text,
+   then as a rounded chip matched to "Your status"'s own 16px (was
+   14px, mismatched) -- reviewed both, went with the chip: it reads as
+   its own distinct element rather than a second line of text drifting
+   past the title. Same three colors as the away banner/.status-pill
+   elsewhere, just contained in a shape now. Kept updated in render()
+   regardless of collapse state; visibility is the only thing toggled
+   here, and by CSS rather than JS, so there's no risk of the two ever
+   disagreeing. Once expanded, the full detail (the away banner, or
+   "Currently: ...") already covers this, so showing it too would just
+   be the same fact said twice. */
+.status-header-pill { font-size: 16px; font-weight: 700; padding: 4px 14px; border-radius: var(--radius-pill); }
+.status-header-pill.on_time { background: var(--success-bg); color: var(--success); }
+.status-header-pill.on_break { background: #ece9fc; color: #5b3ec9; }
+.status-header-pill.emergency { background: var(--danger-bg); color: var(--danger); }
+.status-header-pill.closed { background: var(--grey-300); color: var(--grey-700); }
 #statusPanel:not(.panel-collapsed) .status-header-pill { display: none; }
 
 /* A doctor who isn't on time gets the whole row tinted + a left border
