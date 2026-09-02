@@ -2071,7 +2071,11 @@ input[type="number"] { -moz-appearance: textfield; }
   color: var(--black);
   text-decoration: none;
   padding: 0 10px;
-  margin-bottom: 28px;
+  /* Was 28px -- with the wordmark now centered over its (shorter)
+     tagline instead of sprawled left, that much space below it read as
+     a gap, not breathing room. Tightened so the clinic name/logo row
+     sits right under the brand block instead of floating below it. */
+  margin-bottom: 14px;
   display: flex;
   flex-direction: column;
   /* Centered, not flex-start -- same wordmark-shoved-to-one-side bug

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=247" />
+<link rel="stylesheet" href="styles.css?v=248" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -1619,10 +1619,18 @@
       // time-bound to midnight (see isDoctorClosedToday), and without a
       // doctor/patient row actually changing, nothing else would trigger a
       // re-render right at the moment the calendar date rolls over.
+      // renderQueues() rides along too now — "Now with: X" (and the rest
+      // of the queue view) previously only ever updated via
+      // Qlinic.onLiveChange()'s Realtime subscription below, with no
+      // fallback if a push got missed (a dropped socket, a reconnect
+      // gap). Same "catches anything Realtime might miss" reasoning
+      // queue.html/display.html already use for their own polls, just
+      // riding this existing 30s tick instead of a second timer.
       setInterval(() => {
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
         renderClosedDayBanner();
         updateDoctorClosedHint();
+        renderQueues();
       }, 30000);
       document.getElementById('pDate').min = Qlinic.getTodayDate();
       document.getElementById('pDate').value = Qlinic.getTodayDate();
