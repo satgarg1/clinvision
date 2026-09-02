@@ -2416,6 +2416,14 @@
     if (error) throw error;
   }
 
+  // Same direct-table-update pattern as updateStaffRole above (RLS
+  // already scopes profiles writes to admin + same-clinic) -- there was
+  // previously no way to rename a staff member at all after signup.
+  async function updateStaffName(profileId, fullName) {
+    const { error } = await sb.from('profiles').update({ full_name: fullName }).eq('id', profileId);
+    if (error) throw error;
+  }
+
   // Own RPC (not a direct table update, unlike updateStaffRole/
   // updateStaffDoctorLink above) so the admin-only + same-clinic check
   // lives in one place server-side rather than relying on an RLS policy
@@ -2593,6 +2601,7 @@
     createStaffAccount,
     setStaffActive,
     updateStaffRole,
+    updateStaffName,
     updateStaffDoctorLink,
     updateStaffPhone,
     updateMyPhone,

@@ -103,7 +103,12 @@
 
       <div class="panel">
         <div class="panel-header"><h2>Everyone with access</h2></div>
+        <div class="doctor-search-row">
+          <input type="search" id="teamSearch" placeholder="Search by name…" class="doctor-search-input" />
+          <span class="panel-note" id="teamCountNote"></span>
+        </div>
         <div id="teamList"></div>
+        <div class="pager" id="teamPager"></div>
       </div>
     </main>
   </div>
@@ -112,7 +117,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=88"></script>
+  <script src="clinic-data.js?v=89"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -139,6 +144,15 @@
 
       let myProfileId = null;
       let doctors = [];
+      let doctorById = {};
+
+      // Same "read-only table, edit-modal-for-changes" pattern as
+      // manage-doctors.html -- a live inline input/select in every row
+      // was the exact "looks cheap" thing that page moved away from too.
+      const PAGE_SIZE = 10;
+      let allTeam = [];
+      let searchTerm = '';
+      let currentPage = 1;
 
       function showToast(msg) {
         const t = document.getElementById('toast');
@@ -147,9 +161,11 @@
         setTimeout(() => t.classList.remove('show'), 2200);
       }
 
+      function roleLabel(r) { return r.charAt(0).toUpperCase() + r.slice(1); }
+
       function roleOptionsHtml(selected) {
         return ['admin', 'reception', 'doctor'].map((r) =>
-          `<option value="${r}" ${r === selected ? 'selected' : ''}>${r.charAt(0).toUpperCase() + r.slice(1)}</option>`
+          `<option value="${r}" ${r === selected ? 'selected' : ''}>${roleLabel(r)}</option>`
         ).join('');
       }
 
@@ -159,37 +175,87 @@
         ).join('');
       }
 
+      function pencilIconSvg() {
+        return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+      }
       function powerIconSvg() {
         return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/></svg>';
       }
 
-      async function renderTeam() {
-        const team = await Qlinic.getTeam();
+      function filteredTeam() {
+        const term = searchTerm.trim().toLowerCase();
+        if (!term) return allTeam;
+        return allTeam.filter((p) =>
+          (p.fullName || '').toLowerCase().includes(term) || p.email.toLowerCase().includes(term)
+        );
+      }
+
+      function renderPager(total) {
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        if (currentPage > totalPages) currentPage = totalPages;
+        const pager = document.getElementById('teamPager');
+        if (totalPages <= 1) {
+          pager.innerHTML = '';
+          return;
+        }
+        pager.innerHTML = `
+          <button class="btn-sm" id="teamPagerPrev" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+          <span class="pager-label">Page ${currentPage} of ${totalPages}</span>
+          <button class="btn-sm" id="teamPagerNext" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+        `;
+        document.getElementById('teamPagerPrev').addEventListener('click', () => { currentPage -= 1; renderTeamList(); });
+        document.getElementById('teamPagerNext').addEventListener('click', () => { currentPage += 1; renderTeamList(); });
+      }
+
+      function renderTeamList() {
+        const filtered = filteredTeam();
         const box = document.getElementById('teamList');
+        const countNote = document.getElementById('teamCountNote');
+
+        if (allTeam.length === 0) {
+          box.innerHTML = '<div class="empty-state">No one has access yet.</div>';
+          countNote.textContent = '';
+          document.getElementById('teamPager').innerHTML = '';
+          return;
+        }
+        if (filtered.length === 0) {
+          box.innerHTML = '<div class="empty-state">No one matches your search.</div>';
+          countNote.textContent = `0 of ${allTeam.length} people`;
+          document.getElementById('teamPager').innerHTML = '';
+          return;
+        }
+
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+        if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageTeam = filtered.slice(start, start + PAGE_SIZE);
+
+        countNote.textContent = searchTerm.trim()
+          ? `${filtered.length} of ${allTeam.length} people`
+          : `${allTeam.length} ${allTeam.length === 1 ? 'person' : 'people'}`;
+
         box.innerHTML = `
           <table class="qtable">
             <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Linked doctor</th><th>Status</th><th></th></tr></thead>
             <tbody>
-              ${team.map((p) => {
+              ${pageTeam.map((p) => {
                 const isSelf = p.id === myProfileId;
+                const linkedDoctor = p.role === 'doctor'
+                  ? (doctorById[p.doctorId] ? Qlinic.escapeHtml(doctorById[p.doctorId].name) : '<span class="sub-line">— not linked —</span>')
+                  : '<span class="sub-line">—</span>';
                 return `
                 <tr style="${p.isActive ? '' : 'opacity:0.5;'}">
                   <td>${p.fullName ? Qlinic.escapeHtml(p.fullName) : '·'}${isSelf ? ' <span class="sub-line">(you)</span>' : ''}</td>
                   <td>${Qlinic.escapeHtml(p.email)}</td>
-                  <td>
-                    <input type="tel" class="staff-phone" data-id="${p.id}" data-original="${p.phone ? Qlinic.escapeHtml(p.phone) : ''}" inputmode="numeric" maxlength="10" placeholder="Add for phone login" value="${p.phone ? Qlinic.escapeHtml(p.phone) : ''}" style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);" />
-                  </td>
-                  <td>
-                    <select class="staff-role" data-id="${p.id}" ${isSelf ? 'disabled' : ''} style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);">${roleOptionsHtml(p.role)}</select>
-                  </td>
-                  <td>
-                    ${p.role === 'doctor'
-                      ? `<select class="staff-doctor-link" data-id="${p.id}" style="width:100%;padding:8px 10px;border:1px solid var(--grey-300);border-radius:8px;font-family:var(--font);">${doctorOptionsHtml(p.doctorId)}</select>`
-                      : '<span class="sub-line">—</span>'}
-                  </td>
-                  <td>${p.isActive ? '<span class="badge badge-booked">Active</span>' : '<span class="badge badge-no-show">Deactivated</span>'}</td>
+                  <td>${p.phone ? Qlinic.escapeHtml(p.phone) : '·'}</td>
+                  <td>${roleLabel(p.role)}</td>
+                  <td>${linkedDoctor}</td>
+                  <td><span class="status-dot-label"><span class="status-dot ${p.isActive ? 'active' : 'inactive'}"></span>${p.isActive ? 'Active' : 'Deactivated'}</span></td>
                   <td class="row-actions">
-                    ${isSelf ? '' : `<button type="button" class="icon-btn ${p.isActive ? 'danger' : ''}" onclick="doSetStaffActive('${p.id}', ${!p.isActive})" title="${p.isActive ? 'Deactivate' : 'Reactivate'}" aria-label="${p.isActive ? 'Deactivate' : 'Reactivate'} ${p.fullName ? Qlinic.escapeHtml(p.fullName) : ''}">${powerIconSvg()}</button>`}
+                    ${isSelf ? '' : `
+                      <button type="button" class="icon-btn" onclick="doOpenEditStaff('${p.id}')" title="Edit" aria-label="Edit ${p.fullName ? Qlinic.escapeHtml(p.fullName) : ''}">${pencilIconSvg()}</button>
+                      <button type="button" class="icon-btn ${p.isActive ? 'danger' : ''}" onclick="doSetStaffActive('${p.id}', ${!p.isActive})" title="${p.isActive ? 'Deactivate' : 'Reactivate'}" aria-label="${p.isActive ? 'Deactivate' : 'Reactivate'} ${p.fullName ? Qlinic.escapeHtml(p.fullName) : ''}">${powerIconSvg()}</button>
+                    `}
                   </td>
                 </tr>
               `;
@@ -197,7 +263,101 @@
             </tbody>
           </table>
         `;
+        renderPager(filtered.length);
       }
+
+      async function loadTeam() {
+        allTeam = await Qlinic.getTeam();
+        renderTeamList();
+      }
+
+      function doOpenEditStaff(id) {
+        const person = allTeam.find((p) => p.id === id);
+        if (person) openEditStaffModal(person);
+      }
+
+      // A dialog, not a live inline input/select per row — same reasoning
+      // manage-doctors.html's own edit modal comment already gives: keeps
+      // the table itself plain text always, rather than turning into a
+      // form the moment you touch one row.
+      function openEditStaffModal(person) {
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop';
+        backdrop.innerHTML = `
+          <div class="modal-card" role="dialog" aria-modal="true">
+            <h2 class="modal-title">Edit team member</h2>
+            <div class="doctor-form-field" style="margin-bottom:14px;">
+              <label>Full name</label>
+              <input type="text" id="editStaffName" value="${(person.fullName || '').replace(/"/g, '&quot;')}" />
+            </div>
+            <div class="doctor-form-field" style="margin-bottom:14px;">
+              <label>Phone <span class="sub-line">(for phone login)</span></label>
+              <div style="display:flex;gap:8px;">
+                <input type="text" value="+91" disabled style="flex:0 0 60px;text-align:center;" />
+                <input type="tel" id="editStaffPhone" inputmode="numeric" maxlength="10" placeholder="10-digit number" value="${(person.phone || '').replace(/"/g, '&quot;')}" style="flex:1;min-width:0;" />
+              </div>
+            </div>
+            <div class="doctor-form-field" style="margin-bottom:14px;">
+              <label>Role</label>
+              <select id="editStaffRole">${roleOptionsHtml(person.role)}</select>
+            </div>
+            <div class="doctor-form-field" id="editStaffDoctorField" style="margin-bottom:14px;${person.role === 'doctor' ? '' : 'display:none;'}">
+              <label>Which doctor</label>
+              <select id="editStaffDoctorId">${doctorOptionsHtml(person.doctorId)}</select>
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="btn-sm primary" id="editStaffSaveBtn">Save</button>
+              <button type="button" class="btn-sm" id="editStaffCancelBtn">Cancel</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        function cleanup() {
+          backdrop.remove();
+          document.removeEventListener('keydown', onKeydown);
+        }
+        function onKeydown(e) {
+          if (e.key === 'Escape') cleanup();
+        }
+        document.addEventListener('keydown', onKeydown);
+        backdrop.addEventListener('click', (e) => { if (e.target === backdrop) cleanup(); });
+        backdrop.querySelector('#editStaffCancelBtn').addEventListener('click', cleanup);
+
+        // Strips anything non-numeric as they type, matching billing's own
+        // phone field and reception's patient forms.
+        backdrop.querySelector('#editStaffPhone').addEventListener('input', function () {
+          this.value = this.value.replace(/\D/g, '').slice(0, 10);
+        });
+
+        backdrop.querySelector('#editStaffRole').addEventListener('change', (e) => {
+          backdrop.querySelector('#editStaffDoctorField').style.display = e.target.value === 'doctor' ? '' : 'none';
+        });
+
+        backdrop.querySelector('#editStaffSaveBtn').addEventListener('click', async () => {
+          const fullName = backdrop.querySelector('#editStaffName').value.trim();
+          const phone = backdrop.querySelector('#editStaffPhone').value;
+          const role = backdrop.querySelector('#editStaffRole').value;
+          const doctorId = role === 'doctor' ? backdrop.querySelector('#editStaffDoctorId').value : '';
+          try {
+            if (fullName !== (person.fullName || '')) await Qlinic.updateStaffName(person.id, fullName);
+            if (phone !== (person.phone || '')) await Qlinic.updateStaffPhone(person.id, phone);
+            if (role !== person.role) await Qlinic.updateStaffRole(person.id, role);
+            if (role === 'doctor' && doctorId !== (person.doctorId || '')) await Qlinic.updateStaffDoctorLink(person.id, doctorId);
+          } catch (err) {
+            // Most likely either the one-phone-per-account uniqueness
+            // constraint or the one-login-per-doctor link constraint.
+            showToast(err.message || 'Could not update this person — please try again.');
+            return;
+          }
+          cleanup();
+          showToast('Team member updated');
+          loadTeam();
+        });
+
+        backdrop.querySelector('#editStaffName').focus();
+      }
+      window.doOpenEditStaff = doOpenEditStaff;
 
       async function doSetStaffActive(id, isActive) {
         if (!isActive && !(await Qlinic.confirmDialog({
@@ -215,9 +375,15 @@
           return;
         }
         showToast(isActive ? 'Access restored' : 'Access removed');
-        renderTeam();
+        loadTeam();
       }
       window.doSetStaffActive = doSetStaffActive;
+
+      document.getElementById('teamSearch').addEventListener('input', (e) => {
+        searchTerm = e.target.value;
+        currentPage = 1;
+        renderTeamList();
+      });
 
       document.getElementById('newStaffName').addEventListener('input', function () {
         this.value = this.value.replace(/[0-9]/g, '');
@@ -227,51 +393,6 @@
       // phone field and reception's patient forms.
       document.getElementById('newStaffPhone').addEventListener('input', function () {
         this.value = this.value.replace(/\D/g, '').slice(0, 10);
-      });
-
-      document.getElementById('teamList').addEventListener('input', function (e) {
-        if (!e.target.classList.contains('staff-phone')) return;
-        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
-      });
-
-      document.getElementById('teamList').addEventListener('blur', async (e) => {
-        if (!e.target.classList.contains('staff-phone')) return;
-        if (e.target.value === e.target.getAttribute('data-original')) return; // untouched, don't re-save/toast
-        const id = e.target.getAttribute('data-id');
-        try {
-          await Qlinic.updateStaffPhone(id, e.target.value);
-          showToast('Phone number updated');
-        } catch (err) {
-          showToast(err.message || 'Could not update phone number — please try again.');
-        }
-        renderTeam();
-      }, true); // capture: 'blur' doesn't bubble, unlike 'change'/'input' above
-
-      document.getElementById('teamList').addEventListener('change', async (e) => {
-        if (e.target.classList.contains('staff-doctor-link')) {
-          const id = e.target.getAttribute('data-id');
-          try {
-            await Qlinic.updateStaffDoctorLink(id, e.target.value);
-            showToast('Linked doctor updated');
-          } catch (err) {
-            // Most likely the one-login-per-doctor uniqueness constraint —
-            // that doctor is already linked to someone else's account.
-            showToast(err.message || 'Could not update the linked doctor.');
-          }
-          renderTeam();
-          return;
-        }
-        if (!e.target.classList.contains('staff-role')) return;
-        const id = e.target.getAttribute('data-id');
-        try {
-          await Qlinic.updateStaffRole(id, e.target.value);
-        } catch (err) {
-          showToast(err.message || 'Could not update role — please try again.');
-          renderTeam();
-          return;
-        }
-        showToast('Role updated');
-        renderTeam();
       });
 
       document.getElementById('newStaffRole').addEventListener('change', (e) => {
@@ -295,7 +416,10 @@
           e.target.reset();
           document.getElementById('newStaffDoctorField').style.display = 'none';
           showToast('Staff member added');
-          renderTeam();
+          searchTerm = '';
+          document.getElementById('teamSearch').value = '';
+          currentPage = 1;
+          loadTeam();
         } catch (err) {
           note.style.display = 'block';
           note.textContent = err.message || 'Could not add this staff member.';
@@ -313,10 +437,11 @@
       const myProfile = await Qlinic.getMyProfile();
       myProfileId = myProfile ? myProfile.id : null;
       doctors = await Qlinic.getDoctors({ includeInactive: true });
+      doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
       document.getElementById('newStaffDoctorId').insertAdjacentHTML('beforeend', doctors.map((d) =>
         `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}</option>`
       ).join(''));
-      await renderTeam();
+      await loadTeam();
     })();
   </script>
 
