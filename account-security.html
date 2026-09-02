@@ -226,6 +226,14 @@
       // Blank is a valid submission here (unlike the clinic-phone form
       // below, which requires one) — it removes phone login the same way
       // an admin can blank a team member's phone field on team.html.
+      //
+      // Stored WITHOUT a +91 prefix, on purpose -- unlike the clinic-
+      // phone field below (a different column, clinics.phone, just a
+      // human-readable contact number). This one feeds the pre-login
+      // phone lookup (login.html's email_for_staff_phone RPC), which
+      // queries with the raw 10-digit value the same way team.html's
+      // own updateStaffPhone already stores it -- a +91-prefixed value
+      // here would silently never match at login.
       document.getElementById('loginPhoneForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const note = document.getElementById('loginPhoneNote');
@@ -236,11 +244,10 @@
           return;
         }
         try {
-          const newPhone = val ? '+91' + val : '';
-          await Qlinic.updateMyPhone(newPhone);
+          await Qlinic.updateMyPhone(val);
           note.style.display = 'block';
           note.textContent = val ? 'Phone number updated.' : 'Phone login turned off.';
-          document.getElementById('currentLoginPhone').textContent = val ? newPhone : '·';
+          document.getElementById('currentLoginPhone').textContent = val || '·';
           e.target.reset();
         } catch (err) {
           note.style.display = 'block';
