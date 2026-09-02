@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=245" />
+<link rel="stylesheet" href="styles.css?v=246" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -62,52 +62,69 @@
           <div>
             <div class="next-appt-eyebrow">Next appointment</div>
             <div class="next-appt-line" id="nextAppointmentLine"></div>
+            <!-- Moved here from #statusPanel's own summary line -- this
+                 number is worth seeing constantly, unlike the status
+                 buttons below it, so it shouldn't disappear behind the
+                 same collapse. -->
+            <div class="next-appt-waiting-line" id="nextAppointmentWaitingLine" style="display:none;"></div>
           </div>
         </div>
 
+        <!-- Collapsed by default -- a doctor only touches this a handful
+             of times a day; the rest of the time it was dead space
+             between Next appointment and Now serving, the two panels
+             actually read continuously through the day. No persisted
+             state on purpose: it starts collapsed every load, expanded
+             only for as long as it's actually needed. -->
         <div class="panel" id="statusPanel">
-          <div class="panel-header"><h2>Your status</h2></div>
-          <div class="doctor-identity">
-            <div class="doctor-identity-name" id="statusDoctorName"></div>
-            <div class="doctor-identity-specialty" id="statusDoctorSpecialty"></div>
+          <div class="panel-header">
+            <h2>Your status</h2>
+            <button type="button" class="panel-toggle-btn" id="statusToggleBtn" aria-expanded="false" aria-controls="statusPanelBody" aria-label="Show status controls" style="margin-left:auto;">
+              <svg class="panel-toggle-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
           </div>
-          <div id="statusSummaryLines"></div>
-          <p style="font-size:13px;color:var(--grey-500);margin:0 0 16px;">
-            One tap updates every waiting patient's estimate and the waiting-room screen, no one needs to interrupt you to ask.
-          </p>
-          <div class="inline-form" id="statusActionSeg" style="margin-bottom:10px;">
-            <button class="btn-sm success-outline" data-status="on_time">Clear status</button>
-            <button class="btn-sm accent-outline" data-status="on_break">On a break</button>
-            <button class="btn-sm danger-outline" data-status="emergency">Emergency</button>
-          </div>
-          <div id="statusLockedNote" class="field-hint" style="display:none;"></div>
-          <div id="delayInputWrap" style="display:none;margin-top:10px;">
-            <div class="inline-form">
-              <div class="field" style="max-width:230px;">
-                <label id="delayInputLabel">How many minutes behind?</label>
-                <div class="time-picker" id="delayPicker">
-                  <button type="button" class="time-picker-trigger" id="delayTrigger">
-                    <span id="delayTriggerText">30 min</span><span class="time-picker-caret">▾</span>
-                  </button>
-                  <input type="hidden" id="delayMinsInput" value="30" />
-                  <div class="time-picker-panel" id="delayPanel" style="display:none;"></div>
+          <div id="statusPanelBody" style="display:none;">
+            <div class="doctor-identity">
+              <div class="doctor-identity-name" id="statusDoctorName"></div>
+              <div class="doctor-identity-specialty" id="statusDoctorSpecialty"></div>
+            </div>
+            <p style="font-size:13px;color:var(--grey-500);margin:0 0 16px;">
+              One tap updates every waiting patient's estimate and the waiting-room screen, no one needs to interrupt you to ask.
+            </p>
+            <div class="inline-form" id="statusActionSeg" style="margin-bottom:10px;">
+              <button class="btn-sm success-outline" data-status="on_time">Clear status</button>
+              <button class="btn-sm accent-outline" data-status="on_break">On a break</button>
+              <button class="btn-sm danger-outline" data-status="emergency">Emergency</button>
+            </div>
+            <div id="statusLockedNote" class="field-hint" style="display:none;"></div>
+            <div id="delayInputWrap" style="display:none;margin-top:10px;">
+              <div class="inline-form">
+                <div class="field" style="max-width:230px;">
+                  <label id="delayInputLabel">How many minutes behind?</label>
+                  <div class="time-picker" id="delayPicker">
+                    <button type="button" class="time-picker-trigger" id="delayTrigger">
+                      <span id="delayTriggerText">30 min</span><span class="time-picker-caret">▾</span>
+                    </button>
+                    <input type="hidden" id="delayMinsInput" value="30" />
+                    <div class="time-picker-panel" id="delayPanel" style="display:none;"></div>
+                  </div>
+                </div>
+                <div class="field" style="max-width:340px;">
+                  <label>Reason (optional)</label>
+                  <div class="autocomplete-wrap">
+                    <div class="autocomplete-ghost" id="delayReasonGhost" aria-hidden="true"></div>
+                    <input type="text" id="delayReasonInput" placeholder="e.g., in a meeting, at lunch" maxlength="60" autocomplete="off" />
+                  </div>
                 </div>
               </div>
-              <div class="field" style="max-width:340px;">
-                <label>Reason (optional)</label>
-                <div class="autocomplete-wrap">
-                  <div class="autocomplete-ghost" id="delayReasonGhost" aria-hidden="true"></div>
-                  <input type="text" id="delayReasonInput" placeholder="e.g., in a meeting, at lunch" maxlength="60" autocomplete="off" />
-                </div>
+              <div class="inline-form" style="margin-top:10px;">
+                <button class="btn-sm primary" id="confirmDelayBtn">Broadcast delay</button>
+                <button type="button" class="btn-sm accent-outline" id="cancelDelayBtn">Cancel</button>
               </div>
+              <div id="delayHistoryNote" class="field-hint" style="display:none;"></div>
             </div>
-            <div class="inline-form" style="margin-top:10px;">
-              <button class="btn-sm primary" id="confirmDelayBtn">Broadcast delay</button>
-              <button type="button" class="btn-sm accent-outline" id="cancelDelayBtn">Cancel</button>
-            </div>
-            <div id="delayHistoryNote" class="field-hint" style="display:none;"></div>
+            <div id="currentStatusLine" style="margin-top:14px;font-size:14px;"></div>
           </div>
-          <div id="currentStatusLine" style="margin-top:14px;font-size:14px;"></div>
         </div>
 
         <div class="panel" id="nowServingPanel">
@@ -332,12 +349,18 @@
       }
       function renderNextAppointment(q) {
         const el = document.getElementById('nextAppointmentLine');
+        const waitingEl = document.getElementById('nextAppointmentWaitingLine');
         if (!q.waiting.length) {
           el.textContent = 'No one else waiting today';
+          // "0 patients waiting" would just repeat what the line above
+          // already says — dropped entirely rather than shown redundantly.
+          waitingEl.style.display = 'none';
           return;
         }
         const next = q.waiting[0];
         el.textContent = `${next.name} — ${formatMinsUntil(minsUntil(next))}`;
+        waitingEl.textContent = `${q.waiting.length} patient${q.waiting.length === 1 ? '' : 's'} waiting`;
+        waitingEl.style.display = '';
       }
 
       // Booked/waiting/in_consult only ever get a token if they made it
@@ -784,8 +807,6 @@
 
         document.getElementById('statusDoctorName').textContent = doc.name;
         document.getElementById('statusDoctorSpecialty').textContent = doc.specialty;
-        document.getElementById('statusSummaryLines').innerHTML =
-          `<div>Patients Waiting: ${q.waiting.length}</div>`;
 
         const statusNoteHtml = Qlinic.isRealStatusReason(doc.statusNote) ? ' · "' + Qlinic.escapeHtml(doc.statusNote) + '"' : '';
         document.getElementById('currentStatusLine').innerHTML =
@@ -1191,6 +1212,16 @@
             showToast(err.message || 'Could not update status');
           }
         });
+      });
+
+      // Collapsed by default every load, no persisted state — see the
+      // comment on #statusPanel itself for why.
+      document.getElementById('statusToggleBtn').addEventListener('click', () => {
+        const btn = document.getElementById('statusToggleBtn');
+        const body = document.getElementById('statusPanelBody');
+        const isOpen = body.style.display !== 'none';
+        body.style.display = isOpen ? 'none' : '';
+        btn.setAttribute('aria-expanded', String(!isOpen));
       });
 
       // Closes the picker without broadcasting anything — for the case a

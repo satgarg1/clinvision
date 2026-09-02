@@ -2354,6 +2354,25 @@ input[type="number"] { -moz-appearance: textfield; }
 .next-appt-icon { font-size: 22px; }
 .next-appt-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--chip-text); }
 .next-appt-line { font-size: 17px; font-weight: 600; }
+/* Moved out of the collapsible "Your status" panel -- this count is
+   worth seeing constantly, unlike the status-change buttons it used to
+   sit alongside, so it lives in the one panel that's never collapsed. */
+.next-appt-waiting-line { font-size: 13px; color: var(--grey-700); margin-top: 2px; }
+
+/* Small round chevron button in a .panel-header, toggling a sibling
+   content block's visibility -- #statusPanel is the first (only, so
+   far) user of this. */
+.panel-toggle-btn {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  border: none; background: var(--grey-100); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--grey-500);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.panel-toggle-btn:hover { background: var(--grey-300); color: var(--black); }
+.panel-toggle-chevron { width: 16px; height: 16px; transition: transform 0.25s ease; }
+.panel-toggle-btn[aria-expanded="true"] .panel-toggle-chevron { transform: rotate(180deg); }
+
 .doctor-identity { margin-bottom: 14px; }
 .doctor-identity-name { font-size: 15px; font-weight: 700; }
 .doctor-identity-specialty { font-size: 13px; color: var(--grey-500); }
