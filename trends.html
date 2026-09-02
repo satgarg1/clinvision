@@ -254,6 +254,25 @@
         const lastSunday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - 1);
         return { start: toDateStr(lastMonday), end: toDateStr(lastSunday) };
       }
+      // The anomaly chip's own comparison window -- NOT a replacement
+      // for computeLastWeekRange() above, which stays the full prior
+      // week on purpose (it's also the standalone "Last week" period-
+      // picker preset, where selecting it explicitly means "show me all
+      // 7 days," regardless of what day it is today). Capping the END
+      // of last week to however many days of "this week" have actually
+      // elapsed is what makes the anomaly chip compare like-for-like --
+      // Monday (1 day) against last Monday (1 day), not against all 7
+      // of last week (raised 2026-09-01: a real Monday-morning screenshot
+      // read "Revenue down 90%" purely from this exact mismatch).
+      function computeLastWeekSameSpanRange(thisWeek) {
+        const full = computeLastWeekRange();
+        const [ty, tm, td] = thisWeek.start.split('-').map(Number);
+        const [tey, tem, ted] = thisWeek.end.split('-').map(Number);
+        const daysElapsed = Math.round((Date.UTC(tey, tem - 1, ted) - Date.UTC(ty, tm - 1, td)) / 86400000) + 1;
+        const [fy, fm, fd] = full.start.split('-').map(Number);
+        const end = new Date(fy, fm - 1, fd + daysElapsed - 1);
+        return { start: full.start, end: toDateStr(end) };
+      }
       function computeCurrentWeekRange() {
         const today = new Date();
         const day = today.getDay();
@@ -264,6 +283,14 @@
         const sundayStr = toDateStr(sunday);
         return { start: toDateStr(monday), end: sundayStr > tStr ? tStr : sundayStr };
       }
+      // FLAG (raised 2026-09-01, not fixed -- nothing combines this with
+      // computeLastMonthRange in a comparison today, so there's nothing
+      // live to break): built the identical month-to-date-vs-full-month
+      // shape as computeLastWeekRange had before computeLastWeekSameSpanRange
+      // was added above. A month-over-month comparison built later must
+      // NOT pair this directly against computeLastMonthRange() the way
+      // the anomaly chip briefly did with weeks -- it needs its own
+      // same-span variant, on day 1 of a month worst of all.
       function computeCurrentMonthRange() {
         const today = new Date();
         const first = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -1132,8 +1159,22 @@
       }
       async function renderAnomalyChipInner(btn, icon, text, popover) {
         const thisWeek = computeCurrentWeekRange();
-        const lastWeek = computeLastWeekRange();
+        const lastWeek = computeLastWeekSameSpanRange(thisWeek);
         const scopeDoctorId = myDoctorId || undefined;
+
+        // Now that "last week" is capped to the same span as "this week",
+        // saying just "vs. last week" plainly would still read as if the
+        // whole prior week was the comparison -- only naming the day on
+        // Monday (a true single-day-vs-single-day comparison) and adding
+        // "through <day>" every other day makes clear this isn't the full
+        // week, without cluttering "this week" (already the obvious,
+        // expected partial half) with the same qualifier.
+        const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const DAY_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const todayDow = new Date().getDay();
+        const diffToMonday = todayDow === 0 ? 6 : todayDow - 1;
+        const thisLabel = diffToMonday === 0 ? `this ${DAY_FULL[0]}` : 'this week';
+        const lastLabel = diffToMonday === 0 ? `last ${DAY_FULL[0]}` : `last week through ${DAY_SHORT[diffToMonday]}`;
 
         const [thisInvoices, lastInvoices, thisPatients, lastPatients] = await Promise.all([
           amDoctor ? Promise.resolve([]) : Qlinic.getInvoicesForDateRange(thisWeek.start, thisWeek.end),
@@ -1194,7 +1235,7 @@
               <div class="anomaly-badge ${tone}">${m.icon}</div>
               <div class="anomaly-body">
                 <div class="anomaly-headline">${Qlinic.escapeHtml(m.label)} <span class="num ${tone}">${arrow} ${Math.abs(m.pct)}%</span></div>
-                <div class="anomaly-sub">${m.fmt(m.thisVal)} this week vs. ${m.fmt(m.lastVal)} last week.</div>
+                <div class="anomaly-sub">${m.fmt(m.thisVal)} ${thisLabel} vs. ${m.fmt(m.lastVal)} ${lastLabel}.</div>
                 <button type="button" class="anomaly-tab-link" data-jump-group="${m.key}">Open ${Qlinic.escapeHtml(m.label === 'Avg. consult duration' ? 'Consult Duration' : m.label === 'Footfall' ? 'Patient Stats' : m.label)} tab →</button>
               </div>
             </div>
@@ -1211,8 +1252,8 @@
             <div class="anomaly-calm-body">
               <span class="icon">✓</span>
               <span class="text">${anyComparable
-                ? `${candidates.map((m) => m.label).join(', ')} are all within ${ANOMALY_THRESHOLD_PCT}% of last week — nothing stands out.`
-                : 'Not enough data from last week yet to compare.'}</span>
+                ? `${candidates.map((m) => m.label).join(', ')} are all within ${ANOMALY_THRESHOLD_PCT}% of ${lastLabel} — nothing stands out.`
+                : `Not enough data from ${lastLabel} yet to compare.`}</span>
             </div>
           `;
         } else {

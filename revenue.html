@@ -442,7 +442,15 @@
 
           <div class="revenue-section">
             <div class="revenue-eyebrow">Best &amp; worst day this month</div>
-            ${bestDay ? `
+            ${dayEntries.length === 0 ? '<div class="revenue-empty-note">Not enough data yet</div>' : dayEntries.length === 1 ? `
+              <div class="revenue-daypair">
+                <div class="revenue-day-row">
+                  <span class="revenue-day-date">${Qlinic.escapeHtml(Qlinic.formatDateLabel(bestDay[0]))}</span>
+                  <span class="revenue-day-amt">₹${bestDay[1]}</span>
+                </div>
+              </div>
+              <div class="revenue-empty-note" style="margin-top:8px;">Best &amp; worst will show once there's more than 1 day of revenue this month.</div>
+            ` : `
               <div class="revenue-daypair">
                 <div class="revenue-day-row">
                   <span class="revenue-day-tag best">Best</span>
@@ -455,7 +463,7 @@
                   <span class="revenue-day-amt">₹${worstDay[1]}</span>
                 </div>
               </div>
-            ` : '<div class="revenue-empty-note">Not enough data yet</div>'}
+            `}
           </div>
 
           <div class="revenue-section">
