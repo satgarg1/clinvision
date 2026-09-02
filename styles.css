@@ -2372,11 +2372,16 @@ input[type="number"] { -moz-appearance: textfield; }
 .panel-toggle-btn:hover { background: var(--grey-300); color: var(--black); }
 .panel-toggle-chevron { width: 16px; height: 16px; transition: transform 0.25s ease; }
 .panel-toggle-btn[aria-expanded="true"] .panel-toggle-chevron { transform: rotate(180deg); }
+/* Collapsed state gets .panel's own generous 26px/28px padding trimmed
+   right down -- with nothing below the header, that padding (tuned for
+   a panel actually holding content) just reads as a tall, mostly-empty
+   bar. Only the header's own height should show. */
+#statusPanel.panel-collapsed { padding: 14px 20px; }
+#statusPanel.panel-collapsed .panel-header { margin-bottom: 0; }
 
 .doctor-identity { margin-bottom: 14px; }
 .doctor-identity-name { font-size: 15px; font-weight: 700; }
 .doctor-identity-specialty { font-size: 13px; color: var(--grey-500); }
-#statusSummaryLines { font-size: 14px; margin-bottom: 14px; }
 #statusSummaryLines div { margin-bottom: 4px; }
 
 .billing-option-card { transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease; }
