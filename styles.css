@@ -4320,6 +4320,13 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
    rather than changed on .panel itself (which would touch every panel
    sitewide). */
 #holidaysPanel, #allHolidaysPanel { border-color: var(--accent); }
+/* The table itself already spans 100% of the panel -- the "columns
+   don't fill the rectangle" look was actually the panel stretching to
+   the full app-main width (uncapped, so 1500px+ on a wide screen)
+   while 3 mostly-short-text columns only need ~1100px. No column-width
+   tweak can fix that; capping the panel so it matches what 3 columns
+   genuinely need is what makes them read as filling it. */
+#allHolidaysPanel { max-width: 1150px; }
 
 /* "View Holidays"' own running total -- a solid badge, not plain grey
    text, so it's easy to spot next to the heading rather than reading
