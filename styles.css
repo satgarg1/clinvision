@@ -4335,17 +4335,23 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
    notice. Today reuses the same tinted-row + left-border-stripe
    pattern Doctor View's own row highlights already use elsewhere;
    past fades hard rather than just dimming text color. */
-#allHolidaysTableWrap tr.is-past { opacity: 0.45; }
-#allHolidaysTableWrap tr.is-today { background: #e8f0fe; }
-#allHolidaysTableWrap tr.is-today td:first-child { border-left: 4px solid var(--accent-dark); padding-left: 10px; }
-#allHolidaysTableWrap tr.is-today td { font-weight: 700; }
+#allHolidaysTableWrap tr.is-past, #holidaysTableWrap tr.is-past { opacity: 0.45; }
+#allHolidaysTableWrap tr.is-today, #holidaysTableWrap tr.is-today { background: #e8f0fe; }
+#allHolidaysTableWrap tr.is-today td:first-child, #holidaysTableWrap tr.is-today td:first-child { border-left: 4px solid var(--accent-dark); padding-left: 10px; }
+#allHolidaysTableWrap tr.is-today td, #holidaysTableWrap tr.is-today td { font-weight: 700; }
 .today-badge { margin-left: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #fff; background: var(--accent-dark); padding: 2px 8px; border-radius: var(--radius-pill); }
 .soon-badge { margin-left: 8px; font-size: 11px; font-weight: 600; color: var(--accent-dark); background: var(--mkt-blue-bg); padding: 2px 8px; border-radius: var(--radius-pill); white-space: nowrap; }
 /* Fixed width so the badge that follows starts at the same x on every
    row, regardless of how long that row's own date string happens to
    be ("Sat, 29 Aug, 2026" vs "Wed, 16 Sept, 2026") -- without this the
    badges drift left/right by a few px per row and read as misaligned. */
-#allHolidaysTableWrap .holiday-date-text { display: inline-block; width: 132px; }
+#allHolidaysTableWrap .holiday-date-text, #holidaysTableWrap .holiday-date-text { display: inline-block; width: 150px; white-space: nowrap; }
+/* Pinning the columns (qtable-fixed) moved Role and Name into place,
+   but the default 10px cell padding then read as cramped against a
+   fixed-width column instead of an auto one -- widen the gutter so the
+   table reads as properly filling its columns, not squeezed. */
+#allHolidaysPanel th, #allHolidaysPanel td, #holidaysPanel th, #holidaysPanel td { padding-left: 20px; padding-right: 20px; }
+#allHolidaysPanel th:first-child, #allHolidaysPanel td:first-child, #holidaysPanel th:first-child, #holidaysPanel td:first-child { padding-left: 10px; }
 
 #allHolidaysPager .pager-controls { display: flex; align-items: center; gap: 14px; }
 

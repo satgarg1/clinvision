@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=270" />
+<link rel="stylesheet" href="styles.css?v=271" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -245,20 +245,30 @@
           wrap.innerHTML = '<div class="empty-state">No holidays added yet.</div>';
           return;
         }
+        // Same date treatment "View Holidays" already uses -- past rows
+        // fade out, today gets its badge, and anything within 2 weeks
+        // gets the lighter "coming up soon" signal -- so a doctor or
+        // staff member scanning their own list gets the same at-a-glance
+        // read admin already has, and an admin managing someone else's
+        // list from this same panel sees it too.
         wrap.innerHTML = `
           <table class="qtable">
             <thead><tr><th>Date</th><th>Note</th><th style="width:90px;"></th></tr></thead>
             <tbody>
-              ${holidays.map((h) => `
-                <tr>
-                  <td>${fmtDate(h.date)}</td>
+              ${holidays.map((h) => {
+                const cls = h.date < TODAY_STR ? 'is-past' : h.date === TODAY_STR ? 'is-today' : '';
+                const badge = h.date === TODAY_STR ? '<span class="today-badge">Today</span>' : relativeSoonBadge(h.date);
+                return `
+                <tr class="${cls}">
+                  <td class="qtable-wrap"><span class="holiday-date-text">${fmtDate(h.date)}</span>${badge}</td>
                   <td>${h.note ? Qlinic.escapeHtml(h.note) : '<span class="sub-line">No note</span>'}</td>
                   <td class="row-actions">
                     <button type="button" class="icon-btn" onclick="doOpenEditHoliday('${h.id}')" title="Edit" aria-label="Edit holiday on ${fmtDate(h.date)}">${pencilIconSvg()}</button>
                     <button type="button" class="icon-btn danger" onclick="doDeleteHoliday('${h.id}')" title="Delete" aria-label="Delete holiday on ${fmtDate(h.date)}">${trashIconSvg()}</button>
                   </td>
                 </tr>
-              `).join('')}
+              `;
+              }).join('')}
             </tbody>
           </table>
         `;
