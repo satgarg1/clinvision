@@ -1547,10 +1547,21 @@ a { color: inherit; }
    canvas's own JS sets its top (matching Chart.js's real scales.x.top
    for that render) and toggles its opacity on mousemove; pointer-
    events stay off so it never intercepts the click meant for the
-   canvas underneath it. */
+   canvas above it. BEHIND the canvas in the DOM on purpose (a bug
+   caught live: placed after the canvas, its opaque fill painted over
+   Chart.js's own axis-label text instead of showing through around
+   it -- the canvas's own background is transparent everywhere it
+   isn't actively drawing, so ordering this first lets the labels
+   stay legible on top of the highlight rather than blanked out by
+   it). rgba(0,113,227,...) -- the same accent tint already used for
+   hover on .qdp-quick button and other "this is a control" surfaces,
+   not the plain var(--grey-100) row-hover shade -- reads clearly on
+   both the near-white light surface and the near-black dark one
+   without needing a separate dark-mode override, since --accent
+   itself is one of the few tokens this app never re-themes. */
 .chart-axis-hover {
   position: absolute; left: 0; right: 0; bottom: 0;
-  background: var(--grey-100); border-radius: 6px; opacity: 0; pointer-events: none;
+  background: rgba(0, 113, 227, 0.12); border-radius: 6px; opacity: 0; pointer-events: none;
   transition: opacity 0.1s ease;
 }
 /* The bucket-interval popover: opened by a native click listener on
