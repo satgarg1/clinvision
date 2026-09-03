@@ -398,14 +398,21 @@ a { color: inherit; }
 .mkt-stat .label { font-size: 15px; color: var(--grey-500); margin-top: 6px; }
 .mkt-section.dark .mkt-stat .label { color: var(--grey-300); }
 
+/* Razorpay-style footer (raised 2026-09-03): white ground, every word
+   in the accent blue instead of the usual muted grey-500 footer text,
+   links with no underline at rest and no color change on hover -- bold
+   weight is the only hover feedback, not layered on top of an
+   underline. */
 .mkt-footer {
   padding: 50px 6vw;
   text-align: center;
-  color: var(--grey-500);
+  color: var(--accent);
   font-size: 13px;
   border-top: 1px solid var(--grey-300);
+  background: var(--white);
 }
-.mkt-footer a { color: var(--grey-500); text-decoration: underline; }
+.mkt-footer a { color: var(--accent); text-decoration: none; font-weight: 400; transition: font-weight 0.15s ease; }
+.mkt-footer a:hover { font-weight: 700; }
 
 /* ---------------- Hero ---------------- */
 
