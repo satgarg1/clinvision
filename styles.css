@@ -1417,10 +1417,16 @@ a { color: inherit; }
 /* .eyebrow/.mkt-h2/.pg-h2/.mkt-sub are the real shared classes -- only
    colors (and, for the eyebrow, size+centering per feedback) are
    overridden here, scoped to this one dark section. */
+/* Same fix as .hero-stage .eyebrow::before on solo-practice.html's own
+   hero: the shared .eyebrow::before dot is positioned for a
+   left-aligned label (left:0, padding-left:16px on .eyebrow itself) --
+   left as-is here, it showed up as a stray floating dot in front of a
+   centered label. Dropped here only. */
 .contact-dark-band .eyebrow {
-  color: #8fb8ff; font-size: 18px;
+  color: #8fb8ff; font-size: 18px; padding-left: 0;
   display: block; width: fit-content; margin-left: auto; margin-right: auto;
 }
+.contact-dark-band .eyebrow::before { display: none; }
 .contact-dark-band .mkt-h2 { color: #fff; }
 .contact-dark-band .mkt-sub { color: #c7cbe0; max-width: 460px; margin-left: 0; }
 .contact-dark-band .pg-h2 { color: #fff; margin-bottom: 8px; }
