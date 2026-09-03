@@ -1237,26 +1237,48 @@ a { color: inherit; }
   box-shadow: 0 24px 60px rgba(0,0,0,0.16), 0 4px 14px rgba(0,0,0,0.08);
   padding: 10px;
 }
+/* Hover feedback on every row, disabled ones included -- a plain
+   background tint doesn't promise clickability by itself, and leaving
+   3 of the 4 items completely inert on hover read as broken rather
+   than "not built yet". */
 .segment-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; transition: background 0.12s ease; cursor: pointer; text-decoration: none; }
 .segment-item:hover { background: var(--mkt-paper); }
 .segment-item.disabled { opacity: 0.45; cursor: default; }
-.segment-item.disabled:hover { background: transparent; }
-/* Razorpay-style icon badge: a solid colored circle per segment with
-   its own emoji, replacing a plain color dot. */
+/* Plain icon badge, matching the reference screenshot exactly: one
+   neutral grey rounded-square for every row (not a different color
+   per segment) with a simple monochrome line icon inside, not an
+   emoji. Segment identity still shows up on each segment's own page
+   (its .tone-* color, its hero eyebrow) -- just not here anymore. */
 .segment-icon {
-  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  background: var(--grey-100); color: var(--black);
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px; line-height: 1;
 }
+.segment-icon svg { width: 20px; height: 20px; display: block; }
 .segment-item-title { font-size: 15px; font-weight: 700; color: var(--black); margin: 0 0 2px; }
 .segment-item-desc { font-size: 13px; color: var(--grey-500); margin: 0; line-height: 1.4; }
 
 /* A centered variant of index.html's own .hero-stage (which is
    left-aligned by design there) -- for a segment page's hero, which
-   centers its whole content column instead. */
+   centers its whole content column instead. text-align:center on
+   .content only centers INLINE content (the h1's own wrapped text
+   lines) -- the eyebrow is a block-level flex box sized to its own
+   content (width:max-content), so text-align does nothing to ITS
+   position; margin:auto is what actually centers a block like that
+   within its parent. justify-content, tried first, was the wrong
+   property entirely (it governs the eyebrow's own children, not
+   where the eyebrow itself sits) and silently fixed nothing. */
 .hero-stage.centered .content { text-align: center; }
-.hero-stage.centered .eyebrow { justify-content: center; }
+.hero-stage.centered .eyebrow { margin-left: auto; margin-right: auto; }
 .hero-stage.centered .mkt-cta-row { justify-content: center; }
+/* Segment pages' own closing CTA -- .final-cta is left-aligned by
+   default above 900px (only the mobile media query below centers it),
+   which reads fine on index.html's own wide/editorial band but looked
+   like a mistake on the narrower, centered feel a segment page
+   already commits to everywhere else on the page. Scoped to this
+   modifier, not the base class, so index.html's own Final CTA is
+   untouched. */
+.final-cta.centered { text-align: center; }
 
 /* ---------------- Segment pages (Solo practice, and whichever of
    Multi-doctor clinics/Polyclinics/Diagnostic centers get built next)
