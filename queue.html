@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=294" />
+<link rel="stylesheet" href="styles.css?v=295" />
 </head>
 <body>
   <div class="login-wrap">
@@ -359,12 +359,45 @@
           detailsTitle: 'Queue details',
           detailsInConsult: (nowStr) => `You're currently with the doctor — here's how the rest of today's queue looks right now (${nowStr}).`,
           detailsWaiting: (nowStr) => `You've checked in and are waiting — here's how today's queue looks right now (${nowStr}).`,
-          detailsPassedNotCalled: (apptStr, nowStr) => `Your appointment time (${apptStr}) has passed and you haven't been called yet — here's where things stand right now (${nowStr}).`,
+          detailsPassedNotCalled: (apptStr, nowStr) => `Your appointment time (${apptStr}) has passed and you haven't checked in yet — here's where things stand right now (${nowStr}).`,
           detailsFromNowThrough: (nowStr, apptStr) => `Showing details from now (${nowStr}) through your appointment at ${apptStr}.`,
           detailsFallback: 'Showing details from now through your position in the queue.',
-          bookedInWindow: 'Booked in this window',
+          // Advisory shown in place of the stat grid when the patient is
+          // more than 2 hours from their own slot and hasn't checked in —
+          // a far-out "0 arrived" reads as broken/alarming rather than
+          // just too early to mean anything (BACKLOG.md).
+          detailsAdvisoryEarly: (apptStr) => `<b>It's a bit early</b> to show queue details for your ${apptStr} appointment — check back within 2 hours of your slot to see exactly how things stand.`,
+          // Booked/arrived/not-checked-in labels split into a "not passed
+          // yet" set and a "your slot already passed" set — re-anchored to
+          // the patient's own slot time and naming it out loud, instead of
+          // the old static "Booked in this window" that read as genuinely
+          // ambiguous once the doctor fell behind (BACKLOG.md Problem 1b).
+          windowBookedUpToSlot: 'Booked up to your slot',
+          windowBookedBySlot: (apptStr) => `Booked by ${apptStr}`,
           arrivedWaiting: 'Arrived & waiting',
-          notYetArrived: 'Not yet arrived',
+          windowArrivedByThen: 'Arrived by then',
+          // Same wording in both cases (not just the not-passed one) —
+          // "Haven't shown up" read as a claim about where the patient
+          // physically is, when all this actually knows is whether
+          // they're marked checked-in in the system.
+          windowNotCheckedIn: "Haven't checked in yet",
+          windowIncludingYou: '(including you)',
+          windowFriendlyNote: "Most people arrive a little later than their slot — this isn't unusual.",
+          // "How's today going" persistent summary (BACKLOG.md Problem 2).
+          // Doctor status/delay reason reuse doctorStatusSentence/
+          // forDuration/since below, the same composition the main page's
+          // own doctorStatusBlock already uses — not a second, slightly
+          // different phrasing of the same fact.
+          summaryDoctorOnTime: 'Doctor is on time today.',
+          summaryStartedSeeing: (t) => `Started seeing patients at ${t}.`,
+          summarySeenSoFar: (n) => `${n} seen so far today.`,
+          // bookedTodayCount is deliberately never shown here — a doctor
+          // may not want their total daily booking volume surfaced to
+          // their own patients (decided 2026-09-03). windowBookedUpToSlot/
+          // windowBookedBySlot above are a different, much narrower number
+          // (capped at this one patient's own slot) and are unaffected.
+          summaryBreaksToday: (n, d) => (n === 1 ? `1 break/emergency today, ${d} total.` : `${n} breaks/emergencies today, ${d} total.`),
+          summaryOngoingSuffix: ' (still ongoing)',
           close: 'Close',
         },
         hi: {
@@ -427,12 +460,22 @@
           detailsTitle: 'कतार का विवरण',
           detailsInConsult: (nowStr) => `आप अभी डॉक्टर के साथ हैं — अभी (${nowStr}) बाकी कतार ऐसी दिख रही है।`,
           detailsWaiting: (nowStr) => `आपने चेक-इन कर लिया है और प्रतीक्षा कर रहे हैं — अभी (${nowStr}) कतार ऐसी दिख रही है।`,
-          detailsPassedNotCalled: (apptStr, nowStr) => `आपके अपॉइंटमेंट का समय (${apptStr}) बीत चुका है और आपको अभी तक नहीं बुलाया गया है — अभी (${nowStr}) स्थिति यह है।`,
+          detailsPassedNotCalled: (apptStr, nowStr) => `आपके अपॉइंटमेंट का समय (${apptStr}) बीत चुका है और आपने अभी तक चेक-इन नहीं किया है — अभी (${nowStr}) स्थिति यह है।`,
           detailsFromNowThrough: (nowStr, apptStr) => `अभी (${nowStr}) से लेकर आपकी अपॉइंटमेंट के समय ${apptStr} तक का विवरण दिखाया जा रहा है।`,
           detailsFallback: 'अभी से लेकर कतार में आपकी स्थिति तक का विवरण दिखाया जा रहा है।',
-          bookedInWindow: 'इस समय-सीमा में बुक',
+          detailsAdvisoryEarly: (apptStr) => `<b>अभी थोड़ा जल्दी है</b> — आपकी ${apptStr} अपॉइंटमेंट के कतार विवरण के लिए कृपया अपने समय से 2 घंटे पहले दोबारा देखें।`,
+          windowBookedUpToSlot: 'आपके समय तक बुक',
+          windowBookedBySlot: (apptStr) => `${apptStr} तक बुक`,
           arrivedWaiting: 'पहुंचे और प्रतीक्षा में',
-          notYetArrived: 'अभी नहीं पहुंचे',
+          windowArrivedByThen: 'तब तक पहुंचे',
+          windowNotCheckedIn: 'अभी तक चेक-इन नहीं किया',
+          windowIncludingYou: '(आप भी शामिल हैं)',
+          windowFriendlyNote: 'ज़्यादातर लोग अपने समय से थोड़ा देर से पहुंचते हैं — यह असामान्य नहीं है।',
+          summaryDoctorOnTime: 'डॉक्टर आज समय पर हैं।',
+          summaryStartedSeeing: (t) => `${t} से मरीज़ों को देखना शुरू किया।`,
+          summarySeenSoFar: (n) => `आज अब तक ${n} मरीज़ देखे जा चुके हैं।`,
+          summaryBreaksToday: (n, d) => `आज ${n} ब्रेक/इमरजेंसी हुईं, कुल ${d}।`,
+          summaryOngoingSuffix: ' (अभी भी जारी)',
           close: 'बंद करें',
         },
       };
@@ -789,9 +832,31 @@
       // never counted server-side), never the whole day and never anyone
       // after this patient. Same modal-card look confirmDialog uses
       // elsewhere in the app.
-      function detailsScopeText(data) {
+      // Computes the 2 facts detailsScopeText/detailsWindowHtml both
+      // need: whether the patient's own slot has already passed "now",
+      // and whether the stat grid should show at all yet (BACKLOG.md:
+      // within 2 hours of the slot, or already checked in, whichever
+      // comes first — a far-out "0 arrived" reads as broken/alarming,
+      // not just early). Walk-ins have no future slot to be "far out"
+      // from, so they always show.
+      function slotContext(data) {
+        if (data.type === 'appointment' && data.bookedTime) {
+          const now = new Date();
+          const nowMins = now.getHours() * 60 + now.getMinutes();
+          const apptMins = Qlinic.parseTime(data.bookedTime);
+          return {
+            apptMins,
+            apptStr: Qlinic.formatTime(apptMins),
+            passed: nowMins > apptMins,
+            showWindow: data.status !== 'booked' || (apptMins - nowMins) <= 120,
+          };
+        }
+        return { apptMins: null, apptStr: null, passed: false, showWindow: true };
+      }
+
+      function detailsScopeText(data, ctx) {
         const nowStr = Qlinic.formatTimestamp(new Date());
-        // "Haven't been called yet" only ever applies to status==='booked'
+        // "Haven't checked in yet" only ever applies to status==='booked'
         // — once a patient has actually checked in (waiting) or is with
         // the doctor (in_consult), they've moved past their original
         // slot time entirely, so re-checking the clock against it (as the
@@ -802,33 +867,103 @@
         if (data.status === 'waiting') {
           return T.detailsWaiting(nowStr);
         }
-        if (data.type === 'appointment' && data.bookedTime) {
-          const now = new Date();
-          const apptMins = Qlinic.parseTime(data.bookedTime);
-          const apptStr = Qlinic.formatTime(apptMins);
+        if (ctx.apptMins != null) {
           // A running-behind doctor (or just a backlog) means the
           // patient's own slot time can already be in the past even
-          // though they haven't been called yet — "now (10:32) through
-          // your appointment at 10:15" would read as a backwards range.
-          // The counts themselves are still correct either way (scoped
-          // by the patient's slot, not by "now"); only this sentence
-          // needs to say so honestly instead of an inverted time span.
-          if (now.getHours() * 60 + now.getMinutes() > apptMins) {
-            return T.detailsPassedNotCalled(apptStr, nowStr);
+          // though they haven't checked in — "now (10:32) through your
+          // appointment at 10:15" would read as a backwards range. The
+          // counts themselves are still correct either way (scoped by
+          // the patient's slot, not by "now"); only this sentence needs
+          // to say so honestly instead of an inverted time span.
+          if (ctx.passed) {
+            return T.detailsPassedNotCalled(ctx.apptStr, nowStr);
           }
-          return T.detailsFromNowThrough(nowStr, apptStr);
+          return T.detailsFromNowThrough(nowStr, ctx.apptStr);
         }
         return T.detailsFallback;
       }
 
+      // "How's today going" — BACKLOG.md Problem 2, a persistent summary
+      // shown at every distance, not just a far-out fallback: a stalled
+      // queue right when a patient expected movement is more alarming
+      // than the same thing hours early, and a doctor's whole-day pace
+      // is invisible to a window that only looks forward from "now".
+      // Doctor status/delay reason reuse the exact same composition as
+      // the main page's own doctorStatusBlock (below, in render()) —
+      // not a second, slightly different phrasing of the same fact.
+      function detailsSummaryHtml(data) {
+        const lines = [];
+
+        if (data.doctorStatus && data.doctorStatus !== 'on_time') {
+          const base = T.doctorStatusSentence[data.doctorStatus] || `Doctor status: ${data.doctorStatus}`;
+          const notePart = Qlinic.isRealStatusReason(data.doctorStatusNote)
+            ? ` <span class="doc-note-quote">"${Qlinic.escapeHtml(data.doctorStatusNote)}"</span>`
+            : '';
+          const durationPart = data.doctorDelayMins ? ` ${T.forDuration(T.formatDuration(data.doctorDelayMins))}` : '';
+          const sincePart = data.doctorStatusUpdatedAt ? ` ${T.since(Qlinic.formatTimestamp(data.doctorStatusUpdatedAt))}` : '';
+          lines.push(`<span class="doc-status away">${base}${notePart}${durationPart}${sincePart}</span>`);
+        } else {
+          lines.push(`<span class="doc-status">${T.summaryDoctorOnTime}</span>`);
+        }
+
+        // No first-called time yet (doctor hasn't called anyone today) —
+        // omit that half of the sentence rather than showing a blank.
+        lines.push(data.firstCalledAtToday
+          ? `${T.summaryStartedSeeing(Qlinic.formatTimestamp(data.firstCalledAtToday))} ${T.summarySeenSoFar(data.seenTodayCount || 0)}`
+          : T.summarySeenSoFar(data.seenTodayCount || 0));
+
+        if (data.breaksTodayCount) {
+          const durationStr = T.formatDuration(Math.round((data.awaySecondsToday || 0) / 60));
+          const ongoing = (data.doctorStatus === 'on_break' || data.doctorStatus === 'emergency') ? T.summaryOngoingSuffix : '';
+          lines.push(`${T.summaryBreaksToday(data.breaksTodayCount, durationStr)}${ongoing}`);
+        }
+
+        return lines.map((l) => `<p>${l}</p>`).join('');
+      }
+
+      function detailsWindowHtml(data, ctx) {
+        if (!ctx.showWindow) {
+          return `
+            <div class="queue-details-advisory">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+              <p>${T.detailsAdvisoryEarly(ctx.apptStr)}</p>
+            </div>
+          `;
+        }
+
+        // The "your slot passed and you're still not checked in" relabel
+        // only ever makes sense for status==='booked' — once a patient
+        // has actually checked in, their slot being in the past is just
+        // normal (that's when most people check in), not the ambiguous
+        // case this re-anchoring exists for. Gated on status here too,
+        // not just ctx.passed, so a waiting patient never sees "Booked by
+        // 11:00 AM" / "Arrived by then" just because their appointment
+        // time happens to be behind "now".
+        const relabel = data.status === 'booked' && ctx.passed;
+        const bookedLabel = relabel ? T.windowBookedBySlot(ctx.apptStr) : T.windowBookedUpToSlot;
+        const arrivedLabel = relabel ? T.windowArrivedByThen : T.arrivedWaiting;
+        // "(including you)" lands on whichever cell matches the viewing
+        // patient's own status — in_consult never reaches this modal at
+        // all (see detailsOpenWrap below), so only these 2 cases apply.
+        const arrivedYou = data.status === 'waiting' ? ` <span class="you">${T.windowIncludingYou}</span>` : '';
+        const notCheckedInYou = data.status === 'booked' ? ` <span class="you">${T.windowIncludingYou}</span>` : '';
+
+        return `
+          <div class="queue-stat-grid">
+            <div class="queue-stat-cell"><div class="num">${data.windowBookedCount}</div><div class="label">${bookedLabel}</div></div>
+            <div class="queue-stat-cell arrived"><div class="num">${data.windowArrivedCount}</div><div class="label">${arrivedLabel}${arrivedYou}</div></div>
+            <div class="queue-stat-cell notyet"><div class="num">${data.windowNotArrivedCount}</div><div class="label">${T.windowNotCheckedIn}${notCheckedInYou}</div></div>
+          </div>
+          <p class="queue-details-note">${T.windowFriendlyNote}</p>
+        `;
+      }
+
       function renderDetailsModal(data) {
         const card = document.querySelector('#queueDetailsBackdrop .modal-card');
-        card.querySelector('.queue-details-scope').textContent = detailsScopeText(data);
-        card.querySelector('.queue-stat-grid').innerHTML = `
-          <div class="queue-stat-cell"><div class="num">${data.windowBookedCount}</div><div class="label">${T.bookedInWindow}</div></div>
-          <div class="queue-stat-cell arrived"><div class="num">${data.windowArrivedCount}</div><div class="label">${T.arrivedWaiting}</div></div>
-          <div class="queue-stat-cell notyet"><div class="num">${data.windowNotArrivedCount}</div><div class="label">${T.notYetArrived}</div></div>
-        `;
+        const ctx = slotContext(data);
+        card.querySelector('.queue-details-scope').textContent = detailsScopeText(data, ctx);
+        card.querySelector('.queue-details-summary').innerHTML = detailsSummaryHtml(data);
+        card.querySelector('.queue-details-window').innerHTML = detailsWindowHtml(data, ctx);
       }
 
       function openDetailsModal() {
@@ -841,7 +976,8 @@
             <h2 class="modal-title">${T.detailsTitle}</h2>
             <p class="queue-details-scope"></p>
             <div class="queue-details-live"><span class="dot"></span>${T.live}</div>
-            <div class="queue-stat-grid"></div>
+            <div class="queue-details-summary"></div>
+            <div class="queue-details-window"></div>
             <div class="modal-actions" style="margin-top:22px;">
               <button type="button" class="btn-sm primary" id="queueDetailsCloseBtn">${T.close}</button>
             </div>

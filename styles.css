@@ -1822,14 +1822,58 @@ a { color: inherit; }
 .queue-details-scope { font-size: 13px; color: var(--grey-700); line-height: 1.5; margin: 0 0 16px; }
 .queue-details-live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--success); margin-bottom: 18px; }
 .queue-details-live .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: queue-pulse 1.4s infinite; }
+
+/* "How's today going" persistent summary (BACKLOG.md Problem 2) — plain
+   sentences, not another stat grid, shown at every distance including
+   far-out, where it sits above the .queue-details-advisory note below
+   instead of the stat grid. Light card treatment so it reads as its
+   own info panel, not just more paragraph text under the scope line. */
+.queue-details-summary { background: var(--grey-100); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 16px; }
+.queue-details-summary p { font-size: 13.5px; color: var(--grey-700); line-height: 1.55; margin: 0; }
+.queue-details-summary p + p { margin-top: 8px; }
+.queue-details-summary .doc-status { font-weight: 700; color: var(--black); }
+.queue-details-summary .doc-status.away { color: var(--warning); }
+
+/* Far-out advisory, replaces the stat grid entirely when more than 2
+   hours from the patient's own slot and they haven't checked in
+   (BACKLOG.md Problem 1). Deliberately its own accent-tinted look, not
+   the same grey card as .queue-details-summary above it — a left
+   accent bar is what makes this read as "notice", not just more info.
+   --accent is never redefined under dark mode (confirmed elsewhere in
+   this app), so this rgba tint needs no separate dark-theme override. */
+.queue-details-advisory {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: rgba(0, 113, 227, 0.08);
+  border: 1px solid rgba(0, 113, 227, 0.28);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+.queue-details-advisory svg { width: 19px; height: 19px; stroke: var(--accent); flex-shrink: 0; margin-top: 1px; }
+.queue-details-advisory p { font-size: 13.5px; color: var(--black); line-height: 1.5; margin: 0; }
+.queue-details-advisory b { color: var(--accent-dark); }
+
 .queue-stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-.queue-stat-cell { text-align: center; background: var(--white); border: 1px solid var(--grey-300); border-radius: var(--radius-md); padding: 14px 6px; }
+/* flex column + justify-content:center + a shared min-height — the 3
+   labels are genuinely different lengths ("Arrived by then" vs "Booked
+   by your 10:20 AM slot"), and without this the cell whose label wraps
+   to more lines is simply taller than its neighbors, reading as an
+   uneven/misaligned row. */
+.queue-stat-cell {
+  display: flex; flex-direction: column; justify-content: center; min-height: 88px;
+  text-align: center; background: var(--white); border: 1px solid var(--grey-300); border-radius: var(--radius-md); padding: 14px 6px;
+}
 .queue-stat-cell .num { font-size: 26px; font-weight: 800; color: var(--black); line-height: 1.1; }
 .queue-stat-cell .label { font-size: 11px; font-weight: 600; color: var(--grey-700); text-transform: uppercase; letter-spacing: 0.02em; margin-top: 6px; line-height: 1.35; }
+/* "(including you)" — not uppercase/letter-spaced like its parent
+   .label, so it reads as a parenthetical aside rather than more
+   shouted stat-grid copy. */
+.queue-stat-cell .you { display: block; font-size: 10px; font-weight: 700; color: var(--accent); text-transform: none; letter-spacing: 0; margin-top: 3px; }
 .queue-stat-cell.arrived { border-color: var(--success); background: var(--success-bg); }
 .queue-stat-cell.arrived .num { color: var(--success); }
 .queue-stat-cell.notyet { border-color: var(--warning); background: var(--warning-bg); }
 .queue-stat-cell.notyet .num { color: var(--warning); }
+.queue-details-note { font-size: 11.5px; color: var(--grey-500); line-height: 1.4; margin: 10px 0 0; }
 
 /* queue.html's visit-complete screen: a gradient banner (cancels out
    .login-card-wide's own padding via negative margins to go full-bleed)
