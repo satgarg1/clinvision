@@ -497,8 +497,9 @@ a { color: inherit; }
    under .hero-stage specifically so the entrance-sequence treatment (the
    centered eyebrow, the oversized serif lines) can't leak onto this same
    .eyebrow/.mkt-h1 markup used unstyled-by-this-block elsewhere on the page
-   and on the other 4 marketing pages -- confirmed via grep that
-   .hero-stage/.hero-fx/.hero-glow/.hero-line* are index.html-only. */
+   and on the other 4 marketing pages. Originally index.html-only; now also
+   reused verbatim by solo-practice.html's own hero (via .hero-stage.centered,
+   see below) and by every future segment page after it. */
 .hero-stage {
   position: relative;
   display: grid;
@@ -1334,6 +1335,54 @@ a { color: inherit; }
 .tone-purple .pg-glow { background: radial-gradient(ellipse 85% 70% at 50% 0%, rgba(124, 58, 237, 0.16) 0%, rgba(124, 58, 237, 0.06) 45%, rgba(124, 58, 237, 0) 75%); }
 .tone-purple .item-num { font-size: 46px; }
 .tone-purple .item-lead { font-size: 24px; }
+
+/* Dark contrast panel -- a different shell from .pg-section (light paper
+   + a colored glow): this one breaks the page's background entirely for
+   one section, for a segment page's featured/benefits band, where a
+   fourth identical column row in a row would read as more of the same.
+   Mocked up in 3 tones (violet/teal/indigo) and reviewed before picking
+   indigo for solo-practice.html's own "What's included for you" section
+   -- built as a shell + a .tone-* modifier, same split as .pg-section's
+   own tones, so a future segment page can reuse the shell with its own
+   tone instead of duplicating it. Rows use the same .show-on-scroll
+   stagger pattern as .item-card, just centered instead of column-left. */
+.dark-panel { position: relative; padding: 80px 6vw 92px; overflow: hidden; }
+.dark-panel-glow { position: absolute; inset: 0; pointer-events: none; }
+.dark-panel-head { position: relative; z-index: 1; max-width: 680px; margin: 0 auto 52px; text-align: center; }
+.dark-panel-eyebrow {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 600; font-size: 16px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 16px;
+}
+.dark-panel-head h2 {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 600; letter-spacing: -0.02em; line-height: 1.16;
+  font-size: clamp(26px, 3.2vw, 38px); margin: 0; color: #fff;
+}
+.dark-panel-list { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
+.dark-panel-row {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 34px 4px; width: 100%; border-top: 1px solid rgba(255, 255, 255, 0.12);
+  opacity: 0; transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.19,1,0.22,1), transform 0.7s cubic-bezier(0.19,1,0.22,1);
+}
+.dark-panel-row.show { opacity: 1; transform: translateY(0); }
+.dark-panel-row:last-child { border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+.dark-panel-check { flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
+.dark-panel-check svg { width: 17px; height: 17px; }
+.dark-panel-lead {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 600; font-size: 26px; line-height: 1.32; color: #fff; margin: 0 0 10px;
+  letter-spacing: -0.005em; max-width: 520px;
+}
+.dark-panel-support { font-size: 18px; line-height: 1.55; margin: 0; max-width: 480px; }
+@media (max-width: 700px) { .dark-panel { padding: 64px 6vw 76px; } }
+
+.dark-panel.tone-indigo { background: #12162b; }
+.dark-panel.tone-indigo .dark-panel-glow { background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(79, 70, 229, 0.38) 0%, rgba(79, 70, 229, 0.12) 45%, rgba(79, 70, 229, 0) 75%); }
+.dark-panel.tone-indigo .dark-panel-eyebrow { color: #a5b4fc; }
+.dark-panel.tone-indigo .dark-panel-check { background: rgba(79, 70, 229, 0.30); border: 1px solid rgba(165, 180, 252, 0.5); }
+.dark-panel.tone-indigo .dark-panel-check svg { stroke: #a5b4fc; }
+.dark-panel.tone-indigo .dark-panel-support { color: #c1c3e0; }
 
 /* ---------------- Shared colorful accents (used across every logged-in page) ----------------
    Same 5-color palette as the landing page, applied consistently: each doctor
