@@ -1417,11 +1417,13 @@ a { color: inherit; }
 /* .eyebrow/.mkt-h2/.pg-h2/.mkt-sub are the real shared classes -- only
    colors (and, for the eyebrow, size+centering per feedback) are
    overridden here, scoped to this one dark section. */
-/* Left-aligned, matching "Get in touch" below it -- an earlier centered
-   version (needed to also hide the shared .eyebrow::before dot, which
-   is positioned for a left-aligned label) read as misaligned against
-   every other left-aligned line in this column, per feedback. */
-.contact-dark-band .eyebrow { color: #8fb8ff; font-size: 18px; }
+/* Left-aligned, matching "Get in touch" below it (an earlier centered
+   version read as misaligned against everything else in this column).
+   The shared .eyebrow::before dot is dropped here specifically, per
+   explicit feedback -- every other left-aligned eyebrow on the site
+   keeps it, this is a one-off exception for this page's eyebrow only. */
+.contact-dark-band .eyebrow { color: #8fb8ff; font-size: 18px; padding-left: 0; }
+.contact-dark-band .eyebrow::before { display: none; }
 .contact-dark-band .mkt-h2 { color: #fff; }
 .contact-dark-band .mkt-sub { color: #c7cbe0; max-width: 460px; margin-left: 0; }
 .contact-dark-band .pg-h2 { color: #fff; margin-bottom: 8px; }

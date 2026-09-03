@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=293" />
+<link rel="stylesheet" href="styles.css?v=294" />
 </head>
 <body>
 
@@ -76,10 +76,14 @@
         <div class="contact-panel-inner">
           <div class="eyebrow">We're here to help!</div>
           <h1 class="mkt-h2">Get in touch</h1>
-          <p class="mkt-sub">Thanks for your interest in ClinVision.<br />Reach us directly, or fill in the form below and we'll reach out to you.</p>
+          <!-- nowrap on the first sentence -- at narrower widths it was
+               breaking mid-sentence ("...interest in" / "ClinVision.")
+               before the <br /> even kicked in, so "one line, not two"
+               needed forcing, not just the manual break. -->
+          <p class="mkt-sub"><span style="white-space:nowrap;">Thanks for your interest in ClinVision.</span><br />Reach us directly, or fill in the form below and we'll reach out to you.</p>
 
           <div class="contact-cta-row">
-            <a href="#" id="heroWhatsapp" class="btn btn-whatsapp btn-large">
+            <a href="#" id="heroWhatsapp" class="btn btn-whatsapp btn-large" target="_blank" rel="noopener noreferrer">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.5A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 1 .9-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.2-.7.8-.8 1-.1.1-.3.2-.5.1-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5.1-.1.2-.3.4-.4.1-.1.2-.3.2-.4.1-.1 0-.3 0-.4-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.2 1.6 2.4 3.8 3.4.5.2.9.4 1.3.5.5.2 1 .1 1.4.1.4-.1 1.3-.5 1.5-1 .2-.5.2-.9.1-1z"/></svg>
               Send a message
             </a>
