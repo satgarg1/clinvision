@@ -1075,23 +1075,36 @@
     const clinicId = await ensureClinicContext();
     const cleanPhone = (phone || '').trim();
     if (!clinicId || !cleanPhone) return null;
+    // 200 is a safety cap, not a real-world limit -- one phone number's
+    // full visit history is nowhere near that in practice, unlike
+    // getPatientDirectory's whole-clinic fetch below (which genuinely
+    // needs real pagination). Still ordered by created_at desc so the
+    // no-show check right below keeps its original "last 5 visits"
+    // meaning exactly as it was, unaffected by the wider fetch.
     const { data, error } = await sb
       .from('patients')
-      .select('name, gender, address, age, status')
+      .select('name, gender, address, age, status, token_date')
       .eq('clinic_id', clinicId)
       .eq('phone', cleanPhone)
       .order('created_at', { ascending: false })
-      .limit(5);
+      .limit(200);
     if (error) throw error;
     if (!data || data.length === 0) return null;
     const latest = data[0];
+    const lastFive = data.slice(0, 5);
+    // Same "actually arrived" definition getPatientDirectory uses below --
+    // a booking nobody showed up to, or a no-show, isn't a visit.
+    const visited = data.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status));
+    const recentVisits = visited.map((p) => p.token_date).sort().reverse().slice(0, 3);
     return {
       name: latest.name,
       gender: latest.gender,
       address: latest.address,
       age: latest.age,
-      visitsChecked: data.length,
-      noShowCount: data.filter((p) => p.status === 'no_show').length,
+      visitsChecked: lastFive.length,
+      noShowCount: lastFive.filter((p) => p.status === 'no_show').length,
+      totalVisits: visited.length,
+      recentVisits,
     };
   }
 

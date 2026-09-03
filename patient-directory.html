@@ -94,7 +94,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=89"></script>
+  <script src="clinic-data.js?v=90"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -500,6 +500,14 @@
       // Most recently active patients first — the ones most likely to be
       // relevant to whatever admin is looking this page up for.
       allEntries.sort((a, b) => (b.lastVisitDate || '').localeCompare(a.lastVisitDate || ''));
+
+      // Deep link from reception.html's "View full history" -- pre-fills
+      // the same search box a person would've typed into by hand, so it
+      // stays a normal filtered view (paging, CSV export, etc. all still
+      // work), not a special single-patient mode.
+      const phoneParam = new URLSearchParams(window.location.search).get('phone');
+      if (phoneParam) document.getElementById('directorySearch').value = phoneParam;
+
       renderTable();
     })();
   </script>

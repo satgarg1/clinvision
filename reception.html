@@ -184,7 +184,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=89"></script>
+  <script src="clinic-data.js?v=90"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -1543,13 +1543,23 @@
         const match = await Qlinic.getPatientLookupByPhone(phone);
         if (myToken !== patientLookupToken) return;
         if (!match) { clearPatientLookupHint(); return; }
-        const visitWord = match.visitsChecked === 1 ? 'visit' : 'visits';
+        const visitWord = match.totalVisits === 1 ? 'visit' : 'visits';
         let html = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <span style="color:var(--accent);font-weight:600;">Found: ${Qlinic.escapeHtml(match.name)}, ${match.address ? Qlinic.escapeHtml(match.address) : 'no address on file'} &middot; ${match.visitsChecked} ${visitWord} on file</span>
-          <button type="button" class="btn-sm" id="useLookupBtn">Use these details</button>
+          <span style="color:var(--accent);font-weight:600;">Found: ${Qlinic.escapeHtml(match.name)}, ${match.address ? Qlinic.escapeHtml(match.address) : 'no address on file'} &middot; ${match.totalVisits} ${visitWord} on file</span>
+          <button type="button" class="btn-sm primary" id="useLookupBtn">Use these details</button>
         </div>`;
         if (match.noShowCount >= 2) {
           html += `<div style="margin-top:8px;color:var(--warning);background:var(--warning-bg);padding:8px 12px;border-radius:8px;">⚠ Missed ${match.noShowCount} of their last ${match.visitsChecked} visits, consider confirming by call.</div>`;
+        }
+        // Reuses the exact date format patient-directory.html already
+        // shows this same data in (Qlinic.formatDateLabel), rather than
+        // introducing a second convention for the same kind of date.
+        // Skipped entirely when there's no qualifying visit yet -- same
+        // "nothing to show" spirit as this whole hint being absent for a
+        // genuinely first-time patient.
+        if (match.recentVisits && match.recentVisits.length > 0) {
+          const dateLabels = match.recentVisits.map((d) => Qlinic.formatDateLabel(d)).join(' &middot; ');
+          html += `<div style="margin-top:8px;">Last ${match.recentVisits.length === 1 ? 'visit' : 'visits'}: <strong>${dateLabels}</strong> &nbsp;<a href="patient-directory.html?phone=${encodeURIComponent(phone)}" style="font-weight:600;">View full history &rarr;</a></div>`;
         }
         hint.innerHTML = html;
         hint.style.display = 'block';
