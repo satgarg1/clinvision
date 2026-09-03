@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Solo practice: ClinVision</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css?v=286" />
+</head>
+<body>
+
+  <!-- Reached only by hovering "Solutions" in the nav below -- there is
+       no standalone "who it's for" overview page anymore. See the
+       .nav-segment-wrap/.segment-menu block in styles.css for how the
+       menu itself works, and BACKLOG.md's segment-page note for what's
+       still unbuilt (Multi-doctor clinics/Polyclinics/Diagnostic
+       centers all sit in that same menu, disabled, until each gets its
+       own page like this one). -->
+  <nav class="mkt-nav">
+    <a href="index.html" class="brand">
+      <span class="brand-top">
+        <span class="brand-word-wrap">
+          <span class="brand-word">ClinVision</span>
+          <span class="brand-word-bar"></span>
+        </span>
+      </span>
+      <span class="brand-tagline">Where clinics run better</span>
+    </a>
+    <div class="mkt-nav-links">
+      <div class="nav-segment-wrap" tabindex="0">
+        <button type="button" class="nav-hover-trigger mkt-nav-current">
+          Solutions
+          <svg class="chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="segment-menu">
+          <div class="segment-menu-inner">
+            <a class="segment-item" href="solo-practice.html">
+              <span class="segment-icon" style="background:var(--mkt-teal);">🩺</span>
+              <span><p class="segment-item-title">Solo practice</p><p class="segment-item-desc">One doctor. Still runs like clockwork.</p></span>
+            </a>
+            <a class="segment-item disabled" href="#" onclick="return false;">
+              <span class="segment-icon" style="background:#2563eb;">👥</span>
+              <span><p class="segment-item-title">Multi-doctor clinics</p><p class="segment-item-desc">Every doctor's queue, one shared view.</p></span>
+            </a>
+            <a class="segment-item disabled" href="#" onclick="return false;">
+              <span class="segment-icon" style="background:#7c3aed;">🏢</span>
+              <span><p class="segment-item-title">Polyclinics</p><p class="segment-item-desc">Many specialties, one front desk.</p></span>
+            </a>
+            <a class="segment-item disabled" href="#" onclick="return false;">
+              <span class="segment-icon" style="background:#f97316;">🧪</span>
+              <span><p class="segment-item-title">Diagnostic centers</p><p class="segment-item-desc">Every walk-in, tracked and billed.</p></span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <a href="about-us.html" style="font-weight:600;font-size:15px;color:var(--black);text-decoration:none;">About us</a>
+      <a href="contact.html" style="font-weight:600;font-size:15px;color:var(--black);text-decoration:none;">Contact</a>
+      <a href="login.html" class="btn btn-accent">Log in</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="mkt-fullbleed" style="background:var(--mkt-paper);">
+    <div class="hero-stage centered">
+      <!-- Same shape/animation as index.html's own .hero-glow, just
+           recolored teal (this segment's own identity color) via an
+           inline override instead of a new CSS class per segment. -->
+      <div class="hero-glow" aria-hidden="true" style="background: radial-gradient(circle, rgba(13, 148, 136, 0.10) 0%, rgba(13, 148, 136, 0) 68%);"></div>
+      <div class="content">
+        <div class="eyebrow" style="color:var(--mkt-teal);">For solo practices</div>
+        <h1 class="mkt-h1">
+          <span class="hero-line hero-line-last">You've got the hands!</span>
+          <span class="hero-line-resolve" style="white-space:normal;">You're missing the system that keeps them in sync!</span>
+        </h1>
+        <p class="mkt-sub hero-sub">One doctor, a small front desk team, any specialty. ClinVision keeps your queue, your billing, and your patient records on one shared system, so your team isn't syncing it all by memory and shouted names.</p>
+        <div class="mkt-cta-row">
+          <a href="contact.html" class="btn btn-accent btn-large">Book a demo</a>
+          <a href="login.html" class="btn btn-ghost btn-large">Log in</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <img src="solo-practice.png" alt="A solo doctor's desk beside a small front desk with two staff, one holding a patient file. Both desks show the same simple queue screen, and a patient in the waiting nook checks her phone with her token number in a thought bubble." />
+        <div class="hero-visual-caption">Illustrative &mdash; a solo practice already running on ClinVision</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROBLEM -- 4 numbered facts, red tone, staggered reveal -->
+  <section class="pg-section tone-red">
+    <div class="pg-glow" aria-hidden="true"></div>
+    <div class="pg-head reveal">
+      <div class="pg-eyebrow">The problem</div>
+      <h2 class="pg-h2">Everyone's doing their job right. None of it's connected.</h2>
+    </div>
+    <div class="item-row" id="problemRow" style="--cols:4;">
+      <div class="item-card"><div class="item-num">01</div><p class="item-lead">Matching a patient to their prescription is entirely manual.</p><p class="item-support">Someone places the file, calls the name, and does it again for the next one, all day.</p></div>
+      <div class="item-card"><div class="item-num">02</div><p class="item-lead">You have no easy way to see how the day's actually moving.</p><p class="item-support">By the time you notice you're behind, you already are.</p></div>
+      <div class="item-card"><div class="item-num">03</div><p class="item-lead">Your staff handle it well, walk-ins included.</p><p class="item-support">But it takes their full attention away from patients.</p></div>
+      <div class="item-card"><div class="item-num">04</div><p class="item-lead">A patient outside has no way to know their place in that stack.</p><p class="item-support">Their only option is to ask.</p></div>
+    </div>
+  </section>
+
+  <!-- FIX -- 3 columns, one per audience, green tone -->
+  <section class="pg-section tone-green">
+    <div class="pg-glow" aria-hidden="true"></div>
+    <div class="pg-head reveal">
+      <div class="pg-eyebrow">The fix</div>
+      <h2 class="pg-h2">One shared system. Three different views of it.</h2>
+    </div>
+    <div class="item-row" id="fixRow" style="--cols:3;">
+      <div class="item-card"><div class="item-num">For you</div><p class="item-lead">The same order shows up on your own screen.</p><p class="item-support">Not just the stack of prescriptions in front of you.</p></div>
+      <div class="item-card"><div class="item-num">Front desk</div><p class="item-lead">One shared queue, one shared patient history.</p><p class="item-support">Not a paper stack only one person can check at a time.</p></div>
+      <div class="item-card"><div class="item-num">Patients</div><p class="item-lead">They check their own phone.</p><p class="item-support">And know exactly when to walk in, instead of guessing.</p></div>
+    </div>
+  </section>
+
+  <!-- INCLUDED FOR YOU -- 3 columns, purple tone -->
+  <section class="pg-section tone-purple">
+    <div class="pg-glow" aria-hidden="true"></div>
+    <div class="pg-head reveal">
+      <div class="pg-eyebrow">Included for you</div>
+      <h2 class="pg-h2">The same tools, built for a team of a few.</h2>
+    </div>
+    <div class="item-row" id="builtRow" style="--cols:3;">
+      <div class="item-card"><div class="item-num">01</div><p class="item-lead">Billing happens automatically.</p><p class="item-support">The moment a patient arrives, so your front desk isn't creating invoices by hand between patients.</p></div>
+      <div class="item-card"><div class="item-num">02</div><p class="item-lead">One searchable patient list.</p><p class="item-support">Anyone at the desk knows exactly when someone was last in, and for what.</p></div>
+      <div class="item-card"><div class="item-num">03</div><p class="item-lead">Patients check their own queue.</p><p class="item-support">So your front desk isn't fielding "how much longer" calls all day on top of everything else.</p></div>
+    </div>
+  </section>
+
+  <!-- CLOSING CTA -- paper + blue glow, matching index.html's own Final CTA -->
+  <section class="final-cta reveal">
+    <div class="final-cta-glow" aria-hidden="true"></div>
+    <div class="final-cta-inner">
+      <h2>One doctor.<br />One clear day.</h2>
+      <div class="mkt-cta-row">
+        <a href="contact.html" class="btn btn-accent">Book a demo</a>
+        <a href="login.html" class="btn btn-ghost">Log in to your clinic</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="mkt-footer">
+    ClinVision: Intelligent Clinic Management &nbsp;·&nbsp; Contact: <a href="mailto:hello@clinvision.in">hello@clinvision.in</a> &nbsp;·&nbsp;
+    <a href="contact.html">Contact us</a> &nbsp;·&nbsp;
+    <a href="login.html">Clinic login</a>
+  </footer>
+
+  <script>
+    // Plain section headers: simple fade-up on scroll -- same pattern
+    // index.html's own .explore-head/.faq/.final-cta already use.
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) { entry.target.classList.add('visible'); revealObserver.unobserve(entry.target); }
+      });
+    }, { threshold: 0.05 });
+    document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
+
+    // Numbered item rows: staggered per-card reveal -- verbatim pattern
+    // from index.html's own .trust-item stagger.
+    ['problemRow', 'fixRow', 'builtRow'].forEach((rowId) => {
+      const cards = document.querySelectorAll('#' + rowId + ' .item-card');
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach((entry, i) => {
+          if (entry.isIntersecting) {
+            window.setTimeout(() => entry.target.classList.add('show'), i * 150);
+            obs.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.05 });
+      cards.forEach((el) => obs.observe(el));
+    });
+
+    // Equalize .item-lead height within each row so every .item-support
+    // line starts at the same baseline, regardless of how many lines
+    // that card's own lead wraps to -- same technique and same reason
+    // as index.html's own equalizeTrustLeads().
+    (function () {
+      var rowIds = ['problemRow', 'fixRow', 'builtRow'];
+      function equalizeRow(rowId) {
+        var leads = document.querySelectorAll('#' + rowId + ' .item-lead');
+        if (leads.length < 2) return;
+        leads.forEach(function (el) { el.style.minHeight = ''; });
+        var max = 0;
+        leads.forEach(function (el) {
+          var h = el.getBoundingClientRect().height;
+          if (h > max) max = h;
+        });
+        leads.forEach(function (el) { el.style.minHeight = max + 'px'; });
+      }
+      function equalizeAll() { rowIds.forEach(equalizeRow); }
+      var resizeTimer;
+      window.addEventListener('resize', function () {
+        window.clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(equalizeAll, 150);
+      });
+      if (document.fonts && document.fonts.ready) { document.fonts.ready.then(equalizeAll); }
+      equalizeAll();
+    })();
+  </script>
+
+</body>
+</html>

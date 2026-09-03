@@ -43,8 +43,10 @@ Grouped by who uses them - most pages redirect based on role
 (`Qlinic.isAdmin()`/`isDoctor()`), so this is what exists, not what every
 signed-in user sees.
 
-**Public / marketing:** `index.html`, `contact.html`,
-`whats-inside.html`, `who-its-for.html`
+**Public / marketing:** `index.html`, `contact.html`, `about-us.html`,
+`solo-practice.html` (the first of the "Solutions" nav dropdown's
+segment pages - reached only by hovering the nav, no standalone
+overview page)
 
 **Auth:** `login.html`, `signup.html` (real clinic registration, not a demo
 account), `forgot-password.html`, `reset-password.html`

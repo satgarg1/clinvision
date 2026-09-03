@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=285" />
+<link rel="stylesheet" href="styles.css?v=286" />
 </head>
 <body>
 
@@ -29,7 +29,32 @@
       <span class="brand-tagline">Where clinics run better</span>
     </a>
     <div class="mkt-nav-links">
-      <a href="who-its-for.html" style="font-weight:600;font-size:15px;color:var(--black);text-decoration:none;">Who it's for</a>
+      <div class="nav-segment-wrap" tabindex="0">
+        <button type="button" class="nav-hover-trigger">
+          Solutions
+          <svg class="chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="segment-menu">
+          <div class="segment-menu-inner">
+            <a class="segment-item" href="solo-practice.html">
+              <span class="segment-icon" style="background:var(--mkt-teal);">🩺</span>
+              <span><p class="segment-item-title">Solo practice</p><p class="segment-item-desc">One doctor. Still runs like clockwork.</p></span>
+            </a>
+            <a class="segment-item disabled" href="#" onclick="return false;">
+              <span class="segment-icon" style="background:#2563eb;">👥</span>
+              <span><p class="segment-item-title">Multi-doctor clinics</p><p class="segment-item-desc">Every doctor's queue, one shared view.</p></span>
+            </a>
+            <a class="segment-item disabled" href="#" onclick="return false;">
+              <span class="segment-icon" style="background:#7c3aed;">🏢</span>
+              <span><p class="segment-item-title">Polyclinics</p><p class="segment-item-desc">Many specialties, one front desk.</p></span>
+            </a>
+            <a class="segment-item disabled" href="#" onclick="return false;">
+              <span class="segment-icon" style="background:#f97316;">🧪</span>
+              <span><p class="segment-item-title">Diagnostic centers</p><p class="segment-item-desc">Every walk-in, tracked and billed.</p></span>
+            </a>
+          </div>
+        </div>
+      </div>
       <a href="about-us.html" style="font-weight:600;font-size:15px;color:var(--black);text-decoration:none;">About us</a>
       <a href="contact.html" class="mkt-nav-current" style="font-weight:600;font-size:15px;text-decoration:none;">Contact</a>
       <a href="login.html" class="btn btn-accent">Log in</a>
