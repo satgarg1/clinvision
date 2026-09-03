@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=278" />
+<link rel="stylesheet" href="styles.css?v=279" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -438,6 +438,28 @@
         let ranks, GROUPS, allAppts, chartBuckets, visibleBuckets, currentBucket, stillToSee, showChart, nowMin;
         let scheduleChart = null;
         let activeTab = 'active';
+        let intervalPopoverOpen = false;
+
+        // Bucket width: doctor-configurable (backlog item, 2026-09-01),
+        // a personal device-local preference exactly like qlinic_theme
+        // above, just keyed per doctor since two doctors sharing a
+        // clinic could reasonably want different granularity for their
+        // own schedule view. Four fixed presets, not free entry -- a
+        // discrete set needs no min/max validation UI at all, unlike
+        // the typed-number version this was originally scoped with.
+        const BUCKET_PRESETS_MIN = [60, 120, 180, 240];
+        function bucketWidthStorageKey() { return 'qlinic_schedule_bucket_' + doc.id; }
+        function loadBucketWidth() {
+          try {
+            const n = parseInt(localStorage.getItem(bucketWidthStorageKey()), 10);
+            if (BUCKET_PRESETS_MIN.includes(n)) return n;
+          } catch (e) { /* ignore */ }
+          return 60;
+        }
+        function saveBucketWidth(n) {
+          try { localStorage.setItem(bucketWidthStorageKey(), String(n)); } catch (e) { /* ignore */ }
+        }
+        let bucketWidthMin = loadBucketWidth();
 
         function recompute(queueSnapshot) {
           ranks = buildWalkinRanks(queueSnapshot);
@@ -467,8 +489,8 @@
             const openMin = Qlinic.parseTime(clinic.opening_time);
             const closeMin = Qlinic.parseTime(clinic.closing_time);
             if (closeMin > openMin) {
-              for (let start = openMin; start < closeMin; start += 60) {
-                chartBuckets.push({ start, end: Math.min(start + 60, closeMin), total: 0, byStatus: {} });
+              for (let start = openMin; start < closeMin; start += bucketWidthMin) {
+                chartBuckets.push({ start, end: Math.min(start + bucketWidthMin, closeMin), total: 0, byStatus: {} });
               }
               allAppts.forEach((p) => {
                 const mins = Qlinic.parseTime(p.bookedTime);
@@ -661,6 +683,19 @@
           });
         }
 
+        // The interval popover's own markup lives inside .chart-axis-trigger
+        // (not a sibling) so a single delegated click handler can tell
+        // "clicked the trigger" from "clicked a chip inside it" using
+        // plain closest() checks, same as every other popover this app
+        // already builds this way (see .patient-info-chip on
+        // reception.html).
+        function intervalPopoverHtml() {
+          const chips = BUCKET_PRESETS_MIN.map((m) => `
+            <button type="button" class="chip${m === bucketWidthMin ? ' active' : ''}" data-min="${m}">${m / 60} hr</button>
+          `).join('');
+          return `<div class="chart-interval-popover${intervalPopoverOpen ? ' open' : ''}">${chips}</div>`;
+        }
+
         function chartBlockHtml() {
           if (!showChart) return '';
           return `
@@ -674,12 +709,10 @@
               </div>
               <hr class="chart-divider" />
               ${visibleBuckets.length > 0 ? `
-                <div class="chart-subhead">
-                  <span class="label">By hour</span>
-                  ${currentBucket ? `<span class="now-chip"><span class="dot"></span><span>Now: ${Qlinic.formatTime(currentBucket.start)}–${Qlinic.formatTime(currentBucket.end)}</span></span>` : ''}
-                </div>
+                ${currentBucket ? `<div class="chart-subhead"><span class="now-chip"><span class="dot"></span><span>Now: ${Qlinic.formatTime(currentBucket.start)}–${Qlinic.formatTime(currentBucket.end)}</span></span></div>` : ''}
                 <div class="chart-canvas-wrap"><canvas id="scheduleLoadChart" height="128"></canvas></div>
-                <p class="chart-note">Hover a bar for the status breakdown — a faded bar means that hour is still catching up, not yet fully seen.</p>
+                <div class="chart-axis-trigger">${intervalPopoverHtml()}</div>
+                <p class="chart-note">Hover a bar for the status breakdown — a faded bar means that period hasn't fully played out yet.</p>
               ` : '<p class="chart-note" style="margin-top:0;">All of today\'s appointments have passed.</p>'}
             </div>
           `;
@@ -748,6 +781,37 @@
           renderAll();
         });
 
+        // Delegated on the backdrop, not #scheduleChartWrap directly --
+        // the chart block (trigger + popover included) gets torn down
+        // and rebuilt by every renderAll(), including the 15s auto-
+        // refresh below, so a listener on the wrap's own innerHTML
+        // wouldn't survive past the first render. Picking a chip
+        // applies it and closes the popover in one click (no Apply/
+        // Cancel) per the reviewed mockup; anywhere else closes an
+        // open popover without changing the width.
+        backdrop.addEventListener('click', (e) => {
+          if (e.target === backdrop) return; // the backdrop-click-closes-modal listener below owns this case
+          const chip = e.target.closest('.chart-interval-popover .chip');
+          if (chip) {
+            bucketWidthMin = Number(chip.dataset.min);
+            saveBucketWidth(bucketWidthMin);
+            intervalPopoverOpen = false;
+            recompute(currentQueue || q);
+            renderAll();
+            return;
+          }
+          const trigger = e.target.closest('.chart-axis-trigger');
+          if (trigger) {
+            intervalPopoverOpen = !intervalPopoverOpen;
+            renderAll();
+            return;
+          }
+          if (intervalPopoverOpen) {
+            intervalPopoverOpen = false;
+            renderAll();
+          }
+        });
+
         // Owns its own clock instead of waiting to be pushed to by
         // render() or some other timer - simpler, and it means this
         // modal staying current never depends on anything happening
@@ -770,7 +834,15 @@
           backdrop.remove();
           document.removeEventListener('keydown', onKey);
         }
-        function onKey(e) { if (e.key === 'Escape') close(); }
+        // Layered like every other popover-over-a-panel in this app --
+        // Escape closes the nearer thing first. A doctor mid-pick on
+        // the interval shouldn't have their first Escape blow past it
+        // and dismiss the whole schedule.
+        function onKey(e) {
+          if (e.key !== 'Escape') return;
+          if (intervalPopoverOpen) { intervalPopoverOpen = false; renderAll(); return; }
+          close();
+        }
         backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
         backdrop.querySelector('#fullScheduleModalCloseBtn').addEventListener('click', close);
         document.addEventListener('keydown', onKey);

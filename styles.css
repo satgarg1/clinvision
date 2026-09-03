@@ -1531,8 +1531,10 @@ a { color: inherit; }
 .chart-hero-caption { text-align: right; font-size: 12.5px; color: var(--grey-700); line-height: 1.55; max-width: 220px; }
 .chart-hero-caption .muted { color: var(--grey-500); font-size: 11.5px; }
 .chart-divider { border: none; border-top: 1px solid var(--grey-100); margin: 14px 0 12px; }
-.chart-subhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.chart-subhead .label { font-size: 12px; font-weight: 700; color: var(--grey-700); }
+/* Right-aligned, not space-between -- the "By hour" label this row
+   used to pair with is gone now that the axis itself is the only
+   interval control, so the Now chip is the row's one child. */
+.chart-subhead { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 8px; }
 .now-chip {
   font-size: 11px; font-weight: 700; color: var(--accent-dark);
   background: rgba(0, 113, 227, 0.1); border-radius: var(--radius-pill); padding: 3px 10px;
@@ -1540,6 +1542,26 @@ a { color: inherit; }
 }
 .now-chip .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-dark); }
 .chart-canvas-wrap { position: relative; height: 128px; }
+/* The bucket-interval control: a thin invisible strip right under the
+   chart (where Chart.js already draws its own x-axis labels inside the
+   canvas), so the axis itself is the only affordance -- no separate
+   label or "click here" hint text sitting above it. A hover tint is
+   the one hint it's interactive. */
+.chart-axis-trigger { height: 20px; margin: -4px 0 4px; cursor: pointer; border-radius: 6px; position: relative; }
+.chart-axis-trigger:hover { background: var(--grey-100); }
+.chart-interval-popover {
+  display: none; position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: var(--white); border: 1px solid var(--grey-300); border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16); padding: 8px; z-index: 30;
+  grid-template-columns: 1fr 1fr; gap: 6px; width: 168px;
+}
+.chart-interval-popover.open { display: grid; }
+.chart-interval-popover .chip {
+  font-family: var(--font); font-size: 12px; font-weight: 700; color: var(--grey-700);
+  background: var(--grey-100); border: none; border-radius: 7px; padding: 8px 0; cursor: pointer;
+}
+.chart-interval-popover .chip:hover { background: var(--grey-300); }
+.chart-interval-popover .chip.active { background: var(--accent); color: #fff; }
 .chart-note { font-size: 11.5px; font-style: italic; color: var(--grey-500); margin: 10px 2px 0; }
 
 /* Smaller and outlined so it reads as a tappable action next to the
