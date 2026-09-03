@@ -1466,6 +1466,21 @@ a { color: inherit; }
 }
 .contact-dark-band .field select option { background: #2b2b2e; color: #f0f0f2; }
 
+/* The real .field input:-webkit-autofill override (2042 above) forces a
+   white background for light-mode pages -- the browser's own autofill
+   styling always wins over a plain background-color otherwise, but that
+   same white fill turned the City box white on this dark page once
+   Chrome autofilled it. Same trick, dark fill instead. */
+.contact-dark-band .field input:-webkit-autofill,
+.contact-dark-band .field input:-webkit-autofill:hover,
+.contact-dark-band .field input:-webkit-autofill:focus,
+.contact-dark-band .field input:-webkit-autofill:active {
+  -webkit-text-fill-color: #f0f0f2 !important;
+  -webkit-box-shadow: 0 0 0px 1000px #3a3a3d inset !important;
+  box-shadow: 0 0 0px 1000px #3a3a3d inset !important;
+  caret-color: #f0f0f2;
+}
+
 .contact-panel .btn-accent { width: 100%; justify-content: center; margin-top: 4px; }
 .contact-panel .btn-accent[disabled] { opacity: 0.6; cursor: default; }
 
@@ -1477,14 +1492,23 @@ a { color: inherit; }
 .contact-honeypot { position: absolute; left: -9999px; top: -9999px; }
 
 /* Submit swaps the form for this, in place -- no page reload, so the
-   confirmation reads as "that worked" rather than losing the page. */
-.contact-success { text-align: center; padding: 20px 0; }
-.contact-success svg { width: 44px; height: 44px; stroke: #4ade80; margin-bottom: 14px; }
+   confirmation reads as "that worked" rather than losing the page.
+   #contactFormWrap gets an inline min-height set by JS right before the
+   swap (the form's own rendered height), so the pane doesn't visibly
+   shrink once the much-shorter success message replaces a multi-field
+   form -- flex here is what lets .contact-success then fill and center
+   in that preserved height instead of sitting small at the top. */
+#contactFormWrap { display: flex; flex-direction: column; }
+.contact-success {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 20px 0;
+}
+.contact-success svg { width: 72px; height: 72px; stroke: #4ade80; margin-bottom: 22px; }
 .contact-success h3 {
   font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-weight: 600; font-size: 22px; color: #fff; margin: 0 0 8px;
+  font-weight: 600; font-size: clamp(28px, 3.4vw, 38px); color: #fff; margin: 0 0 12px;
 }
-.contact-success p { font-size: 15px; color: #c7cbe0; margin: 0; }
+.contact-success p { font-size: 19px; color: #c7cbe0; margin: 0; max-width: 380px; }
 .contact-form-error { font-size: 13.5px; color: #fca5a5; margin: -8px 0 16px; }
 
 @media (max-width: 900px) {
