@@ -1384,6 +1384,109 @@ a { color: inherit; }
 .dark-panel.tone-indigo .dark-panel-check svg { stroke: #a5b4fc; }
 .dark-panel.tone-indigo .dark-panel-support { color: #c1c3e0; }
 
+/* ---------------- Contact page: two-pane dark band ----------------
+   Same "image left, form right" pattern as login.html's own two-pane
+   auth-shell, but under its own classes (not .auth-*) since this stays
+   a normal marketing page with the full .mkt-nav on top, not a
+   stripped-down auth flow. Reviewed as a mockup (5 dark-background
+   swatches, several iteration rounds) before shipping -- Graphite
+   (#2b2b2e) chosen, lightened once from an earlier #1b1b1d that read
+   "too dark". Nav and footer stay their normal light selves; only this
+   middle band goes dark, same scoping precedent as
+   .dark-panel.tone-indigo on solo-practice.html. */
+.contact-dark-band { background: #2b2b2e; color: #f0f0f2; }
+.contact-split { display: flex; align-items: stretch; min-height: 680px; max-width: 1180px; margin: 0 auto; }
+/* align-items:flex-start (not center) + a top padding roughly matching
+   .contact-panel's own top padding + eyebrow/heading height, so the
+   image starts near "Thanks for your interest..." instead of sitting
+   vertically centered and lower, per review feedback. */
+.contact-media {
+  flex: 1 1 50%; position: relative; overflow: hidden;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 150px 40px 40px;
+}
+.contact-glow {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 70% 60% at 40% 40%, rgba(0, 113, 227, 0.16) 0%, rgba(0, 113, 227, 0.05) 45%, rgba(0, 113, 227, 0) 75%);
+}
+.contact-media img { position: relative; z-index: 1; width: 100%; max-width: 560px; }
+
+.contact-panel { flex: 1 1 50%; display: flex; align-items: center; padding: 56px 6vw 56px 48px; }
+.contact-panel-inner { width: 100%; max-width: 460px; }
+
+/* .eyebrow/.mkt-h2/.pg-h2/.mkt-sub are the real shared classes -- only
+   colors (and, for the eyebrow, size+centering per feedback) are
+   overridden here, scoped to this one dark section. */
+.contact-dark-band .eyebrow {
+  color: #8fb8ff; font-size: 18px;
+  display: block; width: fit-content; margin-left: auto; margin-right: auto;
+}
+.contact-dark-band .mkt-h2 { color: #fff; }
+.contact-dark-band .mkt-sub { color: #c7cbe0; max-width: 460px; margin-left: 0; }
+.contact-dark-band .pg-h2 { color: #fff; margin-bottom: 8px; }
+
+.contact-cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 34px; }
+.contact-dark-band .btn-ghost { color: #f0f0f2; border-color: rgba(255, 255, 255, 0.3); }
+.contact-dark-band .btn-ghost:hover { border-color: #fff; }
+/* The real .btn-whatsapp (white fill, green outline) is built for a
+   white page background -- on this dark band it read washed out per
+   feedback. Solid WhatsApp-brand green fill instead, scoped to this
+   dark band only; every light-mode page keeps the outline style
+   untouched. */
+.contact-dark-band .btn-whatsapp { background: #25D366; color: #fff; border: none; }
+.contact-dark-band .btn-whatsapp:hover { background: #1fb959; }
+
+.contact-divider { display: flex; align-items: center; gap: 14px; margin: 0 0 26px; color: #8b90a8; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.contact-divider::before, .contact-divider::after { content: ""; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.15); }
+
+.contact-form-note { font-size: 14.5px; color: #a8adc4; margin: 0 0 22px; }
+.contact-dark-band .field label { color: #c7cbe0; }
+.contact-dark-band .field input, .contact-dark-band .field select {
+  background: rgba(255, 255, 255, 0.06); color: #f0f0f2; border: 1px solid rgba(255, 255, 255, 0.22);
+}
+.contact-dark-band .field input::placeholder { color: #7d82a0; }
+.contact-dark-band .field input:focus, .contact-dark-band .field select:focus {
+  outline: none; border-color: var(--accent); background: rgba(255, 255, 255, 0.09);
+}
+/* Every property re-declared here, not just background-image -- an
+   earlier draft only overrode background-image and relied on the base
+   .field select rule for background-repeat/-size, which produced a row
+   of tiled arrows instead of one; the cascade didn't carry those
+   properties the way it looked like it should. */
+.contact-dark-band .field select {
+  appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  background-repeat: no-repeat; background-position: right 12px center; background-size: 14px 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c7cbe0' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+.contact-dark-band .field select option { background: #2b2b2e; color: #f0f0f2; }
+
+.contact-panel .btn-accent { width: 100%; justify-content: center; margin-top: 4px; }
+.contact-panel .btn-accent[disabled] { opacity: 0.6; cursor: default; }
+
+/* Honeypot -- see migration 061's own note on this endpoint having no
+   CAPTCHA/rate limiting: a hidden field a human never fills in but a
+   simple bot form-filler often does. Off-screen rather than
+   display:none, since some bots specifically skip display:none
+   fields. */
+.contact-honeypot { position: absolute; left: -9999px; top: -9999px; }
+
+/* Submit swaps the form for this, in place -- no page reload, so the
+   confirmation reads as "that worked" rather than losing the page. */
+.contact-success { text-align: center; padding: 20px 0; }
+.contact-success svg { width: 44px; height: 44px; stroke: #4ade80; margin-bottom: 14px; }
+.contact-success h3 {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-weight: 600; font-size: 22px; color: #fff; margin: 0 0 8px;
+}
+.contact-success p { font-size: 15px; color: #c7cbe0; margin: 0; }
+.contact-form-error { font-size: 13.5px; color: #fca5a5; margin: -8px 0 16px; }
+
+@media (max-width: 900px) {
+  .contact-split { flex-direction: column; min-height: 0; }
+  .contact-media { padding: 40px 24px; }
+  .contact-panel { padding: 40px 24px; }
+}
+
 /* ---------------- Shared colorful accents (used across every logged-in page) ----------------
    Same 5-color palette as the landing page, applied consistently: each doctor
    gets a stable color (by their position in the doctors list) shown as a top
@@ -1839,6 +1942,13 @@ a { color: inherit; }
 }
 
 .field { margin-bottom: 18px; }
+/* Generic 2-up field row -- new for contact.html (name+phone, clinic
+   name+city), collapses to 1 column on mobile. Every other form on the
+   site stacks fields in a single 420px column (signup.html's 9+ fields
+   included, per that page's own comment), so this is additive, not a
+   replacement for that convention. */
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 700px) { .field-row { grid-template-columns: 1fr; } }
 .field label {
   display: block;
   font-size: 13px;

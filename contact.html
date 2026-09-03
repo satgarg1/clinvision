@@ -9,12 +9,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Contact &amp; book a demo: ClinVision</title>
+<title>Contact us: ClinVision</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=289" />
+<link rel="stylesheet" href="styles.css?v=290" />
 </head>
 <body>
 
@@ -56,58 +56,98 @@
         </div>
       </div>
       <a href="about-us.html" style="font-weight:600;font-size:15px;color:var(--black);text-decoration:none;">About us</a>
-      <a href="contact.html" class="mkt-nav-current" style="font-weight:600;font-size:15px;text-decoration:none;">Contact</a>
+      <a href="contact.html" class="mkt-nav-current" style="font-weight:600;font-size:15px;text-decoration:none;">Contact us</a>
       <a href="login.html" class="btn btn-accent">Log in</a>
     </div>
   </nav>
 
-  <div class="mkt-fullbleed">
-    <div class="mkt-wash" aria-hidden="true">
-      <div class="hero-blob" style="width:280px;height:280px;background:var(--mkt-teal);top:-120px;left:6%;"></div>
-      <div class="hero-blob" style="width:240px;height:240px;background:var(--mkt-blue);top:-100px;left:38%;"></div>
-      <div class="hero-blob" style="width:260px;height:260px;background:var(--mkt-coral);top:-110px;left:68%;"></div>
-      <div class="hero-blob" style="width:220px;height:220px;background:var(--mkt-purple);top:-130px;right:4%;"></div>
+  <!-- Two-pane dark band. Reviewed as a mockup (5 background swatches,
+       several rounds of feedback) before shipping -- see styles.css's
+       .contact-dark-band block for the full history. Nav/footer stay
+       their normal light selves on purpose. -->
+  <div class="contact-dark-band">
+    <div class="contact-split">
+      <div class="contact-media">
+        <div class="contact-glow" aria-hidden="true"></div>
+        <img src="contact-illustration.png" alt="An illustrated support agent inside a phone screen labeled CONTACT US, with call, email, and message icons beside it." />
+      </div>
+
+      <div class="contact-panel">
+        <div class="contact-panel-inner">
+          <div class="eyebrow">We're here to help</div>
+          <h1 class="mkt-h2">Get in touch</h1>
+          <p class="mkt-sub">Thanks for your interest in ClinVision. Reach us directly, or fill in the form below and we'll reach out to you.</p>
+
+          <div class="contact-cta-row">
+            <a href="#" id="heroWhatsapp" class="btn btn-whatsapp btn-large">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.5A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 1 .9-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.2-.7.8-.8 1-.1.1-.3.2-.5.1-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5.1-.1.2-.3.4-.4.1-.1.2-.3.2-.4.1-.1 0-.3 0-.4-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.2 1.6 2.4 3.8 3.4.5.2.9.4 1.3.5.5.2 1 .1 1.4.1.4-.1 1.3-.5 1.5-1 .2-.5.2-.9.1-1z"/></svg>
+              Send a message
+            </a>
+            <a href="mailto:hello@clinvision.in" class="btn btn-ghost btn-large">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>
+              Email us
+            </a>
+          </div>
+
+          <div class="contact-divider">or</div>
+
+          <h2 class="pg-h2">Contact us</h2>
+          <p class="contact-form-note">Share a few details and we'll get in touch with you.</p>
+
+          <div id="contactFormWrap">
+            <p id="contactFormError" class="contact-form-error" style="display:none;"></p>
+            <form id="contactForm">
+              <!-- Honeypot -- see migration 061's own note. Left blank by
+                   a real visitor, often filled in by a simple bot. -->
+              <div class="field contact-honeypot" aria-hidden="true">
+                <label for="cWebsite">Leave this field blank</label>
+                <input type="text" id="cWebsite" tabindex="-1" autocomplete="off" />
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="cName">Your name</label>
+                  <input type="text" id="cName" placeholder="Full name" required />
+                </div>
+                <div class="field">
+                  <label for="cPhone">Phone number</label>
+                  <input type="tel" id="cPhone" placeholder="10-digit mobile number" required />
+                </div>
+              </div>
+              <div class="field">
+                <label for="cClinicType">Clinic type</label>
+                <!-- value= stays the short form -- matches the check
+                     constraint on contact_enquiries.clinic_type
+                     (migration 061) exactly; only the visible label
+                     carries the explanation. -->
+                <select id="cClinicType">
+                  <option value="">Select your clinic type</option>
+                  <option value="Solo practice">Solo practice (1 doctor)</option>
+                  <option value="Multi-doctor clinic">Multi-doctor clinic (2+ doctors, one specialty)</option>
+                  <option value="Polyclinic">Polyclinic (multiple specialties, one location)</option>
+                  <option value="Diagnostic center">Diagnostic center (labs and tests, no consultations)</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="cClinic">Clinic name <span style="font-weight:400;">(optional)</span></label>
+                  <input type="text" id="cClinic" placeholder="Clinic name" />
+                </div>
+                <div class="field">
+                  <label for="cCity">City <span style="font-weight:400;">(optional)</span></label>
+                  <input type="text" id="cCity" placeholder="City" />
+                </div>
+              </div>
+              <div class="field">
+                <label for="cNote">Anything specific you'd like to ask? <span style="font-weight:400;">(optional)</span></label>
+                <input type="text" id="cNote" placeholder="Tell us a bit more" />
+              </div>
+              <button type="submit" class="btn btn-accent btn-large" id="contactSubmitBtn">Send</button>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
-    <section class="mkt-section tight" style="position:relative;z-index:1;">
-    <div class="eyebrow">Book a demo, or just ask a question</div>
-    <h2 class="mkt-h2">Tell us a bit about your clinic.<br />We'll take it from there.</h2>
-    <p class="mkt-sub">
-      No account needed to reach us. Fill in what you can, even just your
-      name and number, and we'll pick it up on WhatsApp.
-    </p>
-
-    <form id="contactForm" style="max-width:480px;margin:0 auto;text-align:left;">
-      <div class="field">
-        <label for="cName">Your name</label>
-        <input type="text" id="cName" required />
-      </div>
-      <div class="field">
-        <label for="cPhone">Phone number</label>
-        <input type="tel" id="cPhone" required />
-      </div>
-      <div class="field">
-        <label for="cClinic">Clinic name</label>
-        <input type="text" id="cClinic" placeholder="Optional" />
-      </div>
-      <div class="field">
-        <label for="cCity">City</label>
-        <input type="text" id="cCity" placeholder="Optional" />
-      </div>
-      <div class="field">
-        <label for="cNote">Anything specific you'd like to ask?</label>
-        <input type="text" id="cNote" placeholder="Optional" />
-      </div>
-      <div class="mkt-cta-row" style="justify-content:flex-start;margin-top:8px;">
-        <button type="submit" class="btn btn-accent btn-large">Continue on WhatsApp</button>
-      </div>
-    </form>
-
-    <p class="panel-note" style="margin-top:32px;">
-      Prefer not to fill anything in?
-      <a href="#" id="directWhatsapp">Just message us directly</a>
-      or call <span id="phoneDisplay"></span>.
-    </p>
-    </section>
   </div>
 
   <footer class="mkt-footer">
@@ -115,38 +155,82 @@
     <a href="index.html">Back to home</a>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
   <script>
     // Placeholder: see the TODO comment at the top of this file.
     const WHATSAPP_NUMBER = '91XXXXXXXXXX';
-    const DISPLAY_NUMBER = '+91 XXXXX XXXXX';
-
-    document.getElementById('phoneDisplay').textContent = DISPLAY_NUMBER;
-
-    function waLink(message) {
-      return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-    }
-
-    document.getElementById('directWhatsapp').href = waLink("Hi, I'd like to know more about ClinVision.");
+    const heroWhatsappLink = document.getElementById('heroWhatsapp');
+    heroWhatsappLink.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi, I'd like to know more about ClinVision.")}`;
 
     document.getElementById('cName').addEventListener('input', function () {
       this.value = this.value.replace(/[0-9]/g, '');
     });
 
-    document.getElementById('contactForm').addEventListener('submit', (e) => {
+    // Lightweight, dedicated client for this one public insert -- this
+    // page doesn't need clinic-data.js's full app logic (auth session,
+    // clinic-scoped queries), just an anon-key insert into a table with
+    // no clinic context at all. Same supabase.createClient pattern
+    // login.html and clinic-data.js already use.
+    const sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    const form = document.getElementById('contactForm');
+    const formWrap = document.getElementById('contactFormWrap');
+    const errorEl = document.getElementById('contactFormError');
+    const submitBtn = document.getElementById('contactSubmitBtn');
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      // Honeypot: a real visitor never sees or fills this field. If it's
+      // filled, silently pretend success without writing a row.
+      if (document.getElementById('cWebsite').value.trim()) {
+        showSuccess();
+        return;
+      }
+
       const name = document.getElementById('cName').value.trim();
       const phone = document.getElementById('cPhone').value.trim();
-      const clinic = document.getElementById('cClinic').value.trim();
-      const city = document.getElementById('cCity').value.trim();
-      const note = document.getElementById('cNote').value.trim();
+      const clinicType = document.getElementById('cClinicType').value || null;
+      const clinicName = document.getElementById('cClinic').value.trim() || null;
+      const city = document.getElementById('cCity').value.trim() || null;
+      const message = document.getElementById('cNote').value.trim() || null;
 
-      let message = `Hi, I'd like to book a demo of ClinVision. My name is ${name}, phone ${phone}.`;
-      if (clinic) message += ` Clinic: ${clinic}.`;
-      if (city) message += ` City: ${city}.`;
-      if (note) message += ` ${note}`;
+      if (!name || !phone) {
+        errorEl.textContent = 'Please fill in your name and phone number.';
+        errorEl.style.display = 'block';
+        return;
+      }
+      errorEl.style.display = 'none';
 
-      window.open(waLink(message), '_blank', 'noopener');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
+
+      const { error } = await sb.from('contact_enquiries').insert({
+        name, phone, clinic_type: clinicType, clinic_name: clinicName, city, message
+      });
+
+      if (error) {
+        console.error('contact_enquiries insert failed:', error);
+        errorEl.textContent = "Something went wrong sending that. Please try WhatsApp or email above instead.";
+        errorEl.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send';
+        return;
+      }
+
+      showSuccess();
     });
+
+    function showSuccess() {
+      formWrap.innerHTML = `
+        <div class="contact-success">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+          <h3>Thanks, we've got your details</h3>
+          <p>We'll reach out to you shortly.</p>
+        </div>
+      `;
+    }
   </script>
 
 </body>
