@@ -1937,12 +1937,17 @@ a { color: inherit; }
 .queue-feedback-textarea::placeholder { color: var(--grey-500); }
 .queue-feedback-textarea:focus { outline: none; border-color: var(--accent); }
 .queue-feedback-send { margin-top: 12px; width: 100%; }
-.queue-feedback-thanks { display: none; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--success); }
+.queue-feedback-thanks { display: none; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 600; color: var(--success); }
 .queue-feedback-thanks svg { width: 18px; height: 18px; flex: none; }
 .queue-feedback.submitted .queue-feedback-q,
 .queue-feedback.submitted .queue-feedback-stars,
 .queue-feedback.submitted .queue-feedback-extra { display: none; }
 .queue-feedback.submitted .queue-feedback-thanks { display: flex; }
+/* Once feedback is submitted, this block collapses down to just the
+   thanks line -- its own top border plus .queue-done-footer's right
+   below it read as a redundant double rule sandwiching one short line.
+   Drop this one; the footer's own divider below is enough. */
+.queue-feedback.submitted { border-top: none; padding-top: 0; }
 
 /* Registration has 10 fields (address split into 3 rows) where every
    other login-card page has 1-4, so it alone gets a denser tier on top
