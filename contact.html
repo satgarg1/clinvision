@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=292" />
+<link rel="stylesheet" href="styles.css?v=293" />
 </head>
 <body>
 
@@ -74,9 +74,9 @@
 
       <div class="contact-panel">
         <div class="contact-panel-inner">
-          <div class="eyebrow">We're here to help</div>
+          <div class="eyebrow">We're here to help!</div>
           <h1 class="mkt-h2">Get in touch</h1>
-          <p class="mkt-sub">Thanks for your interest in ClinVision. Reach us directly, or fill in the form below and we'll reach out to you.</p>
+          <p class="mkt-sub">Thanks for your interest in ClinVision.<br />Reach us directly, or fill in the form below and we'll reach out to you.</p>
 
           <div class="contact-cta-row">
             <a href="#" id="heroWhatsapp" class="btn btn-whatsapp btn-large">
@@ -91,10 +91,14 @@
 
           <div class="contact-divider">or</div>
 
-          <h2 class="pg-h2">Contact us</h2>
-          <p class="contact-form-note">Share a few details and we'll get in touch with you.</p>
-
-          <div id="contactFormWrap">
+          <!-- Everything from here down -- heading, note, and the form
+               itself -- gets replaced by showSuccess() on submit, not
+               just the form: leaving "Contact us"/"Share a few
+               details..." visible above the confirmation read oddly,
+               since the form they refer to would already be gone. -->
+          <div id="contactFormSection">
+            <h2 class="pg-h2">Contact us</h2>
+            <p class="contact-form-note">Share a few details and we'll get in touch with you.</p>
             <p id="contactFormError" class="contact-form-error" style="display:none;"></p>
             <form id="contactForm">
               <!-- Honeypot -- see migration 061's own note. Left blank by
@@ -181,7 +185,7 @@
     const sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
     const form = document.getElementById('contactForm');
-    const formWrap = document.getElementById('contactFormWrap');
+    const formSection = document.getElementById('contactFormSection');
     const errorEl = document.getElementById('contactFormError');
     const submitBtn = document.getElementById('contactSubmitBtn');
 
@@ -234,12 +238,15 @@
     });
 
     function showSuccess() {
-      // Lock in the form's own rendered height before swapping it out --
-      // otherwise the much shorter success message collapses the whole
+      // Lock in the whole section's rendered height before swapping it
+      // out -- otherwise the much shorter success message collapses the
       // pane, which read as an odd size jump between the two states.
-      const heightBefore = formWrap.getBoundingClientRect().height;
-      formWrap.style.minHeight = heightBefore + 'px';
-      formWrap.innerHTML = `
+      // Swaps "Contact us"/the note/the form all at once, not just the
+      // form: leaving that heading and note above the confirmation read
+      // oddly once the form they refer to was already gone.
+      const heightBefore = formSection.getBoundingClientRect().height;
+      formSection.style.minHeight = heightBefore + 'px';
+      formSection.innerHTML = `
         <div class="contact-success">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
           <h3>Thanks, we've got your details</h3>

@@ -1417,16 +1417,11 @@ a { color: inherit; }
 /* .eyebrow/.mkt-h2/.pg-h2/.mkt-sub are the real shared classes -- only
    colors (and, for the eyebrow, size+centering per feedback) are
    overridden here, scoped to this one dark section. */
-/* Same fix as .hero-stage .eyebrow::before on solo-practice.html's own
-   hero: the shared .eyebrow::before dot is positioned for a
-   left-aligned label (left:0, padding-left:16px on .eyebrow itself) --
-   left as-is here, it showed up as a stray floating dot in front of a
-   centered label. Dropped here only. */
-.contact-dark-band .eyebrow {
-  color: #8fb8ff; font-size: 18px; padding-left: 0;
-  display: block; width: fit-content; margin-left: auto; margin-right: auto;
-}
-.contact-dark-band .eyebrow::before { display: none; }
+/* Left-aligned, matching "Get in touch" below it -- an earlier centered
+   version (needed to also hide the shared .eyebrow::before dot, which
+   is positioned for a left-aligned label) read as misaligned against
+   every other left-aligned line in this column, per feedback. */
+.contact-dark-band .eyebrow { color: #8fb8ff; font-size: 18px; }
 .contact-dark-band .mkt-h2 { color: #fff; }
 .contact-dark-band .mkt-sub { color: #c7cbe0; max-width: 460px; margin-left: 0; }
 .contact-dark-band .pg-h2 { color: #fff; margin-bottom: 8px; }
@@ -1491,24 +1486,28 @@ a { color: inherit; }
    fields. */
 .contact-honeypot { position: absolute; left: -9999px; top: -9999px; }
 
-/* Submit swaps the form for this, in place -- no page reload, so the
-   confirmation reads as "that worked" rather than losing the page.
-   #contactFormWrap gets an inline min-height set by JS right before the
-   swap (the form's own rendered height), so the pane doesn't visibly
-   shrink once the much-shorter success message replaces a multi-field
-   form -- flex here is what lets .contact-success then fill and center
-   in that preserved height instead of sitting small at the top. */
-#contactFormWrap { display: flex; flex-direction: column; }
+/* Submit swaps this whole section for the confirmation, in place -- no
+   page reload, so it reads as "that worked" rather than losing the
+   page. Swaps "Contact us"/the note/the form together, not just the
+   form -- leaving that heading and note above the confirmation read
+   oddly once the form they referred to was already gone.
+   #contactFormSection gets an inline min-height set by JS right before
+   the swap (its own rendered height, heading+note+form included), so
+   the pane doesn't visibly shrink once the much shorter success message
+   replaces all of that -- flex here is what lets .contact-success then
+   fill and center in that preserved height instead of sitting small at
+   the top. */
+#contactFormSection { display: flex; flex-direction: column; }
 .contact-success {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
   text-align: center; padding: 20px 0;
 }
-.contact-success svg { width: 72px; height: 72px; stroke: #4ade80; margin-bottom: 22px; }
+.contact-success svg { width: 88px; height: 88px; stroke: #4ade80; margin-bottom: 26px; }
 .contact-success h3 {
   font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-weight: 600; font-size: clamp(28px, 3.4vw, 38px); color: #fff; margin: 0 0 12px;
+  font-weight: 600; font-size: clamp(34px, 4.2vw, 46px); color: #fff; margin: 0 0 14px;
 }
-.contact-success p { font-size: 19px; color: #c7cbe0; margin: 0; max-width: 380px; }
+.contact-success p { font-size: 22px; color: #c7cbe0; margin: 0; max-width: 420px; }
 .contact-form-error { font-size: 13.5px; color: #fca5a5; margin: -8px 0 16px; }
 
 @media (max-width: 900px) {
