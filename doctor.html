@@ -607,7 +607,7 @@
               ctx2.restore();
             },
           };
-          return new Chart(canvasEl, {
+          const chartInstance = new Chart(canvasEl, {
             type: 'bar',
             plugins: [valueLabelPlugin],
             data: {
@@ -648,25 +648,6 @@
               responsive: true,
               maintainAspectRatio: false,
               layout: { padding: { top: 16 } },
-              // Bug found on the live page: the earlier build put a
-              // separate invisible strip BELOW the canvas as the click
-              // target, so clicking the actual rendered time labels
-              // (drawn inside the canvas by Chart.js) did nothing, and
-              // the real hit zone was an unmarked gap underneath them.
-              // scales.x.top is the real boundary between the plot area
-              // and the axis's own box (ticks + labels) -- checking the
-              // click's y against that hits the labels themselves,
-              // wherever Chart.js actually draws them.
-              onClick(evt, elements, chart) {
-                if (evt.y >= chart.scales.x.top) {
-                  if (evt.native) evt.native.stopPropagation();
-                  intervalPopoverOpen = !intervalPopoverOpen;
-                  renderAll();
-                }
-              },
-              onHover(evt, elements, chart) {
-                chart.canvas.style.cursor = evt.y >= chart.scales.x.top ? 'pointer' : 'default';
-              },
               scales: {
                 x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10.5, weight: '600' }, color: '#86868b' } },
                 y: {
@@ -700,13 +681,42 @@
               },
             },
           });
+          // Bug found on the live page, root-caused against a standalone
+          // Chart.js 4.5.1 harness: options.onClick/onHover are wired
+          // and fire for nothing here -- chart.options.onClick was
+          // confirmed correctly registered and 'click' was confirmed
+          // present in chart.options.events, but the callback itself
+          // never actually ran for a real or synthetic click on this
+          // Chart.js build. A plain native listener on the canvas
+          // element works reliably instead (confirmed in the same
+          // harness), using the same chart.scales.x.top boundary -- the
+          // real edge between the plot area and the axis's own box
+          // (ticks + labels) -- so this opens exactly where the time
+          // labels are drawn, not a separate strip that might miss them
+          // (that was the ORIGINAL bug, one build before this one).
+          // stopPropagation only on the axis hit, so a click elsewhere
+          // on the chart still reaches the backdrop's own delegated
+          // handler and closes an open popover as normal.
+          chartInstance.canvas.addEventListener('click', (e) => {
+            const y = e.clientY - chartInstance.canvas.getBoundingClientRect().top;
+            if (y >= chartInstance.scales.x.top) {
+              e.stopPropagation();
+              intervalPopoverOpen = !intervalPopoverOpen;
+              renderAll();
+            }
+          });
+          chartInstance.canvas.addEventListener('mousemove', (e) => {
+            const y = e.clientY - chartInstance.canvas.getBoundingClientRect().top;
+            chartInstance.canvas.style.cursor = y >= chartInstance.scales.x.top ? 'pointer' : 'default';
+          });
+          return chartInstance;
         }
 
         // Lives inside .chart-canvas-wrap (position:relative already,
         // for the canvas itself) so it anchors right under the chart
         // regardless of where in the canvas the click that opened it
-        // landed -- the open/close logic is the canvas's own Chart.js
-        // onClick above, not a click on this div.
+        // landed -- the open/close logic is the canvas's own native
+        // click listener above, not a click on this div.
         function intervalPopoverHtml() {
           const chips = BUCKET_PRESETS_MIN.map((m) => `
             <button type="button" class="chip${m === bucketWidthMin ? ' active' : ''}" data-min="${m}">${m / 60} hr</button>
