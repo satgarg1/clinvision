@@ -1542,8 +1542,19 @@ a { color: inherit; }
 }
 .now-chip .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-dark); }
 .chart-canvas-wrap { position: relative; height: 128px; }
-/* The bucket-interval popover: opened by Chart.js's own onClick on the
-   canvas (clicking its real axis-label pixels, not a separate DOM
+/* A hover-only highlight over the chart's real x-axis label zone, so
+   the axis reads as clickable without any "click here" text -- the
+   canvas's own JS sets its top (matching Chart.js's real scales.x.top
+   for that render) and toggles its opacity on mousemove; pointer-
+   events stay off so it never intercepts the click meant for the
+   canvas underneath it. */
+.chart-axis-hover {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: var(--grey-100); border-radius: 6px; opacity: 0; pointer-events: none;
+  transition: opacity 0.1s ease;
+}
+/* The bucket-interval popover: opened by a native click listener on
+   the canvas (clicking its real axis-label pixels, not a separate DOM
    strip -- a first build used one of those below the chart and it
    silently missed the actual labels, confirmed live), so this is
    purely the floating panel's own shape, not a click target itself. */
