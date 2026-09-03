@@ -1894,8 +1894,12 @@ a { color: inherit; }
   margin: 16px auto -52px; box-shadow: var(--shadow-resting); position: relative; z-index: 2;
 }
 .queue-done-body { padding-top: 60px; text-align: center; }
-.queue-done-headline { font-size: 24px; font-weight: 700; margin: 0 0 10px; }
-.queue-done-sub { font-size: 15px; color: var(--grey-700); line-height: 1.6; margin: 0; }
+.queue-done-headline { font-size: 26px; font-weight: 800; margin: 0 0 10px; }
+/* Was 15px/400-weight/grey-700 -- read as throwaway fine print for what
+   is actually the visit's own record (who saw the patient, that the
+   link is now closed). Bumped up and darkened per feedback so it reads
+   as a real fact, not a footnote. */
+.queue-done-sub { font-size: 17px; font-weight: 700; color: var(--black); line-height: 1.6; margin: 0; }
 .queue-done-token {
   margin: 22px auto; display: inline-flex; flex-direction: column; align-items: center; gap: 6px;
   background: var(--success-bg); border-radius: var(--radius-md); padding: 16px 32px;
