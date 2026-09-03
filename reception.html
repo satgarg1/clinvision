@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=276" />
+<link rel="stylesheet" href="styles.css?v=277" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -72,6 +72,14 @@
           <div class="mode-toggle" role="tablist" aria-label="How is this patient being added" style="margin-bottom:0;">
             <button type="button" class="mode-btn active" data-mode="appointment" role="tab" aria-selected="true">📞 Phoned-in appointment, booking ahead</button>
             <button type="button" class="mode-btn" data-mode="walkin" role="tab" aria-selected="false">🚶 Walk-in, here right now</button>
+          </div>
+          <!-- Hidden until phone-blur finds a returning patient with at
+               least one real visit -- same lifecycle as patientLookupHint
+               below, just a separate, additive way to see more, not a
+               replacement for that hint's own autofill job. -->
+          <div class="patient-info-wrap" id="patientInfoWrap" style="display:none;">
+            <button type="button" class="patient-info-chip" id="patientInfoChipBtn" aria-expanded="false">🕘 <span id="patientInfoChipText">Patient Info</span></button>
+            <div class="patient-info-popover" id="patientInfoPopover"></div>
           </div>
           <button type="button" class="btn-sm primary" id="viewDaySlotsBtn" style="margin-left:auto;padding:10px 16px;font-size:14px;">View day's schedule</button>
         </div>
@@ -184,7 +192,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=90"></script>
+  <script src="clinic-data.js?v=91"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -1530,11 +1538,46 @@
       // passive heads-up, not a gate: it never blocks or auto-fills
       // anything on its own, reception has to click "Use these details"
       // to apply a match, and the no-show note is informational only.
+      function closePatientInfoPopover() {
+        document.getElementById('patientInfoPopover').classList.remove('open');
+        document.getElementById('patientInfoChipBtn').setAttribute('aria-expanded', 'false');
+      }
+      function hidePatientInfoChip() {
+        document.getElementById('patientInfoWrap').style.display = 'none';
+        closePatientInfoPopover();
+      }
       function clearPatientLookupHint() {
         const hint = document.getElementById('patientLookupHint');
         hint.style.display = 'none';
         hint.innerHTML = '';
+        hidePatientInfoChip();
       }
+
+      // Same trigger + dropdown mechanics as Insights' own anomaly chip
+      // (trends.html/revenue.html) -- re-themed amber and re-purposed
+      // here, not a new interaction pattern for the app to learn.
+      // Reuses the exact date format patient-directory.html already
+      // shows this same data in (Qlinic.formatDateLabel), rather than
+      // introducing a second convention for the same kind of date.
+      function renderPatientInfoChip(match, phone) {
+        const wrap = document.getElementById('patientInfoWrap');
+        if (!match.recentVisits || match.recentVisits.length === 0) { hidePatientInfoChip(); return; }
+        document.getElementById('patientInfoChipText').textContent =
+          `Patient Info · ${match.totalVisits} ${match.totalVisits === 1 ? 'visit' : 'visits'}`;
+        const rows = match.recentVisits.map((v) => {
+          const doctor = doctorsCache.find((d) => d.id === v.doctorId);
+          const doctorLabel = doctor ? `Dr. ${Qlinic.escapeHtml(doctor.name)}` : 'Doctor no longer on roster';
+          return `<div class="pi-visit-row"><span class="pi-visit-date">${Qlinic.formatDateLabel(v.date)}</span><span class="pi-visit-doctor">${doctorLabel}</span></div>`;
+        }).join('');
+        document.getElementById('patientInfoPopover').innerHTML = `
+          <div class="pi-eyebrow">Recent visits</div>
+          <div class="pi-name">${Qlinic.escapeHtml(match.name)}</div>
+          ${rows}
+          <a href="patient-directory.html?phone=${encodeURIComponent(phone)}" class="pi-footer-link">View full history (${match.totalVisits} ${match.totalVisits === 1 ? 'visit' : 'visits'}) &rarr;</a>
+        `;
+        wrap.style.display = '';
+      }
+
       async function checkPatientLookup() {
         const myToken = ++patientLookupToken;
         const phone = document.getElementById('pPhone').value.trim();
@@ -1551,16 +1594,6 @@
         if (match.noShowCount >= 2) {
           html += `<div style="margin-top:8px;color:var(--warning);background:var(--warning-bg);padding:8px 12px;border-radius:8px;">⚠ Missed ${match.noShowCount} of their last ${match.visitsChecked} visits, consider confirming by call.</div>`;
         }
-        // Reuses the exact date format patient-directory.html already
-        // shows this same data in (Qlinic.formatDateLabel), rather than
-        // introducing a second convention for the same kind of date.
-        // Skipped entirely when there's no qualifying visit yet -- same
-        // "nothing to show" spirit as this whole hint being absent for a
-        // genuinely first-time patient.
-        if (match.recentVisits && match.recentVisits.length > 0) {
-          const dateLabels = match.recentVisits.map((d) => Qlinic.formatDateLabel(d)).join(' &middot; ');
-          html += `<div style="margin-top:8px;">Last ${match.recentVisits.length === 1 ? 'visit' : 'visits'}: <strong>${dateLabels}</strong> &nbsp;<a href="patient-directory.html?phone=${encodeURIComponent(phone)}" style="font-weight:600;">View full history &rarr;</a></div>`;
-        }
         hint.innerHTML = html;
         hint.style.display = 'block';
         document.getElementById('useLookupBtn').addEventListener('click', () => {
@@ -1570,8 +1603,22 @@
           if (match.age) document.getElementById('pAge').value = match.age;
           showToast('Details filled in');
         });
+        renderPatientInfoChip(match, phone);
       }
       document.getElementById('pPhone').addEventListener('blur', checkPatientLookup);
+
+      document.getElementById('patientInfoChipBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const popover = document.getElementById('patientInfoPopover');
+        const isOpen = popover.classList.toggle('open');
+        document.getElementById('patientInfoChipBtn').setAttribute('aria-expanded', String(isOpen));
+      });
+      document.addEventListener('click', (e) => {
+        if (!document.getElementById('patientInfoWrap').contains(e.target)) closePatientInfoPopover();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closePatientInfoPopover();
+      });
 
       // Advisory only, same spirit as the no-show note above: tells
       // reception whether to expect payment, never blocks or auto-fills

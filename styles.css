@@ -3820,6 +3820,34 @@ th.th-filterable { position: relative; }
 .anomaly-tab-link { display: inline-block; margin-top: 5px; font-size: 11.5px; font-weight: 700; color: var(--accent-dark); background: none; border: none; padding: 0; cursor: pointer; font-family: var(--font); }
 .anomaly-tab-link:hover { text-decoration: underline; }
 .anomaly-calm-body { display: flex; align-items: center; gap: 10px; padding: 4px 0 2px; }
+
+/* Reception's "Patient Info" chip -- reuses the exact trigger +
+   dropdown mechanics the anomaly chip above already established
+   (chip toggles .open on its popover, outside-click/Escape closes it),
+   re-themed amber and re-purposed rather than inventing a second
+   interaction pattern for the app to learn. Scoped/mocked up and
+   reviewed before building (see BACKLOG.md). */
+.patient-info-wrap { position: relative; }
+.patient-info-chip {
+  display: inline-flex; align-items: center; gap: 8px; font-family: var(--font);
+  font-size: 13px; font-weight: 700; border: none; border-radius: var(--radius-pill);
+  padding: 10px 16px; cursor: pointer; white-space: nowrap;
+  background: var(--warning-bg); color: var(--warning);
+}
+.patient-info-chip:hover { filter: brightness(0.97); }
+.patient-info-popover {
+  position: absolute; top: calc(100% + 8px); left: 0; width: 320px;
+  background: var(--white); border: 1px solid var(--grey-300); border-radius: 12px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.14); z-index: 50; padding: 16px 18px; display: none;
+}
+.patient-info-popover.open { display: block; }
+.pi-eyebrow { font-size: 10.5px; font-weight: 700; color: var(--grey-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.pi-name { font-size: 15px; font-weight: 700; color: var(--black); margin-bottom: 12px; }
+.pi-visit-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 7px 0; }
+.pi-visit-row + .pi-visit-row { border-top: 1px solid var(--grey-100); }
+.pi-visit-date { font-size: 13px; font-weight: 600; color: var(--black); white-space: nowrap; }
+.pi-visit-doctor { font-size: 12.5px; color: var(--grey-500); text-align: right; }
+.pi-footer-link { display: block; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--grey-100); font-size: 13px; font-weight: 600; color: var(--accent-dark); }
 .anomaly-calm-body .icon { font-size: 20px; }
 .anomaly-calm-body .text { font-size: 13px; color: var(--grey-700); }
 

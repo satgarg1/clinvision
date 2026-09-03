@@ -1083,7 +1083,7 @@
     // meaning exactly as it was, unaffected by the wider fetch.
     const { data, error } = await sb
       .from('patients')
-      .select('name, gender, address, age, status, token_date')
+      .select('name, gender, address, age, status, token_date, doctor_id')
       .eq('clinic_id', clinicId)
       .eq('phone', cleanPhone)
       .order('created_at', { ascending: false })
@@ -1095,7 +1095,11 @@
     // Same "actually arrived" definition getPatientDirectory uses below --
     // a booking nobody showed up to, or a no-show, isn't a visit.
     const visited = data.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status));
-    const recentVisits = visited.map((p) => p.token_date).sort().reverse().slice(0, 3);
+    const recentVisits = visited
+      .slice()
+      .sort((a, b) => (a.token_date > b.token_date ? -1 : a.token_date < b.token_date ? 1 : 0))
+      .slice(0, 3)
+      .map((p) => ({ date: p.token_date, doctorId: p.doctor_id }));
     return {
       name: latest.name,
       gender: latest.gender,
