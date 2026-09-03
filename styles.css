@@ -1542,13 +1542,11 @@ a { color: inherit; }
 }
 .now-chip .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-dark); }
 .chart-canvas-wrap { position: relative; height: 128px; }
-/* The bucket-interval control: a thin invisible strip right under the
-   chart (where Chart.js already draws its own x-axis labels inside the
-   canvas), so the axis itself is the only affordance -- no separate
-   label or "click here" hint text sitting above it. A hover tint is
-   the one hint it's interactive. */
-.chart-axis-trigger { height: 20px; margin: -4px 0 4px; cursor: pointer; border-radius: 6px; position: relative; }
-.chart-axis-trigger:hover { background: var(--grey-100); }
+/* The bucket-interval popover: opened by Chart.js's own onClick on the
+   canvas (clicking its real axis-label pixels, not a separate DOM
+   strip -- a first build used one of those below the chart and it
+   silently missed the actual labels, confirmed live), so this is
+   purely the floating panel's own shape, not a click target itself. */
 .chart-interval-popover {
   display: none; position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
   background: var(--white); border: 1px solid var(--grey-300); border-radius: 10px;

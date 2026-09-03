@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=279" />
+<link rel="stylesheet" href="styles.css?v=280" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -94,7 +94,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=91"></script>
+  <script src="clinic-data.js?v=92"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -128,6 +128,7 @@
       let periodPreset = 'all';
       let doctorFilterIds = new Set();
       let genderFilterValues = new Set();
+      let visitsFilterValues = new Set();
       let customPeriodRange = null;
       const GENDER_LABELS = { male: 'Male', female: 'Female', other: 'Other' };
       function genderKey(g) { return g || '__unspecified__'; }
@@ -232,7 +233,7 @@
         return allEntries.filter((e) => {
           if (term && !(
             e.name.toLowerCase().includes(term) ||
-            e.phone.toLowerCase().includes(term) ||
+            (e.phone || '').toLowerCase().includes(term) ||
             (e.address || '').toLowerCase().includes(term)
           )) return false;
           if (range && !(e.lastVisitDate >= range.start && e.lastVisitDate <= range.end)) return false;
@@ -244,6 +245,7 @@
         return searchAndPeriodEntries().filter((e) => {
           if (doctorFilterIds.size > 0 && !e.doctorIds.some((id) => doctorFilterIds.has(id))) return false;
           if (genderFilterValues.size > 0 && !genderFilterValues.has(genderKey(e.gender))) return false;
+          if (visitsFilterValues.size > 0 && !visitsFilterValues.has(String(e.totalVisits))) return false;
           return true;
         });
       }
@@ -287,6 +289,7 @@
       function resetAllFilters() {
         doctorFilterIds.clear();
         genderFilterValues.clear();
+        visitsFilterValues.clear();
         onDirectoryFilterChange();
       }
       document.addEventListener('click', () => closeColumnFilter());
@@ -307,6 +310,21 @@
           count: counting.filter((e) => genderKey(e.gender) === k).length,
         })).sort((a, b) => b.count - a.count);
       }
+      // Same Excel-style checkbox dropdown as Gender/Doctors seen, just
+      // over whatever visit counts actually occur in the data (1 to N,
+      // not a fixed range someone has to guess) -- sorted low to high
+      // rather than by popularity, since a visit count is a number line
+      // an admin reads in order, not a set of categories ranked by how
+      // common each one is.
+      function visitsFilterOptions() {
+        const counting = searchAndPeriodEntries();
+        const keys = Array.from(new Set(counting.map((e) => e.totalVisits)));
+        return keys.map((k) => ({
+          value: String(k),
+          label: `${k} visit${k === 1 ? '' : 's'}`,
+          count: counting.filter((e) => e.totalVisits === k).length,
+        })).sort((a, b) => Number(a.value) - Number(b.value));
+      }
 
       // One removable chip per active column filter, so a filtered
       // directory is visibly and specifically flagged as filtered
@@ -322,12 +340,17 @@
           const labels = [...genderFilterValues].map((v) => genderLabel(v === '__unspecified__' ? null : v));
           chips.push({ key: 'gender', label: `Gender: ${labels.join(', ')}` });
         }
+        if (visitsFilterValues.size > 0) {
+          const labels = [...visitsFilterValues].map(Number).sort((a, b) => a - b);
+          chips.push({ key: 'visits', label: `Total visits: ${labels.join(', ')}` });
+        }
         if (chips.length === 0) return '';
         return `<div class="active-filter-chips">${chips.map((c) => `<div class="filter-chip">${Qlinic.escapeHtml(c.label)}<button type="button" class="clear-filter-chip" data-key="${c.key}" aria-label="Clear filter">×</button></div>`).join('')}</div>`;
       }
       function clearFilterByKey(key) {
         if (key === 'doctor') doctorFilterIds.clear();
         else if (key === 'gender') genderFilterValues.clear();
+        else if (key === 'visits') visitsFilterValues.clear();
         onDirectoryFilterChange();
       }
 
@@ -394,6 +417,7 @@
 
         const genderIconClass = genderFilterValues.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
         const doctorIconClass = doctorFilterIds.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
+        const visitsIconClass = visitsFilterValues.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
         wrap.innerHTML = `
           <table class="qtable qtable-fixed">
             <colgroup>
@@ -404,14 +428,16 @@
             <thead><tr>
               <th>Name</th><th>Phone</th><th>Age</th>
               <th class="th-filterable"><span class="th-filter-trigger" id="genderFilterTrigger">Gender ${FILTER_ICON_SVG(genderIconClass)}</span></th>
-              <th>Address</th><th>Total visits</th><th>First visit</th><th>Last visit</th>
+              <th>Address</th>
+              <th class="th-filterable"><span class="th-filter-trigger" id="visitsFilterTrigger">Total visits ${FILTER_ICON_SVG(visitsIconClass)}</span></th>
+              <th>First visit</th><th>Last visit</th>
               <th class="th-filterable"><span class="th-filter-trigger" id="doctorFilterTrigger">Doctors seen ${FILTER_ICON_SVG(doctorIconClass)}</span></th>
             </tr></thead>
             <tbody>
               ${pageItems.map((e) => `
                 <tr>
                   <td class="qtable-wrap">${Qlinic.escapeHtml(e.name)}</td>
-                  <td>${Qlinic.escapeHtml(e.phone)}</td>
+                  <td>${e.phone ? Qlinic.escapeHtml(e.phone) : '—'}</td>
                   <td>${e.age || '—'}</td>
                   <td>${genderLabel(e.gender)}</td>
                   <td class="qtable-wrap">${e.address ? Qlinic.escapeHtml(e.address) : '—'}</td>
@@ -427,6 +453,10 @@
         document.getElementById('genderFilterTrigger').addEventListener('click', (e) => {
           e.stopPropagation();
           openColumnFilter('gender', e.currentTarget.closest('th'), genderFilterOptions(), genderFilterValues, onDirectoryFilterChange);
+        });
+        document.getElementById('visitsFilterTrigger').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openColumnFilter('visits', e.currentTarget.closest('th'), visitsFilterOptions(), visitsFilterValues, onDirectoryFilterChange);
         });
         document.getElementById('doctorFilterTrigger').addEventListener('click', (e) => {
           e.stopPropagation();

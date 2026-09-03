@@ -1152,6 +1152,17 @@
   // one. A phone whose only rows are 'booked'/'no_show' (never actually
   // arrived) is left out entirely — that's a booking attempt, not
   // patient history.
+  //
+  // A blank phone used to be dropped the same way — silently, with no
+  // row at all, even for a real visited patient (confirmed bug, found
+  // 2026-09-03 while explaining a Patient Directory/Billing Audit count
+  // mismatch: some of that gap was ordinary multi-visit patients, but
+  // part of it was blank-phone visits invisible here despite being
+  // billed and counted there). Fixed by giving each blank-phone row its
+  // own single-visit entry instead — it can't be merged with anything
+  // else the way a real phone number can (there's no shared identifier
+  // that actually means "same person"), so it isn't merged with other
+  // blank-phone rows either, on the same reasoning.
   async function getPatientDirectory() {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
@@ -1169,14 +1180,15 @@
       .range(from, to));
 
     const byPhone = {};
+    const blankPhoneRows = [];
     (data || []).forEach((row) => {
       const phone = (row.phone || '').trim();
-      if (!phone) return;
+      if (!phone) { blankPhoneRows.push(row); return; }
       (byPhone[phone] = byPhone[phone] || []).push(row);
     });
 
     const directory = [];
-    Object.entries(byPhone).forEach(([phone, rows]) => {
+    function addEntry(phone, rows) {
       const visited = rows.filter((r) => ['waiting', 'in_consult', 'done'].includes(r.status));
       if (visited.length === 0) return;
       const latest = rows[0]; // rows inherit the query's created_at-desc order within each group
@@ -1192,7 +1204,9 @@
         lastVisitDate: visitDates[visitDates.length - 1],
         doctorIds: Array.from(new Set(visited.map((r) => r.doctor_id))),
       });
-    });
+    }
+    Object.entries(byPhone).forEach(([phone, rows]) => addEntry(phone, rows));
+    blankPhoneRows.forEach((row) => addEntry('', [row]));
 
     return directory;
   }

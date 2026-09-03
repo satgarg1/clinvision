@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=279" />
+<link rel="stylesheet" href="styles.css?v=280" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -179,7 +179,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=91"></script>
+  <script src="clinic-data.js?v=92"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -648,6 +648,25 @@
               responsive: true,
               maintainAspectRatio: false,
               layout: { padding: { top: 16 } },
+              // Bug found on the live page: the earlier build put a
+              // separate invisible strip BELOW the canvas as the click
+              // target, so clicking the actual rendered time labels
+              // (drawn inside the canvas by Chart.js) did nothing, and
+              // the real hit zone was an unmarked gap underneath them.
+              // scales.x.top is the real boundary between the plot area
+              // and the axis's own box (ticks + labels) -- checking the
+              // click's y against that hits the labels themselves,
+              // wherever Chart.js actually draws them.
+              onClick(evt, elements, chart) {
+                if (evt.y >= chart.scales.x.top) {
+                  if (evt.native) evt.native.stopPropagation();
+                  intervalPopoverOpen = !intervalPopoverOpen;
+                  renderAll();
+                }
+              },
+              onHover(evt, elements, chart) {
+                chart.canvas.style.cursor = evt.y >= chart.scales.x.top ? 'pointer' : 'default';
+              },
               scales: {
                 x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10.5, weight: '600' }, color: '#86868b' } },
                 y: {
@@ -683,12 +702,11 @@
           });
         }
 
-        // The interval popover's own markup lives inside .chart-axis-trigger
-        // (not a sibling) so a single delegated click handler can tell
-        // "clicked the trigger" from "clicked a chip inside it" using
-        // plain closest() checks, same as every other popover this app
-        // already builds this way (see .patient-info-chip on
-        // reception.html).
+        // Lives inside .chart-canvas-wrap (position:relative already,
+        // for the canvas itself) so it anchors right under the chart
+        // regardless of where in the canvas the click that opened it
+        // landed -- the open/close logic is the canvas's own Chart.js
+        // onClick above, not a click on this div.
         function intervalPopoverHtml() {
           const chips = BUCKET_PRESETS_MIN.map((m) => `
             <button type="button" class="chip${m === bucketWidthMin ? ' active' : ''}" data-min="${m}">${m / 60} hr</button>
@@ -710,8 +728,7 @@
               <hr class="chart-divider" />
               ${visibleBuckets.length > 0 ? `
                 ${currentBucket ? `<div class="chart-subhead"><span class="now-chip"><span class="dot"></span><span>Now: ${Qlinic.formatTime(currentBucket.start)}–${Qlinic.formatTime(currentBucket.end)}</span></span></div>` : ''}
-                <div class="chart-canvas-wrap"><canvas id="scheduleLoadChart" height="128"></canvas></div>
-                <div class="chart-axis-trigger">${intervalPopoverHtml()}</div>
+                <div class="chart-canvas-wrap"><canvas id="scheduleLoadChart" height="128"></canvas>${intervalPopoverHtml()}</div>
                 <p class="chart-note">Hover a bar for the status breakdown — a faded bar means that period hasn't fully played out yet.</p>
               ` : '<p class="chart-note" style="margin-top:0;">All of today\'s appointments have passed.</p>'}
             </div>
@@ -782,13 +799,17 @@
         });
 
         // Delegated on the backdrop, not #scheduleChartWrap directly --
-        // the chart block (trigger + popover included) gets torn down
-        // and rebuilt by every renderAll(), including the 15s auto-
-        // refresh below, so a listener on the wrap's own innerHTML
-        // wouldn't survive past the first render. Picking a chip
-        // applies it and closes the popover in one click (no Apply/
-        // Cancel) per the reviewed mockup; anywhere else closes an
-        // open popover without changing the width.
+        // the chart block (popover included) gets torn down and
+        // rebuilt by every renderAll(), including the 15s auto-refresh
+        // below, so a listener on the wrap's own innerHTML wouldn't
+        // survive past the first render. Picking a chip applies it and
+        // closes the popover in one click (no Apply/Cancel) per the
+        // reviewed mockup; anywhere else in the modal closes an open
+        // popover without changing the width. Opening it happens in
+        // the chart's own onClick above (clicking the canvas's real
+        // axis labels), not here -- that handler stops the click's
+        // propagation on its way up specifically so it never also hits
+        // this "anywhere else closes it" branch on the same click.
         backdrop.addEventListener('click', (e) => {
           if (e.target === backdrop) return; // the backdrop-click-closes-modal listener below owns this case
           const chip = e.target.closest('.chart-interval-popover .chip');
@@ -797,12 +818,6 @@
             saveBucketWidth(bucketWidthMin);
             intervalPopoverOpen = false;
             recompute(currentQueue || q);
-            renderAll();
-            return;
-          }
-          const trigger = e.target.closest('.chart-axis-trigger');
-          if (trigger) {
-            intervalPopoverOpen = !intervalPopoverOpen;
             renderAll();
             return;
           }
