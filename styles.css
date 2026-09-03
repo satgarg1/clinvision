@@ -1351,12 +1351,12 @@ a { color: inherit; }
 .dark-panel-head { position: relative; z-index: 1; max-width: 680px; margin: 0 auto 52px; text-align: center; }
 .dark-panel-eyebrow {
   font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-weight: 600; font-size: 16px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 16px;
+  font-weight: 600; font-size: 20px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 16px;
 }
 .dark-panel-head h2 {
   font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   font-weight: 600; letter-spacing: -0.02em; line-height: 1.16;
-  font-size: clamp(26px, 3.2vw, 38px); margin: 0; color: #fff;
+  font-size: clamp(29px, 3.2vw, 41px); margin: 0; color: #fff;
 }
 .dark-panel-list { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
 .dark-panel-row {
