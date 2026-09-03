@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=298" />
+<link rel="stylesheet" href="styles.css?v=299" />
 </head>
 <body>
   <div class="login-wrap">
@@ -64,6 +64,7 @@
         <div class="queue-done-body">
           <h1 class="queue-done-headline" id="doneHeadline"></h1>
           <p class="queue-done-sub" id="doneSubText"></p>
+          <p class="queue-done-expired" id="doneExpiredText"></p>
           <div class="queue-done-token">
             <div class="label" id="doneTokenLabel"></div>
             <div class="num" id="doneTokenNumber"></div>
@@ -342,7 +343,10 @@
           noShowHeadline: 'This appointment was marked as a no-show',
           noShowSub: (clinicName) => `If this was a mistake, please contact ${clinicName} directly.`,
           visitCompleteHeadline: 'Your visit is complete',
-          visitCompleteSub: (doctorName, specialty) => `You were seen by ${doctorName}${specialty}.<br>Thank you for visiting: This link has now expired.`,
+          // Split into 2 strings (was 1, <br>-joined) so the visit
+          // record and the closing note can be styled distinctly.
+          visitCompleteSeenBy: (doctorName, specialty) => `You were seen by ${doctorName}${specialty}.`,
+          visitCompleteExpired: 'Thank you for visiting: This link has now expired.',
           tokenWas: 'Your token was',
           needAnythingElse: 'Need anything else? Please contact the clinic directly.',
           // Internal ClinVision product feedback, not a review of the
@@ -449,7 +453,8 @@
           noShowHeadline: 'इस अपॉइंटमेंट को नो-शो के रूप में चिह्नित किया गया है',
           noShowSub: (clinicName) => `यदि यह गलती से हुआ है, तो कृपया सीधे ${clinicName} से संपर्क करें।`,
           visitCompleteHeadline: 'आपकी विज़िट पूरी हो गई है',
-          visitCompleteSub: (doctorName, specialty) => `आपको ${doctorName}${specialty} ने देखा।<br>मिलने के लिए धन्यवाद: यह लिंक अब समाप्त हो गया है।`,
+          visitCompleteSeenBy: (doctorName, specialty) => `आपको ${doctorName}${specialty} ने देखा।`,
+          visitCompleteExpired: 'मिलने के लिए धन्यवाद: यह लिंक अब समाप्त हो गया है।',
           tokenWas: 'आपका टोकन था',
           needAnythingElse: 'कुछ और चाहिए? कृपया सीधे क्लिनिक से संपर्क करें।',
           feedbackQuestion: 'आज ClinVision के कतार लिंक और डिस्प्ले स्क्रीन का अनुभव कैसा रहा?',
@@ -591,12 +596,19 @@
         if (isNoShow) {
           document.getElementById('doneHeadline').textContent = T.noShowHeadline;
           document.getElementById('doneSubText').textContent = T.noShowSub(localizeName(data.clinicName));
+          // No-show has no "this link has expired" line — .queue-done-
+          // expired:empty hides it entirely rather than leaving a blank
+          // paragraph with its own margin.
+          document.getElementById('doneExpiredText').textContent = '';
         } else {
-          // innerHTML now (the two-line message needs a <br>), so both
-          // dynamic pieces need escaping that .textContent never did.
+          // Split into 2 elements, not 1 <br>-joined paragraph — per
+          // feedback they need to look visually distinct: the actual
+          // visit record (who saw them) stays bold/prominent, the
+          // closing "link expired" note is secondary, smaller, muted.
           const specialty = data.doctorSpecialty ? ` (${Qlinic.escapeHtml(localizeSpecialty(data.doctorSpecialty))})` : '';
           document.getElementById('doneHeadline').textContent = T.visitCompleteHeadline;
-          document.getElementById('doneSubText').innerHTML = T.visitCompleteSub(Qlinic.escapeHtml(localizeName(data.doctorName)), specialty);
+          document.getElementById('doneSubText').innerHTML = T.visitCompleteSeenBy(Qlinic.escapeHtml(localizeName(data.doctorName)), specialty);
+          document.getElementById('doneExpiredText').textContent = T.visitCompleteExpired;
         }
         document.getElementById('doneTokenLabel').textContent = T.tokenWas;
         document.getElementById('doneTokenNumber').textContent = data.tokenDisplay || '·';

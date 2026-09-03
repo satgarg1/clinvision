@@ -1881,13 +1881,21 @@ a { color: inherit; }
    through token. Same structure doubles for no-show via .is-noshow,
    just muted (amber, not celebratory green) since that isn't good news. */
 .queue-done-banner {
-  margin: -64px -56px 0; padding: 34px 40px 40px;
+  /* padding-top was 34px -- .lang-toggle-wrap sits at top:22px relative
+     to .login-card's own padding box, and this banner's negative margin
+     pulls its top edge flush with that same box, so 34px of padding
+     landed the clinic-name line right inside the toggle's own vertical
+     band (roughly 22-50px). Bumped to clear it regardless of clinic
+     name length/wrap -- a vertical fix works at any width, where
+     reserving horizontal space would only have worked for short names
+     or eaten into the text's own room on a narrow screen. */
+  margin: -64px -56px 0; padding: 58px 40px 40px;
   background: linear-gradient(135deg, var(--mkt-teal), var(--accent));
   border-radius: 24px 24px 0 0;
   text-align: center; position: relative;
 }
 .queue-done-banner.is-noshow { background: linear-gradient(135deg, var(--warning), var(--mkt-coral)); }
-.queue-done-clinic { color: rgba(255, 255, 255, 0.85); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.queue-done-clinic { color: rgba(255, 255, 255, 0.95); font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
 .queue-done-check {
   width: 64px; height: 64px; border-radius: 50%; background: var(--white);
   display: flex; align-items: center; justify-content: center; font-size: 32px;
@@ -1900,6 +1908,14 @@ a { color: inherit; }
    link is now closed). Bumped up and darkened per feedback so it reads
    as a real fact, not a footnote. */
 .queue-done-sub { font-size: 17px; font-weight: 700; color: var(--black); line-height: 1.6; margin: 0; }
+/* Deliberately the opposite treatment from .queue-done-sub right above
+   it -- per feedback the two need to look separate, not one merged
+   block. This is a closing note, not part of the visit record, so it
+   recedes instead of matching. Empty on the no-show path (that state
+   has no such line) -- :empty hides it rather than leaving a blank
+   paragraph with its own margin. */
+.queue-done-expired { font-size: 13px; font-weight: 400; color: var(--grey-500); line-height: 1.5; margin: 8px 0 0; }
+.queue-done-expired:empty { display: none; }
 .queue-done-token {
   margin: 22px auto; display: inline-flex; flex-direction: column; align-items: center; gap: 6px;
   background: var(--success-bg); border-radius: var(--radius-md); padding: 16px 32px;
