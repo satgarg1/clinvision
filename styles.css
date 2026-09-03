@@ -3829,14 +3829,20 @@ th.th-filterable { position: relative; }
    reviewed before building (see BACKLOG.md). */
 .patient-info-wrap { position: relative; }
 .patient-info-chip {
-  display: inline-flex; align-items: center; gap: 8px; font-family: var(--font);
-  font-size: 13px; font-weight: 700; border: none; border-radius: var(--radius-pill);
-  padding: 10px 16px; cursor: pointer; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 6px; font-family: var(--font);
+  font-size: 12px; font-weight: 700; border: none; border-radius: var(--radius-pill);
+  padding: 6px 12px; cursor: pointer; white-space: nowrap;
   background: var(--warning-bg); color: var(--warning);
 }
 .patient-info-chip:hover { filter: brightness(0.97); }
 .patient-info-popover {
-  position: absolute; top: calc(100% + 8px); left: 0; width: 320px;
+  /* right, not left: the chip now sits near the panel's own right edge
+     (just before "View day's schedule"), so anchoring from the right
+     and extending left is what keeps a 320px-wide popover from
+     overflowing past the panel -- same reasoning the anomaly popover
+     above already uses, since its own trigger sits at the right of its
+     row too. */
+  position: absolute; top: calc(100% + 8px); right: 0; width: 320px;
   background: var(--white); border: 1px solid var(--grey-300); border-radius: 12px;
   box-shadow: 0 16px 32px rgba(0, 0, 0, 0.14); z-index: 50; padding: 16px 18px; display: none;
 }

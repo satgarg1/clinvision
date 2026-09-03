@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=277" />
+<link rel="stylesheet" href="styles.css?v=278" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -73,15 +73,24 @@
             <button type="button" class="mode-btn active" data-mode="appointment" role="tab" aria-selected="true">📞 Phoned-in appointment, booking ahead</button>
             <button type="button" class="mode-btn" data-mode="walkin" role="tab" aria-selected="false">🚶 Walk-in, here right now</button>
           </div>
-          <!-- Hidden until phone-blur finds a returning patient with at
-               least one real visit -- same lifecycle as patientLookupHint
-               below, just a separate, additive way to see more, not a
-               replacement for that hint's own autofill job. -->
-          <div class="patient-info-wrap" id="patientInfoWrap" style="display:none;">
-            <button type="button" class="patient-info-chip" id="patientInfoChipBtn" aria-expanded="false">🕘 <span id="patientInfoChipText">Patient Info</span></button>
-            <div class="patient-info-popover" id="patientInfoPopover"></div>
+          <!-- The auto-margin lives on this wrapper, not on the chip or
+               the schedule button individually, so the right-hand
+               cluster stays pinned to the right whether or not the chip
+               is currently visible -- putting the margin on the chip
+               itself would only push things right while it's shown, and
+               the button would jump back to hugging the mode toggle the
+               moment the chip hides again. -->
+          <div style="display:flex;align-items:center;gap:10px;margin-left:auto;">
+            <!-- Hidden until phone-blur finds a returning patient with at
+                 least one real visit -- same lifecycle as patientLookupHint
+                 below, just a separate, additive way to see more, not a
+                 replacement for that hint's own autofill job. -->
+            <div class="patient-info-wrap" id="patientInfoWrap" style="display:none;">
+              <button type="button" class="patient-info-chip" id="patientInfoChipBtn" aria-expanded="false">🕘 <span id="patientInfoChipText">Patient Info</span></button>
+              <div class="patient-info-popover" id="patientInfoPopover"></div>
+            </div>
+            <button type="button" class="btn-sm primary" id="viewDaySlotsBtn" style="padding:10px 16px;font-size:14px;">View day's schedule</button>
           </div>
-          <button type="button" class="btn-sm primary" id="viewDaySlotsBtn" style="margin-left:auto;padding:10px 16px;font-size:14px;">View day's schedule</button>
         </div>
         <p id="modeHint" class="panel-note">
           Booking a call-in appointment ahead of time: pick when they should arrive.
@@ -1601,7 +1610,13 @@
           document.getElementById('pGender').value = match.gender || 'other';
           document.getElementById('pAddress').value = match.address || '';
           if (match.age) document.getElementById('pAge').value = match.age;
-          showToast('Details filled in');
+          // Once clicked, this hint (the found-line, the button, and any
+          // no-show warning alongside it) has done its one job -- nothing
+          // left to say. Patient Info stays up on purpose: it's a
+          // separate, still-useful reference (visit history), not part
+          // of the autofill flow this hint was for.
+          hint.style.display = 'none';
+          hint.innerHTML = '';
         });
         renderPatientInfoChip(match, phone);
       }
