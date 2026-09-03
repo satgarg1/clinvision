@@ -1225,12 +1225,14 @@ a { color: inherit; }
 .explore-grid {
   position: relative;
   z-index: 1;
-  max-width: 1180px;
+  /* One card now, not two -- "What's inside" was removed outright, same
+     as "How it works" before it. Narrowed from 1180px (which stretched
+     a lone card full-width, leaving it looking oversized/half-empty)
+     down to the card's own natural width instead. */
+  max-width: 460px;
   margin: 0 auto;
   display: grid;
-  /* Two cards now, not three -- "How it works" was removed outright,
-     not just unlinked. */
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 28px;
 }
 .explore-card {
