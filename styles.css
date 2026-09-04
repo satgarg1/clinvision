@@ -4472,7 +4472,12 @@ th.th-filterable { position: relative; }
   font-variant-numeric: tabular-nums;
 }
 .board-pos { font-size: 17px; font-weight: 800; color: var(--grey-500); }
-.board-time { font-size: 15px; font-weight: 700; color: var(--grey-300); }
+.board-time-cell { font-size: 15px; font-weight: 700; color: var(--grey-300); display: flex; flex-direction: column; }
+/* Same amber this board already uses for a warning state (.dboard-pill-
+   warn) — bright on the default dark board, the darker/muted shade
+   below once data-board-mode switches to light, same as that pill's
+   own light-mode override right below it. */
+.board-time-late { font-size: 12px; font-weight: 600; color: #ff9f0a; margin-top: 2px; }
 .board-name { font-size: 17px; font-weight: 600; display: flex; flex-direction: column; }
 .board-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .board-priority {
@@ -4567,6 +4572,7 @@ body[data-board-mode="light"] .dboard-row { border-top-color: #d6d6da; border-ri
 body[data-board-mode="light"] .dboard-pill-ok { background: rgba(30, 142, 62, 0.12); color: #1e8e3e; }
 body[data-board-mode="light"] .dboard-pill-warn { background: rgba(178, 106, 0, 0.14); color: #b26a00; }
 body[data-board-mode="light"] .dboard-detail-line { color: #b26a00; }
+body[data-board-mode="light"] .board-time-late { color: #b26a00; }
 body[data-board-mode="light"] .dboard-next-chip { background: #f0f0f2; border-color: #e3e3e6; }
 body[data-board-mode="light"] .dboard-next-chip.more { color: #8a6a2f; }
 body[data-board-mode="light"] .board-page-indicator .dot { background: rgba(0, 0, 0, 0.12); }
@@ -4591,7 +4597,7 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
      each other; pinning row 1-4 keeps time/name/doctor/type in that
      fixed reading order under the token every time. */
   .board-pos { grid-column: 1; grid-row: 1; }
-  .board-time { grid-column: 2; grid-row: 1; font-size: 13px; }
+  .board-time-cell { grid-column: 2; grid-row: 1; font-size: 13px; }
   .board-name { grid-column: 2; grid-row: 2; }
   .board-doc { grid-column: 2; grid-row: 3; font-size: 13px; }
   .board-type { grid-column: 2; grid-row: 4; font-size: 13px; }
