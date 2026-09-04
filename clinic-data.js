@@ -975,9 +975,17 @@
       .eq('token_date', today)
       .or(`name.ilike.%${q}%,phone.ilike.%${q}%`);
     if (error) throw error;
+    // Supabase returns matches in whatever order the DB happens to give
+    // (no order-by was ever specified) — with no explicit sort, two rows
+    // matching the same search term can come back in a confusing order,
+    // most visibly two same-named patients with their earlier slot
+    // shown second. Sort by each patient's own effective moment
+    // (booked slot, or arrival time for a plain ASAP walk-in) so the
+    // earliest-due patient always lists first, matching how the queue
+    // itself is ordered.
     return data.map(normalizePatient).map((p) => Object.assign({}, p, {
       effectiveTime: effectiveMoment(p, doctorById[p.doctorId]),
-    }));
+    })).sort((a, b) => a.effectiveTime - b.effectiveTime);
   }
 
   // Fixes a mistake caught after a patient was already added, and also

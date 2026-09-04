@@ -179,7 +179,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=92"></script>
+  <script src="clinic-data.js?v=93"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -544,7 +544,14 @@
         // Arrived/Pending expand in place instead - those ARE patients a
         // doctor might still act on right now.
         const SCHEDULE_PREVIEW_COUNT = 5;
-        let expandedScheduleTab = { active: false, booked: false };
+        const SCHEDULE_EXPAND_STEP = 20;
+        // Tracks how many rows are currently shown per tab, not just an
+        // expanded/collapsed flag - a doctor with 60 booked patients
+        // dumping all 55 extra rows in on one click ("Show 50 more") is
+        // its own wall of text to scroll through. Reveals in pages of 20
+        // instead (5, then +20, +20, ... capped at the list length) so
+        // "Show more" only ever adds a manageable chunk.
+        let expandedScheduleTab = { active: SCHEDULE_PREVIEW_COUNT, booked: SCHEDULE_PREVIEW_COUNT };
         // GROUPS.done is sorted ascending by scheduled/arrival time (same
         // sortByTime as every other group, for a sensible full-day
         // reading order) - taking the first 5 off THAT list surfaces the
@@ -566,11 +573,12 @@
             }
             return html;
           }
-          const expanded = expandedScheduleTab[tabKey];
-          const visible = expanded ? list : list.slice(0, SCHEDULE_PREVIEW_COUNT);
+          const shownCount = expandedScheduleTab[tabKey] || SCHEDULE_PREVIEW_COUNT;
+          const fullyShown = shownCount >= list.length;
+          const visible = list.slice(0, shownCount);
           let html = visible.map(rowHtml).join('');
           if (list.length > SCHEDULE_PREVIEW_COUNT) {
-            html += `<tr><td colspan="5" style="text-align:center;padding-top:14px;"><button type="button" class="btn-sm" data-expand-tab="${tabKey}">${expanded ? 'Show fewer' : `Show ${list.length - SCHEDULE_PREVIEW_COUNT} more`}</button></td></tr>`;
+            html += `<tr><td colspan="5" style="text-align:center;padding-top:14px;"><button type="button" class="btn-sm" data-expand-tab="${tabKey}">${fullyShown ? 'Show fewer' : 'Show more'}</button></td></tr>`;
           }
           return html;
         }
@@ -822,7 +830,12 @@
         backdrop.querySelector('#scheduleTbody').addEventListener('click', (e) => {
           const btn = e.target.closest('button[data-expand-tab]');
           if (!btn) return;
-          expandedScheduleTab[btn.dataset.expandTab] = !expandedScheduleTab[btn.dataset.expandTab];
+          const tabKey = btn.dataset.expandTab;
+          const list = tabKey === 'active' ? GROUPS.active : GROUPS.booked;
+          const shownCount = expandedScheduleTab[tabKey] || SCHEDULE_PREVIEW_COUNT;
+          expandedScheduleTab[tabKey] = shownCount >= list.length
+            ? SCHEDULE_PREVIEW_COUNT
+            : Math.min(shownCount + SCHEDULE_EXPAND_STEP, list.length);
           renderAll();
         });
 
