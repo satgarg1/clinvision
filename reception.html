@@ -784,7 +784,7 @@
               </select>
               <input type="number" min="0" step="1" class="adj-amount-received" value="${inv.amountReceived}" />
               <div class="adj-actions">
-                <button type="button" class="btn-sm primary" onclick="saveInvoiceEdit('${inv.id}')">Save</button>
+                <button type="button" class="btn-sm primary" onclick="saveInvoiceEdit('${inv.id}', this)">Save</button>
                 <button type="button" class="btn-sm" onclick="cancelInvoiceEdit()">Cancel</button>
               </div>
             </div>
@@ -875,7 +875,18 @@
         const box = document.getElementById('searchResults');
         document.getElementById('clearSearchBtn').style.display = q.trim() ? '' : 'none';
         if (!q.trim()) { box.innerHTML = ''; return; }
-        const results = await Qlinic.searchBookedPatients(q);
+        // Fetched alongside the search itself, not reused from
+        // renderQueues()'s own todayInvoices — that copy only gets
+        // refreshed while the queue panel happens to be showing TODAY
+        // (isTodayView), but a search always looks at today's patients
+        // regardless of what date the panel is currently filtered to.
+        // Reusing it would silently show "Not yet billed" for an
+        // already-billed patient whenever the panel's own date filter
+        // was pointed elsewhere.
+        const [results, searchInvoices] = await Promise.all([
+          Qlinic.searchBookedPatients(q),
+          canBill ? Qlinic.getTodayInvoices() : Promise.resolve([]),
+        ]);
         // The box fires on every keystroke with no debounce, so a slower
         // response for an earlier character can resolve after a later
         // (or empty) one already rendered. Discard it if the input has
@@ -886,9 +897,11 @@
           return;
         }
         const doctorById = Object.fromEntries(doctorsCache.map((d) => [d.id, d]));
+        const searchInvoiceByPatientId = {};
+        searchInvoices.forEach((inv) => { if (inv.patientId) searchInvoiceByPatientId[inv.patientId] = inv; });
         box.innerHTML = `
           <table class="qtable">
-            <thead><tr><th>Name</th><th>Phone</th><th>Doctor</th><th>Booked</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>Phone</th><th>Doctor</th><th>Booked</th><th>Status</th>${canBill ? '<th>Billing</th>' : ''}<th></th></tr></thead>
             <tbody>
               ${results.map((p) => {
                 const doc = doctorById[p.doctorId];
@@ -897,6 +910,11 @@
                 // preferred time), which must still read as "Walk-in"
                 // here, not silently look like a formal appointment.
                 const bookedCell = p.type === 'appointment' ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '<span class="badge badge-neutral">Walk-in</span>';
+                // billingCell already handles the un-arrived case cleanly
+                // ("Not yet billed", no button) — same component the
+                // Waiting list uses, so Adjust here is the identical
+                // fee-type/payment-mode/amount editor, not a second one.
+                const billingTd = canBill ? `<td>${billingCell(p, searchInvoiceByPatientId, doc)}</td>` : '';
                 if (editingSearchPatientId === p.id) {
                   const doctorOptions = doctorsCache.map((d) => `<option value="${d.id}" ${d.id === p.doctorId ? 'selected' : ''}>${Qlinic.escapeHtml(d.name)}</option>`).join('');
                   // Every type gets the time-picker now (setting a real
@@ -922,6 +940,7 @@
                       <td><select class="search-edit-doctor">${doctorOptions}</select></td>
                       <td>${bookedEditCell}</td>
                       <td>${searchStatusBadge(p)}</td>
+                      ${billingTd}
                       <td>
                         <button class="btn-sm primary" onclick="doSaveSearchEdit('${p.id}')">Save</button>
                         <button class="btn-sm" onclick="doCancelSearchEdit()">Cancel</button>
@@ -936,6 +955,7 @@
                     <td>${doc ? Qlinic.escapeHtml(doc.name) : '·'}</td>
                     <td>${bookedCell}</td>
                     <td>${searchStatusBadge(p)}</td>
+                    ${billingTd}
                     <td>
                       ${p.status === 'booked' ? `<button class="btn-sm primary" onclick="doMarkArrived('${p.id}', this)">Mark arrived</button>` : ''}
                       <button class="btn-sm" onclick="doStartSearchEdit('${p.id}')">Edit</button>
@@ -1110,16 +1130,31 @@
       window.doMarkArrived = doMarkArrived;
       window.doMarkNoShow = doMarkNoShow;
 
+      // billingCell (and editingInvoiceId) are now shared between the
+      // queue panel's own Waiting table AND search results — whichever
+      // one the doctor/patient happens to be found in, re-rendering only
+      // the panel would leave the other showing stale edit-mode state.
+      // renderSearch() itself is a no-op when the search box is empty
+      // (see its own early return), so calling it here even when
+      // there's no active search does nothing extra.
       function startEditInvoice(invoiceId) {
         editingInvoiceId = invoiceId;
         renderQueues();
+        renderSearch();
       }
       function cancelInvoiceEdit() {
         editingInvoiceId = null;
         renderQueues();
+        renderSearch();
       }
-      async function saveInvoiceEdit(invoiceId) {
-        const row = document.querySelector(`[onclick*="saveInvoiceEdit('${invoiceId}')"]`).closest('td');
+      async function saveInvoiceEdit(invoiceId, btn) {
+        // Scoped to the actual button clicked, not a document-wide lookup
+        // by invoice id — the same invoice can now render its own adj-box
+        // twice at once (a patient visible in both the queue panel's
+        // Waiting list AND search results), and grabbing "the first match
+        // in the document" would silently read whichever copy happens to
+        // sit first in the DOM, not necessarily the one just edited.
+        const row = btn.closest('td');
         const feeType = row.querySelector('.adj-fee-type').value;
         const paymentMode = row.querySelector('.adj-payment-mode').value;
         const amountReceived = row.querySelector('.adj-amount-received').value;
@@ -1132,6 +1167,7 @@
         editingInvoiceId = null;
         showToast('Billing updated');
         renderQueues();
+        renderSearch();
       }
       window.startEditInvoice = startEditInvoice;
       window.cancelInvoiceEdit = cancelInvoiceEdit;
