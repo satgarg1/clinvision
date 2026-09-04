@@ -1020,18 +1020,19 @@
         applyDoctorAccent(doctorId);
         renderNextAppointment(q);
 
-        const statusNoteHtml = Qlinic.isRealStatusReason(doc.statusNote) ? ' · "' + Qlinic.escapeHtml(doc.statusNote) + '"' : '';
-        // Was a colored .status-pill chip here, same purple/red as the
-        // away banner above it -- one status shown two different ways
-        // right next to each other read as inconsistent rather than
-        // reinforcing. Plain bold text instead; the banner above is
-        // still the colored one.
-        // The "Updated: <date+time>" tail that used to sit here was
-        // dropped -- while away, the banner above already shows the
-        // same timestamp as "Since 10:11 am", so this line was
-        // repeating it a few lines down for no reason.
+        // Used to repeat the whole status ("Currently: On a break for
+        // 20 min · "In a meeting".") right below the colored away
+        // banner above, which already says exactly that ("On a break
+        // for 20 min", "In a meeting" as the note) -- same fact, two
+        // places. This line now only carries what the banner doesn't:
+        // when the status was actually set. formatDateTime (not
+        // formatTimestamp) -- a status left unset since a prior day
+        // (nothing ever automatically clears it) used to show a bare
+        // time with no date, reading as if it happened today. The date
+        // matters here precisely because it might not be. ", " -> " at "
+        // to read as a sentence rather than a comma-spliced fragment.
         document.getElementById('currentStatusLine').innerHTML =
-          `Currently: <b>${statusLabel(doc.status)}${doc.delayMins ? ' for ' + doc.delayMins + ' min' : ''}</b>${statusNoteHtml}.`;
+          `Updated: ${Qlinic.formatDateTime(doc.statusUpdatedAt).replace(', ', ' at ')}`;
 
         // Once the day is closed, the status actions (Take a break/
         // Declare emergency/I'm back) and "Call next patient" are

@@ -782,7 +782,7 @@
           // together. display.html's own doctor-note line has the same
           // free-text shape and was never transliterated either.
           const notePart = Qlinic.isRealStatusReason(data.doctorStatusNote)
-            ? ` <span class="doc-note-quote">"${Qlinic.escapeHtml(data.doctorStatusNote)}"</span>`
+            ? `: <span class="doc-note-quote">"${Qlinic.escapeHtml(data.doctorStatusNote)}"</span>`
             : '';
           const durationPart = data.doctorDelayMins ? ` ${T.forDuration(T.formatDuration(data.doctorDelayMins))}` : '';
           const sincePart = data.doctorStatusUpdatedAt ? ` ${T.since(Qlinic.formatTimestamp(data.doctorStatusUpdatedAt))}` : '';
@@ -915,7 +915,7 @@
         if (data.doctorStatus && data.doctorStatus !== 'on_time') {
           const base = T.doctorStatusSentence[data.doctorStatus] || `Doctor status: ${data.doctorStatus}`;
           const notePart = Qlinic.isRealStatusReason(data.doctorStatusNote)
-            ? ` <span class="doc-note-quote">"${Qlinic.escapeHtml(data.doctorStatusNote)}"</span>`
+            ? `: <span class="doc-note-quote">"${Qlinic.escapeHtml(data.doctorStatusNote)}"</span>`
             : '';
           const durationPart = data.doctorDelayMins ? ` ${T.forDuration(T.formatDuration(data.doctorDelayMins))}` : '';
           const sincePart = data.doctorStatusUpdatedAt ? ` ${T.since(Qlinic.formatTimestamp(data.doctorStatusUpdatedAt))}` : '';
