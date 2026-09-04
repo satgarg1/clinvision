@@ -207,7 +207,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=97"></script>
+  <script src="clinic-data.js?v=98"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -341,11 +341,11 @@
           const positive = l.quantityDelta > 0;
           const typeLabel = l.movementType.charAt(0).toUpperCase() + l.movementType.slice(1);
           return `<tr>
-            <td>${Qlinic.formatDateLabel ? Qlinic.formatDateLabel(l.createdAt) : new Date(l.createdAt).toLocaleDateString()}</td>
+            <td>${Qlinic.formatTimestamp(l.createdAt)}</td>
             <td><span class="badge" style="background:var(--grey-100); color:var(--grey-700);">${typeLabel}</span></td>
             <td style="color:${positive ? 'var(--success)' : 'var(--danger)'}; font-weight:600;">${positive ? '+' : ''}${l.quantityDelta} ${Qlinic.escapeHtml(m.unitOfSale || '')}</td>
-            <td>${l.referenceInvoiceId ? 'PH-…' + l.referenceInvoiceId.slice(0, 4) : (l.note || '—')}</td>
-            <td>${l.batchId ? l.batchId.slice(0, 8) : '—'}</td>
+            <td>${l.referenceInvoiceLabel || l.note || '—'}</td>
+            <td>${Qlinic.escapeHtml(l.batchNumber || '—')}</td>
             <td style="text-align:right;">${l.closingStockAfter} ${Qlinic.escapeHtml(m.unitOfSale || '')}</td>
           </tr>`;
         }).join('');

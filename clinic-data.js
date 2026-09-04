@@ -2773,14 +2773,21 @@
   }
 
   function normalizeStockLedgerEntry(row) {
+    const invoice = Array.isArray(row.invoices) ? row.invoices[0] : row.invoices;
+    const batch = Array.isArray(row.medicine_batches) ? row.medicine_batches[0] : row.medicine_batches;
     return {
       id: row.id,
       medicineId: row.medicine_id,
       batchId: row.batch_id,
+      batchNumber: batch ? batch.batch_number : null,
       movementType: row.movement_type,
       quantityDelta: row.quantity_delta,
       closingStockAfter: row.closing_stock_after,
       referenceInvoiceId: row.reference_invoice_id,
+      // "PH-0043" for a sale, so the ledger's Invoice column reads as a
+      // real invoice reference — not the underlying UUID, which means
+      // nothing to a person reading this table.
+      referenceInvoiceLabel: invoice ? 'PH-' + String(invoice.invoice_number).padStart(4, '0') : null,
       note: row.note,
       createdAt: row.created_at,
     };
@@ -2878,7 +2885,10 @@
   }
 
   async function getStockLedger(medicineId, { limit = 50 } = {}) {
-    const { data, error } = await sb.from('stock_ledger').select('*')
+    // Embeds the referenced invoice's number and the batch's own batch
+    // number via Supabase's FK-join syntax, so the ledger can show
+    // "PH-0043" / "AMX24118" instead of the underlying UUIDs.
+    const { data, error } = await sb.from('stock_ledger').select('*, invoices!reference_invoice_id(invoice_number), medicine_batches!batch_id(batch_number)')
       .eq('medicine_id', medicineId)
       .order('created_at', { ascending: false })
       .limit(limit);
