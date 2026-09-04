@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=306" />
+<link rel="stylesheet" href="styles.css?v=307" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -201,7 +201,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=95"></script>
+  <script src="clinic-data.js?v=96"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -1064,20 +1064,20 @@
         backdrop.innerHTML = `
           <div class="modal-card" role="dialog" aria-modal="true">
             <h2 class="modal-title">Edit patient</h2>
-            <div class="doctor-form-field">
+            <div class="doctor-form-field" style="margin-bottom:16px;">
               <label>Name</label>
               <input type="text" id="editPatientName" value="${Qlinic.escapeHtml(p.name)}" />
             </div>
-            <div class="doctor-form-field">
+            <div class="doctor-form-field" style="margin-bottom:16px;">
               <label>Phone</label>
               <input type="text" id="editPatientPhone" value="${Qlinic.escapeHtml(p.phone)}" />
             </div>
-            <div class="doctor-form-field">
+            <div class="doctor-form-field" style="margin-bottom:16px;">
               <label>Doctor</label>
               <select id="editPatientDoctor">${doctorOptions}</select>
             </div>
             ${inv ? `
-            <div class="doctor-form-field">
+            <div class="doctor-form-field" style="margin-bottom:16px;">
               <label>Consultation type</label>
               <select id="editPatientFeeType">
                 <option value="consultation" ${inv.feeType === 'consultation' ? 'selected' : ''}>Consultation</option>
@@ -1085,13 +1085,13 @@
                 <option value="waived" ${inv.feeType === 'waived' ? 'selected' : ''}>Follow up</option>
               </select>
             </div>` : ''}
-            <div style="display:flex;gap:12px;">
+            <div style="display:flex;gap:12px;margin-bottom:16px;">
               ${p.type === 'appointment' ? `
-              <div class="doctor-form-field" style="flex:1;">
+              <div class="doctor-form-field" style="flex:1;margin-bottom:0;">
                 <label>Booked date</label>
                 <input type="date" lang="en-GB" id="editPatientDate" value="${p.bookedDate || ''}" />
               </div>` : ''}
-              <div class="doctor-form-field" style="flex:1;">
+              <div class="doctor-form-field" style="flex:1;margin-bottom:0;">
                 <label>Time</label>
                 <div class="time-picker" id="editPatientTimePicker">
                   <button type="button" class="time-picker-trigger ${p.bookedTime ? '' : 'placeholder'}" id="editPatientTimeTrigger">
@@ -1102,7 +1102,7 @@
                 </div>
               </div>
             </div>
-            <p class="modal-message" id="editPatientError" style="display:none;color:var(--danger);margin:-6px 0 14px;font-size:13px;"></p>
+            <p class="modal-message" id="editPatientError" style="display:none;color:var(--danger);margin:6px 0 16px;font-size:13px;"></p>
             <div class="modal-actions">
               <button type="button" class="btn-sm primary" id="editPatientSaveBtn">Save</button>
               <button type="button" class="btn-sm" id="editPatientCancelBtn">Cancel</button>
@@ -1393,8 +1393,16 @@
         // own except the last, which is left unset to absorb whatever's
         // left (Billing/Actions when either is present, otherwise
         // Queue time/Status).
-        const waitingColgroup = `<colgroup><col style="width:64px;"><col style="width:190px;"><col style="width:110px;">${canBill ? '<col style="width:140px;"><col>' : '<col>'}</colgroup>`;
-        const bookedColgroup = `<colgroup><col style="width:64px;"><col style="width:190px;"><col style="width:130px;">${isTodayView ? '<col style="width:110px;"><col>' : '<col>'}</colgroup>`;
+        // Percentages, not fixed px — px widths left a huge dead gap on
+        // any real (wide) screen, since only one column was ever left
+        // flexible to soak up whatever the panel's actual width happened
+        // to be beyond a small mockup-sized guess. Percentages scale
+        // with the panel at any width instead, and Token/Name keep the
+        // exact same percentage in every variant, so they still land at
+        // the same pixel between Waiting and Booked (both render at the
+        // same panel width) without needing a fixed px guess at all.
+        const waitingColgroup = `<colgroup><col style="width:8%;"><col style="width:26%;"><col style="width:${canBill ? '14%' : '22%'};"><col style="width:${canBill ? '20%' : '44%'};">${canBill ? '<col style="width:32%;">' : ''}</colgroup>`;
+        const bookedColgroup = `<colgroup><col style="width:8%;"><col style="width:26%;"><col style="width:${isTodayView ? '18%' : '22%'};"><col style="width:${isTodayView ? '14%' : '44%'};">${isTodayView ? '<col style="width:34%;">' : ''}</colgroup>`;
 
         panelEl.innerHTML = `
           <div class="panel accent-${accentForDoctor(queueDoctorId)}">
@@ -1447,7 +1455,7 @@
                         <tr>
                           <td class="token-num">${formatToken(p, walkinRanks)}</td>
                           <td>${nameCell(p)}</td>
-                          <td>${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}${soon ? `<div class="sub-line">${soon.soon ? '<span class="badge-soon-dot"></span>' : ''}${soon.text}</div>` : ''}</td>
+                          <td>${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}${soon ? `<div class="sub-line" style="white-space:nowrap;">${soon.text}</div>` : ''}</td>
                           <td><span class="badge badge-booked">Expected</span></td>
                           ${isTodayView ? `
                             <td class="actions-cell">

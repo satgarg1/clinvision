@@ -3019,7 +3019,7 @@ th.th-filterable { position: relative; }
 /* Adjust billing's live fee preview -- one uniform bold weight/size for
    the whole line (was part-grey-13px + part-bold-16px, reads as two
    different UI elements glued together for what's really one sentence). */
-.amount-preview { font-size: 15px; font-weight: 700; color: var(--black); margin: -6px 0 14px; }
+.amount-preview { font-size: 15px; font-weight: 700; color: var(--black); margin: 0 0 18px; }
 
 /* Dashboard's day-of-holiday popup -- built on .modal-backdrop/
    .modal-card above (same shell Qlinic.confirmDialog() uses); this is
@@ -3819,7 +3819,6 @@ th.th-filterable { position: relative; }
 
 .token-num { font-variant-numeric: tabular-nums; color: var(--grey-500); font-weight: 700; }
 .actions-cell { white-space: nowrap; }
-.badge-soon-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warning); display: inline-block; margin-right: 5px; }
 
 .pager {
   display: flex;

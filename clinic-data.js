@@ -202,7 +202,7 @@
     backdrop.innerHTML = `
       <div class="modal-card" role="dialog" aria-modal="true">
         <h2 class="modal-title">Adjust billing</h2>
-        <div class="doctor-form-field">
+        <div class="doctor-form-field" style="margin-bottom:16px;">
           <label>Fee type</label>
           <select id="adjModalFeeType">
             <option value="consultation" ${invoice.feeType === 'consultation' ? 'selected' : ''}>Consultation</option>
@@ -210,7 +210,7 @@
             <option value="waived" ${invoice.feeType === 'waived' ? 'selected' : ''}>Follow up</option>
           </select>
         </div>
-        <div class="doctor-form-field">
+        <div class="doctor-form-field" style="margin-bottom:16px;">
           <label>Payment mode</label>
           <select id="adjModalPaymentMode">
             <option value="cash" ${invoice.paymentMode === 'cash' ? 'selected' : ''}>Cash</option>
@@ -218,12 +218,12 @@
             <option value="card" ${invoice.paymentMode === 'card' ? 'selected' : ''}>Card</option>
           </select>
         </div>
-        <div class="doctor-form-field">
+        <div class="doctor-form-field" style="margin-bottom:16px;">
           <label>Amount received (&#8377;)</label>
           <input type="number" min="0" step="1" id="adjModalAmount" value="${invoice.amountReceived}" />
         </div>
         <p class="amount-preview" id="adjModalPreview"></p>
-        <p class="modal-message" id="adjModalError" style="display:none;color:var(--danger);margin:-6px 0 14px;font-size:13px;"></p>
+        <p class="modal-message" id="adjModalError" style="display:none;color:var(--danger);margin:6px 0 16px;font-size:13px;"></p>
         <div class="modal-actions">
           <button type="button" class="btn-sm primary" id="adjModalSaveBtn">Save</button>
           <button type="button" class="btn-sm" id="adjModalCancelBtn">Cancel</button>
