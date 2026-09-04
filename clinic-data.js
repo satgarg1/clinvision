@@ -1616,6 +1616,7 @@
     return {
       id: row.id,
       invoiceNumber: row.invoice_number,
+      invoiceType: row.invoice_type || 'consultation',
       doctorId: row.doctor_id,
       patientId: row.patient_id,
       feeType: row.fee_type,
@@ -1626,7 +1627,7 @@
       patientAge: row.patient_age,
       patientGender: row.patient_gender,
       paymentMode: row.payment_mode,
-      amountReceived: Number(row.amount_received),
+      amountReceived: row.amount_received == null ? null : Number(row.amount_received),
       createdAt: row.created_at,
       invoiceDate: row.invoice_date,
     };
@@ -2575,6 +2576,23 @@
     return !!profile && profile.role === 'doctor' && profile.isActive;
   }
 
+  // Pharmacist: the pharmacy counter + medicine catalog only — never
+  // the queue, doctors, staff management, or a consultation invoice.
+  // Matches the new "pharmacist select pharmacy invoices" RLS policy
+  // (067_pharmacist_role.sql), which is scoped the same way.
+  async function isPharmacist() {
+    const profile = await getMyProfile();
+    return !!profile && profile.role === 'pharmacist' && profile.isActive;
+  }
+
+  // Who can use the pharmacy counter/catalog — matches medicines'/
+  // medicine_batches'/stock_ledger's own RLS ('admin', 'reception',
+  // 'pharmacist'), same shape as canAccessBilling above.
+  async function canAccessPharmacy() {
+    const profile = await getMyProfile();
+    return !!profile && profile.isActive && ['admin', 'reception', 'pharmacist'].includes(profile.role);
+  }
+
   // null for anyone but an active doctor — including a doctor whose
   // login hasn't been linked to a doctors row yet, which callers need
   // to distinguish from "not a doctor at all" to show the right
@@ -2707,6 +2725,243 @@
       .subscribe();
   }
 
+  // ============================================================
+  // Pharmacy billing & inventory (BACKLOG.md, Milestone A). Medicine
+  // catalog CRUD is a plain client insert/update against medicines' own
+  // RLS (063_medicines.sql) — no RPC needed there, same as doctors.
+  // Stock-in, adjustments, and a pharmacy sale itself all go through
+  // security-definer RPCs (068_medicine_rpcs.sql) since those derive
+  // money/stock numbers server-side, the same trust model createInvoice
+  // already uses.
+  // ============================================================
+
+  function normalizeMedicine(row) {
+    return {
+      id: row.id,
+      name: row.name,
+      genericName: row.generic_name,
+      manufacturer: row.manufacturer,
+      form: row.form,
+      strength: row.strength,
+      unitOfSale: row.unit_of_sale,
+      schedule: row.schedule,
+      trackBatches: row.track_batches,
+      referenceNumber: row.reference_number,
+      mrp: Number(row.mrp),
+      sellingPrice: Number(row.selling_price),
+      gstRate: Number(row.gst_rate),
+      hsnCode: row.hsn_code,
+      stockQuantity: row.stock_quantity,
+      isActive: row.is_active,
+      createdAt: row.created_at,
+    };
+  }
+
+  function normalizeMedicineBatch(row) {
+    return {
+      id: row.id,
+      medicineId: row.medicine_id,
+      batchNumber: row.batch_number,
+      mfgDate: row.mfg_date,
+      expiryDate: row.expiry_date,
+      purchasePrice: Number(row.purchase_price),
+      mrp: Number(row.mrp),
+      quantityReceived: row.quantity_received,
+      quantityRemaining: row.quantity_remaining,
+      createdAt: row.created_at,
+    };
+  }
+
+  function normalizeStockLedgerEntry(row) {
+    return {
+      id: row.id,
+      medicineId: row.medicine_id,
+      batchId: row.batch_id,
+      movementType: row.movement_type,
+      quantityDelta: row.quantity_delta,
+      closingStockAfter: row.closing_stock_after,
+      referenceInvoiceId: row.reference_invoice_id,
+      note: row.note,
+      createdAt: row.created_at,
+    };
+  }
+
+  function normalizeInvoiceItem(row) {
+    return {
+      id: row.id,
+      invoiceId: row.invoice_id,
+      medicineId: row.medicine_id,
+      batchId: row.batch_id,
+      medicineName: row.medicine_name_snapshot,
+      hsnCode: row.hsn_code_snapshot,
+      quantity: row.quantity,
+      unitPrice: Number(row.unit_price),
+      gstRate: Number(row.gst_rate),
+      lineTotal: Number(row.line_total),
+    };
+  }
+
+  // { activeOnly = true, search = '' }
+  async function getMedicines({ activeOnly = true, search = '' } = {}) {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId) return [];
+    let query = sb.from('medicines').select('*').eq('clinic_id', clinicId);
+    if (activeOnly) query = query.eq('is_active', true);
+    if (search) query = query.ilike('name', `%${search}%`);
+    const { data, error } = await query.order('name');
+    if (error) throw error;
+    return data.map(normalizeMedicine);
+  }
+
+  async function getMedicine(id) {
+    const { data, error } = await sb.from('medicines').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data ? normalizeMedicine(data) : null;
+  }
+
+  // opening stock (if any) is a separate, immediate recordStockPurchase()
+  // call right after this insert — the same stock-in RPC used for every
+  // later restock, not a special case baked into medicine creation.
+  async function addMedicine({ name, genericName, manufacturer, form, strength, unitOfSale, schedule, trackBatches, referenceNumber, mrp, sellingPrice, gstRate, hsnCode }) {
+    const clinicId = await ensureClinicContext();
+    const { data, error } = await sb.from('medicines').insert({
+      clinic_id: clinicId,
+      name,
+      generic_name: genericName || '',
+      manufacturer: manufacturer || '',
+      form: form || '',
+      strength: strength || '',
+      unit_of_sale: unitOfSale || '',
+      schedule: schedule || 'none',
+      track_batches: trackBatches !== false,
+      reference_number: referenceNumber || '',
+      mrp: Number(mrp) || 0,
+      selling_price: Number(sellingPrice) || 0,
+      gst_rate: gstRate == null ? 12 : Number(gstRate),
+      hsn_code: hsnCode || '',
+    }).select().single();
+    if (error) throw error;
+    return normalizeMedicine(data);
+  }
+
+  async function updateMedicine(id, { name, genericName, manufacturer, form, strength, unitOfSale, schedule, trackBatches, referenceNumber, mrp, sellingPrice, gstRate, hsnCode }) {
+    const { data, error } = await sb.from('medicines').update({
+      name,
+      generic_name: genericName || '',
+      manufacturer: manufacturer || '',
+      form: form || '',
+      strength: strength || '',
+      unit_of_sale: unitOfSale || '',
+      schedule: schedule || 'none',
+      track_batches: trackBatches !== false,
+      reference_number: referenceNumber || '',
+      mrp: Number(mrp) || 0,
+      selling_price: Number(sellingPrice) || 0,
+      gst_rate: gstRate == null ? 12 : Number(gstRate),
+      hsn_code: hsnCode || '',
+    }).eq('id', id).select().single();
+    if (error) throw error;
+    return normalizeMedicine(data);
+  }
+
+  async function setMedicineActive(id, isActive) {
+    const { error } = await sb.from('medicines').update({ is_active: isActive }).eq('id', id);
+    if (error) throw error;
+  }
+
+  async function getMedicineBatches(medicineId) {
+    const { data, error } = await sb.from('medicine_batches').select('*')
+      .eq('medicine_id', medicineId)
+      .order('expiry_date', { ascending: true, nullsFirst: false });
+    if (error) throw error;
+    return data.map(normalizeMedicineBatch);
+  }
+
+  async function getStockLedger(medicineId, { limit = 50 } = {}) {
+    const { data, error } = await sb.from('stock_ledger').select('*')
+      .eq('medicine_id', medicineId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data.map(normalizeStockLedgerEntry);
+  }
+
+  async function recordStockPurchase({ medicineId, batchNumber, mfgDate, expiryDate, quantity, purchasePrice, mrp }) {
+    const { data, error } = await sb.rpc('record_stock_purchase', {
+      p_medicine_id: medicineId,
+      p_batch_number: batchNumber || '',
+      p_mfg_date: mfgDate || null,
+      p_expiry_date: expiryDate || null,
+      p_quantity: Number(quantity),
+      p_purchase_price: purchasePrice == null ? 0 : Number(purchasePrice),
+      p_mrp: mrp == null ? 0 : Number(mrp),
+    });
+    if (error) throw error;
+    return normalizeMedicineBatch(data);
+  }
+
+  async function adjustStock({ medicineId, batchId, delta, note }) {
+    const { error } = await sb.rpc('adjust_stock', {
+      p_medicine_id: medicineId,
+      p_batch_id: batchId,
+      p_delta: Number(delta),
+      p_note: note || '',
+    });
+    if (error) throw error;
+  }
+
+  // items: [{ medicineId, quantity }, ...]. Stock is deducted FEFO
+  // server-side (create_pharmacy_invoice) — the client never picks a
+  // batch itself.
+  async function createPharmacyInvoice({ patientId, patientName, patientPhone, paymentMode, amountReceived, items }) {
+    const { data, error } = await sb.rpc('create_pharmacy_invoice', {
+      p_patient_id: patientId || null,
+      p_patient_name: patientName || '',
+      p_patient_phone: patientPhone || '',
+      p_payment_mode: paymentMode || 'cash',
+      p_amount_received: amountReceived == null ? null : Number(amountReceived),
+      p_items: items.map((i) => ({ medicine_id: i.medicineId, quantity: Number(i.quantity) })),
+    });
+    if (error) throw error;
+    return normalizeInvoice(data);
+  }
+
+  // Pharmacy's own patient search is deliberately not scoped to today's
+  // queue the way searchBookedPatients is above — someone can walk up
+  // to the counter for a refill days after their actual visit, with no
+  // booking today at all. De-duplicated by phone (same idea as
+  // getPatientDirectory), newest visit first, capped at 20 since this
+  // backs a live-typing dropdown, not a full directory.
+  async function searchPatientsForPharmacy(query) {
+    const clinicId = await ensureClinicContext();
+    const q = (query || '').trim();
+    if (!q || !clinicId) return [];
+    const { data, error } = await sb
+      .from('patients')
+      .select('id, name, phone')
+      .eq('clinic_id', clinicId)
+      .or(`name.ilike.%${q}%,phone.ilike.%${q}%`)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    const seenPhones = new Set();
+    const results = [];
+    for (const row of data) {
+      const phone = (row.phone || '').trim();
+      if (phone && seenPhones.has(phone)) continue;
+      if (phone) seenPhones.add(phone);
+      results.push({ id: row.id, name: row.name, phone: row.phone });
+      if (results.length >= 20) break;
+    }
+    return results;
+  }
+
+  async function getInvoiceItems(invoiceId) {
+    const { data, error } = await sb.from('invoice_items').select('*').eq('invoice_id', invoiceId).order('created_at');
+    if (error) throw error;
+    return data.map(normalizeInvoiceItem);
+  }
+
   global.Qlinic = {
     parseTime,
     formatTime,
@@ -2807,6 +3062,8 @@
     isAdmin,
     canAccessBilling,
     isDoctor,
+    isPharmacist,
+    canAccessPharmacy,
     getMyDoctorId,
     getTeam,
     createStaffAccount,
@@ -2819,6 +3076,19 @@
 
     getTheme,
     setTheme,
+
+    getMedicines,
+    getMedicine,
+    addMedicine,
+    updateMedicine,
+    setMedicineActive,
+    getMedicineBatches,
+    getStockLedger,
+    recordStockPurchase,
+    adjustStock,
+    createPharmacyInvoice,
+    getInvoiceItems,
+    searchPatientsForPharmacy,
 
     onLiveChange,
   };

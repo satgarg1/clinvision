@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pharmacy: ClinVision</title>
+<script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css?v=307" />
+<style>
+  .med-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-radius:var(--radius-sm); border:1px solid var(--grey-300); margin-bottom:8px; }
+  .med-row:hover { border-color:var(--grey-500); }
+  .med-name { font-size:14px; font-weight:600; }
+  .med-meta { font-size:12px; color:var(--grey-500); margin-top:2px; }
+  .med-stock { font-size:12px; font-weight:600; margin-right:6px; }
+  .qty-stepper { display:inline-flex; align-items:center; gap:8px; }
+  .qty-stepper button { width:24px; height:24px; border-radius:var(--radius-sm); border:1px solid var(--grey-300); background:var(--grey-100); cursor:pointer; font-size:14px; line-height:1; }
+  .qty-stepper span { min-width:18px; text-align:center; font-weight:600; font-variant-numeric:tabular-nums; }
+  .totals-row { display:flex; justify-content:space-between; font-size:13px; color:var(--grey-700); padding:4px 0; }
+  .totals-row.grand { font-size:16px; font-weight:700; color:var(--black); border-top:1px solid var(--grey-300); margin-top:8px; padding-top:10px; }
+  .patient-suggest { position:relative; }
+  .patient-suggest-list { position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--white); border:1px solid var(--grey-300); border-radius:var(--radius-sm); box-shadow:var(--shadow-resting); z-index:20; max-height:220px; overflow-y:auto; }
+  .patient-suggest-item { padding:9px 12px; font-size:13px; cursor:pointer; }
+  .patient-suggest-item:hover { background:var(--grey-100); }
+  .receipt-head { text-align:center; margin-bottom:14px; }
+  .receipt-head .clinic { font-size:18px; font-weight:700; }
+  .receipt-head .addr { font-size:12px; color:var(--grey-500); margin-top:2px; }
+  .receipt-tag { display:inline-block; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; background:var(--accent); color:#fff; border-radius:var(--radius-sm); padding:3px 10px; margin-top:8px; }
+  .receipt-meta { display:flex; justify-content:space-between; font-size:12px; color:var(--grey-700); margin:14px 0 10px; padding-bottom:10px; border-bottom:1px dashed var(--grey-300); }
+  .receipt-table { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:10px; }
+  .receipt-table th { text-align:left; font-size:10px; text-transform:uppercase; color:var(--grey-500); padding:4px 4px; border-bottom:1px solid var(--grey-300); }
+  .receipt-table td { padding:6px 4px; border-bottom:1px solid var(--grey-100); }
+  .receipt-table td.num, .receipt-table th.num { text-align:right; }
+  @media print {
+    body * { visibility:hidden; }
+    #receiptCard, #receiptCard * { visibility:visible; }
+    #receiptCard { position:absolute; top:0; left:0; width:100%; box-shadow:none; }
+    #receiptCloseBtn, #receiptPrintBtn { display:none; }
+  }
+</style>
+</head>
+<body style="visibility:hidden;">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <a href="index.html" class="brand">
+        <span class="brand-top">
+        <span class="brand-word-wrap">
+          <span class="brand-word">ClinVision</span>
+          <span class="brand-word-bar"></span>
+        </span>
+      </span>
+      <span class="brand-tagline">Where clinics run better</span>
+      </a>
+      <div class="clinic-name-row">
+        <img class="clinic-logo-thumb" id="clinicLogoThumb" style="display:none;" alt="" />
+        <div class="clinic-name" id="clinicName">Loading…</div>
+      </div>
+      <nav>
+        <a href="dashboard.html" class="nav-link" id="dashboardNavLink">Dashboard</a>
+        <a href="reception.html" class="nav-link" id="receptionNavLink">Reception</a>
+        <a href="doctor.html" class="nav-link" id="doctorNavLink">Doctor View</a>
+        <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
+        <a href="pharmacy.html" class="nav-link active" id="pharmacyNavLink">Pharmacy</a>
+        <a href="manage-medicines.html" class="nav-link" id="medicinesNavLink">Medicines</a>
+        <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
+        <a href="trends.html" class="nav-link" id="trendsNavLink">Insights</a>
+        <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
+        <a href="display.html" class="nav-link" id="displayNavLink">Display Screen</a>
+        <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
+      </nav>
+    </aside>
+
+    <main class="app-main">
+      <div class="app-topbar">
+        <div>
+          <h1>Pharmacy counter</h1>
+        </div>
+        <div style="font-size:13px; color:var(--grey-500); text-align:right;">
+          Next pharmacy invoice<br><strong style="color:var(--black);" id="nextInvoiceHint">—</strong>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>Patient</h2></div>
+        <div style="display:flex; gap:14px; align-items:flex-end;">
+          <div class="field patient-suggest" style="flex:1; margin-bottom:0;">
+            <label>Name or phone (optional — leave blank for a walk-in sale)</label>
+            <input type="text" id="patientInput" autocomplete="off" placeholder="Start typing a name or phone…" />
+            <div class="patient-suggest-list" id="patientSuggestList" style="display:none;"></div>
+          </div>
+          <button class="btn-sm" style="margin-bottom:0;" id="clearPatientBtn">Clear, walk-in sale</button>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1.6fr 1fr; gap:18px; align-items:start;">
+        <div>
+          <div class="panel">
+            <div class="panel-header"><h2>Add medicines</h2></div>
+            <div class="field">
+              <label>Search by name, or scan a barcode</label>
+              <input type="text" id="medSearch" placeholder="Type a medicine name…" />
+            </div>
+            <div id="medResults"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><h2>Cart</h2></div>
+            <table class="qtable" id="cartTable">
+              <thead><tr><th>Medicine</th><th>Qty</th><th>Rate</th><th>GST</th><th style="text-align:right;">Total</th><th></th></tr></thead>
+              <tbody id="cartBody"></tbody>
+            </table>
+            <div id="cartEmpty" class="cart-empty" style="padding:24px; text-align:center; color:var(--grey-500); font-size:13px;">No medicines added yet</div>
+          </div>
+        </div>
+
+        <div class="panel" style="position:sticky; top:12px;">
+          <div class="panel-header"><h2>Complete sale</h2></div>
+          <div class="totals-row"><span>Subtotal</span><span id="sumSubtotal">₹0.00</span></div>
+          <div class="totals-row"><span>GST</span><span id="sumTax">₹0.00</span></div>
+          <div class="totals-row grand"><span>Total</span><span id="sumTotal">₹0.00</span></div>
+          <div class="field" style="margin-top:16px;">
+            <label>Payment mode</label>
+            <select id="paymentMode"><option value="cash">Cash</option><option value="upi">UPI</option><option value="card">Card</option></select>
+          </div>
+          <div class="field">
+            <label>Amount received</label>
+            <input type="text" id="amountReceived" placeholder="₹0.00" />
+          </div>
+          <p id="saleError" style="display:none; font-size:13px; color:var(--danger); margin:0 0 12px;"></p>
+          <button class="btn-sm primary" style="width:100%; padding:11px;" id="completeSaleBtn" disabled>Complete sale</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="receiptModal" style="display:none;">
+    <div class="modal-card" id="receiptCard" style="max-width:480px;">
+      <div class="receipt-head">
+        <div class="clinic" id="rcClinicName">Clinic</div>
+        <div class="addr" id="rcClinicAddr"></div>
+        <span class="receipt-tag">Pharmacy tax invoice — not a consultation receipt</span>
+      </div>
+      <div class="receipt-meta">
+        <span>Invoice <strong style="color:var(--black);" id="rcInvoiceNumber"></strong></span>
+        <span id="rcInvoiceDate"></span>
+      </div>
+      <div class="receipt-meta" style="border-bottom:none; margin-top:-8px;">
+        <span id="rcPatient"></span>
+        <span id="rcPaymentMode"></span>
+      </div>
+      <table class="receipt-table">
+        <thead><tr><th>Item</th><th>HSN</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Tax</th><th class="num">Total</th></tr></thead>
+        <tbody id="receiptBody"></tbody>
+      </table>
+      <div class="totals-row"><span>Subtotal</span><span id="rcSubtotal"></span></div>
+      <div class="totals-row"><span>GST</span><span id="rcTax"></span></div>
+      <div class="totals-row grand"><span>Total</span><span id="rcTotal"></span></div>
+      <div style="display:flex; gap:10px; margin-top:18px;">
+        <button class="btn-sm" style="flex:1;" id="receiptCloseBtn">Close</button>
+        <button class="btn-sm primary" style="flex:1;" id="receiptPrintBtn">Print</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=97"></script>
+  <script>
+    (async function () {
+      if (!(await Qlinic.requireLogin('login.html'))) return;
+      if (!(await Qlinic.canAccessPharmacy())) { window.location.href = 'dashboard.html'; return; }
+
+      const amPharmacist = await Qlinic.isPharmacist();
+      const [amAdmin, amDoctor] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor()]);
+
+      // A pure pharmacist gets exactly the two pages BACKLOG.md scoped
+      // for the role — everything else in the nav is hidden, not just
+      // redirect-blocked, same "no link to a page you can't open"
+      // convention dashboard.html already follows for other roles.
+      if (amPharmacist) {
+        ['dashboardNavLink', 'receptionNavLink', 'doctorNavLink', 'billingNavLink', 'revenueNavLink', 'trendsNavLink', 'endOfDayNavLink', 'displayNavLink']
+          .forEach((id) => { document.getElementById(id).style.display = 'none'; });
+      } else {
+        if (amDoctor) {
+          ['receptionNavLink', 'billingNavLink', 'displayNavLink'].forEach((id) => { document.getElementById(id).style.display = 'none'; });
+        }
+        if (!amAdmin) {
+          ['revenueNavLink', 'endOfDayNavLink'].forEach((id) => { document.getElementById(id).style.display = 'none'; });
+        }
+        if (!amAdmin && !amDoctor) {
+          document.getElementById('trendsNavLink').style.display = 'none';
+        }
+      }
+      document.body.style.visibility = 'visible';
+
+      const clinic = await Qlinic.getClinic();
+      document.getElementById('clinicName').textContent = clinic.name;
+      document.getElementById('nextInvoiceHint').textContent = 'PH-' + String(clinic.next_pharmacy_invoice_number).padStart(4, '0');
+
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+      }
+      function money(n) { return '₹' + Number(n).toFixed(2); }
+
+      let catalog = await Qlinic.getMedicines({ activeOnly: true });
+      let selectedPatient = null; // { id, name, phone } or null for walk-in
+      let cart = []; // [{ medicineId, name, unitOfSale, sellingPrice, gstRate, stockQuantity, qty }]
+
+      function scheduleBadge(s) {
+        if (s === 'h1' || s === 'x') return `<span class="badge" style="background:var(--danger-bg); color:var(--danger);">Schedule ${s.toUpperCase()}</span>`;
+        if (s === 'h') return `<span class="badge" style="background:var(--warning-bg); color:var(--warning);">Schedule H</span>`;
+        return `<span class="badge" style="background:var(--grey-100); color:var(--grey-700);">OTC</span>`;
+      }
+
+      function renderMeds(filterText) {
+        const q = (filterText || '').trim().toLowerCase();
+        const matches = q
+          ? catalog.filter((m) => m.name.toLowerCase().includes(q) || (m.referenceNumber || '').toLowerCase() === q)
+          : [];
+        const html = matches.slice(0, 20).map((m) => {
+          const stockColor = m.stockQuantity < 10 ? 'var(--danger)' : 'var(--grey-500)';
+          return `<div class="med-row">
+            <div><div class="med-name">${Qlinic.escapeHtml(m.name)} ${scheduleBadge(m.schedule)}</div>
+            <div class="med-meta">${money(m.sellingPrice)} / ${Qlinic.escapeHtml(m.unitOfSale || 'unit')} · GST ${m.gstRate}%</div></div>
+            <div style="display:flex;align-items:center;">
+              <span class="med-stock" style="color:${stockColor};">${m.stockQuantity} ${Qlinic.escapeHtml(m.unitOfSale || '')}</span>
+              <button class="btn-sm" data-add="${m.id}" ${m.stockQuantity <= 0 ? 'disabled title="Out of stock"' : ''}>Add</button>
+            </div></div>`;
+        }).join('');
+        document.getElementById('medResults').innerHTML = html || (q ? '<div style="padding:12px; color:var(--grey-500); font-size:13px;">No medicine matches that search</div>' : '');
+      }
+
+      document.getElementById('medSearch').addEventListener('input', (e) => renderMeds(e.target.value));
+      document.getElementById('medResults').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-add]');
+        if (!btn) return;
+        addToCart(btn.getAttribute('data-add'));
+      });
+
+      function addToCart(medicineId) {
+        const m = catalog.find((x) => x.id === medicineId);
+        if (!m) return;
+        const existing = cart.find((c) => c.medicineId === medicineId);
+        const currentQty = existing ? existing.qty : 0;
+        if (currentQty + 1 > m.stockQuantity) {
+          showToast(`Only ${m.stockQuantity} ${m.unitOfSale || 'units'} of ${m.name} left`);
+          return;
+        }
+        if (existing) existing.qty += 1;
+        else cart.push({ medicineId: m.id, name: m.name, unitOfSale: m.unitOfSale, sellingPrice: m.sellingPrice, gstRate: m.gstRate, stockQuantity: m.stockQuantity, qty: 1 });
+        renderCart();
+      }
+      function changeQty(medicineId, delta) {
+        const line = cart.find((c) => c.medicineId === medicineId);
+        if (!line) return;
+        if (delta > 0 && line.qty + 1 > line.stockQuantity) {
+          showToast(`Only ${line.stockQuantity} ${line.unitOfSale || 'units'} of ${line.name} left`);
+          return;
+        }
+        line.qty += delta;
+        if (line.qty <= 0) cart = cart.filter((c) => c.medicineId !== medicineId);
+        renderCart();
+      }
+      function removeLine(medicineId) { cart = cart.filter((c) => c.medicineId !== medicineId); renderCart(); }
+
+      function cartTotals() {
+        let subtotal = 0, tax = 0;
+        cart.forEach((line) => {
+          const base = line.sellingPrice * line.qty;
+          subtotal += base;
+          tax += base * line.gstRate / 100;
+        });
+        return { subtotal, tax, total: subtotal + tax };
+      }
+
+      function renderCart() {
+        const body = document.getElementById('cartBody');
+        const empty = document.getElementById('cartEmpty');
+        empty.style.display = cart.length === 0 ? 'block' : 'none';
+        body.innerHTML = cart.map((line) => {
+          const base = line.sellingPrice * line.qty;
+          const lineTax = base * line.gstRate / 100;
+          return `<tr>
+            <td><div class="med-name" style="font-size:13px;">${Qlinic.escapeHtml(line.name)}</div></td>
+            <td><div class="qty-stepper">
+              <button type="button" data-dec="${line.medicineId}">−</button><span>${line.qty}</span><button type="button" data-inc="${line.medicineId}">+</button>
+            </div></td>
+            <td>${money(line.sellingPrice)}</td><td>${line.gstRate}%</td>
+            <td style="text-align:right; font-weight:600;">${money(base + lineTax)}</td>
+            <td><button type="button" class="btn-sm" style="color:var(--danger);" data-remove="${line.medicineId}" aria-label="Remove">✕</button></td>
+          </tr>`;
+        }).join('');
+        const { subtotal, tax, total } = cartTotals();
+        document.getElementById('sumSubtotal').textContent = money(subtotal);
+        document.getElementById('sumTax').textContent = money(tax);
+        document.getElementById('sumTotal').textContent = money(total);
+        document.getElementById('amountReceived').value = cart.length ? total.toFixed(2) : '';
+        document.getElementById('completeSaleBtn').disabled = cart.length === 0;
+      }
+      document.getElementById('cartBody').addEventListener('click', (e) => {
+        const dec = e.target.closest('button[data-dec]');
+        const inc = e.target.closest('button[data-inc]');
+        const rm = e.target.closest('button[data-remove]');
+        if (dec) changeQty(dec.getAttribute('data-dec'), -1);
+        if (inc) changeQty(inc.getAttribute('data-inc'), 1);
+        if (rm) removeLine(rm.getAttribute('data-remove'));
+      });
+
+      // Patient search — debounced, dropdown of matches, click to pick.
+      let patientSearchTimer = null;
+      document.getElementById('patientInput').addEventListener('input', (e) => {
+        selectedPatient = null;
+        const q = e.target.value;
+        clearTimeout(patientSearchTimer);
+        if (!q.trim()) { document.getElementById('patientSuggestList').style.display = 'none'; return; }
+        patientSearchTimer = setTimeout(async () => {
+          const matches = await Qlinic.searchPatientsForPharmacy(q);
+          const list = document.getElementById('patientSuggestList');
+          if (matches.length === 0) { list.style.display = 'none'; return; }
+          list.innerHTML = matches.map((p) => `<div class="patient-suggest-item" data-id="${p.id}" data-name="${Qlinic.escapeHtml(p.name)}" data-phone="${Qlinic.escapeHtml(p.phone || '')}">${Qlinic.escapeHtml(p.name)} · ${Qlinic.escapeHtml(p.phone || 'no phone')}</div>`).join('');
+          list.style.display = 'block';
+        }, 250);
+      });
+      document.getElementById('patientSuggestList').addEventListener('click', (e) => {
+        const item = e.target.closest('.patient-suggest-item');
+        if (!item) return;
+        selectedPatient = { id: item.getAttribute('data-id'), name: item.getAttribute('data-name'), phone: item.getAttribute('data-phone') };
+        document.getElementById('patientInput').value = `${selectedPatient.name} · ${selectedPatient.phone || 'no phone'}`;
+        document.getElementById('patientSuggestList').style.display = 'none';
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.patient-suggest')) document.getElementById('patientSuggestList').style.display = 'none';
+      });
+      document.getElementById('clearPatientBtn').addEventListener('click', () => {
+        selectedPatient = null;
+        document.getElementById('patientInput').value = '';
+      });
+
+      document.getElementById('completeSaleBtn').addEventListener('click', async () => {
+        const errEl = document.getElementById('saleError');
+        errEl.style.display = 'none';
+        if (cart.length === 0) return;
+        const btn = document.getElementById('completeSaleBtn');
+        btn.disabled = true;
+        try {
+          const invoice = await Qlinic.createPharmacyInvoice({
+            patientId: selectedPatient ? selectedPatient.id : null,
+            patientName: selectedPatient ? selectedPatient.name : '',
+            patientPhone: selectedPatient ? selectedPatient.phone : '',
+            paymentMode: document.getElementById('paymentMode').value,
+            amountReceived: document.getElementById('amountReceived').value,
+            items: cart.map((c) => ({ medicineId: c.medicineId, quantity: c.qty })),
+          });
+          const items = await Qlinic.getInvoiceItems(invoice.id);
+          showReceipt(invoice, items);
+          cart = [];
+          renderCart();
+          selectedPatient = null;
+          document.getElementById('patientInput').value = '';
+          catalog = await Qlinic.getMedicines({ activeOnly: true });
+          const freshClinic = await Qlinic.getClinic();
+          document.getElementById('nextInvoiceHint').textContent = 'PH-' + String(freshClinic.next_pharmacy_invoice_number).padStart(4, '0');
+        } catch (err) {
+          errEl.textContent = err.message || 'Could not complete this sale.';
+          errEl.style.display = 'block';
+        } finally {
+          btn.disabled = cart.length === 0;
+        }
+      });
+
+      function showReceipt(invoice, items) {
+        document.getElementById('rcClinicName').textContent = clinic.name;
+        document.getElementById('rcClinicAddr').textContent = [clinic.address_line, clinic.city, clinic.state].filter(Boolean).join(', ');
+        document.getElementById('rcInvoiceNumber').textContent = 'PH-' + String(invoice.invoiceNumber).padStart(4, '0');
+        document.getElementById('rcInvoiceDate').textContent = Qlinic.formatTimestamp(invoice.createdAt);
+        document.getElementById('rcPatient').textContent = 'Patient: ' + (invoice.patientName || 'Walk-in');
+        document.getElementById('rcPaymentMode').textContent = invoice.paymentMode.toUpperCase();
+        document.getElementById('receiptBody').innerHTML = items.map((it) => `<tr>
+          <td>${Qlinic.escapeHtml(it.medicineName)}</td><td>${Qlinic.escapeHtml(it.hsnCode || '')}</td>
+          <td class="num">${it.quantity}</td><td class="num">${money(it.unitPrice)}</td>
+          <td class="num">${money(it.lineTotal - it.unitPrice * it.quantity)}</td><td class="num">${money(it.lineTotal)}</td>
+        </tr>`).join('');
+        const subtotal = items.reduce((s, it) => s + it.unitPrice * it.quantity, 0);
+        const total = items.reduce((s, it) => s + it.lineTotal, 0);
+        document.getElementById('rcSubtotal').textContent = money(subtotal);
+        document.getElementById('rcTax').textContent = money(total - subtotal);
+        document.getElementById('rcTotal').textContent = money(total);
+        document.getElementById('receiptModal').style.display = 'flex';
+      }
+      document.getElementById('receiptCloseBtn').addEventListener('click', () => { document.getElementById('receiptModal').style.display = 'none'; });
+      document.getElementById('receiptPrintBtn').addEventListener('click', () => window.print());
+
+      renderCart();
+    })();
+  </script>
+</body>
+</html>

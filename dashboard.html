@@ -32,6 +32,8 @@
         <a href="reception.html" class="nav-link" id="receptionNavLink">Reception</a>
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
+        <a href="pharmacy.html" class="nav-link" id="pharmacyNavLink">Pharmacy</a>
+        <a href="manage-medicines.html" class="nav-link" id="medicinesNavLink">Medicines</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
         <a href="trends.html" class="nav-link" id="trendsNavLink">Insights</a>
         <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
@@ -70,10 +72,16 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=96"></script>
+  <script src="clinic-data.js?v=97"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
+
+      // Every login lands on dashboard.html first (login.html's own
+      // redirect), regardless of role — a pharmacist has no real use
+      // for this dashboard (doctor status, queue-wide stats), so send
+      // them straight to their one page instead of showing it first.
+      if (await Qlinic.isPharmacist()) { window.location.href = 'pharmacy.html'; return; }
 
       // The sidebar logo links to the marketing site, which has no way
       // back into the app without logging in again, worth a heads-up
@@ -96,6 +104,8 @@
         document.getElementById('receptionNavLink').style.display = 'none';
         document.getElementById('billingNavLink').style.display = 'none';
         document.getElementById('displayNavLink').style.display = 'none';
+        document.getElementById('pharmacyNavLink').style.display = 'none';
+        document.getElementById('medicinesNavLink').style.display = 'none';
       }
       if (!amAdmin) {
         document.getElementById('revenueNavLink').style.display = 'none';

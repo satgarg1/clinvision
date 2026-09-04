@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Medicines: ClinVision</title>
+<script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css?v=307" />
+<style>
+  .tab-switch { display:inline-flex; gap:4px; background:var(--grey-100); border-radius:var(--radius-pill); padding:3px; margin-bottom:18px; }
+  .tab-switch button { font-family:var(--font); font-size:13px; font-weight:600; border:none; background:transparent; color:var(--grey-700); padding:7px 16px; border-radius:var(--radius-pill); cursor:pointer; }
+  .tab-switch button.active { background:var(--white); color:var(--accent); box-shadow:0 1px 3px rgba(0,0,0,.1); }
+  .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  .kv-row { display:flex; justify-content:space-between; font-size:13px; padding:7px 0; border-bottom:1px solid var(--grey-100); }
+  .kv-row:last-child { border-bottom:none; }
+  .kv-row .k { color:var(--grey-500); }
+  .kv-row .v { font-weight:600; text-align:right; }
+</style>
+</head>
+<body style="visibility:hidden;">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <a href="index.html" class="brand">
+        <span class="brand-top">
+        <span class="brand-word-wrap">
+          <span class="brand-word">ClinVision</span>
+          <span class="brand-word-bar"></span>
+        </span>
+      </span>
+      <span class="brand-tagline">Where clinics run better</span>
+      </a>
+      <div class="clinic-name-row">
+        <img class="clinic-logo-thumb" id="clinicLogoThumb" style="display:none;" alt="" />
+        <div class="clinic-name" id="clinicName">Loading…</div>
+      </div>
+      <nav>
+        <a href="dashboard.html" class="nav-link" id="dashboardNavLink">Dashboard</a>
+        <a href="reception.html" class="nav-link" id="receptionNavLink">Reception</a>
+        <a href="doctor.html" class="nav-link" id="doctorNavLink">Doctor View</a>
+        <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
+        <a href="pharmacy.html" class="nav-link" id="pharmacyNavLink">Pharmacy</a>
+        <a href="manage-medicines.html" class="nav-link active" id="medicinesNavLink">Medicines</a>
+        <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
+        <a href="trends.html" class="nav-link" id="trendsNavLink">Insights</a>
+        <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
+        <a href="display.html" class="nav-link" id="displayNavLink">Display Screen</a>
+        <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
+      </nav>
+    </aside>
+
+    <main class="app-main">
+      <div id="listView">
+        <div class="app-topbar">
+          <h1>Medicines</h1>
+          <button class="btn-sm primary" id="addMedicineBtn">Add medicine</button>
+        </div>
+        <div class="panel">
+          <div class="field" style="max-width:320px;">
+            <label>Search</label>
+            <input type="text" id="listSearch" placeholder="Search by name…" />
+          </div>
+          <table class="qtable">
+            <thead><tr><th>Name</th><th>Schedule</th><th>Stock</th><th>Selling price</th><th>Active</th><th></th></tr></thead>
+            <tbody id="listBody"></tbody>
+          </table>
+          <div id="listEmpty" style="display:none; padding:24px; text-align:center; color:var(--grey-500); font-size:13px;">No medicines match that search</div>
+          <div id="listPager" style="margin-top:14px;"></div>
+        </div>
+      </div>
+
+      <div id="detailView" style="display:none;">
+        <div class="app-topbar">
+          <div>
+            <div class="breadcrumb"><a href="#" id="backToListLink">Medicines</a> <span>/</span> <span id="detailBreadcrumbName"></span></div>
+            <h1 id="detailName">— <span class="badge" id="detailScheduleBadge" style="vertical-align:middle; margin-left:6px;"></span></h1>
+          </div>
+          <span class="badge" id="detailStockBadge" style="font-size:13px; padding:6px 12px;"></span>
+        </div>
+
+        <div class="tab-switch">
+          <button id="tabItemBtn" class="active">Item details</button>
+          <button id="tabStockBtn">Stock details</button>
+        </div>
+
+        <div id="detailItem">
+          <div class="detail-grid">
+            <div class="panel">
+              <div class="panel-header"><h2>General details</h2><button class="btn-sm" id="editMedicineBtn">Edit item</button></div>
+              <div class="kv-row"><span class="k">Generic name</span><span class="v" id="dGenericName"></span></div>
+              <div class="kv-row"><span class="k">Manufacturer</span><span class="v" id="dManufacturer"></span></div>
+              <div class="kv-row"><span class="k">Form / strength</span><span class="v" id="dFormStrength"></span></div>
+              <div class="kv-row"><span class="k">Unit of sale</span><span class="v" id="dUnit"></span></div>
+              <div class="kv-row"><span class="k">Reference no.</span><span class="v" id="dRefNo"></span></div>
+              <div class="kv-row"><span class="k">Active</span><span class="v" id="dActive"></span></div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><h2>Pricing</h2></div>
+              <div class="kv-row"><span class="k">MRP</span><span class="v" id="dMrp"></span></div>
+              <div class="kv-row"><span class="k">Selling price</span><span class="v" id="dSellingPrice"></span></div>
+              <div class="kv-row"><span class="k">GST rate</span><span class="v" id="dGstRate"></span></div>
+              <div class="kv-row"><span class="k">HSN code</span><span class="v" id="dHsn"></span></div>
+              <div class="kv-row"><span class="k">Total stock (all batches)</span><span class="v" id="dTotalStock"></span></div>
+            </div>
+          </div>
+
+          <div class="panel" style="margin-top:18px;">
+            <div class="panel-header"><h2>Batches</h2><button class="btn-sm primary" id="addBatchBtn">Add batch (stock in)</button></div>
+            <table class="qtable">
+              <thead><tr><th>Batch no.</th><th>Mfg date</th><th>Expiry date</th><th>Purchase price</th><th>Qty remaining</th><th></th><th></th></tr></thead>
+              <tbody id="batchesBody"></tbody>
+            </table>
+            <div id="batchesEmpty" style="display:none; padding:16px; text-align:center; color:var(--grey-500); font-size:13px;">No stock recorded yet</div>
+          </div>
+        </div>
+
+        <div id="detailStock" style="display:none;">
+          <div class="panel">
+            <div class="panel-header"><h2>Stock movement history</h2></div>
+            <table class="qtable">
+              <thead><tr><th>Date</th><th>Type</th><th>Qty</th><th>Invoice</th><th>Batch</th><th style="text-align:right;">Closing stock</th></tr></thead>
+              <tbody id="ledgerBody"></tbody>
+            </table>
+            <div id="ledgerEmpty" style="display:none; padding:16px; text-align:center; color:var(--grey-500); font-size:13px;">No stock movement recorded yet</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="medicineModal" style="display:none;">
+    <div class="modal-card" style="max-width:520px;">
+      <h3 class="modal-title" id="medicineModalTitle">Add medicine</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Name</label><input type="text" id="mfName" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Generic name</label><input type="text" id="mfGenericName" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Manufacturer</label><input type="text" id="mfManufacturer" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Form</label><input type="text" id="mfForm" placeholder="Tablet, syrup…" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Strength</label><input type="text" id="mfStrength" placeholder="500mg" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Unit of sale</label><input type="text" id="mfUnit" placeholder="Strip of 10" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Schedule</label>
+          <select id="mfSchedule"><option value="none">OTC (no schedule)</option><option value="h">Schedule H</option><option value="h1">Schedule H1</option><option value="x">Schedule X</option></select>
+        </div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Reference no.</label><input type="text" id="mfRefNo" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>MRP (₹)</label><input type="text" id="mfMrp" inputmode="decimal" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Selling price (₹)</label><input type="text" id="mfSellingPrice" inputmode="decimal" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>GST rate (%)</label><input type="text" id="mfGstRate" inputmode="decimal" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>HSN code</label><input type="text" id="mfHsn" /></div>
+      </div>
+      <div id="openingStockFields">
+        <p style="font-size:12px; font-weight:600; color:var(--grey-500); margin:4px 0 10px;">Opening stock (optional)</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">
+          <div class="doctor-form-field" style="margin-bottom:16px;"><label>Batch number</label><input type="text" id="mfOpeningBatch" /></div>
+          <div class="doctor-form-field" style="margin-bottom:16px;"><label>Quantity</label><input type="text" id="mfOpeningQty" inputmode="numeric" /></div>
+          <div class="doctor-form-field" style="margin-bottom:16px;"><label>Mfg date</label><input type="date" id="mfOpeningMfg" /></div>
+          <div class="doctor-form-field" style="margin-bottom:16px;"><label>Expiry date</label><input type="date" id="mfOpeningExpiry" /></div>
+        </div>
+      </div>
+      <p id="medicineModalError" style="display:none; font-size:13px; color:var(--danger); margin:6px 0 16px;"></p>
+      <div class="modal-actions">
+        <button class="btn-sm primary" id="medicineModalSaveBtn">Save</button>
+        <button class="btn-sm" id="medicineModalCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="batchModal" style="display:none;">
+    <div class="modal-card" style="max-width:420px;">
+      <h3 class="modal-title">Add batch (stock in)</h3>
+      <div class="doctor-form-field" style="margin-bottom:16px;"><label>Batch number</label><input type="text" id="bfBatchNumber" /></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Mfg date</label><input type="date" id="bfMfgDate" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Expiry date</label><input type="date" id="bfExpiryDate" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Quantity</label><input type="text" id="bfQuantity" inputmode="numeric" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Purchase price (₹/unit)</label><input type="text" id="bfPurchasePrice" inputmode="decimal" /></div>
+      </div>
+      <div class="doctor-form-field" style="margin-bottom:16px;"><label>MRP (₹) for this batch</label><input type="text" id="bfMrp" inputmode="decimal" /></div>
+      <p id="batchModalError" style="display:none; font-size:13px; color:var(--danger); margin:6px 0 16px;"></p>
+      <div class="modal-actions">
+        <button class="btn-sm primary" id="batchModalSaveBtn">Save</button>
+        <button class="btn-sm" id="batchModalCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="adjustModal" style="display:none;">
+    <div class="modal-card" style="max-width:380px;">
+      <h3 class="modal-title">Adjust stock</h3>
+      <p class="modal-message" id="adjustModalBatchLabel"></p>
+      <div class="doctor-form-field" style="margin-bottom:16px;">
+        <label>Change (use a negative number to remove stock)</label>
+        <input type="text" id="adjDelta" inputmode="numeric" placeholder="e.g. -2 for breakage" />
+      </div>
+      <div class="doctor-form-field" style="margin-bottom:16px;"><label>Note</label><input type="text" id="adjNote" placeholder="Breakage, recount, expired write-off…" /></div>
+      <p id="adjustModalError" style="display:none; font-size:13px; color:var(--danger); margin:6px 0 16px;"></p>
+      <div class="modal-actions">
+        <button class="btn-sm primary" id="adjustModalSaveBtn">Save</button>
+        <button class="btn-sm" id="adjustModalCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=97"></script>
+  <script>
+    (async function () {
+      if (!(await Qlinic.requireLogin('login.html'))) return;
+      if (!(await Qlinic.canAccessPharmacy())) { window.location.href = 'dashboard.html'; return; }
+
+      const amPharmacist = await Qlinic.isPharmacist();
+      const [amAdmin, amDoctor] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor()]);
+      if (amPharmacist) {
+        ['dashboardNavLink', 'receptionNavLink', 'doctorNavLink', 'billingNavLink', 'revenueNavLink', 'trendsNavLink', 'endOfDayNavLink', 'displayNavLink']
+          .forEach((id) => { document.getElementById(id).style.display = 'none'; });
+      } else {
+        if (amDoctor) ['receptionNavLink', 'billingNavLink', 'displayNavLink'].forEach((id) => { document.getElementById(id).style.display = 'none'; });
+        if (!amAdmin) ['revenueNavLink', 'endOfDayNavLink'].forEach((id) => { document.getElementById(id).style.display = 'none'; });
+        if (!amAdmin && !amDoctor) document.getElementById('trendsNavLink').style.display = 'none';
+      }
+      document.body.style.visibility = 'visible';
+
+      const clinic = await Qlinic.getClinic();
+      document.getElementById('clinicName').textContent = clinic.name;
+
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+      }
+      function money(n) { return '₹' + Number(n).toFixed(2); }
+      function scheduleLabel(s) { return s === 'none' ? 'OTC' : 'Schedule ' + s.toUpperCase(); }
+      function scheduleBadgeStyle(s) {
+        if (s === 'h1' || s === 'x') return 'background:var(--danger-bg); color:var(--danger);';
+        if (s === 'h') return 'background:var(--warning-bg); color:var(--warning);';
+        return 'background:var(--grey-100); color:var(--grey-700);';
+      }
+
+      let allMedicines = [];
+      let listPage = 0;
+      const LIST_PAGE_SIZE = 10;
+      let currentMedicine = null;
+
+      async function reloadList() {
+        allMedicines = await Qlinic.getMedicines({ activeOnly: false });
+        renderList();
+      }
+
+      function renderList() {
+        const q = document.getElementById('listSearch').value.trim().toLowerCase();
+        const filtered = q ? allMedicines.filter((m) => m.name.toLowerCase().includes(q)) : allMedicines;
+        const totalPages = Math.max(1, Math.ceil(filtered.length / LIST_PAGE_SIZE));
+        if (listPage >= totalPages) listPage = totalPages - 1;
+        const pageRows = filtered.slice(listPage * LIST_PAGE_SIZE, listPage * LIST_PAGE_SIZE + LIST_PAGE_SIZE);
+        document.getElementById('listEmpty').style.display = filtered.length === 0 ? 'block' : 'none';
+        document.getElementById('listBody').innerHTML = pageRows.map((m) => `<tr style="cursor:pointer;" data-open="${m.id}">
+          <td>${Qlinic.escapeHtml(m.name)}</td>
+          <td><span class="badge" style="${scheduleBadgeStyle(m.schedule)}">${scheduleLabel(m.schedule)}</span></td>
+          <td>${m.stockQuantity} ${Qlinic.escapeHtml(m.unitOfSale || '')}</td>
+          <td>${money(m.sellingPrice)}</td>
+          <td>${m.isActive ? '<span style="color:var(--success);">Active</span>' : '<span style="color:var(--grey-500);">Inactive</span>'}</td>
+          <td><button class="btn-sm" data-open="${m.id}">View</button></td>
+        </tr>`).join('');
+        const pagerEl = document.getElementById('listPager');
+        pagerEl.innerHTML = Qlinic.pagerHtml(listPage + 1, totalPages);
+        Qlinic.wirePager(pagerEl, listPage + 1, totalPages, (p) => { listPage = p - 1; renderList(); });
+      }
+      document.getElementById('listSearch').addEventListener('input', () => { listPage = 0; renderList(); });
+      document.getElementById('listBody').addEventListener('click', (e) => {
+        const el = e.target.closest('[data-open]');
+        if (el) openDetail(el.getAttribute('data-open'));
+      });
+
+      async function openDetail(id) {
+        currentMedicine = await Qlinic.getMedicine(id);
+        if (!currentMedicine) { showToast('Medicine not found'); return; }
+        document.getElementById('listView').style.display = 'none';
+        document.getElementById('detailView').style.display = 'block';
+        showDetailTab('item');
+        await renderDetail();
+      }
+      document.getElementById('backToListLink').addEventListener('click', async (e) => {
+        e.preventDefault();
+        document.getElementById('detailView').style.display = 'none';
+        document.getElementById('listView').style.display = 'block';
+        await reloadList();
+      });
+
+      async function renderDetail() {
+        const m = currentMedicine;
+        document.getElementById('detailBreadcrumbName').textContent = m.name;
+        document.getElementById('detailName').firstChild.textContent = m.name + ' ';
+        const badge = document.getElementById('detailScheduleBadge');
+        badge.textContent = scheduleLabel(m.schedule);
+        badge.setAttribute('style', 'vertical-align:middle; margin-left:6px; ' + scheduleBadgeStyle(m.schedule));
+        const stockBadge = document.getElementById('detailStockBadge');
+        stockBadge.textContent = `${m.stockQuantity} ${m.unitOfSale || ''} in stock`;
+        stockBadge.setAttribute('style', 'font-size:13px; padding:6px 12px; ' + (m.stockQuantity < 10 ? 'background:var(--warning-bg); color:var(--warning);' : 'background:var(--success-bg); color:var(--success);'));
+
+        document.getElementById('dGenericName').textContent = m.genericName || '—';
+        document.getElementById('dManufacturer').textContent = m.manufacturer || '—';
+        document.getElementById('dFormStrength').textContent = [m.form, m.strength].filter(Boolean).join(' · ') || '—';
+        document.getElementById('dUnit').textContent = m.unitOfSale || '—';
+        document.getElementById('dRefNo').textContent = m.referenceNumber || '—';
+        document.getElementById('dActive').textContent = m.isActive ? 'Yes' : 'No';
+        document.getElementById('dActive').style.color = m.isActive ? 'var(--success)' : 'var(--grey-500)';
+        document.getElementById('dMrp').textContent = money(m.mrp);
+        document.getElementById('dSellingPrice').textContent = money(m.sellingPrice);
+        document.getElementById('dGstRate').textContent = m.gstRate + '%';
+        document.getElementById('dHsn').textContent = m.hsnCode || '—';
+        document.getElementById('dTotalStock').textContent = `${m.stockQuantity} ${m.unitOfSale || ''}`;
+
+        const batches = await Qlinic.getMedicineBatches(m.id);
+        const today = new Date();
+        document.getElementById('batchesEmpty').style.display = batches.length === 0 ? 'block' : 'none';
+        document.getElementById('batchesBody').innerHTML = batches.map((b) => {
+          let expiryFlag = '';
+          if (b.expiryDate) {
+            const days = Math.round((new Date(b.expiryDate) - today) / 86400000);
+            if (days < 0) expiryFlag = `<span class="badge" style="background:var(--danger-bg); color:var(--danger);">Expired</span>`;
+            else if (days <= 60) expiryFlag = `<span class="badge" style="background:var(--danger-bg); color:var(--danger);">Expiring in ${days} days</span>`;
+          }
+          return `<tr>
+            <td>${Qlinic.escapeHtml(b.batchNumber)}</td>
+            <td>${b.mfgDate || '—'}</td><td>${b.expiryDate || '—'}</td>
+            <td>${money(b.purchasePrice)}</td><td>${b.quantityRemaining} ${Qlinic.escapeHtml(m.unitOfSale || '')}</td>
+            <td>${expiryFlag}</td>
+            <td><button class="btn-sm" data-adjust="${b.id}">Adjust</button></td>
+          </tr>`;
+        }).join('');
+
+        const ledger = await Qlinic.getStockLedger(m.id);
+        document.getElementById('ledgerEmpty').style.display = ledger.length === 0 ? 'block' : 'none';
+        document.getElementById('ledgerBody').innerHTML = ledger.map((l) => {
+          const positive = l.quantityDelta > 0;
+          const typeLabel = l.movementType.charAt(0).toUpperCase() + l.movementType.slice(1);
+          return `<tr>
+            <td>${Qlinic.formatDateLabel ? Qlinic.formatDateLabel(l.createdAt) : new Date(l.createdAt).toLocaleDateString()}</td>
+            <td><span class="badge" style="background:var(--grey-100); color:var(--grey-700);">${typeLabel}</span></td>
+            <td style="color:${positive ? 'var(--success)' : 'var(--danger)'}; font-weight:600;">${positive ? '+' : ''}${l.quantityDelta} ${Qlinic.escapeHtml(m.unitOfSale || '')}</td>
+            <td>${l.referenceInvoiceId ? 'PH-…' + l.referenceInvoiceId.slice(0, 4) : (l.note || '—')}</td>
+            <td>${l.batchId ? l.batchId.slice(0, 8) : '—'}</td>
+            <td style="text-align:right;">${l.closingStockAfter} ${Qlinic.escapeHtml(m.unitOfSale || '')}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      function showDetailTab(which) {
+        document.getElementById('detailItem').style.display = which === 'item' ? 'block' : 'none';
+        document.getElementById('detailStock').style.display = which === 'stock' ? 'block' : 'none';
+        document.getElementById('tabItemBtn').classList.toggle('active', which === 'item');
+        document.getElementById('tabStockBtn').classList.toggle('active', which === 'stock');
+      }
+      document.getElementById('tabItemBtn').addEventListener('click', () => showDetailTab('item'));
+      document.getElementById('tabStockBtn').addEventListener('click', () => showDetailTab('stock'));
+
+      document.getElementById('batchesBody').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-adjust]');
+        if (btn) openAdjustModal(btn.getAttribute('data-adjust'));
+      });
+
+      // ---- Add / edit medicine modal ----
+      let editingMedicineId = null;
+      function openMedicineModal(medicine) {
+        editingMedicineId = medicine ? medicine.id : null;
+        document.getElementById('medicineModalTitle').textContent = medicine ? 'Edit medicine' : 'Add medicine';
+        document.getElementById('mfName').value = medicine ? medicine.name : '';
+        document.getElementById('mfGenericName').value = medicine ? medicine.genericName : '';
+        document.getElementById('mfManufacturer').value = medicine ? medicine.manufacturer : '';
+        document.getElementById('mfForm').value = medicine ? medicine.form : '';
+        document.getElementById('mfStrength').value = medicine ? medicine.strength : '';
+        document.getElementById('mfUnit').value = medicine ? medicine.unitOfSale : '';
+        document.getElementById('mfSchedule').value = medicine ? medicine.schedule : 'none';
+        document.getElementById('mfRefNo').value = medicine ? medicine.referenceNumber : '';
+        document.getElementById('mfMrp').value = medicine ? medicine.mrp : '';
+        document.getElementById('mfSellingPrice').value = medicine ? medicine.sellingPrice : '';
+        document.getElementById('mfGstRate').value = medicine ? medicine.gstRate : '12';
+        document.getElementById('mfHsn').value = medicine ? medicine.hsnCode : '';
+        document.getElementById('openingStockFields').style.display = medicine ? 'none' : 'block';
+        document.getElementById('mfOpeningBatch').value = '';
+        document.getElementById('mfOpeningQty').value = '';
+        document.getElementById('mfOpeningMfg').value = '';
+        document.getElementById('mfOpeningExpiry').value = '';
+        document.getElementById('medicineModalError').style.display = 'none';
+        document.getElementById('medicineModal').style.display = 'flex';
+      }
+      document.getElementById('addMedicineBtn').addEventListener('click', () => openMedicineModal(null));
+      document.getElementById('editMedicineBtn').addEventListener('click', () => openMedicineModal(currentMedicine));
+      document.getElementById('medicineModalCancelBtn').addEventListener('click', () => { document.getElementById('medicineModal').style.display = 'none'; });
+      document.getElementById('medicineModalSaveBtn').addEventListener('click', async () => {
+        const errEl = document.getElementById('medicineModalError');
+        errEl.style.display = 'none';
+        const name = document.getElementById('mfName').value.trim();
+        if (!name) { errEl.textContent = 'Name is required.'; errEl.style.display = 'block'; return; }
+        const payload = {
+          name,
+          genericName: document.getElementById('mfGenericName').value.trim(),
+          manufacturer: document.getElementById('mfManufacturer').value.trim(),
+          form: document.getElementById('mfForm').value.trim(),
+          strength: document.getElementById('mfStrength').value.trim(),
+          unitOfSale: document.getElementById('mfUnit').value.trim(),
+          schedule: document.getElementById('mfSchedule').value,
+          referenceNumber: document.getElementById('mfRefNo').value.trim(),
+          mrp: document.getElementById('mfMrp').value || 0,
+          sellingPrice: document.getElementById('mfSellingPrice').value || 0,
+          gstRate: document.getElementById('mfGstRate').value || 12,
+          hsnCode: document.getElementById('mfHsn').value.trim(),
+        };
+        try {
+          if (editingMedicineId) {
+            await Qlinic.updateMedicine(editingMedicineId, payload);
+            currentMedicine = await Qlinic.getMedicine(editingMedicineId);
+            await renderDetail();
+          } else {
+            const created = await Qlinic.addMedicine(payload);
+            const qty = Number(document.getElementById('mfOpeningQty').value);
+            if (qty > 0) {
+              await Qlinic.recordStockPurchase({
+                medicineId: created.id,
+                batchNumber: document.getElementById('mfOpeningBatch').value.trim() || 'OPENING',
+                mfgDate: document.getElementById('mfOpeningMfg').value || null,
+                expiryDate: document.getElementById('mfOpeningExpiry').value || null,
+                quantity: qty,
+                purchasePrice: 0,
+                mrp: payload.mrp,
+              });
+            }
+            await reloadList();
+          }
+          document.getElementById('medicineModal').style.display = 'none';
+          showToast(editingMedicineId ? 'Medicine updated' : 'Medicine added');
+        } catch (err) {
+          errEl.textContent = err.message || 'Could not save this medicine.';
+          errEl.style.display = 'block';
+        }
+      });
+
+      // ---- Add batch (stock in) modal ----
+      document.getElementById('addBatchBtn').addEventListener('click', () => {
+        ['bfBatchNumber', 'bfMfgDate', 'bfExpiryDate', 'bfQuantity', 'bfPurchasePrice', 'bfMrp'].forEach((id) => { document.getElementById(id).value = ''; });
+        document.getElementById('bfMrp').value = currentMedicine.mrp;
+        document.getElementById('batchModalError').style.display = 'none';
+        document.getElementById('batchModal').style.display = 'flex';
+      });
+      document.getElementById('batchModalCancelBtn').addEventListener('click', () => { document.getElementById('batchModal').style.display = 'none'; });
+      document.getElementById('batchModalSaveBtn').addEventListener('click', async () => {
+        const errEl = document.getElementById('batchModalError');
+        errEl.style.display = 'none';
+        const qty = Number(document.getElementById('bfQuantity').value);
+        if (!qty || qty <= 0) { errEl.textContent = 'Enter a quantity greater than zero.'; errEl.style.display = 'block'; return; }
+        try {
+          await Qlinic.recordStockPurchase({
+            medicineId: currentMedicine.id,
+            batchNumber: document.getElementById('bfBatchNumber').value.trim(),
+            mfgDate: document.getElementById('bfMfgDate').value || null,
+            expiryDate: document.getElementById('bfExpiryDate').value || null,
+            quantity: qty,
+            purchasePrice: document.getElementById('bfPurchasePrice').value || 0,
+            mrp: document.getElementById('bfMrp').value || 0,
+          });
+          document.getElementById('batchModal').style.display = 'none';
+          currentMedicine = await Qlinic.getMedicine(currentMedicine.id);
+          await renderDetail();
+          showToast('Stock recorded');
+        } catch (err) {
+          errEl.textContent = err.message || 'Could not record this stock.';
+          errEl.style.display = 'block';
+        }
+      });
+
+      // ---- Adjust stock modal ----
+      let adjustingBatchId = null;
+      function openAdjustModal(batchId) {
+        adjustingBatchId = batchId;
+        document.getElementById('adjustModalBatchLabel').textContent = 'Adjusting batch ' + batchId.slice(0, 8) + '…';
+        document.getElementById('adjDelta').value = '';
+        document.getElementById('adjNote').value = '';
+        document.getElementById('adjustModalError').style.display = 'none';
+        document.getElementById('adjustModal').style.display = 'flex';
+      }
+      document.getElementById('adjustModalCancelBtn').addEventListener('click', () => { document.getElementById('adjustModal').style.display = 'none'; });
+      document.getElementById('adjustModalSaveBtn').addEventListener('click', async () => {
+        const errEl = document.getElementById('adjustModalError');
+        errEl.style.display = 'none';
+        const delta = Number(document.getElementById('adjDelta').value);
+        if (!delta) { errEl.textContent = 'Enter a non-zero adjustment.'; errEl.style.display = 'block'; return; }
+        try {
+          await Qlinic.adjustStock({ medicineId: currentMedicine.id, batchId: adjustingBatchId, delta, note: document.getElementById('adjNote').value.trim() });
+          document.getElementById('adjustModal').style.display = 'none';
+          currentMedicine = await Qlinic.getMedicine(currentMedicine.id);
+          await renderDetail();
+          showToast('Stock adjusted');
+        } catch (err) {
+          errEl.textContent = err.message || 'Could not adjust stock.';
+          errEl.style.display = 'block';
+        }
+      });
+
+      await reloadList();
+    })();
+  </script>
+</body>
+</html>

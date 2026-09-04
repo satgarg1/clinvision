@@ -82,6 +82,7 @@
               <select id="newStaffRole">
                 <option value="reception">Reception</option>
                 <option value="doctor">Doctor</option>
+                <option value="pharmacist">Pharmacist</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
@@ -116,7 +117,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=96"></script>
+  <script src="clinic-data.js?v=97"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -163,7 +164,7 @@
       function roleLabel(r) { return r.charAt(0).toUpperCase() + r.slice(1); }
 
       function roleOptionsHtml(selected) {
-        return ['admin', 'reception', 'doctor'].map((r) =>
+        return ['admin', 'reception', 'doctor', 'pharmacist'].map((r) =>
           `<option value="${r}" ${r === selected ? 'selected' : ''}>${roleLabel(r)}</option>`
         ).join('');
       }
