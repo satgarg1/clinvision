@@ -2743,7 +2743,15 @@
       manufacturer: row.manufacturer,
       form: row.form,
       strength: row.strength,
-      unitOfSale: row.unit_of_sale,
+      // packLabel: what a pack is called ("Strip", "Bottle"). packSize:
+      // how many dispenseUnit's are in one pack (10 tablets in a strip
+      // of 10; 1 for something sold whole, like a bottle or a vial).
+      // mrp/sellingPrice are PACK prices — divide by packSize for the
+      // per-dispense-unit price actually charged at sale time.
+      packLabel: row.pack_label,
+      packSize: row.pack_size,
+      dispenseUnit: row.dispense_unit,
+      barcode: row.barcode,
       schedule: row.schedule,
       trackBatches: row.track_batches,
       referenceNumber: row.reference_number,
@@ -2829,7 +2837,7 @@
   // opening stock (if any) is a separate, immediate recordStockPurchase()
   // call right after this insert — the same stock-in RPC used for every
   // later restock, not a special case baked into medicine creation.
-  async function addMedicine({ name, genericName, manufacturer, form, strength, unitOfSale, schedule, trackBatches, referenceNumber, mrp, sellingPrice, gstRate, hsnCode }) {
+  async function addMedicine({ name, genericName, manufacturer, form, strength, packLabel, packSize, dispenseUnit, barcode, schedule, trackBatches, referenceNumber, mrp, sellingPrice, gstRate, hsnCode }) {
     const clinicId = await ensureClinicContext();
     const { data, error } = await sb.from('medicines').insert({
       clinic_id: clinicId,
@@ -2838,7 +2846,10 @@
       manufacturer: manufacturer || '',
       form: form || '',
       strength: strength || '',
-      unit_of_sale: unitOfSale || '',
+      pack_label: packLabel || '',
+      pack_size: Number(packSize) || 1,
+      dispense_unit: dispenseUnit || '',
+      barcode: barcode || null,
       schedule: schedule || 'none',
       track_batches: trackBatches !== false,
       reference_number: referenceNumber || '',
@@ -2851,14 +2862,17 @@
     return normalizeMedicine(data);
   }
 
-  async function updateMedicine(id, { name, genericName, manufacturer, form, strength, unitOfSale, schedule, trackBatches, referenceNumber, mrp, sellingPrice, gstRate, hsnCode }) {
+  async function updateMedicine(id, { name, genericName, manufacturer, form, strength, packLabel, packSize, dispenseUnit, barcode, schedule, trackBatches, referenceNumber, mrp, sellingPrice, gstRate, hsnCode }) {
     const { data, error } = await sb.from('medicines').update({
       name,
       generic_name: genericName || '',
       manufacturer: manufacturer || '',
       form: form || '',
       strength: strength || '',
-      unit_of_sale: unitOfSale || '',
+      pack_label: packLabel || '',
+      pack_size: Number(packSize) || 1,
+      dispense_unit: dispenseUnit || '',
+      barcode: barcode || null,
       schedule: schedule || 'none',
       track_batches: trackBatches !== false,
       reference_number: referenceNumber || '',
@@ -2896,15 +2910,19 @@
     return data.map(normalizeStockLedgerEntry);
   }
 
-  async function recordStockPurchase({ medicineId, batchNumber, mfgDate, expiryDate, quantity, purchasePrice, mrp }) {
+  // packsReceived is "how many strips/bottles/vials arrived" — the RPC
+  // looks up the medicine's own pack_size server-side and multiplies,
+  // so the client never has to (and can't get it wrong by using a
+  // stale pack_size from before the medicine was last edited).
+  async function recordStockPurchase({ medicineId, batchNumber, mfgDate, expiryDate, packsReceived, purchasePricePerPack, mrpPerPack }) {
     const { data, error } = await sb.rpc('record_stock_purchase', {
       p_medicine_id: medicineId,
       p_batch_number: batchNumber || '',
       p_mfg_date: mfgDate || null,
       p_expiry_date: expiryDate || null,
-      p_quantity: Number(quantity),
-      p_purchase_price: purchasePrice == null ? 0 : Number(purchasePrice),
-      p_mrp: mrp == null ? 0 : Number(mrp),
+      p_packs_received: Number(packsReceived),
+      p_purchase_price_per_pack: purchasePricePerPack == null ? 0 : Number(purchasePricePerPack),
+      p_mrp_per_pack: mrpPerPack == null ? 0 : Number(mrpPerPack),
     });
     if (error) throw error;
     return normalizeMedicineBatch(data);

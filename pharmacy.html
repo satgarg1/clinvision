@@ -21,6 +21,7 @@
   .qty-stepper span { min-width:18px; text-align:center; font-weight:600; font-variant-numeric:tabular-nums; }
   .totals-row { display:flex; justify-content:space-between; font-size:13px; color:var(--grey-700); padding:4px 0; }
   .totals-row.grand { font-size:16px; font-weight:700; color:var(--black); border-top:1px solid var(--grey-300); margin-top:8px; padding-top:10px; }
+  #medResults { max-height:340px; overflow-y:auto; }
   .patient-suggest { position:relative; }
   .patient-suggest-list { position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--white); border:1px solid var(--grey-300); border-radius:var(--radius-sm); box-shadow:var(--shadow-resting); z-index:20; max-height:220px; overflow-y:auto; }
   .patient-suggest-item { padding:9px 12px; font-size:13px; cursor:pointer; }
@@ -84,13 +85,10 @@
 
       <div class="panel">
         <div class="panel-header"><h2>Patient</h2></div>
-        <div style="display:flex; gap:14px; align-items:flex-end;">
-          <div class="field patient-suggest" style="flex:1; margin-bottom:0;">
-            <label>Name or phone (optional — leave blank for a walk-in sale)</label>
-            <input type="text" id="patientInput" autocomplete="off" placeholder="Start typing a name or phone…" />
-            <div class="patient-suggest-list" id="patientSuggestList" style="display:none;"></div>
-          </div>
-          <button class="btn-sm" style="margin-bottom:0;" id="clearPatientBtn">Clear, walk-in sale</button>
+        <div class="field patient-suggest" style="margin-bottom:0;">
+          <label>Name or phone (optional — leave blank for a walk-in sale)</label>
+          <input type="text" id="patientInput" autocomplete="off" placeholder="Start typing a name or phone…" />
+          <div class="patient-suggest-list" id="patientSuggestList" style="display:none;"></div>
         </div>
       </div>
 
@@ -129,7 +127,8 @@
             <input type="text" id="amountReceived" placeholder="₹0.00" />
           </div>
           <p id="saleError" style="display:none; font-size:13px; color:var(--danger); margin:0 0 12px;"></p>
-          <button class="btn-sm primary" style="width:100%; padding:11px;" id="completeSaleBtn" disabled>Complete sale</button>
+          <button class="btn-sm primary" style="width:100%; padding:11px; margin-bottom:8px;" id="completeSaleBtn" disabled>Complete sale</button>
+          <button class="btn-sm" style="width:100%; padding:11px;" id="completeSalePrintBtn" disabled>Complete sale &amp; print receipt</button>
         </div>
       </div>
     </main>
@@ -168,7 +167,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=98"></script>
+  <script src="clinic-data.js?v=99"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -214,26 +213,38 @@
 
       let catalog = await Qlinic.getMedicines({ activeOnly: true });
       let selectedPatient = null; // { id, name, phone } or null for walk-in
-      let cart = []; // [{ medicineId, name, unitOfSale, sellingPrice, gstRate, stockQuantity, qty }]
+      let cart = []; // [{ medicineId, name, dispenseUnit, unitPrice, gstRate, stockQuantity, qty }]
 
       function scheduleBadge(s) {
         if (s === 'h1' || s === 'x') return `<span class="badge" style="background:var(--danger-bg); color:var(--danger);">Schedule ${s.toUpperCase()}</span>`;
         if (s === 'h') return `<span class="badge" style="background:var(--warning-bg); color:var(--warning);">Schedule H</span>`;
         return `<span class="badge" style="background:var(--grey-100); color:var(--grey-700);">OTC</span>`;
       }
+      // mrp/sellingPrice are priced per PACK (a strip of 10) — what gets
+      // charged per unit sold is that divided by pack_size.
+      function unitPriceOf(m) { return Math.round((m.sellingPrice / (m.packSize || 1)) * 100) / 100; }
+
+      function findMedicineMatches(q) {
+        if (!q) return [];
+        const lower = q.toLowerCase();
+        return catalog.filter((m) =>
+          m.name.toLowerCase().includes(lower)
+          || (m.referenceNumber || '').toLowerCase() === lower
+          || (m.barcode || '').toLowerCase() === lower
+        );
+      }
 
       function renderMeds(filterText) {
-        const q = (filterText || '').trim().toLowerCase();
-        const matches = q
-          ? catalog.filter((m) => m.name.toLowerCase().includes(q) || (m.referenceNumber || '').toLowerCase() === q)
-          : [];
+        const q = (filterText || '').trim();
+        const matches = findMedicineMatches(q);
         const html = matches.slice(0, 20).map((m) => {
+          const unit = Qlinic.escapeHtml(m.dispenseUnit || 'unit');
           const stockColor = m.stockQuantity < 10 ? 'var(--danger)' : 'var(--grey-500)';
           return `<div class="med-row">
             <div><div class="med-name">${Qlinic.escapeHtml(m.name)} ${scheduleBadge(m.schedule)}</div>
-            <div class="med-meta">${money(m.sellingPrice)} / ${Qlinic.escapeHtml(m.unitOfSale || 'unit')} · GST ${m.gstRate}%</div></div>
+            <div class="med-meta">${money(unitPriceOf(m))} / ${unit} · GST ${m.gstRate}%</div></div>
             <div style="display:flex;align-items:center;">
-              <span class="med-stock" style="color:${stockColor};">${m.stockQuantity} ${Qlinic.escapeHtml(m.unitOfSale || '')}</span>
+              <span class="med-stock" style="color:${stockColor};">${m.stockQuantity} ${unit}</span>
               <button class="btn-sm" data-add="${m.id}" ${m.stockQuantity <= 0 ? 'disabled title="Out of stock"' : ''}>Add</button>
             </div></div>`;
         }).join('');
@@ -241,6 +252,23 @@
       }
 
       document.getElementById('medSearch').addEventListener('input', (e) => renderMeds(e.target.value));
+      // A barcode scanner is a "keyboard wedge" — it just types the
+      // scanned code into whatever field is focused, then sends Enter,
+      // exactly like a very fast typist. So the entire integration is:
+      // catch Enter here, and if the typed/scanned value exactly
+      // matches one medicine's barcode or reference number, add it and
+      // clear the box for the next scan — no driver, no browser API.
+      document.getElementById('medSearch').addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const q = e.target.value.trim();
+        if (!q) return;
+        const lower = q.toLowerCase();
+        const exact = catalog.find((m) => (m.barcode || '').toLowerCase() === lower || (m.referenceNumber || '').toLowerCase() === lower);
+        if (exact) { addToCart(exact.id); return; }
+        const matches = findMedicineMatches(q);
+        if (matches.length === 1) addToCart(matches[0].id);
+      });
       document.getElementById('medResults').addEventListener('click', (e) => {
         const btn = e.target.closest('button[data-add]');
         if (!btn) return;
@@ -253,18 +281,26 @@
         const existing = cart.find((c) => c.medicineId === medicineId);
         const currentQty = existing ? existing.qty : 0;
         if (currentQty + 1 > m.stockQuantity) {
-          showToast(`Only ${m.stockQuantity} ${m.unitOfSale || 'units'} of ${m.name} left`);
+          showToast(`Only ${m.stockQuantity} ${m.dispenseUnit || 'units'} of ${m.name} left`);
           return;
         }
         if (existing) existing.qty += 1;
-        else cart.push({ medicineId: m.id, name: m.name, unitOfSale: m.unitOfSale, sellingPrice: m.sellingPrice, gstRate: m.gstRate, stockQuantity: m.stockQuantity, qty: 1 });
+        else cart.push({ medicineId: m.id, name: m.name, dispenseUnit: m.dispenseUnit, unitPrice: unitPriceOf(m), gstRate: m.gstRate, stockQuantity: m.stockQuantity, qty: 1 });
         renderCart();
+        // Ready for the next scan or search immediately — a scanner
+        // firing several items in a row shouldn't need a manual clear
+        // between each one, and a search that just found its medicine
+        // shouldn't leave a stale results list sitting under the cart.
+        const searchBox = document.getElementById('medSearch');
+        searchBox.value = '';
+        renderMeds('');
+        searchBox.focus();
       }
       function changeQty(medicineId, delta) {
         const line = cart.find((c) => c.medicineId === medicineId);
         if (!line) return;
         if (delta > 0 && line.qty + 1 > line.stockQuantity) {
-          showToast(`Only ${line.stockQuantity} ${line.unitOfSale || 'units'} of ${line.name} left`);
+          showToast(`Only ${line.stockQuantity} ${line.dispenseUnit || 'units'} of ${line.name} left`);
           return;
         }
         line.qty += delta;
@@ -276,7 +312,7 @@
       function cartTotals() {
         let subtotal = 0, tax = 0;
         cart.forEach((line) => {
-          const base = line.sellingPrice * line.qty;
+          const base = line.unitPrice * line.qty;
           subtotal += base;
           tax += base * line.gstRate / 100;
         });
@@ -288,14 +324,15 @@
         const empty = document.getElementById('cartEmpty');
         empty.style.display = cart.length === 0 ? 'block' : 'none';
         body.innerHTML = cart.map((line) => {
-          const base = line.sellingPrice * line.qty;
+          const base = line.unitPrice * line.qty;
           const lineTax = base * line.gstRate / 100;
           return `<tr>
-            <td><div class="med-name" style="font-size:13px;">${Qlinic.escapeHtml(line.name)}</div></td>
+            <td><div class="med-name" style="font-size:13px;">${Qlinic.escapeHtml(line.name)}</div>
+            <div class="med-meta">${money(line.unitPrice)} / ${Qlinic.escapeHtml(line.dispenseUnit || 'unit')}</div></td>
             <td><div class="qty-stepper">
               <button type="button" data-dec="${line.medicineId}">−</button><span>${line.qty}</span><button type="button" data-inc="${line.medicineId}">+</button>
             </div></td>
-            <td>${money(line.sellingPrice)}</td><td>${line.gstRate}%</td>
+            <td>${money(line.unitPrice)}</td><td>${line.gstRate}%</td>
             <td style="text-align:right; font-weight:600;">${money(base + lineTax)}</td>
             <td><button type="button" class="btn-sm" style="color:var(--danger);" data-remove="${line.medicineId}" aria-label="Remove">✕</button></td>
           </tr>`;
@@ -306,6 +343,7 @@
         document.getElementById('sumTotal').textContent = money(total);
         document.getElementById('amountReceived').value = cart.length ? total.toFixed(2) : '';
         document.getElementById('completeSaleBtn').disabled = cart.length === 0;
+        document.getElementById('completeSalePrintBtn').disabled = cart.length === 0;
       }
       document.getElementById('cartBody').addEventListener('click', (e) => {
         const dec = e.target.closest('button[data-dec]');
@@ -341,17 +379,13 @@
       document.addEventListener('click', (e) => {
         if (!e.target.closest('.patient-suggest')) document.getElementById('patientSuggestList').style.display = 'none';
       });
-      document.getElementById('clearPatientBtn').addEventListener('click', () => {
-        selectedPatient = null;
-        document.getElementById('patientInput').value = '';
-      });
 
-      document.getElementById('completeSaleBtn').addEventListener('click', async () => {
+      async function completeSale(autoPrint) {
         const errEl = document.getElementById('saleError');
         errEl.style.display = 'none';
         if (cart.length === 0) return;
-        const btn = document.getElementById('completeSaleBtn');
-        btn.disabled = true;
+        const btns = [document.getElementById('completeSaleBtn'), document.getElementById('completeSalePrintBtn')];
+        btns.forEach((b) => { b.disabled = true; });
         try {
           const invoice = await Qlinic.createPharmacyInvoice({
             patientId: selectedPatient ? selectedPatient.id : null,
@@ -363,6 +397,7 @@
           });
           const items = await Qlinic.getInvoiceItems(invoice.id);
           showReceipt(invoice, items);
+          if (autoPrint) window.print();
           cart = [];
           renderCart();
           selectedPatient = null;
@@ -373,10 +408,11 @@
         } catch (err) {
           errEl.textContent = err.message || 'Could not complete this sale.';
           errEl.style.display = 'block';
-        } finally {
-          btn.disabled = cart.length === 0;
+          btns.forEach((b) => { b.disabled = cart.length === 0; });
         }
-      });
+      }
+      document.getElementById('completeSaleBtn').addEventListener('click', () => completeSale(false));
+      document.getElementById('completeSalePrintBtn').addEventListener('click', () => completeSale(true));
 
       function showReceipt(invoice, items) {
         document.getElementById('rcClinicName').textContent = clinic.name;

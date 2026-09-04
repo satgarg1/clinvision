@@ -94,14 +94,16 @@
               <div class="kv-row"><span class="k">Generic name</span><span class="v" id="dGenericName"></span></div>
               <div class="kv-row"><span class="k">Manufacturer</span><span class="v" id="dManufacturer"></span></div>
               <div class="kv-row"><span class="k">Form / strength</span><span class="v" id="dFormStrength"></span></div>
-              <div class="kv-row"><span class="k">Unit of sale</span><span class="v" id="dUnit"></span></div>
+              <div class="kv-row"><span class="k">Pack</span><span class="v" id="dPack"></span></div>
+              <div class="kv-row"><span class="k">Barcode</span><span class="v" id="dBarcode"></span></div>
               <div class="kv-row"><span class="k">Reference no.</span><span class="v" id="dRefNo"></span></div>
               <div class="kv-row"><span class="k">Active</span><span class="v" id="dActive"></span></div>
             </div>
             <div class="panel">
               <div class="panel-header"><h2>Pricing</h2></div>
-              <div class="kv-row"><span class="k">MRP</span><span class="v" id="dMrp"></span></div>
-              <div class="kv-row"><span class="k">Selling price</span><span class="v" id="dSellingPrice"></span></div>
+              <div class="kv-row"><span class="k">MRP (per pack)</span><span class="v" id="dMrp"></span></div>
+              <div class="kv-row"><span class="k">Selling price (per pack)</span><span class="v" id="dSellingPrice"></span></div>
+              <div class="kv-row"><span class="k">Price per dispense unit</span><span class="v" id="dUnitPrice"></span></div>
               <div class="kv-row"><span class="k">GST rate</span><span class="v" id="dGstRate"></span></div>
               <div class="kv-row"><span class="k">HSN code</span><span class="v" id="dHsn"></span></div>
               <div class="kv-row"><span class="k">Total stock (all batches)</span><span class="v" id="dTotalStock"></span></div>
@@ -111,7 +113,7 @@
           <div class="panel" style="margin-top:18px;">
             <div class="panel-header"><h2>Batches</h2><button class="btn-sm primary" id="addBatchBtn">Add batch (stock in)</button></div>
             <table class="qtable">
-              <thead><tr><th>Batch no.</th><th>Mfg date</th><th>Expiry date</th><th>Purchase price</th><th>Qty remaining</th><th></th><th></th></tr></thead>
+              <thead><tr><th>Batch no.</th><th>Mfg date</th><th>Expiry date</th><th>Purchase price (per pack)</th><th>Qty remaining</th><th></th><th></th></tr></thead>
               <tbody id="batchesBody"></tbody>
             </table>
             <div id="batchesEmpty" style="display:none; padding:16px; text-align:center; color:var(--grey-500); font-size:13px;">No stock recorded yet</div>
@@ -133,7 +135,7 @@
   </div>
 
   <div class="modal-backdrop" id="medicineModal" style="display:none;">
-    <div class="modal-card" style="max-width:520px;">
+    <div class="modal-card" style="max-width:520px; max-height:85vh; overflow-y:auto;">
       <h3 class="modal-title" id="medicineModalTitle">Add medicine</h3>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">
         <div class="doctor-form-field" style="margin-bottom:16px;"><label>Name</label><input type="text" id="mfName" /></div>
@@ -141,24 +143,29 @@
         <div class="doctor-form-field" style="margin-bottom:16px;"><label>Manufacturer</label><input type="text" id="mfManufacturer" /></div>
         <div class="doctor-form-field" style="margin-bottom:16px;"><label>Form</label><input type="text" id="mfForm" placeholder="Tablet, syrup…" /></div>
         <div class="doctor-form-field" style="margin-bottom:16px;"><label>Strength</label><input type="text" id="mfStrength" placeholder="500mg" /></div>
-        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Unit of sale</label><input type="text" id="mfUnit" placeholder="Strip of 10" /></div>
         <div class="doctor-form-field" style="margin-bottom:16px;"><label>Schedule</label>
           <select id="mfSchedule"><option value="none">OTC (no schedule)</option><option value="h">Schedule H</option><option value="h1">Schedule H1</option><option value="x">Schedule X</option></select>
         </div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Pack type</label><input type="text" id="mfPackLabel" placeholder="Strip, Bottle, Vial…" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Units per pack</label><input type="text" id="mfPackSize" inputmode="numeric" placeholder="10" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Dispense unit</label><input type="text" id="mfDispenseUnit" placeholder="tablet, ml, bottle…" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Barcode <span class="sub-line">(optional)</span></label><input type="text" id="mfBarcode" placeholder="Scan or type the printed barcode" /></div>
         <div class="doctor-form-field" style="margin-bottom:16px;"><label>Reference no.</label><input type="text" id="mfRefNo" /></div>
-        <div class="doctor-form-field" style="margin-bottom:16px;"><label>MRP (₹)</label><input type="text" id="mfMrp" inputmode="decimal" /></div>
-        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Selling price (₹)</label><input type="text" id="mfSellingPrice" inputmode="decimal" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>MRP (₹ per pack)</label><input type="text" id="mfMrp" inputmode="decimal" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Selling price (₹ per pack)</label><input type="text" id="mfSellingPrice" inputmode="decimal" /></div>
         <div class="doctor-form-field" style="margin-bottom:16px;"><label>GST rate (%)</label><input type="text" id="mfGstRate" inputmode="decimal" /></div>
         <div class="doctor-form-field" style="margin-bottom:16px;"><label>HSN code</label><input type="text" id="mfHsn" /></div>
       </div>
+      <p id="mfPriceHint" style="font-size:12px; color:var(--grey-500); margin:-8px 0 16px;"></p>
       <div id="openingStockFields">
         <p style="font-size:12px; font-weight:600; color:var(--grey-500); margin:4px 0 10px;">Opening stock (optional)</p>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">
           <div class="doctor-form-field" style="margin-bottom:16px;"><label>Batch number</label><input type="text" id="mfOpeningBatch" /></div>
-          <div class="doctor-form-field" style="margin-bottom:16px;"><label>Quantity</label><input type="text" id="mfOpeningQty" inputmode="numeric" /></div>
-          <div class="doctor-form-field" style="margin-bottom:16px;"><label>Mfg date</label><input type="date" id="mfOpeningMfg" /></div>
-          <div class="doctor-form-field" style="margin-bottom:16px;"><label>Expiry date</label><input type="date" id="mfOpeningExpiry" /></div>
+          <div class="doctor-form-field" style="margin-bottom:16px;"><label>Packs received</label><input type="text" id="mfOpeningPacks" inputmode="numeric" /></div>
         </div>
+        <p id="mfOpeningHint" style="font-size:12px; color:var(--grey-500); margin:-8px 0 16px;"></p>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Mfg date</label><input type="date" id="mfOpeningMfg" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Expiry date</label><input type="date" id="mfOpeningExpiry" /></div>
       </div>
       <p id="medicineModalError" style="display:none; font-size:13px; color:var(--danger); margin:6px 0 16px;"></p>
       <div class="modal-actions">
@@ -169,16 +176,19 @@
   </div>
 
   <div class="modal-backdrop" id="batchModal" style="display:none;">
-    <div class="modal-card" style="max-width:420px;">
+    <div class="modal-card" style="max-width:420px; max-height:85vh; overflow-y:auto;">
       <h3 class="modal-title">Add batch (stock in)</h3>
-      <div class="doctor-form-field" style="margin-bottom:16px;"><label>Batch number</label><input type="text" id="bfBatchNumber" /></div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">
-        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Mfg date</label><input type="date" id="bfMfgDate" /></div>
-        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Expiry date</label><input type="date" id="bfExpiryDate" /></div>
-        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Quantity</label><input type="text" id="bfQuantity" inputmode="numeric" /></div>
-        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Purchase price (₹/unit)</label><input type="text" id="bfPurchasePrice" inputmode="decimal" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Batch number</label><input type="text" id="bfBatchNumber" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Packs received</label><input type="text" id="bfPacksReceived" inputmode="numeric" /></div>
       </div>
-      <div class="doctor-form-field" style="margin-bottom:16px;"><label>MRP (₹) for this batch</label><input type="text" id="bfMrp" inputmode="decimal" /></div>
+      <p id="bfHint" style="font-size:12px; color:var(--grey-500); margin:-8px 0 16px;"></p>
+      <div class="doctor-form-field" style="margin-bottom:16px;"><label>Mfg date</label><input type="date" id="bfMfgDate" /></div>
+      <div class="doctor-form-field" style="margin-bottom:16px;"><label>Expiry date</label><input type="date" id="bfExpiryDate" /></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>Purchase price (₹/pack)</label><input type="text" id="bfPurchasePrice" inputmode="decimal" /></div>
+        <div class="doctor-form-field" style="margin-bottom:16px;"><label>MRP (₹/pack)</label><input type="text" id="bfMrp" inputmode="decimal" /></div>
+      </div>
       <p id="batchModalError" style="display:none; font-size:13px; color:var(--danger); margin:6px 0 16px;"></p>
       <div class="modal-actions">
         <button class="btn-sm primary" id="batchModalSaveBtn">Save</button>
@@ -208,7 +218,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=98"></script>
+  <script src="clinic-data.js?v=99"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -263,7 +273,7 @@
         document.getElementById('listBody').innerHTML = pageRows.map((m) => `<tr style="cursor:pointer;" data-open="${m.id}">
           <td>${Qlinic.escapeHtml(m.name)}</td>
           <td><span class="badge" style="${scheduleBadgeStyle(m.schedule)}">${scheduleLabel(m.schedule)}</span></td>
-          <td>${m.stockQuantity} ${Qlinic.escapeHtml(m.unitOfSale || '')}</td>
+          <td>${m.stockQuantity} ${Qlinic.escapeHtml(m.dispenseUnit || '')}</td>
           <td>${money(m.sellingPrice)}</td>
           <td>${m.isActive ? '<span style="color:var(--success);">Active</span>' : '<span style="color:var(--grey-500);">Inactive</span>'}</td>
           <td><button class="btn-sm" data-open="${m.id}">View</button></td>
@@ -301,21 +311,25 @@
         badge.textContent = scheduleLabel(m.schedule);
         badge.setAttribute('style', 'vertical-align:middle; margin-left:6px; ' + scheduleBadgeStyle(m.schedule));
         const stockBadge = document.getElementById('detailStockBadge');
-        stockBadge.textContent = `${m.stockQuantity} ${m.unitOfSale || ''} in stock`;
+        stockBadge.textContent = `${m.stockQuantity} ${m.dispenseUnit || ''} in stock`;
         stockBadge.setAttribute('style', 'font-size:13px; padding:6px 12px; ' + (m.stockQuantity < 10 ? 'background:var(--warning-bg); color:var(--warning);' : 'background:var(--success-bg); color:var(--success);'));
 
         document.getElementById('dGenericName').textContent = m.genericName || '—';
         document.getElementById('dManufacturer').textContent = m.manufacturer || '—';
         document.getElementById('dFormStrength').textContent = [m.form, m.strength].filter(Boolean).join(' · ') || '—';
-        document.getElementById('dUnit').textContent = m.unitOfSale || '—';
+        document.getElementById('dPack').textContent = m.packLabel
+          ? `${m.packLabel} of ${m.packSize} ${m.dispenseUnit || 'unit'}${m.packSize === 1 ? '' : 's'}`
+          : '—';
+        document.getElementById('dBarcode').textContent = m.barcode || '—';
         document.getElementById('dRefNo').textContent = m.referenceNumber || '—';
         document.getElementById('dActive').textContent = m.isActive ? 'Yes' : 'No';
         document.getElementById('dActive').style.color = m.isActive ? 'var(--success)' : 'var(--grey-500)';
         document.getElementById('dMrp').textContent = money(m.mrp);
         document.getElementById('dSellingPrice').textContent = money(m.sellingPrice);
+        document.getElementById('dUnitPrice').textContent = money(m.sellingPrice / (m.packSize || 1)) + ' / ' + (m.dispenseUnit || 'unit');
         document.getElementById('dGstRate').textContent = m.gstRate + '%';
         document.getElementById('dHsn').textContent = m.hsnCode || '—';
-        document.getElementById('dTotalStock').textContent = `${m.stockQuantity} ${m.unitOfSale || ''}`;
+        document.getElementById('dTotalStock').textContent = `${m.stockQuantity} ${m.dispenseUnit || ''}`;
 
         const batches = await Qlinic.getMedicineBatches(m.id);
         const today = new Date();
@@ -330,7 +344,7 @@
           return `<tr>
             <td>${Qlinic.escapeHtml(b.batchNumber)}</td>
             <td>${b.mfgDate || '—'}</td><td>${b.expiryDate || '—'}</td>
-            <td>${money(b.purchasePrice)}</td><td>${b.quantityRemaining} ${Qlinic.escapeHtml(m.unitOfSale || '')}</td>
+            <td>${money(b.purchasePrice)}</td><td>${b.quantityRemaining} ${Qlinic.escapeHtml(m.dispenseUnit || '')}</td>
             <td>${expiryFlag}</td>
             <td><button class="btn-sm" data-adjust="${b.id}">Adjust</button></td>
           </tr>`;
@@ -344,10 +358,10 @@
           return `<tr>
             <td>${Qlinic.formatTimestamp(l.createdAt)}</td>
             <td><span class="badge" style="background:var(--grey-100); color:var(--grey-700);">${typeLabel}</span></td>
-            <td style="color:${positive ? 'var(--success)' : 'var(--danger)'}; font-weight:600;">${positive ? '+' : ''}${l.quantityDelta} ${Qlinic.escapeHtml(m.unitOfSale || '')}</td>
+            <td style="color:${positive ? 'var(--success)' : 'var(--danger)'}; font-weight:600;">${positive ? '+' : ''}${l.quantityDelta} ${Qlinic.escapeHtml(m.dispenseUnit || '')}</td>
             <td>${l.referenceInvoiceLabel || l.note || '—'}</td>
             <td>${Qlinic.escapeHtml(l.batchNumber || '—')}</td>
-            <td style="text-align:right;">${l.closingStockAfter} ${Qlinic.escapeHtml(m.unitOfSale || '')}</td>
+            <td style="text-align:right;">${l.closingStockAfter} ${Qlinic.escapeHtml(m.dispenseUnit || '')}</td>
           </tr>`;
         }).join('');
       }
@@ -368,6 +382,25 @@
 
       // ---- Add / edit medicine modal ----
       let editingMedicineId = null;
+      function updateMedicinePriceHint() {
+        const price = Number(document.getElementById('mfSellingPrice').value) || 0;
+        const size = Number(document.getElementById('mfPackSize').value) || 1;
+        const unit = document.getElementById('mfDispenseUnit').value.trim() || 'unit';
+        document.getElementById('mfPriceHint').textContent = size > 1
+          ? `= ${money(price / size)} per ${unit}`
+          : '';
+      }
+      function updateOpeningStockHint() {
+        const packs = Number(document.getElementById('mfOpeningPacks').value) || 0;
+        const size = Number(document.getElementById('mfPackSize').value) || 1;
+        const unit = document.getElementById('mfDispenseUnit').value.trim() || 'unit';
+        document.getElementById('mfOpeningHint').textContent = packs > 0 ? `= ${packs * size} ${unit}${packs * size === 1 ? '' : 's'}` : '';
+      }
+      ['mfSellingPrice', 'mfPackSize', 'mfDispenseUnit'].forEach((id) => {
+        document.getElementById(id).addEventListener('input', () => { updateMedicinePriceHint(); updateOpeningStockHint(); });
+      });
+      document.getElementById('mfOpeningPacks').addEventListener('input', updateOpeningStockHint);
+
       function openMedicineModal(medicine) {
         editingMedicineId = medicine ? medicine.id : null;
         document.getElementById('medicineModalTitle').textContent = medicine ? 'Edit medicine' : 'Add medicine';
@@ -376,7 +409,10 @@
         document.getElementById('mfManufacturer').value = medicine ? medicine.manufacturer : '';
         document.getElementById('mfForm').value = medicine ? medicine.form : '';
         document.getElementById('mfStrength').value = medicine ? medicine.strength : '';
-        document.getElementById('mfUnit').value = medicine ? medicine.unitOfSale : '';
+        document.getElementById('mfPackLabel').value = medicine ? medicine.packLabel : '';
+        document.getElementById('mfPackSize').value = medicine ? medicine.packSize : '1';
+        document.getElementById('mfDispenseUnit').value = medicine ? medicine.dispenseUnit : '';
+        document.getElementById('mfBarcode').value = medicine ? (medicine.barcode || '') : '';
         document.getElementById('mfSchedule').value = medicine ? medicine.schedule : 'none';
         document.getElementById('mfRefNo').value = medicine ? medicine.referenceNumber : '';
         document.getElementById('mfMrp').value = medicine ? medicine.mrp : '';
@@ -385,9 +421,11 @@
         document.getElementById('mfHsn').value = medicine ? medicine.hsnCode : '';
         document.getElementById('openingStockFields').style.display = medicine ? 'none' : 'block';
         document.getElementById('mfOpeningBatch').value = '';
-        document.getElementById('mfOpeningQty').value = '';
+        document.getElementById('mfOpeningPacks').value = '';
         document.getElementById('mfOpeningMfg').value = '';
         document.getElementById('mfOpeningExpiry').value = '';
+        updateMedicinePriceHint();
+        updateOpeningStockHint();
         document.getElementById('medicineModalError').style.display = 'none';
         document.getElementById('medicineModal').style.display = 'flex';
       }
@@ -405,7 +443,10 @@
           manufacturer: document.getElementById('mfManufacturer').value.trim(),
           form: document.getElementById('mfForm').value.trim(),
           strength: document.getElementById('mfStrength').value.trim(),
-          unitOfSale: document.getElementById('mfUnit').value.trim(),
+          packLabel: document.getElementById('mfPackLabel').value.trim(),
+          packSize: document.getElementById('mfPackSize').value || 1,
+          dispenseUnit: document.getElementById('mfDispenseUnit').value.trim(),
+          barcode: document.getElementById('mfBarcode').value.trim() || null,
           schedule: document.getElementById('mfSchedule').value,
           referenceNumber: document.getElementById('mfRefNo').value.trim(),
           mrp: document.getElementById('mfMrp').value || 0,
@@ -420,16 +461,16 @@
             await renderDetail();
           } else {
             const created = await Qlinic.addMedicine(payload);
-            const qty = Number(document.getElementById('mfOpeningQty').value);
-            if (qty > 0) {
+            const packs = Number(document.getElementById('mfOpeningPacks').value);
+            if (packs > 0) {
               await Qlinic.recordStockPurchase({
                 medicineId: created.id,
                 batchNumber: document.getElementById('mfOpeningBatch').value.trim() || 'OPENING',
                 mfgDate: document.getElementById('mfOpeningMfg').value || null,
                 expiryDate: document.getElementById('mfOpeningExpiry').value || null,
-                quantity: qty,
-                purchasePrice: 0,
-                mrp: payload.mrp,
+                packsReceived: packs,
+                purchasePricePerPack: 0,
+                mrpPerPack: payload.mrp,
               });
             }
             await reloadList();
@@ -443,9 +484,17 @@
       });
 
       // ---- Add batch (stock in) modal ----
+      function updateBatchHint() {
+        const packs = Number(document.getElementById('bfPacksReceived').value) || 0;
+        const size = currentMedicine ? (currentMedicine.packSize || 1) : 1;
+        const unit = currentMedicine ? (currentMedicine.dispenseUnit || 'unit') : 'unit';
+        document.getElementById('bfHint').textContent = packs > 0 ? `= ${packs * size} ${unit}${packs * size === 1 ? '' : 's'}` : '';
+      }
+      document.getElementById('bfPacksReceived').addEventListener('input', updateBatchHint);
       document.getElementById('addBatchBtn').addEventListener('click', () => {
-        ['bfBatchNumber', 'bfMfgDate', 'bfExpiryDate', 'bfQuantity', 'bfPurchasePrice', 'bfMrp'].forEach((id) => { document.getElementById(id).value = ''; });
+        ['bfBatchNumber', 'bfMfgDate', 'bfExpiryDate', 'bfPacksReceived', 'bfPurchasePrice'].forEach((id) => { document.getElementById(id).value = ''; });
         document.getElementById('bfMrp').value = currentMedicine.mrp;
+        updateBatchHint();
         document.getElementById('batchModalError').style.display = 'none';
         document.getElementById('batchModal').style.display = 'flex';
       });
@@ -453,17 +502,17 @@
       document.getElementById('batchModalSaveBtn').addEventListener('click', async () => {
         const errEl = document.getElementById('batchModalError');
         errEl.style.display = 'none';
-        const qty = Number(document.getElementById('bfQuantity').value);
-        if (!qty || qty <= 0) { errEl.textContent = 'Enter a quantity greater than zero.'; errEl.style.display = 'block'; return; }
+        const packs = Number(document.getElementById('bfPacksReceived').value);
+        if (!packs || packs <= 0) { errEl.textContent = 'Enter a number of packs greater than zero.'; errEl.style.display = 'block'; return; }
         try {
           await Qlinic.recordStockPurchase({
             medicineId: currentMedicine.id,
             batchNumber: document.getElementById('bfBatchNumber').value.trim(),
             mfgDate: document.getElementById('bfMfgDate').value || null,
             expiryDate: document.getElementById('bfExpiryDate').value || null,
-            quantity: qty,
-            purchasePrice: document.getElementById('bfPurchasePrice').value || 0,
-            mrp: document.getElementById('bfMrp').value || 0,
+            packsReceived: packs,
+            purchasePricePerPack: document.getElementById('bfPurchasePrice').value || 0,
+            mrpPerPack: document.getElementById('bfMrp').value || 0,
           });
           document.getElementById('batchModal').style.display = 'none';
           currentMedicine = await Qlinic.getMedicine(currentMedicine.id);
@@ -507,12 +556,15 @@
       // uses, not the browser's own native date input — attachDatePicker
       // hides the underlying <input> and reads/writes its .value as a
       // plain ISO string, so nothing else in this file needs to change.
+      // quickButtons off: "Today"/"Tomorrow" make sense for booking an
+      // appointment, not for picking a manufacture or expiry date that
+      // could be anywhere from years ago to years out.
       [document.getElementById('mfOpeningMfg'), document.getElementById('bfMfgDate')].forEach((el) => {
-        Qlinic.attachDatePicker(el);
+        Qlinic.attachDatePicker(el, { quickButtons: false });
         el.max = Qlinic.getTodayDate();
       });
       [document.getElementById('mfOpeningExpiry'), document.getElementById('bfExpiryDate')].forEach((el) => {
-        Qlinic.attachDatePicker(el);
+        Qlinic.attachDatePicker(el, { quickButtons: false });
       });
 
       await reloadList();
