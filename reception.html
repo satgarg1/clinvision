@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=303" />
+<link rel="stylesheet" href="styles.css?v=304" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -255,6 +255,17 @@
       let bookedExpanded = false;
       let bookedPage = 0;
       let waitingPage = 0;
+      // Set right before a Mark-arrived write, consumed (and cleared,
+      // match or no match) by the very next renderQueuePanel() — a
+      // patient marked arrived can land anywhere in the Waiting table
+      // once it's paginated by scheduled time rather than arrival order,
+      // and staff need to immediately find them again to adjust billing
+      // (a follow-up/emergency fee correction) without hunting across
+      // pages. Only ever consumed once, so an unrelated later render
+      // (switching doctor/date, a live update from another device)
+      // never re-jumps or re-highlights for an action that already
+      // finished being handled.
+      let pendingHighlightPatientId = null;
       // The last data renderQueues() actually fetched — expand/collapse and
       // pagination re-render from this instead of re-fetching, since none
       // of them change which patients exist. Re-fetching on every click of
@@ -1073,6 +1084,13 @@
         // just re-renders the same results with the updated status, so
         // the rest of the matches stay right where they were.
         renderSearch();
+        // If this patient is in the queue panel currently on screen
+        // (same doctor, today), renderQueuePanel jumps to their page and
+        // flashes their row right after this fetch lands — a no-op if
+        // they belong to a different doctor's queue or the panel isn't
+        // on today's date, since they simply won't be in that queue's
+        // waitingList to find.
+        pendingHighlightPatientId = id;
         renderQueues();
         showToast('Marked arrived, added to the live queue');
       }
@@ -1223,6 +1241,17 @@
         const waitingList = queue.waiting;
         const bookedList = queue.booked;
 
+        // Consumed here, once, regardless of whether it's actually found
+        // in THIS queue (see the comment on the variable itself) — a
+        // page jump only makes sense while the list is still ordered by
+        // scheduled time (unchanged for everyone else reading it), so
+        // this finds wherever that order already put them rather than
+        // reordering the list itself around them.
+        const highlightId = pendingHighlightPatientId;
+        pendingHighlightPatientId = null;
+        const highlightIdx = highlightId ? waitingList.findIndex((p) => p.id === highlightId) : -1;
+        if (highlightIdx !== -1) waitingPage = Math.floor(highlightIdx / WAITING_PAGE_SIZE);
+
         const totalWaitingPages = Math.max(1, Math.ceil(waitingList.length / WAITING_PAGE_SIZE));
         if (waitingPage >= totalWaitingPages) waitingPage = 0;
         const waitingPageItems = waitingList.slice(waitingPage * WAITING_PAGE_SIZE, waitingPage * WAITING_PAGE_SIZE + WAITING_PAGE_SIZE);
@@ -1244,7 +1273,7 @@
                   <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Queue time</th>${canBill ? '<th>Billing</th>' : ''}</tr></thead>
                   <tbody>
                     ${waitingPageItems.map((p) => `
-                      <tr>
+                      <tr ${p.id === highlightId ? 'class="just-arrived-flash"' : ''}>
                         <td>${p.position}</td>
                         <td>${nameCell(p)}</td>
                         <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>

@@ -4887,6 +4887,20 @@ table.qtable tbody tr:hover { background: var(--grey-100); }
 table.qtable tbody tr.breakdown-row-link { cursor: pointer; }
 table.qtable tbody tr.breakdown-row-link:hover { background: var(--mkt-blue-bg); }
 
+/* Reception's Waiting table jumps to whichever page a just-arrived
+   patient's own scheduled-time position landed them on (see
+   pendingHighlightPatientId in reception.html) — this is what actually
+   draws the eye to which row that was, since the jump alone doesn't
+   say which of the 5 rows on the new page is the one staff were
+   looking for. Fades from the same green used for a confirmed/arrived
+   state elsewhere (queue-done-token) back to nothing on its own,
+   rather than needing a timer to remove the class. */
+table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ease; }
+@keyframes just-arrived-flash {
+  0% { background: var(--success-bg); }
+  100% { background: transparent; }
+}
+
 .stat-card .value {
   transition: color 0.2s ease;
 }
