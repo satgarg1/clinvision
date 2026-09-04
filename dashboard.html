@@ -629,7 +629,7 @@
                 <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">closed ${formatStatusTimestamp(d.dayClosedAt)}</div>
               `
             : `
-                <span class="status-pill status-${d.status}">${statusLabel(d.status)}${d.delayMins ? ' · ' + d.delayMins + ' min' : ''}</span>
+                <span class="status-pill status-${d.status}">${statusLabel(d.status)}${d.delayMins ? ' for ' + d.delayMins + ' min' : ''}</span>
                 <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">updated ${formatStatusTimestamp(d.statusUpdatedAt)}</div>
               `;
           return `
