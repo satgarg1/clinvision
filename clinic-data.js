@@ -186,6 +186,102 @@
     });
   }
 
+  // Was two nearly-identical inline "in-place row edit" boxes
+  // (reception.html's and revenue.html's own copies of the exact same
+  // .adj-box markup, each with its own editingInvoiceId/startEditInvoice/
+  // saveInvoiceEdit/syncAdjustAmount) — one shared modal instead, same
+  // .modal-backdrop/.modal-card shell as Edit doctor/Edit team member,
+  // reviewed and approved as a mockup before this replaced them
+  // (https://claude.ai/code/artifact/60b97fa0-c07c-4605-b379-4ee19e3eeaed).
+  // Void, not Promise-returning — matches the Edit-doctor/Edit-team-member
+  // modals' own shape (an onSaved callback), not confirmDialog's
+  // yes/no shape, since this isn't a decision, it's a form.
+  function openAdjustBillingModal({ invoice, doctor, onSaved }) {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="modal-card" role="dialog" aria-modal="true">
+        <h2 class="modal-title">Adjust billing</h2>
+        <div class="doctor-form-field">
+          <label>Fee type</label>
+          <select id="adjModalFeeType">
+            <option value="consultation" ${invoice.feeType === 'consultation' ? 'selected' : ''}>Consultation</option>
+            <option value="emergency" ${invoice.feeType === 'emergency' ? 'selected' : ''}>Emergency</option>
+            <option value="waived" ${invoice.feeType === 'waived' ? 'selected' : ''}>Follow up</option>
+          </select>
+        </div>
+        <div class="doctor-form-field">
+          <label>Payment mode</label>
+          <select id="adjModalPaymentMode">
+            <option value="cash" ${invoice.paymentMode === 'cash' ? 'selected' : ''}>Cash</option>
+            <option value="upi" ${invoice.paymentMode === 'upi' ? 'selected' : ''}>UPI</option>
+            <option value="card" ${invoice.paymentMode === 'card' ? 'selected' : ''}>Card</option>
+          </select>
+        </div>
+        <div class="doctor-form-field">
+          <label>Amount received (&#8377;)</label>
+          <input type="number" min="0" step="1" id="adjModalAmount" value="${invoice.amountReceived}" />
+        </div>
+        <p class="amount-preview" id="adjModalPreview"></p>
+        <p class="modal-message" id="adjModalError" style="display:none;color:var(--danger);margin:-6px 0 14px;font-size:13px;"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn-sm primary" id="adjModalSaveBtn">Save</button>
+          <button type="button" class="btn-sm" id="adjModalCancelBtn">Cancel</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+
+    const feeNormal = (doctor && doctor.feeNormal) || 0;
+    const feeEmergency = (doctor && doctor.feeEmergency) || 0;
+    const FEE_LABELS = { consultation: 'Consultation', emergency: 'Emergency', waived: 'Follow-up' };
+    const feeTypeSelect = backdrop.querySelector('#adjModalFeeType');
+    const amountInput = backdrop.querySelector('#adjModalAmount');
+    const preview = backdrop.querySelector('#adjModalPreview');
+    function feeForType(t) { return t === 'waived' ? 0 : t === 'emergency' ? feeEmergency : feeNormal; }
+    // Same job the old .adj-box's syncAdjustAmount did — recomputing the
+    // amount the instant fee type changes is what keeps Save's actual
+    // submitted value correct, not just the label under it.
+    function syncPreview() {
+      preview.textContent = doctor
+        ? `${FEE_LABELS[feeTypeSelect.value]} fee for ${doctor.name}: ₹${amountInput.value || 0}`
+        : `${FEE_LABELS[feeTypeSelect.value]}: ₹${amountInput.value || 0}`;
+    }
+    feeTypeSelect.addEventListener('change', () => {
+      amountInput.value = feeForType(feeTypeSelect.value);
+      syncPreview();
+    });
+    amountInput.addEventListener('input', syncPreview);
+    syncPreview();
+
+    function cleanup() {
+      backdrop.remove();
+      document.removeEventListener('keydown', onKeydown);
+    }
+    function onKeydown(e) { if (e.key === 'Escape') cleanup(); }
+    document.addEventListener('keydown', onKeydown);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) cleanup(); });
+    backdrop.querySelector('#adjModalCancelBtn').addEventListener('click', cleanup);
+    backdrop.querySelector('#adjModalSaveBtn').addEventListener('click', async () => {
+      const errorEl = backdrop.querySelector('#adjModalError');
+      errorEl.style.display = 'none';
+      try {
+        await updateInvoicePayment({
+          invoiceId: invoice.id,
+          feeType: feeTypeSelect.value,
+          paymentMode: backdrop.querySelector('#adjModalPaymentMode').value,
+          amountReceived: amountInput.value,
+        });
+      } catch (err) {
+        errorEl.textContent = err.message || 'Could not update billing — please try again.';
+        errorEl.style.display = 'block';
+        return;
+      }
+      cleanup();
+      if (onSaved) onSaved();
+    });
+  }
+
   // ---------------- custom date picker, replacing the bare native
   // <input type="date"> everywhere it shows up: a trigger showing the
   // picked date + Today/Tomorrow/In-a-week quick picks above a
@@ -2690,6 +2786,7 @@
     pagerHtml,
     wirePager,
     confirmDialog,
+    openAdjustBillingModal,
     attachDatePicker,
     getQueueStatus,
     submitProductFeedback,

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=305" />
+<link rel="stylesheet" href="styles.css?v=306" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -201,7 +201,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=94"></script>
+  <script src="clinic-data.js?v=95"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -287,7 +287,13 @@
       let followUpHintToken = 0;
       let doctorsCache = [];
       let todayInvoices = [];
-      let editingInvoiceId = null;
+      // Populated by BOTH renderQueues() (queue panel) and renderSearch()
+      // (its own independent invoice fetch, see the comment there) —
+      // openAdjustBilling looks an invoice up here by id regardless of
+      // which surface's fetch most recently ran, since the two are on
+      // separate fetch schedules and either one might be the only one
+      // that's actually seen a given invoice recently.
+      let invoiceById = {};
 
       // Same 5-color identity palette used app-wide; each doctor keeps the
       // same color on reception, the doctor view, and the waiting-room board.
@@ -741,7 +747,51 @@
       // which.
       function nameCell(p) {
         const priorityBadge = p.isPriority ? ' <span class="badge badge-no-show">Priority</span>' : '';
-        return `<div>${Qlinic.escapeHtml(p.name)}${priorityBadge}</div><div class="sub-line">${p.address ? Qlinic.escapeHtml(p.address) : 'No address on file'}</div>`;
+        return `<div class="qtable-wrap">${Qlinic.escapeHtml(p.name)}${priorityBadge}</div><div class="sub-line">${p.address ? Qlinic.escapeHtml(p.address) : 'No address on file'}</div>`;
+      }
+
+      // Same real token doctor.html and the waiting-room board already
+      // show (e.g. #16, W3 for a walk-in) — Waiting used to show a plain
+      // 1/2/3 count instead, which resets every render and isn't the
+      // number anything else in the app calls "their token". Walk-ins
+      // share one token_number sequence with appointments at the DB
+      // level (the public queue-status page's "how many ahead of me"
+      // math depends on that), so they get their own "W"-prefixed rank
+      // computed here for display only, ranked by their existing
+      // token_number among today's walk-ins for this doctor across every
+      // status — exact same approach as doctor.html's own copy.
+      function buildWalkinRanks(q) {
+        const ranks = new Map();
+        const walkins = [
+          ...(q.nowServing ? [q.nowServing] : []),
+          ...q.waiting, ...q.booked, ...q.done, ...q.noShow,
+        ].filter((p) => p.type === 'walkin');
+        walkins.sort((a, b) => (a.tokenNumber || 0) - (b.tokenNumber || 0));
+        walkins.forEach((p, i) => ranks.set(p.id, i + 1));
+        return ranks;
+      }
+      function formatToken(p, ranks) {
+        if (!p || p.tokenNumber == null) return '·';
+        if (p.type === 'walkin') return 'W' + (ranks.get(p.id) || '?');
+        return '#' + p.tokenNumber;
+      }
+
+      // How long until this booked slot, in the same short "Xmin"/
+      // "Xhr Ymin" shape queue.html's own formatDuration uses for the
+      // identical kind of fact. Only ever called for today's own Booked
+      // list (bookedDate === today there), so plain minute-of-day
+      // arithmetic is enough — no need to reason about a real calendar
+      // date. Negative (slot already passed, still not arrived) reads
+      // as "overdue by Xmin" instead of a confusing negative duration.
+      function formatMinutesDuration(mins) {
+        const h = Math.floor(mins / 60), m = mins % 60;
+        return h === 0 ? `${m}min` : m === 0 ? `${h}hr` : `${h}hr ${m}min`;
+      }
+      function bookedSoonLabel(p) {
+        const now = new Date();
+        const diffMin = Qlinic.parseTime(p.bookedTime) - (now.getHours() * 60 + now.getMinutes());
+        if (diffMin >= 0) return { text: `in ${formatMinutesDuration(diffMin)}`, soon: diffMin <= 15 };
+        return { text: `overdue by ${formatMinutesDuration(-diffMin)}`, soon: true };
       }
 
       // The Waiting list is sorted by scheduled/effective time, not raw
@@ -761,62 +811,41 @@
       // hit "waiting" (see migration 016) — cash, consultation fee, paid
       // in full. This cell just shows that, and lets reception correct
       // the rare exception (wrong payment method, an emergency fee, a
-      // genuinely free visit) without ever requiring it. Adjust rewrites
-      // the row in place instead of navigating anywhere, since 200+ of
-      // these a day can't each cost a page load.
+      // genuinely free visit) without ever requiring it. Adjust used to
+      // rewrite this cell in place; now opens Qlinic.openAdjustBillingModal
+      // (shared with revenue.html) instead — reviewed as a mockup first
+      // (https://claude.ai/code/artifact/60b97fa0-c07c-4605-b379-4ee19e3eeaed).
+      // Both renderQueues() and renderSearch() re-render on save regardless
+      // of which surface the click came from: the same invoice can be
+      // visible in both the queue panel's Waiting list and a live search
+      // at once, and neither should be left showing what's now stale data.
       const PAYMENT_MODE_SHORT_LABELS = { cash: 'Cash', upi: 'UPI', card: 'Card' };
 
       function billingCell(p, invoiceByPatientId, doctor) {
         const inv = invoiceByPatientId[p.id];
         if (!inv) return '<span class="sub-line">Not yet billed</span>';
-        if (editingInvoiceId === inv.id) {
-          return `
-            <div class="adj-box">
-              <select class="adj-fee-type" data-fee-normal="${doctor.feeNormal || 0}" data-fee-emergency="${doctor.feeEmergency || 0}" onchange="syncAdjustAmount(this)">
-                <option value="consultation" ${inv.feeType === 'consultation' ? 'selected' : ''}>Consultation</option>
-                <option value="emergency" ${inv.feeType === 'emergency' ? 'selected' : ''}>Emergency</option>
-                <option value="waived" ${inv.feeType === 'waived' ? 'selected' : ''}>Follow up</option>
-              </select>
-              <select class="adj-payment-mode">
-                <option value="cash" ${inv.paymentMode === 'cash' ? 'selected' : ''}>Cash</option>
-                <option value="upi" ${inv.paymentMode === 'upi' ? 'selected' : ''}>UPI</option>
-                <option value="card" ${inv.paymentMode === 'card' ? 'selected' : ''}>Card</option>
-              </select>
-              <input type="number" min="0" step="1" class="adj-amount-received" value="${inv.amountReceived}" />
-              <div class="adj-actions">
-                <button type="button" class="btn-sm primary" onclick="saveInvoiceEdit('${inv.id}', this)">Save</button>
-                <button type="button" class="btn-sm" onclick="cancelInvoiceEdit()">Cancel</button>
-              </div>
-            </div>
-          `;
-        }
         const amountLabel = inv.feeType === 'waived' ? 'Follow up' : `₹${inv.amount} · ${PAYMENT_MODE_SHORT_LABELS[inv.paymentMode] || inv.paymentMode}`;
         return `
           <div>${amountLabel}</div>
           <div class="sub-line">
-            <a href="#" onclick="startEditInvoice('${inv.id}'); return false;" style="color:var(--accent);text-decoration:none;">Adjust</a>
+            <a href="#" onclick="openAdjustBilling('${inv.id}'); return false;" style="color:var(--accent);text-decoration:none;">Adjust</a>
             &middot;
             <a href="billing-consultation.html?invoiceId=${inv.id}" target="_blank" style="color:var(--accent);text-decoration:none;">Print</a>
           </div>
         `;
       }
 
-      // The amount field previewing the new fee the instant fee type
-      // changes isn't just cosmetic: it's what keeps the amount actually
-      // submitted on Save correct. Without this, switching to Emergency
-      // or No charge left the old amount sitting in the field, which then
-      // got saved as amount_received against the new (different) total —
-      // producing a receipt with a balance nobody intended.
-      function syncAdjustAmount(selectEl) {
-        const cell = selectEl.closest('td');
-        const amountInput = cell.querySelector('.adj-amount-received');
-        const feeType = selectEl.value;
-        const amount = feeType === 'waived' ? 0
-          : feeType === 'emergency' ? Number(selectEl.dataset.feeEmergency) || 0
-          : Number(selectEl.dataset.feeNormal) || 0;
-        amountInput.value = amount;
+      function openAdjustBilling(invoiceId) {
+        const inv = invoiceById[invoiceId];
+        if (!inv) return;
+        const doctor = doctorsCache.find((d) => d.id === inv.doctorId);
+        Qlinic.openAdjustBillingModal({
+          invoice: inv,
+          doctor,
+          onSaved: () => { showToast('Billing updated'); renderQueues(); renderSearch(); },
+        });
       }
-      window.syncAdjustAmount = syncAdjustAmount;
+      window.openAdjustBilling = openAdjustBilling;
 
       // Runs for both modes now — a walk-in given a preferred time competes
       // for the same slot as a phoned-in appointment (see countActiveAtSlot
@@ -862,7 +891,13 @@
         }
       }
 
-      let editingSearchPatientId = null;
+      // Set by renderSearch() itself so the delegated Edit-button listener
+      // below (attached once, not per-render) can look up the actual
+      // patient/doctor/invoice objects a click refers to — "Edit" opens
+      // a whole modal now, too much to pack into an inline onclick string.
+      let lastSearchResults = [];
+      let lastSearchDoctorById = {};
+      let lastSearchInvoiceByPatientId = {};
 
       function searchStatusBadge(p) {
         if (p.status === 'waiting') return '<span class="badge badge-done">Waiting</span>';
@@ -898,7 +933,13 @@
         }
         const doctorById = Object.fromEntries(doctorsCache.map((d) => [d.id, d]));
         const searchInvoiceByPatientId = {};
-        searchInvoices.forEach((inv) => { if (inv.patientId) searchInvoiceByPatientId[inv.patientId] = inv; });
+        searchInvoices.forEach((inv) => {
+          if (inv.patientId) searchInvoiceByPatientId[inv.patientId] = inv;
+          invoiceById[inv.id] = inv;
+        });
+        lastSearchResults = results;
+        lastSearchDoctorById = doctorById;
+        lastSearchInvoiceByPatientId = searchInvoiceByPatientId;
         box.innerHTML = `
           <table class="qtable">
             <thead><tr><th>Name</th><th>Phone</th><th>Doctor</th><th>Booked</th><th>Status</th>${canBill ? '<th>Billing</th>' : ''}<th></th></tr></thead>
@@ -915,39 +956,6 @@
                 // Waiting list uses, so Adjust here is the identical
                 // fee-type/payment-mode/amount editor, not a second one.
                 const billingTd = canBill ? `<td>${billingCell(p, searchInvoiceByPatientId, doc)}</td>` : '';
-                if (editingSearchPatientId === p.id) {
-                  const doctorOptions = doctorsCache.map((d) => `<option value="${d.id}" ${d.id === p.doctorId ? 'selected' : ''}>${Qlinic.escapeHtml(d.name)}</option>`).join('');
-                  // Every type gets the time-picker now (setting a real
-                  // effective time is the whole point for a late arrival
-                  // or a revived no-show, not just an appointment
-                  // correction) — only the date field is appointment-only,
-                  // since a walk-in or no-show's effective day is always
-                  // today, exactly like the original walk-in intake form.
-                  const bookedEditCell = `
-                    ${p.type === 'appointment' ? `<input type="date" lang="en-GB" class="search-edit-date" value="${p.bookedDate || ''}" />` : ''}
-                    <div class="time-picker" id="searchEditTimePicker">
-                      <button type="button" class="time-picker-trigger ${p.bookedTime ? '' : 'placeholder'}" id="searchEditTimeTrigger">
-                        <span id="searchEditTimeTriggerText">${p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : 'Select a time'}</span><span class="time-picker-caret">▾</span>
-                      </button>
-                      <input type="hidden" class="search-edit-time" value="${p.bookedTime || ''}" />
-                      <div class="time-picker-panel" id="searchEditTimePanel" style="display:none;"></div>
-                    </div>
-                  `;
-                  return `
-                    <tr class="search-edit-row" data-status="${p.status}">
-                      <td><input type="text" class="search-edit-name" value="${Qlinic.escapeHtml(p.name)}" /></td>
-                      <td><input type="text" class="search-edit-phone" value="${Qlinic.escapeHtml(p.phone)}" /></td>
-                      <td><select class="search-edit-doctor">${doctorOptions}</select></td>
-                      <td>${bookedEditCell}</td>
-                      <td>${searchStatusBadge(p)}</td>
-                      ${billingTd}
-                      <td>
-                        <button class="btn-sm primary" onclick="doSaveSearchEdit('${p.id}')">Save</button>
-                        <button class="btn-sm" onclick="doCancelSearchEdit()">Cancel</button>
-                      </td>
-                    </tr>
-                  `;
-                }
                 return `
                   <tr>
                     <td>${nameCell(p)}</td>
@@ -958,7 +966,7 @@
                     ${billingTd}
                     <td>
                       ${p.status === 'booked' ? `<button class="btn-sm primary" onclick="doMarkArrived('${p.id}', this)">Mark arrived</button>` : ''}
-                      <button class="btn-sm" onclick="doStartSearchEdit('${p.id}')">Edit</button>
+                      <button class="btn-sm" data-edit-patient="${p.id}">Edit</button>
                     </td>
                   </tr>
                 `;
@@ -966,39 +974,62 @@
             </tbody>
           </table>
         `;
-        const editingPatient = results.find((p) => p.id === editingSearchPatientId);
-        if (editingPatient) {
-          wireSearchEditTimePicker();
-          // Rebuilt fresh every render, same as the time picker above —
-          // .search-edit-date only exists at all while a row is mid-edit.
-          const editDateInput = document.querySelector('.search-edit-date');
-          if (editDateInput) Qlinic.attachDatePicker(editDateInput);
-        }
       }
 
-      // Same 5-min-step dropdown as the main Appointment time field, wired
-      // fresh each render since the row (and its DOM) is rebuilt every time
-      // — no "now" restriction here, unlike the new-booking picker: this is
-      // setting a real effective time for someone already at the desk (a
-      // late arrival, or a revived no-show), which is routinely a moment
-      // already in the past by the time reception finishes picking it, not
-      // scheduling a brand-new future slot. doSaveSearchEdit doesn't block
-      // a past time here — that's the point, not a gap.
-      function wireSearchEditTimePicker() {
-        const trigger = document.getElementById('searchEditTimeTrigger');
-        const panel = document.getElementById('searchEditTimePanel');
-        const hidden = document.querySelector('.search-edit-time');
-        if (!trigger) return;
-        const options = [];
-        for (let m = clinicOpenMin; m < clinicCloseMin; m += 5) {
+      // Delegated once (not re-attached per render, since #searchResults'
+      // whole innerHTML is replaced every renderSearch()) — "Edit" opens
+      // a full modal now (name/phone/doctor/consultation type/booked
+      // date+time), too much to pack into an inline onclick string the
+      // way Mark arrived's plain id-only call still can. Looks the
+      // patient/doctor/invoice up from what renderSearch() itself just
+      // stashed, rather than re-fetching.
+      document.getElementById('searchResults').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-edit-patient]');
+        if (!btn) return;
+        const id = btn.getAttribute('data-edit-patient');
+        const p = lastSearchResults.find((r) => r.id === id);
+        if (!p) return;
+        openEditPatientModal(p, lastSearchDoctorById[p.doctorId], lastSearchInvoiceByPatientId[p.id]);
+      });
+
+      // Mirrors buildTimePickerOptions() below the main "Add a patient"
+      // form exactly (rounding "now" up to the next 5-min step when the
+      // target date is today) -- decided 2026-09-04 that this modal's
+      // time field should never offer an already-past moment, for any
+      // status, not just new bookings. A concrete counter-example settled
+      // it: a 12:20pm appointment being edited to an earlier 10:10am at
+      // 11:59am, before the appointment itself had even happened yet --
+      // that's not "correcting a late arrival," it's fabricating a past
+      // that never occurred. (Editing an EXISTING already-past bookedTime
+      // without touching it is unaffected -- this only gates picking a
+      // NEW value.)
+      function buildEditTimeOptions(dateStr) {
+        const isToday = dateStr === Qlinic.getTodayDate();
+        let startMin = clinicOpenMin;
+        if (isToday) {
+          const now = new Date();
+          const nowMin = Math.ceil((now.getHours() * 60 + now.getMinutes()) / 5) * 5;
+          startMin = Math.max(startMin, nowMin);
+        }
+        const opts = [];
+        for (let m = startMin; m < clinicCloseMin; m += 5) {
           const hh = String(Math.floor(m / 60)).padStart(2, '0');
           const mm = String(m % 60).padStart(2, '0');
-          options.push({ value: `${hh}:${mm}`, label: Qlinic.formatTime(m) });
+          opts.push({ value: `${hh}:${mm}`, label: Qlinic.formatTime(m) });
         }
+        return opts;
+      }
+
+      function wireEditPatientTimePicker(backdrop, dateInput) {
+        const trigger = backdrop.querySelector('#editPatientTimeTrigger');
+        const panel = backdrop.querySelector('#editPatientTimePanel');
+        const hidden = backdrop.querySelector('#editPatientTime');
+        function currentDate() { return dateInput ? dateInput.value : Qlinic.getTodayDate(); }
         function renderPanel() {
-          panel.innerHTML = options.map((o) => `
-            <div class="time-picker-option ${o.value === hidden.value ? 'selected' : ''}" data-value="${o.value}" data-label="${o.label}">${o.label}</div>
-          `).join('');
+          const opts = buildEditTimeOptions(currentDate());
+          panel.innerHTML = opts.length
+            ? opts.map((o) => `<div class="time-picker-option ${o.value === hidden.value ? 'selected' : ''}" data-value="${o.value}" data-label="${o.label}">${o.label}</div>`).join('')
+            : '<div class="time-picker-empty">No times left today, pick another date.</div>';
         }
         trigger.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -1012,72 +1043,162 @@
           const opt = e.target.closest('.time-picker-option');
           if (!opt) return;
           hidden.value = opt.getAttribute('data-value');
-          document.getElementById('searchEditTimeTriggerText').textContent = opt.getAttribute('data-label');
+          backdrop.querySelector('#editPatientTimeTriggerText').textContent = opt.getAttribute('data-label');
           trigger.classList.remove('placeholder');
           panel.style.display = 'none';
         });
       }
 
-      function doStartSearchEdit(id) {
-        editingSearchPatientId = id;
-        renderSearch();
-      }
-      function doCancelSearchEdit() {
-        editingSearchPatientId = null;
-        renderSearch();
-      }
-      async function doSaveSearchEdit(id) {
-        const row = document.querySelector(`[onclick*="doSaveSearchEdit('${id}')"]`).closest('tr');
-        const name = row.querySelector('.search-edit-name').value.trim();
-        const phone = row.querySelector('.search-edit-phone').value.trim();
-        if (!name || !phone) { showToast('Name and phone are both required'); return; }
-        if (!isValidPhone(phone)) { showToast('Enter a valid 10-digit phone number'); return; }
-        const doctorSelect = row.querySelector('.search-edit-doctor');
-        const update = { name, phone, doctorId: doctorSelect.value };
-        const status = row.getAttribute('data-status');
-        const dateInput = row.querySelector('.search-edit-date');
-        const timeInput = row.querySelector('.search-edit-time');
-        if (timeInput) {
+      // Replaces the old inline "row turns into a form" edit (reviewed as
+      // a mockup first: https://claude.ai/code/artifact/60b97fa0-c07c-4605-b379-4ee19e3eeaed)
+      // with the same .modal-backdrop/.modal-card shell Edit doctor/Edit
+      // team member already use. `inv` is the patient's own invoice if
+      // they've already arrived (status 'waiting') — a 'booked'/'no_show'
+      // patient has no invoice yet, so there's nothing for Consultation
+      // type to apply to, and the field is left out entirely rather than
+      // showing a control that does nothing until they arrive.
+      function openEditPatientModal(p, doc, inv) {
+        const doctorOptions = doctorsCache.map((d) => `<option value="${d.id}" ${d.id === p.doctorId ? 'selected' : ''}>${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)}</option>`).join('');
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop';
+        backdrop.innerHTML = `
+          <div class="modal-card" role="dialog" aria-modal="true">
+            <h2 class="modal-title">Edit patient</h2>
+            <div class="doctor-form-field">
+              <label>Name</label>
+              <input type="text" id="editPatientName" value="${Qlinic.escapeHtml(p.name)}" />
+            </div>
+            <div class="doctor-form-field">
+              <label>Phone</label>
+              <input type="text" id="editPatientPhone" value="${Qlinic.escapeHtml(p.phone)}" />
+            </div>
+            <div class="doctor-form-field">
+              <label>Doctor</label>
+              <select id="editPatientDoctor">${doctorOptions}</select>
+            </div>
+            ${inv ? `
+            <div class="doctor-form-field">
+              <label>Consultation type</label>
+              <select id="editPatientFeeType">
+                <option value="consultation" ${inv.feeType === 'consultation' ? 'selected' : ''}>Consultation</option>
+                <option value="emergency" ${inv.feeType === 'emergency' ? 'selected' : ''}>Emergency</option>
+                <option value="waived" ${inv.feeType === 'waived' ? 'selected' : ''}>Follow up</option>
+              </select>
+            </div>` : ''}
+            <div style="display:flex;gap:12px;">
+              ${p.type === 'appointment' ? `
+              <div class="doctor-form-field" style="flex:1;">
+                <label>Booked date</label>
+                <input type="date" lang="en-GB" id="editPatientDate" value="${p.bookedDate || ''}" />
+              </div>` : ''}
+              <div class="doctor-form-field" style="flex:1;">
+                <label>Time</label>
+                <div class="time-picker" id="editPatientTimePicker">
+                  <button type="button" class="time-picker-trigger ${p.bookedTime ? '' : 'placeholder'}" id="editPatientTimeTrigger">
+                    <span id="editPatientTimeTriggerText">${p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : 'Select a time'}</span><span class="time-picker-caret">▾</span>
+                  </button>
+                  <input type="hidden" id="editPatientTime" value="${p.bookedTime || ''}" />
+                  <div class="time-picker-panel" id="editPatientTimePanel" style="display:none;"></div>
+                </div>
+              </div>
+            </div>
+            <p class="modal-message" id="editPatientError" style="display:none;color:var(--danger);margin:-6px 0 14px;font-size:13px;"></p>
+            <div class="modal-actions">
+              <button type="button" class="btn-sm primary" id="editPatientSaveBtn">Save</button>
+              <button type="button" class="btn-sm" id="editPatientCancelBtn">Cancel</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        const dateInput = backdrop.querySelector('#editPatientDate');
+        if (dateInput) {
+          dateInput.min = Qlinic.getTodayDate();
+          Qlinic.attachDatePicker(dateInput);
+          // A date change can flip whether "today" restrictions even
+          // apply — re-render the panel next time it opens rather than
+          // trusting whatever list was built for the previous date.
+          dateInput.addEventListener('change', () => { backdrop.querySelector('#editPatientTimePanel').style.display = 'none'; });
+        }
+        wireEditPatientTimePicker(backdrop, dateInput);
+        // Same 10-digit-only / no-digits-in-a-name rule the rest of the
+        // app's own name/phone fields already enforce as you type.
+        backdrop.querySelector('#editPatientPhone').addEventListener('input', (e) => {
+          e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+        });
+        backdrop.querySelector('#editPatientName').addEventListener('input', (e) => {
+          e.target.value = e.target.value.replace(/[0-9]/g, '');
+        });
+
+        function cleanup() {
+          backdrop.remove();
+          document.removeEventListener('keydown', onKeydown);
+        }
+        function onKeydown(e) { if (e.key === 'Escape') cleanup(); }
+        document.addEventListener('keydown', onKeydown);
+        backdrop.addEventListener('click', (e) => { if (e.target === backdrop) cleanup(); });
+        backdrop.querySelector('#editPatientCancelBtn').addEventListener('click', cleanup);
+        backdrop.querySelector('#editPatientSaveBtn').addEventListener('click', async () => {
+          const errorEl = backdrop.querySelector('#editPatientError');
+          function showError(msg) { errorEl.textContent = msg; errorEl.style.display = 'block'; }
+          errorEl.style.display = 'none';
+
+          const name = backdrop.querySelector('#editPatientName').value.trim();
+          const phone = backdrop.querySelector('#editPatientPhone').value.trim();
+          if (!name || !phone) { showError('Name and phone are both required.'); return; }
+          if (!isValidPhone(phone)) { showError('Enter a valid 10-digit phone number.'); return; }
+          const doctorId = backdrop.querySelector('#editPatientDoctor').value;
+          const update = { name, phone, doctorId };
+
+          const timeInput = backdrop.querySelector('#editPatientTime');
           const bookedTime = timeInput.value;
-          if (!bookedTime) { showToast('Pick a time'); return; }
+          if (!bookedTime) { showError('Pick a time.'); return; }
           // Only an appointment carries its own date field — a walk-in or
           // a revived no-show's effective day is always today.
           const bookedDate = dateInput ? dateInput.value : Qlinic.getTodayDate();
-          if (dateInput && !bookedDate) { showToast('Appointment date is required'); return; }
-          // No past-time block here on purpose: setting a real effective
-          // time for someone already at the desk — a late arrival, or a
-          // no-show reception is bringing back in — routinely means
-          // picking a time that's already passed by the moment this gets
-          // saved. Full control over exactly when they're queued belongs
-          // to reception's own judgment, not an automatic guess. A
-          // genuinely closed day is still blocked, since rescheduling an
-          // appointment onto one is always a mistake regardless of time.
-          const bookedDateReason = dateInput ? closureReason(bookedDate, doctorSelect.value) : null;
-          if (bookedDateReason) { showToast(`${bookedDateReason} — choose a different date`); return; }
+          if (dateInput && !bookedDate) { showError('Appointment date is required.'); return; }
+          const bookedDateReason = dateInput ? closureReason(bookedDate, doctorId) : null;
+          if (bookedDateReason) { showError(`${bookedDateReason} — choose a different date.`); return; }
+          if (Qlinic.isPastRealDateTime(bookedDate, bookedTime)) {
+            showError('That time has already passed — pick a later one.');
+            return;
+          }
           update.bookedDate = bookedDate;
           update.bookedTime = bookedTime;
-        }
-        try {
-          await Qlinic.updatePatientContact(id, update);
-          // Setting an effective time is how a late arrival or a revived
-          // no-show actually rejoins today's queue — one action, not a
-          // separate "Mark arrived" click after this one. An already-waiting
-          // patient just gets re-sorted by the new time instead.
-          if (status === 'booked' || status === 'no_show') {
-            await Qlinic.markArrived(id);
+
+          const feeTypeSelect = backdrop.querySelector('#editPatientFeeType');
+          try {
+            await Qlinic.updatePatientContact(p.id, update);
+            // Setting an effective time is how a late arrival or a
+            // revived no-show actually rejoins today's queue — one
+            // action, not a separate "Mark arrived" click after this
+            // one. An already-waiting patient just gets re-sorted by
+            // the new time instead.
+            if (p.status === 'booked' || p.status === 'no_show') {
+              await Qlinic.markArrived(p.id);
+            }
+            // Recomputes the amount the same way syncAdjustAmount/Adjust
+            // billing does — switching Consultation type here without
+            // also updating the charged amount would leave a mismatched
+            // invoice (e.g. "Emergency" type still billed at the
+            // Consultation rate).
+            if (feeTypeSelect && inv && feeTypeSelect.value !== inv.feeType) {
+              const doctorForFee = doctorsCache.find((d) => d.id === doctorId);
+              const feeAmount = feeTypeSelect.value === 'waived' ? 0
+                : feeTypeSelect.value === 'emergency' ? ((doctorForFee && doctorForFee.feeEmergency) || 0)
+                : ((doctorForFee && doctorForFee.feeNormal) || 0);
+              await Qlinic.updateInvoicePayment({ invoiceId: inv.id, feeType: feeTypeSelect.value, paymentMode: inv.paymentMode, amountReceived: feeAmount });
+            }
+          } catch (err) {
+            showError(err.message || 'Could not save changes — please try again.');
+            return;
           }
-        } catch (err) {
-          showToast(err.message || 'Could not save changes — please try again.');
-          return;
-        }
-        editingSearchPatientId = null;
-        showToast(status === 'booked' || status === 'no_show' ? 'Marked arrived' : 'Patient details updated');
-        renderSearch();
-        renderQueues();
+          cleanup();
+          showToast(p.status === 'booked' || p.status === 'no_show' ? 'Marked arrived' : 'Patient details updated');
+          renderSearch();
+          renderQueues();
+        });
       }
-      window.doStartSearchEdit = doStartSearchEdit;
-      window.doCancelSearchEdit = doCancelSearchEdit;
-      window.doSaveSearchEdit = doSaveSearchEdit;
 
       // Disabling the button the instant it's clicked (rather than waiting
       // for the async round-trip to finish) is what actually fixed the
@@ -1130,48 +1251,6 @@
       window.doMarkArrived = doMarkArrived;
       window.doMarkNoShow = doMarkNoShow;
 
-      // billingCell (and editingInvoiceId) are now shared between the
-      // queue panel's own Waiting table AND search results — whichever
-      // one the doctor/patient happens to be found in, re-rendering only
-      // the panel would leave the other showing stale edit-mode state.
-      // renderSearch() itself is a no-op when the search box is empty
-      // (see its own early return), so calling it here even when
-      // there's no active search does nothing extra.
-      function startEditInvoice(invoiceId) {
-        editingInvoiceId = invoiceId;
-        renderQueues();
-        renderSearch();
-      }
-      function cancelInvoiceEdit() {
-        editingInvoiceId = null;
-        renderQueues();
-        renderSearch();
-      }
-      async function saveInvoiceEdit(invoiceId, btn) {
-        // Scoped to the actual button clicked, not a document-wide lookup
-        // by invoice id — the same invoice can now render its own adj-box
-        // twice at once (a patient visible in both the queue panel's
-        // Waiting list AND search results), and grabbing "the first match
-        // in the document" would silently read whichever copy happens to
-        // sit first in the DOM, not necessarily the one just edited.
-        const row = btn.closest('td');
-        const feeType = row.querySelector('.adj-fee-type').value;
-        const paymentMode = row.querySelector('.adj-payment-mode').value;
-        const amountReceived = row.querySelector('.adj-amount-received').value;
-        try {
-          await Qlinic.updateInvoicePayment({ invoiceId, feeType, paymentMode, amountReceived });
-        } catch (err) {
-          showToast(err.message || 'Could not update billing — please try again.');
-          return;
-        }
-        editingInvoiceId = null;
-        showToast('Billing updated');
-        renderQueues();
-        renderSearch();
-      }
-      window.startEditInvoice = startEditInvoice;
-      window.cancelInvoiceEdit = cancelInvoiceEdit;
-      window.saveInvoiceEdit = saveInvoiceEdit;
 
       // A dropdown per doctor (mirroring the "Viewing as" pattern on the
       // Doctor View page) instead of stacking every doctor's full queue on
@@ -1253,7 +1332,10 @@
         if (canBill && isTodayView) {
           todayInvoices = await Qlinic.getTodayInvoices();
           if (myToken !== queueRenderToken) return;
-          todayInvoices.forEach((inv) => { if (inv.patientId) invoiceByPatientId[inv.patientId] = inv; });
+          todayInvoices.forEach((inv) => {
+            if (inv.patientId) invoiceByPatientId[inv.patientId] = inv;
+            invoiceById[inv.id] = inv;
+          });
         }
 
         lastQueueData = { doctor, queue, invoiceByPatientId, isTodayView };
@@ -1296,6 +1378,23 @@
         if (bookedPage >= totalBookedPages) bookedPage = 0;
         const bookedPageItems = bookedList.slice(bookedPage * BOOKED_PAGE_SIZE, bookedPage * BOOKED_PAGE_SIZE + BOOKED_PAGE_SIZE);
         const dateLabel = Qlinic.formatDateLabel(queueViewDate);
+        const walkinRanks = buildWalkinRanks(queue);
+        // Right-aligned note on Booked's own heading — only means anything
+        // for today's own list (bookedSoonLabel's arithmetic assumes
+        // bookedDate === today), same reason the whole "how soon" column
+        // below is isTodayView-gated too.
+        const soonCount = isTodayView ? bookedList.filter((p) => bookedSoonLabel(p).soon).length : 0;
+
+        // Token/Name get the same fixed width in both tables (via
+        // <colgroup>) so the two sections' columns actually land at the
+        // same pixel, reviewed as a mockup first
+        // (https://claude.ai/code/artifact/e2ba3dc8-fa7e-4985-aa20-d65d36bc6f3f)
+        // — the rest of each table's columns get fixed widths of their
+        // own except the last, which is left unset to absorb whatever's
+        // left (Billing/Actions when either is present, otherwise
+        // Queue time/Status).
+        const waitingColgroup = `<colgroup><col style="width:64px;"><col style="width:190px;"><col style="width:110px;">${canBill ? '<col style="width:140px;"><col>' : '<col>'}</colgroup>`;
+        const bookedColgroup = `<colgroup><col style="width:64px;"><col style="width:190px;"><col style="width:130px;">${isTodayView ? '<col style="width:110px;"><col>' : '<col>'}</colgroup>`;
 
         panelEl.innerHTML = `
           <div class="panel accent-${accentForDoctor(queueDoctorId)}">
@@ -1303,50 +1402,62 @@
             ${isTodayView ? `
               ${queue.nowServing ? `<p style="font-size:14px;margin:0 0 14px;"><strong>Now with:</strong> ${Qlinic.escapeHtml(queue.nowServing.name)}</p>` : '<p style="font-size:14px;color:var(--grey-500);margin:0 0 14px;">No one in consultation right now.</p>'}
 
-              <h3 style="font-size:14px;margin:0 0 8px;color:var(--grey-700);">Waiting (${waitingList.length}) <span class="order-note">· ordered by scheduled time, not arrival order</span></h3>
-              ${waitingList.length === 0 ? `<div class="empty-state">No one waiting.</div>` : `
-                <table class="qtable">
-                  <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Queue time</th>${canBill ? '<th>Billing</th>' : ''}</tr></thead>
-                  <tbody>
-                    ${waitingPageItems.map((p) => `
-                      <tr ${p.id === highlightId ? 'class="just-arrived-flash"' : ''}>
-                        <td>${p.position}</td>
-                        <td>${nameCell(p)}</td>
-                        <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
-                        <td>${queueTimeCell(p)}</td>
-                        ${canBill ? `<td>${billingCell(p, invoiceByPatientId, doctor)}</td>` : ''}
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
-                <div id="waitingPagerWrap">${Qlinic.pagerHtml(waitingPage + 1, totalWaitingPages)}</div>
-              `}
+              <div class="qsection">
+                <div class="qsection-head">
+                  <span class="qsection-title">Waiting <span class="qsection-note">(${waitingList.length})</span></span>
+                  <span class="qsection-note">ordered by scheduled time, not arrival order</span>
+                </div>
+                ${waitingList.length === 0 ? `<div class="empty-state">No one waiting.</div>` : `
+                  <table class="qtable qtable-fixed">
+                    ${waitingColgroup}
+                    <thead><tr><th>Token</th><th>Name</th><th>Type</th><th>Queue time</th>${canBill ? '<th>Billing</th>' : ''}</tr></thead>
+                    <tbody>
+                      ${waitingPageItems.map((p) => `
+                        <tr ${p.id === highlightId ? 'class="just-arrived-flash"' : ''}>
+                          <td class="token-num">${formatToken(p, walkinRanks)}</td>
+                          <td>${nameCell(p)}</td>
+                          <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
+                          <td>${queueTimeCell(p)}</td>
+                          ${canBill ? `<td>${billingCell(p, invoiceByPatientId, doctor)}</td>` : ''}
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                  <div id="waitingPagerWrap">${Qlinic.pagerHtml(waitingPage + 1, totalWaitingPages)}</div>
+                `}
+              </div>
             ` : `
               <p class="panel-note">Live queue details (now serving, waiting) only apply to today: this is showing what's booked for ${dateLabel}.</p>
             `}
 
-            <div class="booked-section">
-              <button type="button" class="booked-toggle" id="bookedToggleBtn" aria-expanded="${bookedExpanded}">
-                <span>${bookedExpanded ? '▾' : '▸'} Booked${isTodayView ? ', not yet arrived' : ''} (${bookedList.length})</span>
+            <div class="qsection">
+              <button type="button" class="qsection-head clickable" id="bookedToggleBtn" aria-expanded="${bookedExpanded}">
+                <span class="qsection-title"><span class="qsection-chevron">▾</span>Booked${isTodayView ? ', not yet arrived' : ''} <span class="qsection-note">(${bookedList.length})</span></span>
+                ${soonCount > 0 ? `<span class="qsection-note">${soonCount} arriving within 15 min</span>` : ''}
               </button>
-              <div class="booked-body" style="display:${bookedExpanded ? 'block' : 'none'};">
+              <div class="qsection-body" style="display:${bookedExpanded ? 'block' : 'none'};">
                 ${bookedList.length === 0 ? `<div class="empty-state">${isTodayView ? 'Everyone booked has arrived.' : 'Nothing booked for ' + dateLabel + '.'}</div>` : `
-                  <table class="qtable">
-                    <thead><tr><th>Name</th><th>Booked</th><th>Status</th>${isTodayView ? '<th></th>' : ''}</tr></thead>
+                  <table class="qtable qtable-fixed">
+                    ${bookedColgroup}
+                    <thead><tr><th>Token</th><th>Name</th><th>Booked</th><th>Status</th>${isTodayView ? '<th></th>' : ''}</tr></thead>
                     <tbody>
-                      ${bookedPageItems.map((p) => `
+                      ${bookedPageItems.map((p) => {
+                        const soon = isTodayView ? bookedSoonLabel(p) : null;
+                        return `
                         <tr>
+                          <td class="token-num">${formatToken(p, walkinRanks)}</td>
                           <td>${nameCell(p)}</td>
-                          <td>${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}</td>
+                          <td>${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}${soon ? `<div class="sub-line">${soon.soon ? '<span class="badge-soon-dot"></span>' : ''}${soon.text}</div>` : ''}</td>
                           <td><span class="badge badge-booked">Expected</span></td>
                           ${isTodayView ? `
-                            <td>
+                            <td class="actions-cell">
                               <button class="btn-sm primary" onclick="doMarkArrived('${p.id}', this)">Mark arrived</button>
                               <button class="btn-sm danger" onclick="doMarkNoShow('${p.id}')">No-show</button>
                             </td>
                           ` : ''}
                         </tr>
-                      `).join('')}
+                      `;
+                      }).join('')}
                     </tbody>
                   </table>
                   <div id="bookedPagerWrap">${Qlinic.pagerHtml(bookedPage + 1, totalBookedPages)}</div>
@@ -1381,18 +1492,7 @@
         box.focus();
       });
 
-      // Delegated (not bound per-render) since the edit row's phone input
-      // is rebuilt from scratch on every renderSearch() call.
-      document.getElementById('searchResults').addEventListener('input', (e) => {
-        if (e.target.classList.contains('search-edit-phone')) {
-          e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
-        }
-        if (e.target.classList.contains('search-edit-name')) {
-          e.target.value = e.target.value.replace(/[0-9]/g, '');
-        }
-      });
-
-      // Same 10-digit-only rule as signup's mobile number field: strips
+// Same 10-digit-only rule as signup's mobile number field: strips
       // anything non-numeric as it's typed, so a pasted or typed letter
       // never even lands in the field, and blocks submission on anything
       // short of exactly 10 digits.

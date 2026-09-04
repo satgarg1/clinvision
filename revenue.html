@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=305" />
+<link rel="stylesheet" href="styles.css?v=306" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -125,7 +125,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=94"></script>
+  <script src="clinic-data.js?v=95"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -155,7 +155,6 @@
       let currentPage = 1;
       let doctorById = {};
       let doctorsListCache = []; // same doctors as doctorById, kept as an ordered array too - only needed for the revenue chip's doctor-color dots
-      let editingInvoiceId = null;
       let viewMode = 'single'; // 'single' | 'range'
       let rangePreset = 'lastweek';
       let customRange = null; // exact {start,end} for the 'custom' preset
@@ -808,80 +807,33 @@
         renderPager(filtered.length);
       }
 
-      // Same fields, save flow, and field classes as Reception's Adjust
-      // editor (fee type recomputes amount server-side, payment mode,
-      // amount received) — just without the Print link, since this page
-      // is for correcting a figure, not reprinting a receipt.
+      // Was its own inline .adj-box copy (identical markup to Reception's,
+      // duplicated separately) — now the same shared
+      // Qlinic.openAdjustBillingModal modal reception.html uses, reviewed
+      // as a mockup first
+      // (https://claude.ai/code/artifact/60b97fa0-c07c-4605-b379-4ee19e3eeaed).
+      // The Balance line (this page's only real difference from
+      // Reception's own billingCell) is unaffected — that's a plain
+      // computed display, not part of the editor.
       function billingCell(inv, doctor) {
         const balance = inv.amount - inv.amountReceived;
-        if (editingInvoiceId === inv.id) {
-          return `
-            <div class="adj-box">
-              <select class="adj-fee-type" data-fee-normal="${(doctor && doctor.feeNormal) || 0}" data-fee-emergency="${(doctor && doctor.feeEmergency) || 0}" onchange="syncAdjustAmount(this)">
-                <option value="consultation" ${inv.feeType === 'consultation' ? 'selected' : ''}>Consultation</option>
-                <option value="emergency" ${inv.feeType === 'emergency' ? 'selected' : ''}>Emergency</option>
-                <option value="waived" ${inv.feeType === 'waived' ? 'selected' : ''}>Follow up</option>
-              </select>
-              <select class="adj-payment-mode">
-                <option value="cash" ${inv.paymentMode === 'cash' ? 'selected' : ''}>Cash</option>
-                <option value="upi" ${inv.paymentMode === 'upi' ? 'selected' : ''}>UPI</option>
-                <option value="card" ${inv.paymentMode === 'card' ? 'selected' : ''}>Card</option>
-              </select>
-              <input type="number" min="0" step="1" class="adj-amount-received" value="${inv.amountReceived}" />
-              <div class="adj-actions">
-                <button type="button" class="btn-sm primary" onclick="saveInvoiceEdit('${inv.id}')">Save</button>
-                <button type="button" class="btn-sm" onclick="cancelInvoiceEdit()">Cancel</button>
-              </div>
-            </div>
-          `;
-        }
         return `
-          <div><span style="display:inline-block;min-width:64px;">₹${inv.amountReceived}</span><a href="#" onclick="startEditInvoice('${inv.id}'); return false;" style="color:var(--accent);text-decoration:none;">Adjust</a></div>
+          <div><span style="display:inline-block;min-width:64px;">₹${inv.amountReceived}</span><a href="#" onclick="openAdjustBilling('${inv.id}'); return false;" style="color:var(--accent);text-decoration:none;">Adjust</a></div>
           ${balance > 0 ? `<div class="sub-line" style="color:var(--danger);">Balance: ₹${balance}</div>` : ''}
         `;
       }
 
-      function startEditInvoice(invoiceId) {
-        editingInvoiceId = invoiceId;
-        renderTable();
+      function openAdjustBilling(invoiceId) {
+        const inv = allInvoices.find((i) => i.id === invoiceId);
+        if (!inv) return;
+        const doctor = doctorById[inv.doctorId];
+        Qlinic.openAdjustBillingModal({
+          invoice: inv,
+          doctor,
+          onSaved: async () => { showToast('Billing updated'); await loadInvoices(); },
+        });
       }
-      function cancelInvoiceEdit() {
-        editingInvoiceId = null;
-        renderTable();
-      }
-      async function saveInvoiceEdit(invoiceId) {
-        const row = document.querySelector(`[onclick*="saveInvoiceEdit('${invoiceId}')"]`).closest('td');
-        const feeType = row.querySelector('.adj-fee-type').value;
-        const paymentMode = row.querySelector('.adj-payment-mode').value;
-        const amountReceived = row.querySelector('.adj-amount-received').value;
-        try {
-          await Qlinic.updateInvoicePayment({ invoiceId, feeType, paymentMode, amountReceived });
-        } catch (err) {
-          showToast(err.message || 'Could not update billing — please try again.');
-          return;
-        }
-        editingInvoiceId = null;
-        showToast('Billing updated');
-        await loadInvoices();
-      }
-      window.startEditInvoice = startEditInvoice;
-      window.cancelInvoiceEdit = cancelInvoiceEdit;
-      window.saveInvoiceEdit = saveInvoiceEdit;
-
-      // Mirrors Reception's syncAdjustAmount: keeps the amount field
-      // showing the fee that would actually be saved the instant fee
-      // type changes, so Save never submits a stale amount against a
-      // different fee type.
-      function syncAdjustAmount(selectEl) {
-        const cell = selectEl.closest('td');
-        const amountInput = cell.querySelector('.adj-amount-received');
-        const feeType = selectEl.value;
-        const amount = feeType === 'waived' ? 0
-          : feeType === 'emergency' ? Number(selectEl.dataset.feeEmergency) || 0
-          : Number(selectEl.dataset.feeNormal) || 0;
-        amountInput.value = amount;
-      }
-      window.syncAdjustAmount = syncAdjustAmount;
+      window.openAdjustBilling = openAdjustBilling;
 
       function currentRange() {
         if (viewMode !== 'range') return null;

@@ -3016,6 +3016,10 @@ th.th-filterable { position: relative; }
 .modal-title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--black); margin: 0 0 10px; }
 .modal-message { font-size: 14px; color: var(--grey-700); line-height: 1.5; margin: 0 0 24px; white-space: pre-line; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+/* Adjust billing's live fee preview -- one uniform bold weight/size for
+   the whole line (was part-grey-13px + part-bold-16px, reads as two
+   different UI elements glued together for what's really one sentence). */
+.amount-preview { font-size: 15px; font-weight: 700; color: var(--black); margin: -6px 0 14px; }
 
 /* Dashboard's day-of-holiday popup -- built on .modal-backdrop/
    .modal-card above (same shell Qlinic.confirmDialog() uses); this is
@@ -3577,50 +3581,12 @@ th.th-filterable { position: relative; }
 .time-picker-option.selected { background: var(--accent); color: #ffffff; font-weight: 600; }
 .time-picker-empty { padding: 16px 12px; text-align: center; color: var(--grey-500); font-size: 13px; }
 
-/* Reception's "Find a Patient" inline edit row: Name/Phone/Doctor were
-   left as bare, unstyled inputs while Booked's date + time-picker got the
-   normal polished treatment, so the row read as mismatched. Every editable
-   cell now shares one small, rounded input style; #searchResults scoping
-   (an ID, so it wins over .time-picker-trigger's own rule without relying
-   on source order) keeps this deliberately smaller than the main
-   Add-a-patient form's picker, since Booked stacks two controls (date
-   above time) and a full-size picker there would make that one cell much
-   taller than its single-line neighbors. vertical-align: top keeps every
-   cell starting from the same line instead of centering around whichever
-   cell happens to be tallest. Scoped to the edit row specifically
-   (.search-edit-row) — the normal read-only row has no stacked cell, so
-   it keeps the base .qtable td middle-alignment; forcing top there made
-   Phone/Doctor/Booked sit flush at the top instead of centered next to
-   Name's two-line name+address block. */
-#searchResults .qtable tr.search-edit-row td { vertical-align: top; }
-#searchResults .search-edit-name,
-#searchResults .search-edit-phone,
-#searchResults .search-edit-doctor,
-#searchResults .search-edit-date,
-#searchResults .time-picker-trigger {
-  width: 100%;
-  padding: 7px 9px;
-  font-size: 13px;
-  font-family: var(--font);
-  border: 1px solid var(--grey-300);
-  border-radius: var(--radius-sm);
-  background: var(--white);
-  color: var(--black);
-}
-#searchResults .search-edit-name:focus,
-#searchResults .search-edit-phone:focus,
-#searchResults .search-edit-doctor:focus,
-#searchResults .search-edit-date:focus,
-#searchResults .time-picker-trigger:focus {
-  outline: 2px solid var(--accent);
-  border-color: var(--accent);
-}
-#searchResults .search-edit-date { display: block; margin-bottom: 4px; }
-/* Mark arrived/Edit/Save/Cancel kept the default .btn-sm size (~32px
-   tall) while every other cell in this table was shrunk to a ~24px
-   compact scale, so the buttons visually dominated the row and made
-   everything beside them read as randomly sized/misaligned even though
-   every cell's content already starts at the same top and left offset. */
+/* Mark arrived/Edit kept the default .btn-sm size (~32px tall) while
+   every other cell in this table is on a denser scale — this keeps
+   them from visually dominating the row. Edit now opens a modal
+   (openEditPatientModal in reception.html) instead of turning the row
+   itself into a form, so there's no more edit-row-specific input
+   styling to carry here. */
 #searchResults .btn-sm { padding: 5px 10px; font-size: 12px; }
 
 /* A row of toggleable day buttons — for picking a set of weekdays (e.g.
@@ -3821,26 +3787,39 @@ th.th-filterable { position: relative; }
   font-size: 14px;
 }
 
-.booked-section { margin-top: 22px; }
-.booked-toggle {
+/* Shared heading for both Waiting and Booked — was a real <h3> for one
+   and a plain toggle <button> running different rules for the other,
+   which is what made the two read as unrelated sections rather than
+   two peers in the same list, even though their typography looked
+   almost identical by coincidence. Reviewed as a mockup first
+   (https://claude.ai/code/artifact/e2ba3dc8-fa7e-4985-aa20-d65d36bc6f3f). */
+.qsection { margin-top: 26px; }
+.qsection:first-child { margin-top: 0; }
+.qsection-head {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 12px;
   width: 100%;
   background: none;
   border: none;
-  border-top: 1px solid var(--grey-100);
-  padding: 14px 0 10px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--grey-700);
-  cursor: pointer;
-  text-align: left;
+  padding: 0 0 10px;
+  cursor: default;
   font-family: var(--font);
+  text-align: left;
+  border-bottom: 1px solid var(--grey-300);
+  margin-bottom: 2px;
 }
-.booked-toggle:hover { color: var(--black); }
-.booked-body { padding-top: 6px; }
+.qsection-head.clickable { cursor: pointer; }
+.qsection-title { font-size: 14px; font-weight: 700; color: var(--black); display: flex; align-items: center; gap: 8px; }
+.qsection-chevron { font-size: 11px; color: var(--grey-500); transition: transform 0.15s ease; }
+.qsection-head[aria-expanded="false"] .qsection-chevron { transform: rotate(-90deg); }
+.qsection-note { font-size: 12px; color: var(--grey-500); font-weight: 400; }
+.qsection-body { padding-top: 6px; }
+
+.token-num { font-variant-numeric: tabular-nums; color: var(--grey-500); font-weight: 700; }
+.actions-cell { white-space: nowrap; }
+.badge-soon-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warning); display: inline-block; margin-right: 5px; }
 
 .pager {
   display: flex;
@@ -4678,22 +4657,6 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
   color: var(--grey-500);
   margin-top: 2px;
 }
-
-/* Inline invoice-correction box on Reception's queue row (see
-   billingCell in reception.html). Fixed width keeps the three controls
-   aligned to the same edge instead of each sizing to its own content. */
-.adj-box { display: flex; flex-direction: column; gap: 5px; width: 130px; }
-.adj-box select, .adj-box input {
-  width: 100%;
-  box-sizing: border-box;
-  font-size: 13px;
-  padding: 5px 8px;
-  border: 1px solid var(--grey-300);
-  border-radius: 6px;
-  font-family: var(--font);
-}
-.adj-actions { display: flex; gap: 4px; margin-top: 2px; }
-.adj-actions .btn-sm { padding: 4px 10px; font-size: 12px; }
 
 /* Add-patient mode toggle: walk-in vs. phoned appointment used to be two
    separate, near-identical forms — easy to fill in the wrong one. Now it's
