@@ -23,13 +23,13 @@ alter table public.invoices add column invoice_type text not null default 'consu
 alter table public.invoices alter column doctor_id drop not null;
 alter table public.invoices alter column fee_type drop not null;
 
--- fee_type's original inline check (013_billing.sql) only ever allowed
--- ('consultation', 'emergency') and was never widened since — dropping
--- it "if exists" rather than assuming today's server-generated name in
--- case a differently-named constraint is actually in place.
+-- fee_type's check was widened once already, in 016_auto_invoice_on_arrival.sql,
+-- to add 'waived' for a genuinely free/follow-up visit — real live data
+-- already has rows with that value, so it has to carry over here too, not
+-- just the original ('consultation', 'emergency') from 013_billing.sql.
 alter table public.invoices drop constraint if exists invoices_fee_type_check;
 alter table public.invoices add constraint invoices_type_fee_check check (
-  (invoice_type = 'consultation' and fee_type in ('consultation', 'emergency'))
+  (invoice_type = 'consultation' and fee_type in ('consultation', 'emergency', 'waived'))
   or (invoice_type = 'pharmacy' and fee_type is null)
 );
 
