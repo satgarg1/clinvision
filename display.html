@@ -170,7 +170,16 @@
           emergency: 'Emergency',
           dayClosed: 'Day closed',
           fadingLabel: 'Fading from screen in',
-          onBreakDetail: (m, since) => `On a break for ${m} minutes since ${since}`,
+          // Matches doctor.html's own duration picker labels ("1 hr",
+          // never "60 min") and queue.html's identical formatDuration --
+          // three different pages describing the exact same broadcast
+          // value need to agree on how it reads.
+          formatDuration(mins) {
+            if (mins < 60) return `${mins} min`;
+            const h = Math.floor(mins / 60), m = mins % 60;
+            return m === 0 ? `${h} hr` : `${h} hr ${m} min`;
+          },
+          onBreakDetail: (durationLabel, since) => `On a break for ${durationLabel} since ${since}`,
           emergencyDetail: 'Attending an emergency, please bear with us',
           appointment: 'Appointment',
           walkin: 'Walk-in',
@@ -204,7 +213,12 @@
           emergency: 'आपातकाल',
           dayClosed: 'दिन समाप्त',
           fadingLabel: 'स्क्रीन से हटने में',
-          onBreakDetail: (m, since) => `${m} मिनट के लिए ब्रेक पर ${since} से`,
+          formatDuration(mins) {
+            if (mins < 60) return `${mins} मिनट`;
+            const h = Math.floor(mins / 60), m = mins % 60;
+            return m === 0 ? `${h} घंटा` : `${h} घंटा ${m} मिनट`;
+          },
+          onBreakDetail: (durationLabel, since) => `${durationLabel} के लिए ब्रेक पर ${since} से`,
           emergencyDetail: 'आपातकाल में व्यस्त, कृपया प्रतीक्षा करें',
           appointment: 'अपॉइंटमेंट',
           walkin: 'वॉक-इन',
@@ -389,7 +403,7 @@
         // run-on line that wrapped wherever it happened to run out of
         // room, instead of breaking in a sensible place.
         const note = Qlinic.isRealStatusReason(doctor.statusNote) ? `<br>${escapeHtml(doctor.statusNote)}` : '';
-        if (doctor.status === 'on_break') return T.onBreakDetail(doctor.delayMins || 0, since) + note;
+        if (doctor.status === 'on_break') return T.onBreakDetail(T.formatDuration(doctor.delayMins || 0), since) + note;
         if (doctor.status === 'emergency') return T.emergencyDetail;
         return '';
       }

@@ -147,6 +147,15 @@
         }[status] || status;
       }
 
+      // Matches doctor.html's own DURATION_OPTIONS labels ("1 hr", "1.5
+      // hr", never "90 min") — this pill and that picker describe the
+      // exact same value, so they need to read the same way.
+      function formatDurationLabel(mins) {
+        if (mins < 60) return `${mins} min`;
+        if (mins % 30 === 0) return `${mins / 60} hr`;
+        return `${Math.floor(mins / 60)} hr ${mins % 60} min`;
+      }
+
       // Same 5-color identity palette as the rest of the app; each doctor
       // keeps the same color everywhere, based on their position in the
       // clinic's doctor list.
@@ -629,8 +638,8 @@
                 <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">closed ${formatStatusTimestamp(d.dayClosedAt)}</div>
               `
             : `
-                <span class="status-pill status-${d.status}">${statusLabel(d.status)}${d.delayMins ? ' for ' + d.delayMins + ' min' : ''}</span>
-                <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">updated ${formatStatusTimestamp(d.statusUpdatedAt)}</div>
+                <span class="status-pill status-${d.status}">${statusLabel(d.status)}${d.delayMins ? ' for ' + formatDurationLabel(d.delayMins) : ''}</span>
+                <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">last updated ${formatStatusTimestamp(d.statusUpdatedAt)}</div>
               `;
           return `
             <div class="doctor-status-row ${rowClass}">

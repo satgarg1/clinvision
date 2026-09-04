@@ -324,6 +324,20 @@
         }[status] || status;
       }
 
+      // Every duration this page can broadcast comes from DURATION_OPTIONS
+      // further down (5 min through 4 hr, in 30-min steps once past an
+      // hour) — its own labels already read "1 hr"/"1.5 hr", never "90
+      // min". Anywhere delayMins gets displayed back needs to match that
+      // same convention instead of printing the raw minute count, or a
+      // 2-hour break reads as "120 min" right next to a picker that
+      // would have called the exact same value "2 hr".
+      function formatDurationLabel(mins) {
+        if (mins < 60) return `${mins} min`;
+        if (mins % 60 === 0) return `${mins / 60} hr`;
+        if (mins % 30 === 0) return `${mins / 60} hr`;
+        return `${Math.floor(mins / 60)} hr ${mins % 60} min`;
+      }
+
       function currentDoctorId() {
         return document.getElementById('doctorSelect').value;
       }
@@ -1032,7 +1046,7 @@
         // matters here precisely because it might not be. ", " -> " at "
         // to read as a sentence rather than a comma-spliced fragment.
         document.getElementById('currentStatusLine').innerHTML =
-          `Updated: ${Qlinic.formatDateTime(doc.statusUpdatedAt).replace(', ', ' at ')}`;
+          `Last updated: ${Qlinic.formatDateTime(doc.statusUpdatedAt).replace(', ', ' at ')}`;
         // Hidden for as long as the duration picker sits open — content
         // and visibility are set together, right here, so a background
         // refresh (a live update from another device, the 15s poll)
@@ -1105,7 +1119,7 @@
           awayBanner.style.display = 'inline-flex';
           awayBanner.className = 'status-away-banner ' + doc.status;
           document.getElementById('statusAwayText').textContent =
-            statusLabel(doc.status) + (doc.delayMins ? ' for ' + doc.delayMins + ' min' : '');
+            statusLabel(doc.status) + (doc.delayMins ? ' for ' + formatDurationLabel(doc.delayMins) : '');
           document.getElementById('statusAwaySub').textContent =
             'Since ' + Qlinic.formatTimestamp(doc.statusUpdatedAt)
             + (Qlinic.isRealStatusReason(doc.statusNote) ? ' · "' + doc.statusNote + '"' : '')
@@ -1440,7 +1454,7 @@
             const reasonInput = document.getElementById('delayReasonInput');
             if (currentDoctor && currentDoctor.status === status && currentDoctor.delayMins) {
               const match = DURATION_OPTIONS.find((o) => o.value === currentDoctor.delayMins);
-              const durationLabel = match ? match.label : `${currentDoctor.delayMins} min`;
+              const durationLabel = match ? match.label : formatDurationLabel(currentDoctor.delayMins);
               selectDelay(currentDoctor.delayMins, durationLabel);
               const setAt = new Date(currentDoctor.statusUpdatedAt);
               const elapsedMin = Math.max(0, Math.round((Date.now() - setAt.getTime()) / 60000));
