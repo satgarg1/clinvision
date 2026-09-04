@@ -17,6 +17,14 @@
 -- Run this once in the Supabase SQL Editor, after 072_medicine_pack_units.sql.
 -- ============================================================
 
+-- record_stock_purchase's parameter names are changing (p_quantity ->
+-- p_packs_received, etc.) — Postgres's CREATE OR REPLACE refuses that
+-- even when the type signature is identical (error 42P13, "cannot
+-- change name of input parameter"), so the old one has to be dropped
+-- explicitly first. create_pharmacy_invoice below keeps its original
+-- parameter names, so it doesn't need this.
+drop function if exists public.record_stock_purchase(uuid, text, date, date, integer, numeric, numeric);
+
 create or replace function public.record_stock_purchase(
   p_medicine_id uuid,
   p_batch_number text,
