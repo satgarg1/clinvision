@@ -115,7 +115,7 @@
         } else {
           panel.innerHTML = `
             <div class="panel-header"><h2>End of day</h2></div>
-            <p class="panel-note">Anyone still marked "booked" (never arrived) today will be closed out as a no-show.</p>
+            <p class="panel-note">Anyone still marked "booked" (never arrived) today will be closed out as a no-show. This also happens automatically just after midnight if nobody closes it by hand.</p>
             <button class="btn-sm primary" id="closeDayBtn">Close the day &amp; finalize no-shows</button>
           `;
           document.getElementById('closeDayBtn').addEventListener('click', async () => {
