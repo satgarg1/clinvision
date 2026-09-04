@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=301" />
+<link rel="stylesheet" href="styles.css?v=302" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -1313,8 +1313,16 @@
 
       // Short durations in round minutes, longer ones in half-hour steps:
       // "90 min" reads slower than "1.5 hr" once you're past an hour.
-      const DURATION_OPTIONS = [];
-      for (let m = 10; m < 60; m += 10) DURATION_OPTIONS.push({ value: m, label: `${m} min` });
+      // 5 and 15 min slotted in below/between the old 10-min steps — a
+      // quick nature call is a real, common reason to step away, and
+      // shouldn't force rounding up to a break twice as long as it
+      // needs to be. Listed explicitly rather than a finer-grained loop
+      // so the dropdown doesn't also grow 25/35/45/55, which nobody
+      // asked for and would just make the common options slower to scan.
+      const DURATION_OPTIONS = [
+        { value: 5, label: '5 min' }, { value: 10, label: '10 min' }, { value: 15, label: '15 min' },
+      ];
+      for (let m = 20; m < 60; m += 10) DURATION_OPTIONS.push({ value: m, label: `${m} min` });
       DURATION_OPTIONS.push({ value: 60, label: '1 hr' });
       for (let m = 90; m <= 240; m += 30) DURATION_OPTIONS.push({ value: m, label: `${m / 60} hr` });
 
