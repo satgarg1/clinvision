@@ -32,8 +32,6 @@
         <a href="reception.html" class="nav-link" id="receptionNavLink">Reception</a>
         <a href="doctor.html" class="nav-link">Doctor View</a>
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
-        <a href="pharmacy.html" class="nav-link" id="pharmacyNavLink">Pharmacy</a>
-        <a href="manage-medicines.html" class="nav-link" id="medicinesNavLink">Medicines</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
         <a href="trends.html" class="nav-link" id="trendsNavLink">Insights</a>
         <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
@@ -83,6 +81,12 @@
         <div class="panel-header"><h2>Team Holidays</h2></div>
         <p class="panel-note" id="doctorHolidaysNote">Days a doctor is away, so reception is warned before booking them.</p>
         <a href="doctor-holidays.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage holidays</a>
+      </div>
+
+      <div class="panel" id="medicinesPanel" data-group="clinic-setup">
+        <div class="panel-header"><h2>Medicines</h2></div>
+        <p class="panel-note">The pharmacy counter's catalog — add medicines, record stock coming in, and adjust for breakage or a recount.</p>
+        <a href="manage-medicines.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage medicines</a>
       </div>
 
       <div class="panel" id="patientDirectoryPanel" data-group="records">
@@ -203,7 +207,7 @@
       // or remove a closure, but benefit from seeing the list, same as
       // reception does) - never role-hidden, unlike the operational
       // panels above.
-      if (amDoctor) { roleHiddenIds.add('patientDirectoryPanel'); roleHiddenIds.add('noShowsPanel'); roleHiddenIds.add('displayScreenPanel'); }
+      if (amDoctor) { roleHiddenIds.add('patientDirectoryPanel'); roleHiddenIds.add('noShowsPanel'); roleHiddenIds.add('displayScreenPanel'); roleHiddenIds.add('medicinesPanel'); }
       // Was hidden for reception -- Team Holidays now covers staff too
       // (reception manages their own the same way a doctor does), so
       // every role has a real reason to be here; nothing left to hide.

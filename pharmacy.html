@@ -63,8 +63,6 @@
         <a href="reception.html" class="nav-link" id="receptionNavLink">Reception</a>
         <a href="doctor.html" class="nav-link" id="doctorNavLink">Doctor View</a>
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
-        <a href="pharmacy.html" class="nav-link active" id="pharmacyNavLink">Pharmacy</a>
-        <a href="manage-medicines.html" class="nav-link" id="medicinesNavLink">Medicines</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
         <a href="trends.html" class="nav-link" id="trendsNavLink">Insights</a>
         <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
@@ -76,6 +74,7 @@
     <main class="app-main">
       <div class="app-topbar">
         <div>
+          <div class="breadcrumb" id="billingBreadcrumb"><a href="billing.html">Billing</a> <span>/</span> Pharmacy</div>
           <h1>Pharmacy counter</h1>
         </div>
         <div style="font-size:13px; color:var(--grey-500); text-align:right;">
@@ -185,6 +184,9 @@
       if (amPharmacist) {
         ['dashboardNavLink', 'receptionNavLink', 'doctorNavLink', 'billingNavLink', 'revenueNavLink', 'trendsNavLink', 'endOfDayNavLink', 'displayNavLink']
           .forEach((id) => { document.getElementById(id).style.display = 'none'; });
+        // billing.html is admin/reception only — a pharmacist has no
+        // "Billing" to go back up to, this page already is their home.
+        document.getElementById('billingBreadcrumb').style.display = 'none';
       } else {
         if (amDoctor) {
           ['receptionNavLink', 'billingNavLink', 'displayNavLink'].forEach((id) => { document.getElementById(id).style.display = 'none'; });
