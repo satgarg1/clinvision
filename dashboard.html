@@ -563,7 +563,18 @@
               onClick: () => Qlinic.statBreakdownDialog({
                 title: 'Doctors away',
                 columns: ['Doctor', 'Status'],
-                rows: awayDoctors.map((d) => [d.name, d.dayClosedAt ? 'Day closed' : statusLabel(d.status)]),
+                // The doctor's own typed reason ("In a meeting") is the
+                // actual useful part of this popup for an admin deciding
+                // whether to step in — a bare "On a break" with no
+                // reason answers "who" but not "why". statBreakdownDialog
+                // escapes every cell itself, so this stays raw text, not
+                // pre-escaped (escaping it here too would double-escape).
+                rows: awayDoctors.map((d) => [
+                  d.name,
+                  d.dayClosedAt
+                    ? 'Day closed'
+                    : statusLabel(d.status) + (Qlinic.isRealStatusReason(d.statusNote) ? ' - ' + d.statusNote : ''),
+                ]),
               }),
             });
 
@@ -638,7 +649,7 @@
                 <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">closed ${formatStatusTimestamp(d.dayClosedAt)}</div>
               `
             : `
-                <span class="status-pill status-${d.status}">${statusLabel(d.status)}${d.delayMins ? ' for ' + formatDurationLabel(d.delayMins) : ''}</span>
+                <span class="status-pill status-${d.status}">${statusLabel(d.status)}${d.delayMins ? ' for ' + formatDurationLabel(d.delayMins) : ''}${Qlinic.isRealStatusReason(d.statusNote) ? ': "' + Qlinic.escapeHtml(d.statusNote) + '"' : ''}</span>
                 <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">last updated ${formatStatusTimestamp(d.statusUpdatedAt)}</div>
               `;
           return `
