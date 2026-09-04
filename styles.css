@@ -2819,11 +2819,12 @@ input[type="number"] { -moz-appearance: textfield; }
   z-index: 3;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 10px;
+  padding-left: 28px;
   background: var(--success-bg);
   color: var(--success);
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 700;
   border-radius: var(--radius-lg);
   opacity: 0;
@@ -2831,7 +2832,7 @@ input[type="number"] { -moz-appearance: textfield; }
   transition: opacity 0.2s ease;
 }
 .call-confirm-overlay.show { opacity: 1; }
-.call-confirm-check { font-size: 24px; }
+.call-confirm-check { font-size: 30px; }
 
 /* Small round chevron button in a .panel-header, toggling a sibling
    content block's visibility -- #statusPanel is the first (only, so
