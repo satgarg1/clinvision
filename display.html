@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=299" />
+<link rel="stylesheet" href="styles.css?v=300" />
 </head>
 <body class="display-body">
   <!-- Applied synchronously, before anything else renders, so a device
@@ -110,7 +110,7 @@
       <div class="board-page-indicator" id="pageDots"></div>
     </div>
     <div class="board-cols">
-      <span id="colPos">#</span><span id="colPatient">Patient</span><span id="colDoctor">Doctor</span><span id="colType">Type</span>
+      <span id="colPos">#</span><span id="colTime">Time</span><span id="colPatient">Patient</span><span id="colDoctor">Doctor</span><span id="colType">Type</span>
     </div>
     <div class="board-rows" id="boardRows"></div>
   </div>
@@ -159,6 +159,7 @@
           othersLabel: (n) => `+${n} others`,
           waitingNow: 'Waiting now',
           colPos: 'Token',
+          colTime: 'Time',
           colPatient: 'Patient',
           colDoctor: 'Doctor',
           colType: 'Type',
@@ -191,6 +192,7 @@
           othersLabel: (n) => `+${n} और`,
           waitingNow: 'अभी प्रतीक्षा में',
           colPos: 'टोकन',
+          colTime: 'समय',
           colPatient: 'मरीज़',
           colDoctor: 'डॉक्टर',
           colType: 'प्रकार',
@@ -274,6 +276,14 @@
         // names virtually always contain this word, so it's worth its
         // own entry rather than a wrong sound on every single one.
         clinic: 'क्लिनिक',
+        // Same reasoning for the rest of a typical Indian clinic's own
+        // name ("X Clinic and Diagnostic Centre/Center", "X Hospital",
+        // "X Medical Centre") — every one of these was coming out as an
+        // unreadable syllable-by-syllable guess (e.g. "and" -> "अनद",
+        // "diagnostic" -> "दिअगनोसतिक"). Fixed for every clinic that
+        // uses these words, not just one name.
+        and: 'एंड', diagnostic: 'डायग्नोस्टिक', centre: 'सेण्टर', center: 'सेण्टर',
+        hospital: 'हॉस्पिटल', medical: 'मेडिकल',
       };
 
       function phoneticToDevanagari(word) {
@@ -532,6 +542,7 @@
         return pageItems.map((p, i) => `
           <div class="board-row">
             <span class="board-pos">${p.tokenDisplay ? '#' + p.tokenDisplay : '·'}</span>
+            <span class="board-time">${Qlinic.formatTimestamp(p.effectiveTime)}</span>
             <span class="board-name">
               <span class="board-name-row">${localizeName(p.name)}${p.isPriority ? `<span class="board-priority">${T.priority}</span>` : ''}</span>
               ${p.address ? `<span class="board-sub">${localizeName(p.address)}</span>` : ''}
@@ -547,6 +558,7 @@
         document.getElementById('liveStatusText').textContent = T.liveStatusLabel;
         document.getElementById('waitingNowText').textContent = T.waitingNow;
         document.getElementById('colPos').textContent = T.colPos;
+        document.getElementById('colTime').textContent = T.colTime;
         document.getElementById('colPatient').textContent = T.colPatient;
         document.getElementById('colDoctor').textContent = T.colDoctor;
         document.getElementById('colType').textContent = T.colType;

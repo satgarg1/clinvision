@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=299" />
+<link rel="stylesheet" href="styles.css?v=300" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -155,6 +155,12 @@
           <div id="nowServingBox"></div>
           <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;">Call next patient</button>
           <button class="btn-sm primary" id="finishCurrentBtn" style="margin-top:14px;margin-left:8px;">Done</button>
+          <!-- A toast in the corner is easy to miss at exactly the moment
+               it matters most - right after tapping the button, before
+               looking back up at the patient. This sits right on top of
+               the panel the doctor's thumb is already on, so there's no
+               ambiguity about whether the tap registered. -->
+          <div class="call-confirm-overlay" id="callConfirmOverlay"><span class="call-confirm-check">✓</span>Next patient called</div>
         </div>
 
         <div class="panel" id="waitingPanel">
@@ -223,6 +229,12 @@
       // redundant extra fetch of its own.
       let currentQueue = null;
       let currentDoctor = null;
+      // The live Waiting list itself (not the "Today's full schedule"
+      // modal) — reception paginates its own Waiting/Booked tables at
+      // 5/page for the same reason; a doctor's Waiting list can run just
+      // as long once appointments and walk-ins pile up.
+      const DOCTOR_WAITING_PAGE_SIZE = 5;
+      let doctorWaitingPage = 0;
       // Guardrail against forgetting to mark a visit Done - reported
       // after a real 2-hour miss (stepped away mid-consultation, never
       // came back to hit "Done," only noticed on a manual check later).
@@ -292,6 +304,18 @@
         setTimeout(() => t.classList.remove('show'), 2200);
       }
 
+      // A corner toast for "Next patient called" was too easy to miss —
+      // it's the one confirmation a doctor genuinely needs to see before
+      // looking away from this panel. Flashes right over the panel
+      // instead, briefly, so there's no doubt the tap registered.
+      let callConfirmTimer = null;
+      function flashCallConfirm() {
+        const el = document.getElementById('callConfirmOverlay');
+        el.classList.add('show');
+        clearTimeout(callConfirmTimer);
+        callConfirmTimer = setTimeout(() => el.classList.remove('show'), 1300);
+      }
+
       function statusLabel(status) {
         return {
           on_time: 'Available',
@@ -353,6 +377,47 @@
         if (!p || p.tokenNumber == null) return null;
         if (p.type === 'walkin') return 'W' + (ranks.get(p.id) || '?');
         return String(p.tokenNumber);
+      }
+
+      // Pulled out of render() so a page-flip through the Waiting list
+      // doesn't have to pay for a full network refetch of every doctor's
+      // queue just to slice a different 5 rows out of data already in
+      // hand — same "re-render from what's already fetched" split
+      // reception.html's own pagination uses.
+      function renderWaitingList(q) {
+        const walkinRanks = buildWalkinRanks(q);
+        const totalWaitingPages = Math.max(1, Math.ceil(q.waiting.length / DOCTOR_WAITING_PAGE_SIZE));
+        if (doctorWaitingPage >= totalWaitingPages) doctorWaitingPage = 0;
+        const waitingPageItems = q.waiting.slice(doctorWaitingPage * DOCTOR_WAITING_PAGE_SIZE, doctorWaitingPage * DOCTOR_WAITING_PAGE_SIZE + DOCTOR_WAITING_PAGE_SIZE);
+
+        document.getElementById('waitingList').innerHTML = q.waiting.length === 0
+          ? '<div class="empty-state">No one waiting.</div>'
+          : `
+          <table class="qtable">
+            <thead><tr><th>Token</th><th>Name</th><th>Type</th><th>Queue time</th></tr></thead>
+            <tbody>
+              ${waitingPageItems.map((p) => `
+                <tr>
+                  <td>${formatToken(p, walkinRanks) ? '#' + formatToken(p, walkinRanks) : '·'}</td>
+                  <td><div>${Qlinic.escapeHtml(p.name)}${p.isPriority ? ' <span class="badge badge-no-show">Priority</span>' : ''}</div><div class="sub-line">${p.address ? Qlinic.escapeHtml(p.address) : 'No address on file'}</div></td>
+                  <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
+                  <td>${queueTimeCell(p)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          ${totalWaitingPages > 1 ? `
+            <div class="pager">
+              <button type="button" class="btn-sm" id="doctorWaitingPrevBtn" ${doctorWaitingPage === 0 ? 'disabled' : ''}>‹ Prev</button>
+              <span class="pager-label">Page ${doctorWaitingPage + 1} of ${totalWaitingPages}</span>
+              <button type="button" class="btn-sm" id="doctorWaitingNextBtn" ${doctorWaitingPage >= totalWaitingPages - 1 ? 'disabled' : ''}>Next ›</button>
+            </div>
+          ` : ''}
+        `;
+        const doctorWaitingPrevBtn = document.getElementById('doctorWaitingPrevBtn');
+        const doctorWaitingNextBtn = document.getElementById('doctorWaitingNextBtn');
+        if (doctorWaitingPrevBtn) doctorWaitingPrevBtn.addEventListener('click', () => { doctorWaitingPage = Math.max(0, doctorWaitingPage - 1); renderWaitingList(q); });
+        if (doctorWaitingNextBtn) doctorWaitingNextBtn.addEventListener('click', () => { doctorWaitingPage = Math.min(totalWaitingPages - 1, doctorWaitingPage + 1); renderWaitingList(q); });
       }
 
       // "Next appointment" only ever looks at who's actually waiting —
@@ -952,7 +1017,6 @@
         currentDoctor = doc;
         currentQueue = q;
         checkLongConsultation();
-        const walkinRanks = buildWalkinRanks(q);
         applyDoctorAccent(doctorId);
         renderNextAppointment(q);
 
@@ -1095,23 +1159,7 @@
 
         document.getElementById('waitingHeading').innerHTML = `Waiting <span class="order-note">· ordered by scheduled time, not arrival order</span>`;
 
-        document.getElementById('waitingList').innerHTML = q.waiting.length === 0
-          ? '<div class="empty-state">No one waiting.</div>'
-          : `
-          <table class="qtable">
-            <thead><tr><th>Token</th><th>Name</th><th>Type</th><th>Queue time</th></tr></thead>
-            <tbody>
-              ${q.waiting.map((p) => `
-                <tr>
-                  <td>${formatToken(p, walkinRanks) ? '#' + formatToken(p, walkinRanks) : '·'}</td>
-                  <td><div>${Qlinic.escapeHtml(p.name)}${p.isPriority ? ' <span class="badge badge-no-show">Priority</span>' : ''}</div><div class="sub-line">${p.address ? Qlinic.escapeHtml(p.address) : 'No address on file'}</div></td>
-                  <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
-                  <td>${queueTimeCell(p)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
+        renderWaitingList(q);
 
         document.getElementById('endOfDayBody').innerHTML = doc.dayClosedAt
           ? `
@@ -1457,7 +1505,11 @@
         try {
           const result = await Qlinic.callNextPatient(currentDoctorId());
           render();
-          showToast(result.called ? 'Next patient called in' : 'No one is waiting in the queue');
+          // Only the actual success case gets the on-screen confirmation —
+          // "no one is waiting" isn't a confirmation of anything, it's an
+          // edge case explaining why nothing happened, so it stays a toast.
+          if (result.called) flashCallConfirm();
+          else showToast('No one is waiting in the queue');
         } catch (err) {
           showToast(err.message || 'Could not update the queue');
         }
@@ -1473,7 +1525,10 @@
         }
       });
 
-      document.getElementById('doctorSelect').addEventListener('change', render);
+      document.getElementById('doctorSelect').addEventListener('change', () => {
+        doctorWaitingPage = 0;
+        render();
+      });
 
       document.getElementById('viewFullScheduleBtn').addEventListener('click', () => {
         if (!currentQueue || !currentDoctor) return;

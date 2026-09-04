@@ -2807,6 +2807,32 @@ input[type="number"] { -moz-appearance: textfield; }
    sit alongside, so it lives in the one panel that's never collapsed. */
 .next-appt-waiting-line { font-size: 13px; color: var(--grey-700); margin-top: 2px; }
 
+/* Flashes over the whole Now Serving panel for a beat right after "Call
+   next patient" — a corner toast is too easy to miss at exactly the
+   moment it matters, before the doctor's looked back up. Deliberately
+   covers the panel rather than sitting beside it, so there's zero doubt
+   the tap registered. */
+#nowServingPanel { position: relative; }
+.call-confirm-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--success-bg);
+  color: var(--success);
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: var(--radius-lg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.call-confirm-overlay.show { opacity: 1; }
+.call-confirm-check { font-size: 24px; }
+
 /* Small round chevron button in a .panel-header, toggling a sibling
    content block's visibility -- #statusPanel is the first (only, so
    far) user of this. */
@@ -4409,7 +4435,7 @@ th.th-filterable { position: relative; }
 
 .board-cols {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-columns: 0.6fr 0.8fr 1.4fr 1.2fr 0.8fr;
   gap: 10px;
   padding: 8px 20px;
   font-size: 11px;
@@ -4436,7 +4462,7 @@ th.th-filterable { position: relative; }
    between names, harder to pick out one row from the next at a glance. */
 .board-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-columns: 0.6fr 0.8fr 1.4fr 1.2fr 0.8fr;
   gap: 10px;
   align-items: center;
   padding: 11px 16px;
@@ -4445,6 +4471,7 @@ th.th-filterable { position: relative; }
   font-variant-numeric: tabular-nums;
 }
 .board-pos { font-size: 17px; font-weight: 800; color: var(--grey-500); }
+.board-time { font-size: 15px; font-weight: 700; color: var(--grey-300); }
 .board-name { font-size: 17px; font-weight: 600; display: flex; flex-direction: column; }
 .board-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .board-priority {
@@ -4557,7 +4584,16 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
 @media (max-width: 900px) {
   .board-cols { display: none; }
   .board-row { grid-template-columns: 40px 1fr; row-gap: 4px; }
-  .board-doc, .board-type { grid-column: 2; font-size: 13px; }
+  /* Explicit rows for every stacked cell (not just column) — with 5
+     cells now flowing into one narrow column, leaving row placement to
+     implicit auto-flow risks the browser reordering them relative to
+     each other; pinning row 1-4 keeps time/name/doctor/type in that
+     fixed reading order under the token every time. */
+  .board-pos { grid-column: 1; grid-row: 1; }
+  .board-time { grid-column: 2; grid-row: 1; font-size: 13px; }
+  .board-name { grid-column: 2; grid-row: 2; }
+  .board-doc { grid-column: 2; grid-row: 3; font-size: 13px; }
+  .board-type { grid-column: 2; grid-row: 4; font-size: 13px; }
 }
 
 /* ---------------- Small shared components: slot hints, name/address cells ---------------- */
