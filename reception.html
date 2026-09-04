@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=304" />
+<link rel="stylesheet" href="styles.css?v=305" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -201,7 +201,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=93"></script>
+  <script src="clinic-data.js?v=94"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -1283,13 +1283,7 @@
                     `).join('')}
                   </tbody>
                 </table>
-                ${totalWaitingPages > 1 ? `
-                  <div class="pager">
-                    <button type="button" class="btn-sm" id="waitingPrevBtn" ${waitingPage === 0 ? 'disabled' : ''}>‹ Prev</button>
-                    <span class="pager-label">Page ${waitingPage + 1} of ${totalWaitingPages}</span>
-                    <button type="button" class="btn-sm" id="waitingNextBtn" ${waitingPage >= totalWaitingPages - 1 ? 'disabled' : ''}>Next ›</button>
-                  </div>
-                ` : ''}
+                <div id="waitingPagerWrap">${Qlinic.pagerHtml(waitingPage + 1, totalWaitingPages)}</div>
               `}
             ` : `
               <p class="panel-note">Live queue details (now serving, waiting) only apply to today: this is showing what's booked for ${dateLabel}.</p>
@@ -1319,13 +1313,7 @@
                       `).join('')}
                     </tbody>
                   </table>
-                  ${totalBookedPages > 1 ? `
-                    <div class="pager">
-                      <button type="button" class="btn-sm" id="bookedPrevBtn" ${bookedPage === 0 ? 'disabled' : ''}>‹ Prev</button>
-                      <span class="pager-label">Page ${bookedPage + 1} of ${totalBookedPages}</span>
-                      <button type="button" class="btn-sm" id="bookedNextBtn" ${bookedPage >= totalBookedPages - 1 ? 'disabled' : ''}>Next ›</button>
-                    </div>
-                  ` : ''}
+                  <div id="bookedPagerWrap">${Qlinic.pagerHtml(bookedPage + 1, totalBookedPages)}</div>
                 `}
               </div>
             </div>
@@ -1336,14 +1324,8 @@
           bookedExpanded = !bookedExpanded;
           renderQueuePanel();
         });
-        const prevBtn = document.getElementById('bookedPrevBtn');
-        const nextBtn = document.getElementById('bookedNextBtn');
-        if (prevBtn) prevBtn.addEventListener('click', () => { bookedPage = Math.max(0, bookedPage - 1); renderQueuePanel(); });
-        if (nextBtn) nextBtn.addEventListener('click', () => { bookedPage = Math.min(totalBookedPages - 1, bookedPage + 1); renderQueuePanel(); });
-        const waitingPrevBtn = document.getElementById('waitingPrevBtn');
-        const waitingNextBtn = document.getElementById('waitingNextBtn');
-        if (waitingPrevBtn) waitingPrevBtn.addEventListener('click', () => { waitingPage = Math.max(0, waitingPage - 1); renderQueuePanel(); });
-        if (waitingNextBtn) waitingNextBtn.addEventListener('click', () => { waitingPage = Math.min(totalWaitingPages - 1, waitingPage + 1); renderQueuePanel(); });
+        Qlinic.wirePager(document.getElementById('bookedPagerWrap'), bookedPage + 1, totalBookedPages, (p) => { bookedPage = p - 1; renderQueuePanel(); });
+        Qlinic.wirePager(document.getElementById('waitingPagerWrap'), waitingPage + 1, totalWaitingPages, (p) => { waitingPage = p - 1; renderQueuePanel(); });
       }
 
       // Debounced: renderSearch hits the database (searchBookedPatients),

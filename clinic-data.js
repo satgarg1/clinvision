@@ -66,6 +66,79 @@
     return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  // Shared First/Prev/[jump]/Next/Last pager, replacing the plain
+  // Prev/Page X of Y/Next markup every paginated table used to build by
+  // hand — one implementation instead of eight near-identical copies
+  // across reception, doctor.html, Team, Doctor holidays, Patient
+  // directory, Revenue, and No-shows. `page` and `totalPages` are both
+  // 1-based (the human-readable page number), so callers using a
+  // 0-based page index pass `page + 1` and convert back inside
+  // onChange — this keeps every existing 0-based `xPage` variable and
+  // its slice() math untouched, only the render/wiring for the pager
+  // control itself changes. Mockup reviewed and approved by the user
+  // (Option A: click the page number to type a new one) before this
+  // was rolled out everywhere.
+  function pagerHtml(page, totalPages) {
+    if (totalPages <= 1) return '';
+    return `
+      <div class="pager">
+        <button type="button" class="btn-sm pager-icon-btn" data-pager-action="first" ${page === 1 ? 'disabled' : ''} title="First page">«</button>
+        <button type="button" class="btn-sm" data-pager-action="prev" ${page === 1 ? 'disabled' : ''}>‹ Prev</button>
+        <span class="pager-label">Page <span class="page-jump-editable" data-pager-jump tabindex="0" title="Click to jump to a page"><span class="num">${page}</span></span> of ${totalPages}</span>
+        <button type="button" class="btn-sm" data-pager-action="next" ${page === totalPages ? 'disabled' : ''}>Next ›</button>
+        <button type="button" class="btn-sm pager-icon-btn" data-pager-action="last" ${page === totalPages ? 'disabled' : ''} title="Last page">»</button>
+      </div>
+    `;
+  }
+
+  // Wires up whichever pager was just rendered into containerEl (its own
+  // innerHTML was just replaced, so nothing stale to unbind). onChange
+  // receives the new 1-based page to switch to; the caller re-renders
+  // from there exactly like its existing Prev/Next click already did.
+  // Safe to call with a containerEl that has no .pager inside it (the
+  // page count was 1, so pagerHtml returned '') — every querySelector
+  // below just finds nothing and the optional-call guards no-op.
+  function wirePager(containerEl, page, totalPages, onChange) {
+    if (!containerEl) return;
+    const first = containerEl.querySelector('[data-pager-action="first"]');
+    const prev = containerEl.querySelector('[data-pager-action="prev"]');
+    const next = containerEl.querySelector('[data-pager-action="next"]');
+    const last = containerEl.querySelector('[data-pager-action="last"]');
+    const jump = containerEl.querySelector('[data-pager-jump]');
+    if (first) first.addEventListener('click', () => onChange(1));
+    if (prev) prev.addEventListener('click', () => onChange(Math.max(1, page - 1)));
+    if (next) next.addEventListener('click', () => onChange(Math.min(totalPages, page + 1)));
+    if (last) last.addEventListener('click', () => onChange(totalPages));
+    if (!jump) return;
+    function startEdit() {
+      jump.innerHTML = `<input type="number" class="page-jump-editable-input" min="1" max="${totalPages}" value="${page}" />`;
+      const input = jump.querySelector('input');
+      input.focus();
+      input.select();
+      // Enter commits, then the re-render this triggers removes `input`
+      // from the DOM, which also fires its own blur — guarded so that
+      // doesn't fire a second, redundant onChange with a still-old page.
+      let committed = false;
+      function commit() {
+        if (committed) return;
+        committed = true;
+        const v = Math.min(totalPages, Math.max(1, parseInt(input.value, 10) || page));
+        onChange(v);
+      }
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') commit();
+        if (e.key === 'Escape') { committed = true; onChange(page); }
+      });
+      input.addEventListener('blur', commit);
+    }
+    jump.addEventListener('click', startEdit);
+    // Keyboard-only access (tabindex above) — Enter/Space opens the same
+    // edit state a click would, matching how a real button responds.
+    jump.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startEdit(); }
+    });
+  }
+
   // Every confirmation in the app used to be window.confirm() — a native
   // browser dialog with no styling hook at all (unlike everything else
   // here, it's drawn by the browser itself, outside the page's DOM).
@@ -2614,6 +2687,8 @@
     isClinicClosedToday,
     isRealStatusReason,
     escapeHtml,
+    pagerHtml,
+    wirePager,
     confirmDialog,
     attachDatePicker,
     getQueueStatus,

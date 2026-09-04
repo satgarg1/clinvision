@@ -3846,18 +3846,49 @@ th.th-filterable { position: relative; }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 8px;
   padding-top: 14px;
+  flex-wrap: wrap;
 }
 .pager-label { font-size: 13px; color: var(--grey-500); }
 .pager-summary { font-size: 13px; color: var(--grey-500); }
+.pager-icon-btn { width: 30px; padding: 8px 0; text-align: center; }
+/* The page number itself is the jump-to-page control (mockup: Option A,
+   reviewed and approved before this went in) — dashed underline plus
+   the text cursor is what signals "clickable" here, since it's plain
+   text otherwise; the input it turns into on click stays the same
+   width/weight so nothing shifts around it. */
+.page-jump-editable {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  cursor: text;
+  border-bottom: 1px dashed var(--grey-500);
+  padding-bottom: 1px;
+}
+.page-jump-editable:hover, .page-jump-editable:focus-visible {
+  border-bottom-color: var(--accent);
+  outline: none;
+}
+.page-jump-editable .num { font-weight: 700; color: var(--black); }
+.page-jump-editable-input {
+  width: 34px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--black);
+  background: var(--grey-100);
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  padding: 0 4px;
+  text-align: center;
+  font-size: 13px;
+}
 
 /* Revenue's pager adds a "Showing X-Y of Z" summary the other .pager
    users (manage-doctors, reception) don't have, so it alone needs the
    summary pinned left and controls pinned right instead of the shared
    centered layout. */
 #revenuePager { justify-content: space-between; }
-#revenuePager .pager-controls { display: flex; align-items: center; gap: 14px; }
 
 .empty-state { color: var(--grey-500); font-size: 14px; padding: 20px 0; text-align: center; }
 
@@ -4784,8 +4815,6 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
    inset -- the wider 32px gutter is reserved for the gaps *between*
    columns, not the table's edges against the panel border. */
 #allHolidaysPanel th:last-child, #allHolidaysPanel td:last-child, #holidaysPanel th:last-child, #holidaysPanel td:last-child { padding-right: 10px; }
-
-#allHolidaysPager .pager-controls { display: flex; align-items: center; gap: 14px; }
 
 /* Doctor View's away banner replaces the old #statusActionSeg
    gradient-track pill (Clear status/On a break/Emergency, all three
