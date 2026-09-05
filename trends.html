@@ -157,8 +157,8 @@
           <p class="trend-drill-label"><span id="noShowDrillLabel"></span><span class="trend-drill-close" data-close="noshow">✕</span></p>
           <p class="trend-drill-note" id="noShowDrillNote">By day, and by doctor, for this bucket</p>
           <div class="trend-drill-charts two-up" id="noShowDrillCharts">
-            <div class="trend-drill-chart-box"><canvas id="noShowDayChart"></canvas></div>
-            <div class="trend-drill-chart-box"><canvas id="noShowDocChart"></canvas></div>
+            <div class="trend-drill-chart-box" id="noShowDayChartBox"><canvas id="noShowDayChart"></canvas></div>
+            <div class="trend-drill-chart-box" id="noShowDocChartBox"><canvas id="noShowDocChart"></canvas></div>
           </div>
         </div>
       </div>
@@ -821,12 +821,16 @@
         document.getElementById('noShowDrillCharts').classList.toggle('two-up', !isDayBucket && showByDoctor);
 
         if (trendCharts.noShowDay) { trendCharts.noShowDay.destroy(); trendCharts.noShowDay = null; }
-        document.getElementById('noShowDayChart').style.display = isDayBucket ? 'none' : '';
+        // Hiding the <canvas> alone left its wrapper box (a fixed 220px
+        // tall .trend-drill-chart-box) visible and empty -- the actual
+        // gap this was reported as. Hide the box itself, not just the
+        // chart inside it.
+        document.getElementById('noShowDayChartBox').style.display = isDayBucket ? 'none' : '';
         if (!isDayBucket) {
           trendCharts.noShowDay = makeMiniBarChart('noShowDayChart', dayLabels, dayRates, dayLabels.map(() => cssVar('--mkt-teal')), (v) => v + '%', 'No-show rate');
         }
         if (trendCharts.noShowDoc) { trendCharts.noShowDoc.destroy(); trendCharts.noShowDoc = null; }
-        document.getElementById('noShowDocChart').style.display = showByDoctor ? '' : 'none';
+        document.getElementById('noShowDocChartBox').style.display = showByDoctor ? '' : 'none';
         if (showByDoctor) {
           trendCharts.noShowDoc = makeMiniBarChart('noShowDocChart', doctorRows.map((r) => r.name), doctorRows.map((r) => r.rate),
             doctorRows.map((r) => colorForDoctorIndex(r.colorIdx)), (v) => v + '%', 'No-show rate');
