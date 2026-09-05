@@ -44,7 +44,6 @@
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
         <a href="trends.html" class="nav-link" id="trendsNavLink">Insights</a>
-        <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
         <a href="display.html" class="nav-link" id="displayNavLink">Display Screen</a>
         <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
       </nav>
@@ -227,11 +226,11 @@
       const amPharmacist = await Qlinic.isPharmacist();
       const [amAdmin, amDoctor] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor()]);
       if (amPharmacist) {
-        ['dashboardNavLink', 'receptionNavLink', 'doctorNavLink', 'billingNavLink', 'revenueNavLink', 'trendsNavLink', 'endOfDayNavLink', 'displayNavLink']
+        ['dashboardNavLink', 'receptionNavLink', 'doctorNavLink', 'billingNavLink', 'revenueNavLink', 'trendsNavLink', 'displayNavLink']
           .forEach((id) => { document.getElementById(id).style.display = 'none'; });
       } else {
         if (amDoctor) ['receptionNavLink', 'billingNavLink', 'displayNavLink'].forEach((id) => { document.getElementById(id).style.display = 'none'; });
-        if (!amAdmin) ['revenueNavLink', 'endOfDayNavLink'].forEach((id) => { document.getElementById(id).style.display = 'none'; });
+        if (!amAdmin) ['revenueNavLink'].forEach((id) => { document.getElementById(id).style.display = 'none'; });
         if (!amAdmin && !amDoctor) document.getElementById('trendsNavLink').style.display = 'none';
       }
       document.body.style.visibility = 'visible';

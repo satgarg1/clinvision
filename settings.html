@@ -34,7 +34,6 @@
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
         <a href="trends.html" class="nav-link" id="trendsNavLink">Insights</a>
-        <a href="end-of-day.html" class="nav-link" id="endOfDayNavLink">End of day</a>
         <a href="display.html" class="nav-link" id="displayNavLink">Display Screen</a>
         <a href="settings.html" class="nav-link active pinned-bottom">Settings</a>
       </nav>
@@ -105,6 +104,12 @@
         <div class="panel-header"><h2>Billing Audit</h2></div>
         <p class="panel-note">Confirms receipt numbers are gap-free and unique, and flags any seen patient with no invoice on file.</p>
         <a href="billing-audit.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Open billing audit</a>
+      </div>
+
+      <div class="panel" id="endOfDayPanel" data-group="records">
+        <div class="panel-header"><h2>End of Day</h2></div>
+        <p class="panel-note">Close out today's queue and finalize no-shows by hand, or check that the automatic midnight close-out ran.</p>
+        <a href="end-of-day.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Open end of day</a>
       </div>
 
       <div class="panel" id="teamPanel" data-group="team-access">
@@ -190,7 +195,6 @@
       }
       if (!amAdmin) {
         document.getElementById('revenueNavLink').style.display = 'none';
-        document.getElementById('endOfDayNavLink').style.display = 'none';
       }
       if (!amAdmin && !amDoctor) {
         document.getElementById('trendsNavLink').style.display = 'none';
@@ -202,7 +206,7 @@
       // the three panels with no id (Account & security, Appearance,
       // Session) are never role-hidden, same as before.
       const roleHiddenIds = new Set();
-      if (!amAdmin) { roleHiddenIds.add('clinicSettingsPanel'); roleHiddenIds.add('billingAuditPanel'); roleHiddenIds.add('doctorsPanel'); roleHiddenIds.add('teamPanel'); }
+      if (!amAdmin) { roleHiddenIds.add('clinicSettingsPanel'); roleHiddenIds.add('billingAuditPanel'); roleHiddenIds.add('doctorsPanel'); roleHiddenIds.add('teamPanel'); roleHiddenIds.add('endOfDayPanel'); }
       // Doctors get read-only access to Closed Dates now (they can't add
       // or remove a closure, but benefit from seeing the list, same as
       // reception does) - never role-hidden, unlike the operational
