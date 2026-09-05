@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /$
+Allow: /about-us.html
+Allow: /contact.html
+Allow: /solo-practice.html
+Allow: /styles.css
+Disallow: /
+
+Sitemap: https://clinvision.in/sitemap.xml
