@@ -217,7 +217,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=100"></script>
+  <script src="clinic-data.js?v=101"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -358,7 +358,7 @@
             <td>${Qlinic.formatTimestamp(l.createdAt)}</td>
             <td><span class="badge" style="background:var(--grey-100); color:var(--grey-700);">${typeLabel}</span></td>
             <td style="color:${positive ? 'var(--success)' : 'var(--danger)'}; font-weight:600;">${positive ? '+' : ''}${l.quantityDelta} ${Qlinic.escapeHtml(m.dispenseUnit || '')}</td>
-            <td>${l.referenceInvoiceLabel || l.note || '—'}</td>
+            <td>${l.referenceInvoiceLabel ? Qlinic.escapeHtml(l.referenceInvoiceLabel) : Qlinic.escapeHtml(l.note || '—')}</td>
             <td>${Qlinic.escapeHtml(l.batchNumber || '—')}</td>
             <td style="text-align:right;">${l.closingStockAfter} ${Qlinic.escapeHtml(m.dispenseUnit || '')}</td>
           </tr>`;

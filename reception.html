@@ -200,10 +200,14 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=100"></script>
+  <script src="clinic-data.js?v=101"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
+
+      // Scoped to the pharmacy counter and catalog only -- this page shows
+      // patient/staff data a pharmacist has no business seeing.
+      if (await Qlinic.isPharmacist()) { window.location.href = 'pharmacy.html'; return; }
 
       // The sidebar logo links to the marketing site, which has no way
       // back into the app without logging in again, worth a heads-up

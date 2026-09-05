@@ -166,7 +166,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=100"></script>
+  <script src="clinic-data.js?v=101"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -385,8 +385,10 @@
         if (cart.length === 0) return;
         const btns = [document.getElementById('completeSaleBtn'), document.getElementById('completeSalePrintBtn')];
         btns.forEach((b) => { b.disabled = true; });
+
+        let invoice;
         try {
-          const invoice = await Qlinic.createPharmacyInvoice({
+          invoice = await Qlinic.createPharmacyInvoice({
             patientId: selectedPatient ? selectedPatient.id : null,
             patientName: selectedPatient ? selectedPatient.name : '',
             patientPhone: selectedPatient ? selectedPatient.phone : '',
@@ -394,20 +396,36 @@
             amountReceived: document.getElementById('amountReceived').value,
             items: cart.map((c) => ({ medicineId: c.medicineId, quantity: c.qty })),
           });
-          const items = await Qlinic.getInvoiceItems(invoice.id);
-          showReceipt(invoice, items);
-          if (autoPrint) window.print();
-          cart = [];
-          renderCart();
-          selectedPatient = null;
-          document.getElementById('patientInput').value = '';
-          catalog = await Qlinic.getMedicines({ activeOnly: true });
-          const freshClinic = await Qlinic.getClinic();
-          document.getElementById('nextInvoiceHint').textContent = 'PH-' + String(freshClinic.next_pharmacy_invoice_number).padStart(4, '0');
         } catch (err) {
           errEl.textContent = err.message || 'Could not complete this sale.';
           errEl.style.display = 'block';
           btns.forEach((b) => { b.disabled = cart.length === 0; });
+          return;
+        }
+
+        // The sale is already committed server-side the moment
+        // createPharmacyInvoice resolves — stock deducted, invoice
+        // number issued. Reset the cart right here, before any of the
+        // read-back calls below, so a transient failure fetching the
+        // receipt can never leave the cart populated with the buttons
+        // re-enabled, which previously let a retry click re-run the
+        // whole sale a second time against the same cart.
+        cart = [];
+        renderCart();
+        selectedPatient = null;
+        document.getElementById('patientInput').value = '';
+
+        try {
+          const items = await Qlinic.getInvoiceItems(invoice.id);
+          showReceipt(invoice, items);
+          if (autoPrint) window.print();
+          catalog = await Qlinic.getMedicines({ activeOnly: true });
+          const freshClinic = await Qlinic.getClinic();
+          document.getElementById('nextInvoiceHint').textContent = 'PH-' + String(freshClinic.next_pharmacy_invoice_number).padStart(4, '0');
+        } catch (err) {
+          // The sale itself already succeeded — only the receipt/refresh
+          // failed, so this is informational, not something to retry.
+          showToast('Sale completed (PH-' + String(invoice.invoiceNumber).padStart(4, '0') + '), but the receipt could not be loaded — check Stock details for the record.');
         }
       }
       document.getElementById('completeSaleBtn').addEventListener('click', () => completeSale(false));
@@ -417,7 +435,7 @@
         document.getElementById('rcClinicName').textContent = clinic.name;
         document.getElementById('rcClinicAddr').textContent = [clinic.address_line, clinic.city, clinic.state].filter(Boolean).join(', ');
         document.getElementById('rcInvoiceNumber').textContent = 'PH-' + String(invoice.invoiceNumber).padStart(4, '0');
-        document.getElementById('rcInvoiceDate').textContent = Qlinic.formatTimestamp(invoice.createdAt);
+        document.getElementById('rcInvoiceDate').textContent = Qlinic.formatDateTime(invoice.createdAt);
         document.getElementById('rcPatient').textContent = 'Patient: ' + (invoice.patientName || 'Walk-in');
         document.getElementById('rcPaymentMode').textContent = invoice.paymentMode.toUpperCase();
         document.getElementById('receiptBody').innerHTML = items.map((it) => `<tr>

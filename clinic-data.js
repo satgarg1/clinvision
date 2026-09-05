@@ -1462,7 +1462,7 @@
     let invoice = null;
     try {
       const { data, error } = await sb.from('invoices').select('patient_name, patient_address, patient_age, patient_gender')
-        .eq('clinic_id', clinicId).eq('patient_phone', cleanPhone)
+        .eq('clinic_id', clinicId).eq('patient_phone', cleanPhone).eq('invoice_type', 'consultation')
         .order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (error) throw error;
       invoice = data;
@@ -1527,7 +1527,7 @@
         // billing-consultation.html's submit handler.
         const { data: todayInvoice, error: invoiceErr } = await sb.from('invoices')
           .select('id, fee_type, payment_mode, amount_received')
-          .eq('clinic_id', clinicId).eq('patient_id', todayPatient.id)
+          .eq('clinic_id', clinicId).eq('patient_id', todayPatient.id).eq('invoice_type', 'consultation')
           .order('created_at', { ascending: false }).limit(1).maybeSingle();
         if (invoiceErr) throw invoiceErr;
         if (todayInvoice) {
@@ -1562,7 +1562,7 @@
             const candidateIds = candidates.map((c) => c.id);
             const { data: existingInvoices, error: invErr } = await sb.from('invoices')
               .select('patient_id')
-              .in('patient_id', candidateIds);
+              .in('patient_id', candidateIds).eq('invoice_type', 'consultation');
             if (invErr) throw invErr;
             const billedIds = new Set((existingInvoices || []).map((i) => i.patient_id));
             unbilledVisit = candidates.find((c) => !billedIds.has(c.id)) || null;
@@ -1584,7 +1584,7 @@
             mostRecentVisitDate = recentPatient.token_date;
             const { data: recentInvoice, error: recentInvErr } = await sb.from('invoices')
               .select('fee_type')
-              .eq('clinic_id', clinicId).eq('patient_id', recentPatient.id)
+              .eq('clinic_id', clinicId).eq('patient_id', recentPatient.id).eq('invoice_type', 'consultation')
               .order('created_at', { ascending: false }).limit(1).maybeSingle();
             if (recentInvErr) throw recentInvErr;
             mostRecentFeeType = recentInvoice ? recentInvoice.fee_type : null;

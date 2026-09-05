@@ -168,7 +168,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=100"></script>
+  <script src="clinic-data.js?v=101"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -187,7 +187,7 @@
       // seeing a different subset of panels. The actual access boundary
       // still lives on each destination page (patient-directory.html,
       // team.html, etc.) — a hidden link here is convenience, not security.
-      const [amAdmin, amDoctor] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor()]);
+      const [amAdmin, amDoctor, amPharmacist] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor(), Qlinic.isPharmacist()]);
       if (amDoctor) {
         document.getElementById('receptionNavLink').style.display = 'none';
         document.getElementById('billingNavLink').style.display = 'none';
@@ -212,6 +212,11 @@
       // reception does) - never role-hidden, unlike the operational
       // panels above.
       if (amDoctor) { roleHiddenIds.add('patientDirectoryPanel'); roleHiddenIds.add('noShowsPanel'); roleHiddenIds.add('displayScreenPanel'); roleHiddenIds.add('medicinesPanel'); }
+      // A pharmacist's own destination pages (patient-directory.html,
+      // no-shows.html) now redirect them away entirely — hide the links
+      // here too so this hub doesn't offer a dead end. medicinesPanel
+      // stays visible; that one IS theirs.
+      if (amPharmacist) { roleHiddenIds.add('patientDirectoryPanel'); roleHiddenIds.add('noShowsPanel'); roleHiddenIds.add('displayScreenPanel'); }
       // Was hidden for reception -- Team Holidays now covers staff too
       // (reception manages their own the same way a doctor does), so
       // every role has a real reason to be here; nothing left to hide.
