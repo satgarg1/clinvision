@@ -1692,12 +1692,23 @@
   // timestamp of when the row was actually inserted. A straight equality/
   // range filter here, no local-time-boundary conversion needed (that
   // was only ever a workaround for created_at being a timestamptz).
+  // Every caller of these four functions (reception's per-patient billing
+  // lookup, Revenue, Insights, outstanding-balance chasing) is about a
+  // patient's CONSULTATION visit — none of them are meant to see a
+  // pharmacy sale mixed in. Without this filter a patient who only
+  // bought medicine (no consultation bill yet) would wrongly show as
+  // "already billed" in reception's queue, and Revenue/Insights totals
+  // would silently include pharmacy revenue nobody asked to combine.
+  // Pharmacy's own reporting is scoped separately (pharmacy.html,
+  // manage-medicines.html's stock ledger) — deliberately not merged
+  // here, reversing the "roll up together" plan in BACKLOG.md.
   async function getInvoicesForDate(dateStr) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
     const { data, error } = await sb.from('invoices').select('*')
       .eq('clinic_id', clinicId)
       .eq('invoice_date', dateStr)
+      .eq('invoice_type', 'consultation')
       .order('created_at', { ascending: true });
     if (error) throw error;
     return data.map(normalizeInvoice);
@@ -1714,6 +1725,7 @@
       .eq('clinic_id', clinicId)
       .gte('invoice_date', startDateStr)
       .lte('invoice_date', endDateStr)
+      .eq('invoice_type', 'consultation')
       .order('created_at', { ascending: true });
     if (error) throw error;
     return data.map(normalizeInvoice);
@@ -1736,6 +1748,7 @@
     // server-capped single request.
     const data = await fetchAllRows((from, to) => sb.from('invoices').select('*')
       .eq('clinic_id', clinicId)
+      .eq('invoice_type', 'consultation')
       .order('invoice_date', { ascending: true })
       .order('id', { ascending: true })
       .range(from, to));
