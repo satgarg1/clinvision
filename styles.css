@@ -1281,8 +1281,8 @@ a { color: inherit; }
    untouched. */
 .final-cta.centered { text-align: center; }
 
-/* ---------------- Segment pages (Solo practice, and whichever of
-   Multi-doctor clinics/Polyclinics/Diagnostic centers get built next)
+/* ---------------- Segment pages (Solo practice, Multi-doctor clinics,
+   and whichever of Diagnostic centers gets built next)
    ----------------------------------------------------------------
    Each page: a hero on .hero-stage.centered (tinted to the segment's
    own color via an inline override on .hero-glow, not a new class per
@@ -1452,8 +1452,8 @@ a { color: inherit; }
    rather than reusing .pg-section/.hero-stage. Gold is Resources' own
    identity color: pulled from the existing wordmark bar (#c9973e,
    already sitewide) rather than inventing a new one, and distinct from
-   every segment tone and the purple/amber reserved for Polyclinics/
-   Diagnostic centers. Reuses the site's real .mkt-nav/.segment-menu
+   every segment tone and the amber reserved for Diagnostic centers.
+   Reuses the site's real .mkt-nav/.segment-menu
    nav pattern (a second .nav-segment-wrap for "Resources", identical
    markup to "Solutions"), .btn/.btn-accent for CTAs, and .mkt-footer --
    only the article body below the nav is new. */
