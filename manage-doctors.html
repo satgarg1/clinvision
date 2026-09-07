@@ -185,8 +185,10 @@
 
       function filteredDoctors() {
         const term = searchTerm.trim().toLowerCase();
-        if (!term) return allDoctors;
-        return allDoctors.filter((d) => d.name.toLowerCase().includes(term));
+        const base = !term ? allDoctors : allDoctors.filter((d) => d.name.toLowerCase().includes(term));
+        // Same active-first sort as Team's roster -- deactivated doctors
+        // sink to the bottom instead of interleaving with active ones.
+        return [...base].sort((a, b) => (a.isActive ? 0 : 1) - (b.isActive ? 0 : 1));
       }
 
       function renderPager(total) {
@@ -360,7 +362,7 @@
       async function doSetDoctorActive(id, isActive) {
         if (!isActive && !(await Qlinic.confirmDialog({
           title: 'Deactivate this doctor?',
-          message: 'They’ll disappear from Reception, Doctor View, and the display board, but their patient history is kept. You can reactivate them anytime.',
+          message: 'Are you sure you want to deactivate them?\nTheir login stops working, and they\'re removed from Reception, Doctor View, and the display board. Past patient records stay untouched.',
           confirmLabel: 'Deactivate doctor',
           danger: true,
         }))) {

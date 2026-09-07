@@ -157,10 +157,10 @@
       backdrop.innerHTML = `
         <div class="modal-card" role="alertdialog" aria-modal="true">
           ${title ? `<h2 class="modal-title">${escapeHtml(title)}</h2>` : ''}
-          <p class="modal-message">${escapeHtml(message)}</p>
+          ${message.split('\n').map((line) => `<p class="modal-message">${escapeHtml(line)}</p>`).join('')}
           <div class="modal-actions">
-            <button type="button" class="btn-sm" id="modalCancelBtn">${escapeHtml(cancelLabel)}</button>
             <button type="button" class="btn-sm ${danger ? 'danger-solid' : 'primary'}" id="modalConfirmBtn">${escapeHtml(confirmLabel)}</button>
+            <button type="button" class="btn-sm" id="modalCancelBtn">${escapeHtml(cancelLabel)}</button>
           </div>
         </div>
       `;
@@ -1057,9 +1057,27 @@
   // Deactivating (not deleting) a doctor: see supabase/002_doctor_active_flag.sql
   // for why: patients.doctor_id cascades on delete, so a hard delete would
   // wipe that doctor's entire patient history.
+  // Cascades to the doctor's own staff login too (078_cascade_deactivation.sql)
+  // -- deactivating a doctor's roster entry used to leave their login working
+  // normally end to end, since no RLS check anywhere keys off doctors.is_active,
+  // only profiles.is_active does. This RPC flips both atomically.
   async function setDoctorActive(doctorId, isActive) {
-    const { error } = await sb.from('doctors').update({ is_active: isActive }).eq('id', doctorId);
+    const { error } = await sb.rpc('set_doctor_active_cascade', {
+      target_doctor_id: doctorId,
+      new_active: isActive,
+    });
     if (error) throw error;
+  }
+
+  // Revenue and Insights deliberately keep showing a deactivated doctor's
+  // real name (includeInactive: true on every getDoctors() call they make)
+  // rather than anonymizing historical numbers -- that revenue was earned
+  // under their name and erasing it would make trend data meaningless.
+  // This just tags it clearly as no longer current staff, wherever a
+  // doctor's full name (not a truncated first-name chart label) renders.
+  function doctorLabel(doctor) {
+    if (!doctor) return '';
+    return doctor.isActive === false ? `${doctor.name} (Inactive)` : doctor.name;
   }
 
   // ---------------- patient queries ----------------
@@ -2496,6 +2514,17 @@
       window.location.href = 'account-suspended.html';
       return false;
     }
+    // A deactivated person's own profile still has a perfectly valid
+    // Supabase Auth session (deactivation never touches auth.users), and
+    // RLS alone would just make every query on the page they land on come
+    // back empty -- confusing, not a clear "your access was removed"
+    // message. Catch it here, the same choke point as the subscription
+    // check above, instead of leaving it to look like a broken app.
+    const profile = await getMyProfile();
+    if (!profile || profile.isActive === false) {
+      window.location.href = 'account-deactivated.html';
+      return false;
+    }
     return true;
   }
 
@@ -2645,8 +2674,13 @@
     if (linkError) throw linkError;
   }
 
+  // Cascades to a linked doctor roster entry too, same reasoning as
+  // setDoctorActive() above -- the two flags describe the same person.
   async function setStaffActive(profileId, isActive) {
-    const { error } = await sb.from('profiles').update({ is_active: isActive }).eq('id', profileId);
+    const { error } = await sb.rpc('set_staff_active_cascade', {
+      target_profile_id: profileId,
+      new_active: isActive,
+    });
     if (error) throw error;
   }
 
@@ -3035,6 +3069,7 @@
     addDoctor,
     updateDoctor,
     setDoctorActive,
+    doctorLabel,
 
     getQueueForDoctor,
     getAllQueues,

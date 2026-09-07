@@ -304,7 +304,7 @@
             inv.patientPhone || '',
             inv.patientAge || '',
             inv.patientAddress || '',
-            doctor ? doctor.name : '',
+            Qlinic.doctorLabel(doctor),
             FEE_TYPE_LABELS[inv.feeType] || inv.feeType,
             PAYMENT_MODE_LABELS[inv.paymentMode] || inv.paymentMode,
             inv.amount,
@@ -422,7 +422,7 @@
             <div class="revenue-doc-row">
               <span class="revenue-doc-period">${label}</span>
               <span class="revenue-doc-dot dot-${accentForDoctor(best.doctorId)}"></span>
-              <div class="revenue-doc-info"><div class="revenue-doc-name">${Qlinic.escapeHtml(doctor.name)}</div></div>
+              <div class="revenue-doc-info"><div class="revenue-doc-name">${Qlinic.escapeHtml(Qlinic.doctorLabel(doctor))}</div></div>
               <span class="revenue-doc-count">${best.count} patient${best.count === 1 ? '' : 's'}</span>
             </div>
           `;
@@ -777,7 +777,7 @@
                   </td>
                   <td>${Qlinic.escapeHtml(inv.patientPhone || '—')}</td>
                   <td>${Qlinic.formatDateLabel(inv.invoiceDate)}</td>
-                  <td>${doctor ? Qlinic.escapeHtml(doctor.name) : '—'}</td>
+                  <td>${doctor ? Qlinic.escapeHtml(Qlinic.doctorLabel(doctor)) : '—'}</td>
                   <td>${FEE_TYPE_LABELS[inv.feeType] || inv.feeType}</td>
                   <td>${PAYMENT_MODE_LABELS[inv.paymentMode] || inv.paymentMode}</td>
                   <td>${billingCell(inv, doctor)}</td>

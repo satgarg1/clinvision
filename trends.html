@@ -711,7 +711,7 @@
         document.getElementById('revenueDrillLink').href = `revenue.html?start=${range.start}&end=${range.end}`;
         const byDoctor = revenueBucketsCache[key].byDoctor;
         const rows = doctorListCache
-          .map((d, i) => ({ name: d.name, value: Math.round(byDoctor[d.id] || 0), color: colorForDoctorIndex(i) }))
+          .map((d, i) => ({ name: Qlinic.doctorLabel(d), value: Math.round(byDoctor[d.id] || 0), color: colorForDoctorIndex(i) }))
           .filter((r) => r.value > 0);
         if (trendCharts.revenueDrill) trendCharts.revenueDrill.destroy();
         if (rows.length > 0) {
@@ -848,7 +848,7 @@
         const visited = patients.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status));
         const counts = {};
         visited.forEach((p) => { counts[p.doctorId] = (counts[p.doctorId] || 0) + 1; });
-        const rows = doctors.map((d, i) => ({ name: d.name, value: counts[d.id] || 0, color: colorForDoctorIndex(i) }));
+        const rows = doctors.map((d, i) => ({ name: Qlinic.doctorLabel(d), value: counts[d.id] || 0, color: colorForDoctorIndex(i) }));
         if (trendCharts.visits) trendCharts.visits.destroy();
         const totalVisits = visited.length;
         const visitsFormatter = (v) => totalVisits > 0 ? `${v} (${Math.round((v / totalVisits) * 100)}%)` : `${v}`;
@@ -860,7 +860,7 @@
         if (trendSelected.visits === idx) { trendSelected.visits = null; closeTrendDrill('visitsDrill'); recolorTrendMains(); return; }
         trendSelected.visits = idx; recolorTrendMains();
         const doctor = doctorListCache[idx];
-        document.getElementById('visitsDrillLabel').textContent = `${doctor.name}'s visits this period`;
+        document.getElementById('visitsDrillLabel').textContent = `${Qlinic.doctorLabel(doctor)}'s visits this period`;
         const perBucket = revenueBucketKeysCache.map((k) => visitsBucketsByDoctorCache[k][doctor.id] || 0);
         if (trendCharts.visitsDrill) trendCharts.visitsDrill.destroy();
         trendCharts.visitsDrill = makeAreaChart('visitsDrillChart', revenueBucketKeysCache.map((k) => bucketLabelFor(k, revenueGranularityCache)), perBucket, colorForDoctorIndex(idx), null, null, 'Visits');
@@ -888,7 +888,7 @@
         if (trendSelected.revByDoc === idx) { trendSelected.revByDoc = null; closeTrendDrill('revByDocDrill'); recolorTrendMains(); return; }
         trendSelected.revByDoc = idx; recolorTrendMains();
         const doctor = doctorListCache[idx];
-        document.getElementById('revByDocDrillLabel').textContent = `${doctor.name}'s revenue this period`;
+        document.getElementById('revByDocDrillLabel').textContent = `${Qlinic.doctorLabel(doctor)}'s revenue this period`;
         const perBucket = revenueBucketKeysCache.map((k) => Math.round((revenueBucketsCache[k].byDoctor[doctor.id]) || 0));
         if (trendCharts.revByDocDrill) trendCharts.revByDocDrill.destroy();
         trendCharts.revByDocDrill = makeAreaChart('revByDocDrillChart', revenueBucketKeysCache.map((k) => bucketLabelFor(k, revenueGranularityCache)), perBucket, colorForDoctorIndex(idx),
@@ -1058,7 +1058,7 @@
         apptDistPatientsCache = patients;
         const sel = document.getElementById('apptDistDoctorSelect');
         sel.innerHTML = '<option value="all">All doctors</option>'
-          + doctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}</option>`).join('');
+          + doctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(Qlinic.doctorLabel(d))}</option>`).join('');
         sel.value = doctors.some((d) => d.id === apptDistDoctorFilter) ? apptDistDoctorFilter : 'all';
         apptDistDoctorFilter = sel.value;
 

@@ -183,10 +183,14 @@
 
       function filteredTeam() {
         const term = searchTerm.trim().toLowerCase();
-        if (!term) return allTeam;
-        return allTeam.filter((p) =>
+        const base = !term ? allTeam : allTeam.filter((p) =>
           (p.fullName || '').toLowerCase().includes(term) || p.email.toLowerCase().includes(term)
         );
+        // Active people first, deactivated ones sink to the bottom --
+        // still findable (an admin needs to see them to reactivate or
+        // check history), just out of the way of the roster people
+        // actually work with day to day.
+        return [...base].sort((a, b) => (a.isActive ? 0 : 1) - (b.isActive ? 0 : 1));
       }
 
       function renderPager(total) {
@@ -352,7 +356,7 @@
       async function doSetStaffActive(id, isActive) {
         if (!isActive && !(await Qlinic.confirmDialog({
           title: 'Deactivate this person?',
-          message: 'They will lose access immediately. You can reactivate them anytime.',
+          message: 'Are you sure you want to deactivate them?\nThey lose access to ClinVision immediately. Everything they\'ve done stays on record.',
           confirmLabel: 'Deactivate',
           danger: true,
         }))) {
