@@ -1766,6 +1766,23 @@ a { color: inherit; }
 .login-card .login-hint { font-size: 14px; margin-top: 26px; }
 .login-card .login-error { font-size: 14px; }
 
+/* Live password strength meter — attached under a password field via
+   Qlinic.attachPasswordMeter(). Weak/fair/good/strong reuse the app's
+   existing --danger/--warning/--accent/--success tokens rather than
+   inventing a separate palette just for this. */
+.pw-meter-wrap { margin-top: 8px; }
+.pw-meter { height: 4px; border-radius: 2px; background: var(--grey-200, #e5e5ea); overflow: hidden; }
+.pw-meter-bar { height: 100%; width: 0; border-radius: 2px; background: var(--danger); transition: width 0.15s ease, background-color 0.15s ease; }
+.pw-meter-bar.pw-meter-weak { background: var(--danger); }
+.pw-meter-bar.pw-meter-fair { background: var(--warning); }
+.pw-meter-bar.pw-meter-good { background: var(--accent); }
+.pw-meter-bar.pw-meter-strong { background: var(--success); }
+.pw-meter-label { font-size: 12px; margin-top: 4px; color: var(--grey-500); }
+.pw-meter-label.pw-meter-weak { color: var(--danger); }
+.pw-meter-label.pw-meter-fair { color: var(--warning); }
+.pw-meter-label.pw-meter-good { color: var(--accent); }
+.pw-meter-label.pw-meter-strong { color: var(--success); }
+
 /* queue.html only — wider than the auth-card default so the merged
    appointment sentence has room to breathe instead of wrapping tightly. */
 .login-card-wide { max-width: 560px; }

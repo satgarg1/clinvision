@@ -65,7 +65,7 @@
             </div>
             <div class="field">
               <label>Password</label>
-              <input type="text" id="newStaffPassword" minlength="6" required placeholder="At least 6 characters" />
+              <input type="text" id="newStaffPassword" minlength="8" required placeholder="At least 8 characters" />
             </div>
             <div class="field">
               <label>Phone <span class="sub-line">(for phone login)</span></label>
@@ -120,6 +120,8 @@
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
+
+      Qlinic.attachPasswordMeter(document.getElementById('newStaffPassword'));
 
       // The sidebar logo links to the marketing site, which has no way
       // back into the app without logging in again, worth a heads-up

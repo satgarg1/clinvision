@@ -139,6 +139,63 @@
     });
   }
 
+  // Length matters more than composition rules for real-world password
+  // strength (NIST 800-63B dropped forced uppercase/number/symbol rules
+  // for exactly this reason: they push people toward "Password1!"
+  // instead of a longer, harder-to-guess phrase) — so length drives most
+  // of the score here, character variety adds a little on top, and a
+  // handful of common weak passwords/patterns get capped low regardless
+  // of length. This only ever encourages (a live meter), it never blocks
+  // submission — a hard length minimum stays on the input itself.
+  const COMMON_WEAK_PASSWORDS = ['password', 'password1', '12345678', '123456789', 'qwertyui', 'letmein1', 'admin123', 'welcome1'];
+  function passwordStrength(pw) {
+    if (!pw) return { level: 'empty', label: '', percent: 0 };
+    if (pw.length < 8) return { level: 'weak', label: 'Too short', percent: 15 };
+
+    let score = 0;
+    if (pw.length >= 8) score += 1;
+    if (pw.length >= 12) score += 1;
+    if (pw.length >= 16) score += 1;
+    if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score += 1;
+    if (/\d/.test(pw)) score += 1;
+    if (/[^A-Za-z0-9]/.test(pw)) score += 1;
+
+    const lower = pw.toLowerCase();
+    if (COMMON_WEAK_PASSWORDS.some((weak) => lower.includes(weak)) || /^(.)\1+$/.test(pw)) {
+      score = Math.min(score, 1);
+    }
+
+    if (score <= 1) return { level: 'weak', label: 'Weak', percent: 25 };
+    if (score <= 3) return { level: 'fair', label: 'Fair', percent: 50 };
+    if (score <= 4) return { level: 'good', label: 'Good', percent: 75 };
+    return { level: 'strong', label: 'Strong', percent: 100 };
+  }
+
+  // Wires a live strength meter under a password <input> — inserts the
+  // meter markup itself right after the field, so every call site is one
+  // line instead of copy-pasting the same three DOM nodes three times
+  // (signup, add-staff, reset-password all need this).
+  function attachPasswordMeter(inputEl) {
+    if (!inputEl || inputEl.dataset.meterAttached) return;
+    inputEl.dataset.meterAttached = '1';
+    const wrap = document.createElement('div');
+    wrap.className = 'pw-meter-wrap';
+    wrap.innerHTML = `
+      <div class="pw-meter"><div class="pw-meter-bar" id="${inputEl.id}Bar"></div></div>
+      <div class="pw-meter-label" id="${inputEl.id}Label"></div>
+    `;
+    inputEl.insertAdjacentElement('afterend', wrap);
+    const bar = wrap.querySelector('.pw-meter-bar');
+    const label = wrap.querySelector('.pw-meter-label');
+    inputEl.addEventListener('input', () => {
+      const { level, label: text, percent } = passwordStrength(inputEl.value);
+      bar.style.width = percent + '%';
+      bar.className = 'pw-meter-bar' + (level !== 'empty' ? ` pw-meter-${level}` : '');
+      label.textContent = text;
+      label.className = 'pw-meter-label' + (level !== 'empty' ? ` pw-meter-${level}` : '');
+    });
+  }
+
   // Every confirmation in the app used to be window.confirm() — a native
   // browser dialog with no styling hook at all (unlike everything else
   // here, it's drawn by the browser itself, outside the page's DOM).
@@ -3070,6 +3127,8 @@
     updateDoctor,
     setDoctorActive,
     doctorLabel,
+    passwordStrength,
+    attachPasswordMeter,
 
     getQueueForDoctor,
     getAllQueues,

@@ -131,11 +131,11 @@
           <form id="passwordForm" class="inline-form">
             <div class="field">
               <label>New password</label>
-              <input type="password" id="newPasswordInput" minlength="6" required />
+              <input type="password" id="newPasswordInput" minlength="8" required />
             </div>
             <div class="field">
               <label>Confirm new password</label>
-              <input type="password" id="confirmPasswordInput" minlength="6" required />
+              <input type="password" id="confirmPasswordInput" minlength="8" required />
             </div>
             <div class="field" style="flex:0;min-width:180px;">
               <label>&nbsp;</label>
@@ -156,6 +156,8 @@
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
+
+      Qlinic.attachPasswordMeter(document.getElementById('newPasswordInput'));
 
       // Scoped to the pharmacy counter and catalog only -- this page shows
       // patient/staff data a pharmacist has no business seeing.
