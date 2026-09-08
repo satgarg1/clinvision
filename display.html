@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=311" />
+<link rel="stylesheet" href="styles.css?v=312" />
 </head>
 <body class="display-body">
   <!-- Applied synchronously, before anything else renders, so a device
@@ -24,6 +24,15 @@
        glancing at the board reads it as a faint mark, not a control. -->
   <button class="display-theme-toggle" id="displayThemeToggle" aria-label="Change screen appearance">
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="4,16 12,7 20,16 12,13"/></svg>
+  </button>
+  <!-- Same small/faint treatment as the theme toggle right next to it --
+       a clinic that doesn't want the call chime needs a way to turn it
+       off without touching Settings, and a device that hasn't had its
+       one required tap yet (browsers block unprompted audio) shows this
+       lit up rather than silently doing nothing when a patient's called. -->
+  <button class="display-theme-toggle display-sound-toggle" id="displaySoundToggle" aria-label="Turn call sound on or off">
+    <svg class="icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+    <svg class="icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none;"><path d="M11 5 6 9H2v6h4l5 4z"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>
   </button>
   <div class="display-theme-menu" id="displayThemeMenu">
     <button type="button" data-mode="dark" aria-label="Dark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button>
@@ -60,6 +69,76 @@
           }, 450);
         });
       });
+    })();
+  </script>
+
+  <!-- Standard reception/token-counter practice everywhere from banks to
+       government offices: a call is announced with a sound, not left to
+       a silent screen update someone across a waiting room has to
+       happen to be looking at. Synthesized with the Web Audio API
+       (a plain two-tone chime) rather than shipping an audio file --
+       one fewer asset to host, and it means nobody has to be handed a
+       specific sound to license or replace.
+       Browsers block audio with sound until the page has had at least
+       one real click -- unavoidable, not a bug -- so this also wires a
+       one-time "unlock" to the very first click anywhere on the page,
+       not just this button, since staff setting the screen up for the
+       day will tap it for some other reason (the theme toggle, waking
+       the display) well before the first patient's ever called. -->
+  <script>
+    window.DisplaySound = (function () {
+      var MUTE_KEY = 'clinvision_display_sound_muted';
+      var muted = localStorage.getItem(MUTE_KEY) === '1';
+      var ctx = null;
+
+      function unlock() {
+        if (!ctx) {
+          try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+        }
+        if (ctx.state === 'suspended') ctx.resume();
+      }
+
+      function playChime() {
+        if (muted || !ctx) return;
+        var now = ctx.currentTime;
+        // A short descending two-note "ding-dong", the same shape as a
+        // standard door/reception chime -- immediately recognizable as
+        // "something just happened" without needing to be loud or long.
+        [[880, 0, 0.35], [659, 0.28, 0.55]].forEach(function (t) {
+          var freq = t[0], start = t[1], dur = t[2];
+          var osc = ctx.createOscillator();
+          var gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.0001, now + start);
+          gain.gain.exponentialRampToValueAtTime(0.35, now + start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(now + start);
+          osc.stop(now + start + dur + 0.05);
+        });
+      }
+
+      document.addEventListener('click', unlock, { once: true });
+
+      var btn = document.getElementById('displaySoundToggle');
+      var onIcon = btn.querySelector('.icon-sound-on');
+      var offIcon = btn.querySelector('.icon-sound-off');
+      function reflectMuted() {
+        onIcon.style.display = muted ? 'none' : '';
+        offIcon.style.display = muted ? '' : 'none';
+        btn.setAttribute('aria-label', muted ? 'Turn call sound on' : 'Turn call sound off');
+      }
+      reflectMuted();
+      btn.addEventListener('click', function () {
+        unlock();
+        muted = !muted;
+        localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
+        reflectMuted();
+        if (!muted) playChime(); // confirms it's actually on, right when they turn it on
+      });
+
+      return { playChime: playChime };
     })();
   </script>
 
@@ -139,6 +218,14 @@
 
       let combined = [];
       let currentPage = 0;
+      // Doctor id -> the nowServing patient id last seen for them, so a
+      // refresh can tell "someone was just called" apart from "still
+      // showing the same patient as five seconds ago". Starts empty on
+      // purpose: the very first render of the day would otherwise treat
+      // whoever's already mid-consultation as a brand-new call and chime
+      // for something that didn't just happen.
+      let lastServedByDoctor = {};
+      let hasRenderedOnce = false;
 
       // Same 5-color identity palette used on reception and the doctor view:
       // each doctor keeps the same color everywhere, so on a board mixing
@@ -453,6 +540,24 @@
       }
 
       function renderDoctorStrip(all) {
+        // One chime per refresh tick even if two doctors happened to call
+        // someone in the same 5s window -- overlapping tones would just
+        // read as noise, not as "two calls happened", and a distinct
+        // per-doctor chime isn't worth the complexity for how rare that
+        // actually is.
+        let someoneNewlyCalled = false;
+        const nextServedByDoctor = {};
+        all.forEach(({ doctor, queue }) => {
+          const servingId = queue.nowServing ? queue.nowServing.id : null;
+          nextServedByDoctor[doctor.id] = servingId;
+          if (hasRenderedOnce && servingId && servingId !== lastServedByDoctor[doctor.id]) {
+            someoneNewlyCalled = true;
+          }
+        });
+        lastServedByDoctor = nextServedByDoctor;
+        hasRenderedOnce = true;
+        if (someoneNewlyCalled) window.DisplaySound.playChime();
+
         document.getElementById('doctorStrip').innerHTML = all.map(({ doctor, queue }, index) => {
           // Reaching this function at all means the doctor already passed
           // the refreshData filter above, so they're either still inside

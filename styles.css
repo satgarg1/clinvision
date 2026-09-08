@@ -4713,6 +4713,11 @@ th.th-filterable { position: relative; }
   transition: opacity 0.15s ease, background 0.15s ease;
 }
 .display-theme-toggle:hover { opacity: 0.85; }
+/* Sits just outside the theme toggle (smaller `right` = further toward
+   the actual screen edge), same faint treatment, so the two read as a
+   pair of quiet controls rather than one of them looking like an
+   afterthought bolted on beside the other. */
+.display-sound-toggle { right: 22px; }
 .display-theme-toggle svg { width: 11px; height: 11px; display: block; transition: transform 0.25s ease; }
 .display-theme-toggle.open svg { transform: rotate(180deg); }
 .display-theme-menu {
