@@ -5291,3 +5291,49 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
     width: 100%;
   }
 }
+
+/* ============================================================
+   admin.html — platform admin panel (Phase 1: clinic subscriptions).
+   New component styles only; everything else on the page (.panel,
+   .card-grid, .filter-seg, table.qtable, .modal-backdrop/.modal-card,
+   .field, .inline-form, .doctor-form-field, .badge, .icon-btn,
+   .status-dot-label) is the real, already-shared site convention.
+   ============================================================ */
+
+.badge-active { background: var(--success-bg); color: var(--success); }
+.badge-trialing { background: var(--warning-bg); color: var(--warning); }
+.badge-suspended { background: var(--danger-bg); color: var(--danger); }
+.trial-soon { color: var(--warning); font-weight: 600; }
+.fee-cell.empty, .note-cell.empty { color: var(--grey-500); }
+.note-cell { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The manage-clinic popover needs more room than a plain confirm
+   dialog and can genuinely run taller than the viewport once the
+   subscription-period fields are showing — capped with its own
+   scroll rather than ever letting Save/Cancel get clipped off-screen. */
+.modal-card.modal-card-lg { max-width: 560px; max-height: calc(100vh - 56px); overflow-y: auto; }
+
+.manage-section { padding: 16px 0; border-bottom: 1px solid var(--grey-100); }
+.manage-section:first-of-type { padding-top: 0; }
+.manage-section:last-of-type { border-bottom: none; padding-bottom: 0; }
+.manage-section-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; color: var(--black); margin-bottom: 14px; text-align: center; }
+.manage-stack { display: flex; flex-direction: column; gap: 14px; }
+
+/* Subscription status: a segmented control, matching subscription_status's
+   own 3-value check constraint (053_clinic_subscription_status.sql) —
+   never a badge glued to an unrelated-looking action button. */
+.status-segmented { display: flex; justify-content: center; gap: 8px; }
+.status-seg { padding: 7px 16px; border-radius: var(--radius-pill); border: 1px solid var(--grey-300); background: var(--white); font-family: inherit; font-size: 13px; font-weight: 600; color: var(--grey-500); cursor: pointer; transition: all 0.12s ease; }
+.status-seg.selected[data-status="active"] { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+.status-seg.selected[data-status="trialing"] { background: var(--warning-bg); border-color: var(--warning); color: var(--warning); }
+.status-seg.selected[data-status="suspended"] { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
+
+/* Revealed under the segmented control only for the status it applies
+   to — progressive disclosure instead of always-on fields that don't
+   apply to every status. */
+.subscription-period { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--grey-200); }
+.subscription-period[hidden] { display: none; }
+.date-range-row { display: flex; gap: 12px; }
+.date-range-row .field { flex: 1; min-width: 0; }
+.grace-note { font-size: 12px; color: var(--grey-500); background: var(--grey-100); border-radius: var(--radius-sm); padding: 10px 12px; line-height: 1.5; }
+.grace-note b { color: var(--grey-700); font-weight: 600; }

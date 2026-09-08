@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Platform Admin: ClinVision</title>
+<script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css?v=313" />
+</head>
+<body style="visibility:hidden;">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <a href="index.html" class="brand leave-app-link">
+        <span class="brand-top">
+        <span class="brand-word-wrap">
+          <span class="brand-word">ClinVision</span>
+          <span class="brand-word-bar"></span>
+        </span>
+      </span>
+      <span class="brand-tagline">Where clinics run better</span>
+      </a>
+      <div class="clinic-name-row">
+        <div class="clinic-name">Platform Admin</div>
+        <div class="sub-line" id="platformAdminEmail">Loading…</div>
+      </div>
+      <nav>
+        <a href="#" class="nav-link active" data-page="clinics">Clinics</a>
+        <a href="#" class="nav-link" data-page="admins">Platform Admins</a>
+        <a href="index.html" class="nav-link pinned-bottom leave-app-link">Back to main site</a>
+      </nav>
+    </aside>
+
+    <main class="app-main">
+
+      <!-- ===================== CLINICS ===================== -->
+      <div class="page" id="page-clinics">
+        <div class="app-topbar">
+          <div><h1>Clinics</h1></div>
+        </div>
+
+        <div class="card-grid" id="clinicStats"></div>
+
+        <div class="panel">
+          <div class="filter-seg" id="clinicTabs">
+            <button type="button" data-tab="all" class="active">All clinics</button>
+            <button type="button" data-tab="trial">Trial pipeline</button>
+            <button type="button" data-tab="recent">Recent signups</button>
+          </div>
+
+          <table class="qtable">
+            <thead>
+              <tr><th>Clinic</th><th>Status</th><th>Trial ends</th><th>Fee</th><th>Note</th><th></th></tr>
+            </thead>
+            <tbody id="clinicRows">
+              <tr><td colspan="6">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===================== PLATFORM ADMINS ===================== -->
+      <div class="page" id="page-admins" style="display:none;">
+        <div class="app-topbar">
+          <div><h1>Platform Admins</h1></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><h2>Add a partner admin</h2></div>
+          <p class="panel-note">Create their login here, then share the email, password, and phone number with them. They'll sign in on the same login page as every clinic; this account is simply recognized differently.</p>
+          <form id="addAdminForm">
+            <div class="inline-form">
+              <div class="field"><label>Full name</label><input type="text" id="newAdminName" required /></div>
+              <div class="field"><label>Email</label><input type="email" id="newAdminEmail" required /></div>
+              <div class="field"><label>Password</label><input type="text" id="newAdminPassword" minlength="8" required placeholder="At least 8 characters" /></div>
+              <div class="field">
+                <label>Phone</label>
+                <div style="display:flex;gap:8px;">
+                  <input type="text" value="+91" disabled style="flex:0 0 60px;text-align:center;" />
+                  <input type="tel" id="newAdminPhone" inputmode="numeric" maxlength="10" placeholder="10-digit number" style="flex:1;min-width:0;" />
+                </div>
+              </div>
+              <div class="field" style="flex:0;min-width:150px;">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn-sm primary">Add admin</button>
+              </div>
+            </div>
+          </form>
+          <p class="panel-note" id="addAdminNote" style="display:none;margin-top:12px;margin-bottom:0;"></p>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><h2>Everyone with platform access</h2></div>
+          <table class="qtable">
+            <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th></th></tr></thead>
+            <tbody id="adminRows">
+              <tr><td colspan="5">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ===================== MANAGE CLINIC POPOVER ===================== -->
+  <div class="modal-backdrop" id="manageClinicModal" style="display:none;">
+    <div class="modal-card modal-card-lg">
+      <h2 class="modal-title" id="manageClinicTitle">Manage clinic</h2>
+
+      <div class="manage-section">
+        <div class="manage-section-title">Subscription status</div>
+        <div class="status-segmented" id="manageClinicStatusSeg">
+          <button type="button" class="status-seg" data-status="trialing">Trialing</button>
+          <button type="button" class="status-seg" data-status="active">Active</button>
+          <button type="button" class="status-seg" data-status="suspended">Suspended</button>
+        </div>
+
+        <div class="subscription-period" id="manageClinicActiveFields" hidden>
+          <div class="field">
+            <label>Paid for</label>
+            <select id="manageClinicDuration">
+              <option value="1">1 month</option>
+              <option value="2">2 months</option>
+              <option value="3">3 months</option>
+              <option value="4">4 months</option>
+              <option value="5">5 months</option>
+              <option value="6">6 months</option>
+              <option value="7">7 months</option>
+              <option value="8">8 months</option>
+              <option value="9">9 months</option>
+              <option value="10">10 months</option>
+              <option value="11">11 months</option>
+              <option value="12">1 year</option>
+              <option value="24">2 years</option>
+              <option value="custom">Custom range</option>
+            </select>
+          </div>
+          <div class="date-range-row">
+            <div class="field"><label>From</label><input type="date" lang="en-GB" id="manageClinicFrom" /></div>
+            <div class="field"><label>To</label><input type="date" lang="en-GB" id="manageClinicTo" /></div>
+          </div>
+          <p class="field-hint error" id="manageClinicDateError" style="display:none;"></p>
+          <div class="grace-note" id="manageClinicGraceNote"></div>
+        </div>
+
+        <div class="subscription-period" id="manageClinicTrialFields" hidden>
+          <div class="field">
+            <label>Trial length</label>
+            <select id="manageClinicTrialDuration">
+              <option value="7">7 days</option>
+              <option value="15">15 days</option>
+              <option value="21">21 days</option>
+              <option value="30">30 days</option>
+              <option value="custom">Custom range</option>
+            </select>
+          </div>
+          <div class="date-range-row">
+            <div class="field"><label>Trial starts</label><input type="date" lang="en-GB" id="manageClinicTrialFrom" /></div>
+            <div class="field"><label>Trial ends</label><input type="date" lang="en-GB" id="manageClinicTrialTo" /></div>
+          </div>
+          <p class="field-hint error" id="manageClinicTrialDateError" style="display:none;"></p>
+        </div>
+      </div>
+
+      <div class="manage-section">
+        <div class="manage-section-title">Billing</div>
+        <div class="manage-stack">
+          <div class="field"><label>Fee (₹ / month)</label><input type="number" min="0" id="manageClinicFee" /></div>
+          <div class="field"><label>Internal note</label><textarea id="manageClinicNote" rows="3"></textarea></div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-sm primary" id="manageClinicSaveBtn">Save changes</button>
+        <button type="button" class="btn-sm" id="manageClinicCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=102"></script>
+  <script>
+    (async function () {
+      if (!(await Qlinic.isLoggedIn())) {
+        window.location.href = 'login.html';
+        return;
+      }
+      // Deliberately not Qlinic.requireLogin() -- a platform admin has
+      // no clinics/profiles row at all, and requireLogin()'s clinic
+      // subscription + profile-active checks would misread that as a
+      // deactivated account and bounce here to account-deactivated.html.
+      // This page's only real gate is is_platform_admin() itself, which
+      // every admin_* RPC below re-checks server-side regardless.
+      if (!(await Qlinic.isPlatformAdmin())) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      document.body.style.visibility = 'visible';
+
+      document.getElementById('platformAdminEmail').textContent = await Qlinic.getCurrentUserEmail();
+
+      document.querySelectorAll('.leave-app-link').forEach((link) => {
+        link.addEventListener('click', async (e) => {
+          e.preventDefault();
+          if (await Qlinic.confirmDialog({ message: "Going to the homepage will end your session here, you'll need to log in again to get back in." })) {
+            window.location.href = link.getAttribute('href');
+          }
+        });
+      });
+
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      // ---- page switching (Clinics / Platform Admins) ----
+      document.querySelectorAll('.app-sidebar .nav-link[data-page]').forEach((link) => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          document.querySelectorAll('.app-sidebar .nav-link[data-page]').forEach((l) => l.classList.remove('active'));
+          link.classList.add('active');
+          document.getElementById('page-clinics').style.display = link.dataset.page === 'clinics' ? '' : 'none';
+          document.getElementById('page-admins').style.display = link.dataset.page === 'admins' ? '' : 'none';
+        });
+      });
+
+      // ==================== CLINICS ====================
+
+      let allClinics = [];
+      let clinicTab = 'all';
+
+      function formatDate(dateStr) {
+        if (!dateStr) return '—';
+        return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+
+      function renderStats() {
+        const active = allClinics.filter((c) => c.subscriptionStatus === 'active');
+        const trialing = allClinics.filter((c) => c.subscriptionStatus === 'trialing');
+        const suspended = allClinics.filter((c) => c.subscriptionStatus === 'suspended');
+        const mrr = active.reduce((sum, c) => sum + (c.subscriptionFeeInr || 0), 0);
+        const cards = [
+          { accent: 'blue', value: '₹' + mrr.toLocaleString('en-IN'), label: 'MRR', sub: active.length + ' active clinic' + (active.length === 1 ? '' : 's') },
+          { value: String(trialing.length), label: 'Trialing' },
+          { value: String(suspended.length), label: 'Suspended' },
+          { value: String(allClinics.length), label: 'Total clinics' },
+        ];
+        document.getElementById('clinicStats').innerHTML = cards.map((c) => `
+          <div class="stat-card${c.accent ? ' accent-' + c.accent : ''}">
+            <div class="value">${c.value}</div>
+            <div class="label">${c.label}</div>
+            ${c.sub ? `<div class="stat-sub">${Qlinic.escapeHtml(c.sub)}</div>` : ''}
+          </div>
+        `).join('');
+      }
+
+      function clinicRowHtml(c) {
+        const statusLabel = c.subscriptionStatus.charAt(0).toUpperCase() + c.subscriptionStatus.slice(1);
+        let trialCell = '—';
+        if (c.subscriptionStatus === 'trialing' && c.trialEndsAt) {
+          const daysLeft = Math.ceil((new Date(c.trialEndsAt) - new Date()) / 86400000);
+          trialCell = daysLeft <= 3
+            ? `<span class="trial-soon">${daysLeft <= 0 ? 'expired' : 'in ' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's')}</span>`
+            : formatDate(c.trialEndsAt);
+        }
+        return `
+          <tr>
+            <td><div class="clinic-cell-name">${Qlinic.escapeHtml(c.name)}</div><div class="sub-line">${Qlinic.escapeHtml(c.adminEmail)}${c.phone ? ' · ' + Qlinic.escapeHtml(c.phone) : ''}</div></td>
+            <td><span class="badge badge-${c.subscriptionStatus}">${statusLabel}</span></td>
+            <td>${trialCell}</td>
+            <td class="fee-cell${c.subscriptionFeeInr ? '' : ' empty'}">${c.subscriptionFeeInr ? '₹' + c.subscriptionFeeInr.toLocaleString('en-IN') : '—'}</td>
+            <td class="note-cell${c.adminNote ? '' : ' empty'}" title="${Qlinic.escapeHtml(c.adminNote || '')}">${Qlinic.escapeHtml(c.adminNote || 'No note')}</td>
+            <td><button type="button" class="icon-btn manage-clinic-btn" data-id="${c.id}" title="Manage clinic" aria-label="Manage ${Qlinic.escapeHtml(c.name)}">${pencilIconSvg()}</button></td>
+          </tr>
+        `;
+      }
+
+      function renderClinicRows() {
+        let rows = allClinics;
+        if (clinicTab === 'trial') {
+          rows = allClinics.filter((c) => c.subscriptionStatus === 'trialing')
+            .sort((a, b) => new Date(a.trialEndsAt || 0) - new Date(b.trialEndsAt || 0));
+        } else if (clinicTab === 'recent') {
+          rows = [...allClinics].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 10);
+        }
+        document.getElementById('clinicRows').innerHTML = rows.length
+          ? rows.map(clinicRowHtml).join('')
+          : '<tr><td colspan="6" class="sub-line">Nothing here.</td></tr>';
+        document.querySelectorAll('.manage-clinic-btn').forEach((btn) => {
+          btn.addEventListener('click', () => openManageClinic(btn.dataset.id));
+        });
+      }
+
+      function pencilIconSvg() {
+        return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+      }
+      // Same icon team.html / manage-doctors.html use for deactivate/
+      // reactivate — one convention for "revoke access" app-wide.
+      function powerIconSvg() {
+        return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/></svg>';
+      }
+
+      async function loadClinics() {
+        allClinics = await Qlinic.listPlatformClinics();
+        renderStats();
+        renderClinicRows();
+      }
+
+      document.getElementById('clinicTabs').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-tab]');
+        if (!btn) return;
+        document.querySelectorAll('#clinicTabs button').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        clinicTab = btn.dataset.tab;
+        renderClinicRows();
+      });
+
+      // ---- manage-clinic popover: date math (all UTC, see note below) ----
+      const GRACE_DAYS = 3;
+      function todayStr() { const d = new Date(); return toISO(new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))); }
+      function parseISO(dateStr) { const [y, m, day] = dateStr.split('-').map(Number); return new Date(Date.UTC(y, m - 1, day)); }
+      function toISO(date) { return date.toISOString().slice(0, 10); }
+      function addMonths(dateStr, n) { const d = parseISO(dateStr); d.setUTCMonth(d.getUTCMonth() + n); return toISO(d); }
+      function addDays(dateStr, n) { const d = parseISO(dateStr); d.setUTCDate(d.getUTCDate() + n); return toISO(d); }
+      function formatNice(dateStr) { return parseISO(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }); }
+
+      const manageModal = document.getElementById('manageClinicModal');
+      const statusSeg = document.getElementById('manageClinicStatusSeg');
+      const activeFields = document.getElementById('manageClinicActiveFields');
+      const trialFields = document.getElementById('manageClinicTrialFields');
+      const durationSelect = document.getElementById('manageClinicDuration');
+      const fromInput = document.getElementById('manageClinicFrom');
+      const toInput = document.getElementById('manageClinicTo');
+      const graceNote = document.getElementById('manageClinicGraceNote');
+      const dateError = document.getElementById('manageClinicDateError');
+      const trialDurationSelect = document.getElementById('manageClinicTrialDuration');
+      const trialFromInput = document.getElementById('manageClinicTrialFrom');
+      const trialToInput = document.getElementById('manageClinicTrialTo');
+      const trialDateError = document.getElementById('manageClinicTrialDateError');
+      const feeInput = document.getElementById('manageClinicFee');
+      const noteInput = document.getElementById('manageClinicNote');
+      let manageClinicId = null;
+
+      // The concrete anomaly guard: To/Trial-ends can never sit before
+      // From/Trial-starts. The native `min` attribute stops the picker
+      // itself from offering an earlier date; the value check is the
+      // backstop for whatever sets .value directly.
+      function enforceRange(fromEl, toEl, errorEl, noun) {
+        if (fromEl.value) toEl.min = fromEl.value;
+        if (fromEl.value && toEl.value && toEl.value < fromEl.value) {
+          toEl.value = fromEl.value;
+          errorEl.textContent = noun + ' end date can’t be before its start date — reset to match.';
+          errorEl.style.display = 'block';
+        } else {
+          errorEl.style.display = 'none';
+        }
+      }
+      function updateGraceNote() {
+        if (!toInput.value) { graceNote.innerHTML = ''; return; }
+        const graceEnd = addDays(toInput.value, GRACE_DAYS);
+        graceNote.innerHTML = 'Service keeps running until <b>' + formatNice(graceEnd) + '</b> (' + GRACE_DAYS + '-day grace window), then auto-suspends if not renewed.';
+      }
+      function recomputeTo() {
+        if (durationSelect.value !== 'custom' && fromInput.value) {
+          toInput.value = addMonths(fromInput.value, parseInt(durationSelect.value, 10));
+        }
+        enforceRange(fromInput, toInput, dateError, 'Subscription');
+        updateGraceNote();
+      }
+      function recomputeTrialTo() {
+        if (trialDurationSelect.value !== 'custom' && trialFromInput.value) {
+          trialToInput.value = addDays(trialFromInput.value, parseInt(trialDurationSelect.value, 10));
+        }
+        enforceRange(trialFromInput, trialToInput, trialDateError, 'Trial');
+      }
+      durationSelect.addEventListener('change', recomputeTo);
+      fromInput.addEventListener('change', recomputeTo);
+      toInput.addEventListener('change', () => { durationSelect.value = 'custom'; enforceRange(fromInput, toInput, dateError, 'Subscription'); updateGraceNote(); });
+      trialDurationSelect.addEventListener('change', recomputeTrialTo);
+      trialFromInput.addEventListener('change', recomputeTrialTo);
+      trialToInput.addEventListener('change', () => { trialDurationSelect.value = 'custom'; enforceRange(trialFromInput, trialToInput, trialDateError, 'Trial'); });
+
+      function showFieldsFor(status) {
+        activeFields.hidden = status !== 'active';
+        trialFields.hidden = status !== 'trialing';
+      }
+
+      statusSeg.querySelectorAll('.status-seg').forEach((seg) => {
+        seg.addEventListener('click', () => {
+          statusSeg.querySelectorAll('.status-seg').forEach((s) => s.classList.remove('selected'));
+          seg.classList.add('selected');
+          showFieldsFor(seg.dataset.status);
+          if (seg.dataset.status === 'active' && !fromInput.value) {
+            durationSelect.value = '1';
+            fromInput.value = todayStr();
+            recomputeTo();
+          }
+          if (seg.dataset.status === 'trialing' && !trialFromInput.value) {
+            trialDurationSelect.value = '15';
+            trialFromInput.value = todayStr();
+            recomputeTrialTo();
+          }
+        });
+      });
+
+      function openManageClinic(id) {
+        const c = allClinics.find((x) => x.id === id);
+        if (!c) return;
+        manageClinicId = id;
+        document.getElementById('manageClinicTitle').textContent = 'Manage ' + c.name;
+        feeInput.value = c.subscriptionFeeInr || '';
+        noteInput.value = c.adminNote || '';
+
+        statusSeg.querySelectorAll('.status-seg').forEach((seg) => {
+          seg.classList.toggle('selected', seg.dataset.status === c.subscriptionStatus);
+        });
+        showFieldsFor(c.subscriptionStatus);
+        dateError.style.display = 'none';
+        trialDateError.style.display = 'none';
+
+        durationSelect.value = '1';
+        fromInput.value = c.subscriptionPaidFrom || '';
+        toInput.value = c.subscriptionPaidTo || '';
+        enforceRange(fromInput, toInput, dateError, 'Subscription');
+        updateGraceNote();
+
+        trialDurationSelect.value = '15';
+        trialFromInput.value = '';
+        trialToInput.value = c.trialEndsAt ? c.trialEndsAt.slice(0, 10) : '';
+        enforceRange(trialFromInput, trialToInput, trialDateError, 'Trial');
+
+        manageModal.style.display = 'flex';
+      }
+      document.getElementById('manageClinicCancelBtn').addEventListener('click', () => { manageModal.style.display = 'none'; });
+      manageModal.addEventListener('click', (e) => { if (e.target === manageModal) manageModal.style.display = 'none'; });
+
+      document.getElementById('manageClinicSaveBtn').addEventListener('click', async () => {
+        const status = statusSeg.querySelector('.status-seg.selected')?.dataset.status;
+        if (!status) { showToast('Pick a subscription status first.'); return; }
+        if (status === 'active' && (!fromInput.value || !toInput.value)) {
+          showToast('An active subscription needs both a From and a To date.');
+          return;
+        }
+        let trialEndsAtIso = null;
+        if (status === 'trialing') {
+          if (!trialToInput.value) { showToast('Set a trial end date first.'); return; }
+          trialEndsAtIso = new Date(trialToInput.value + 'T23:59:59').toISOString();
+        }
+        try {
+          await Qlinic.updateClinicSubscription(manageClinicId, {
+            status,
+            paidFrom: status === 'active' ? fromInput.value : null,
+            paidTo: status === 'active' ? toInput.value : null,
+            trialEndsAt: trialEndsAtIso,
+            feeInr: feeInput.value,
+            note: noteInput.value,
+          });
+        } catch (err) {
+          showToast(err.message || 'Could not save changes.');
+          return;
+        }
+        manageModal.style.display = 'none';
+        showToast('Clinic updated');
+        loadClinics();
+      });
+
+      // ==================== PLATFORM ADMINS ====================
+
+      async function loadAdmins() {
+        const admins = await Qlinic.listPlatformAdmins();
+        document.getElementById('adminRows').innerHTML = admins.length ? admins.map((a) => `
+          <tr>
+            <td>${Qlinic.escapeHtml(a.fullName)}</td>
+            <td>${Qlinic.escapeHtml(a.email)}</td>
+            <td>${a.phone ? Qlinic.escapeHtml(a.phone) : '—'}</td>
+            <td><span class="status-dot-label"><span class="status-dot ${a.isActive ? 'active' : 'inactive'}"></span>${a.isActive ? 'Active' : 'Deactivated'}</span></td>
+            <td>
+              <div class="row-actions" style="display:flex;gap:4px;">
+                <button type="button" class="icon-btn edit-admin-btn" data-id="${a.id}" title="Edit" aria-label="Edit ${Qlinic.escapeHtml(a.fullName)}">${pencilIconSvg()}</button>
+                <button type="button" class="icon-btn ${a.isActive ? 'danger' : ''}" onclick="doSetPlatformAdminActive('${a.id}', ${!a.isActive})" title="${a.isActive ? 'Deactivate' : 'Reactivate'}" aria-label="${a.isActive ? 'Deactivate' : 'Reactivate'} ${Qlinic.escapeHtml(a.fullName)}">${powerIconSvg()}</button>
+              </div>
+            </td>
+          </tr>
+        `).join('') : '<tr><td colspan="5" class="sub-line">Nothing here.</td></tr>';
+
+        document.querySelectorAll('.edit-admin-btn').forEach((btn) => {
+          btn.addEventListener('click', () => openEditAdmin(admins.find((a) => a.id === btn.dataset.id)));
+        });
+      }
+
+      async function doSetPlatformAdminActive(id, newActive) {
+        if (!newActive && !(await Qlinic.confirmDialog({
+          title: 'Deactivate this admin?',
+          message: 'Are you sure you want to remove their platform access?\nThey lose the ability to log in as a platform admin immediately.',
+          confirmLabel: 'Deactivate',
+          danger: true,
+        }))) {
+          return;
+        }
+        try {
+          await Qlinic.setPlatformAdminActive(id, newActive);
+        } catch (err) {
+          showToast(err.message || 'Could not update access.');
+          return;
+        }
+        showToast(newActive ? 'Access restored' : 'Access removed');
+        loadAdmins();
+      }
+      window.doSetPlatformAdminActive = doSetPlatformAdminActive;
+
+      function openEditAdmin(admin) {
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop';
+        backdrop.innerHTML = `
+          <div class="modal-card">
+            <h2 class="modal-title">Edit admin</h2>
+            <div class="doctor-form-field"><label>Full name</label><input id="editAdminName" value="${admin.fullName.replace(/"/g, '&quot;')}" /></div>
+            <div class="doctor-form-field">
+              <label>Phone</label>
+              <div style="display:flex;gap:8px;">
+                <input type="text" value="+91" disabled style="flex:0 0 60px;text-align:center;" />
+                <input type="tel" id="editAdminPhone" inputmode="numeric" maxlength="10" value="${(admin.phone || '').replace(/"/g, '&quot;')}" style="flex:1;min-width:0;" />
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="btn-sm primary" id="editAdminSaveBtn">Save</button>
+              <button type="button" class="btn-sm" id="editAdminCancelBtn">Cancel</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(backdrop);
+        function cleanup() { backdrop.remove(); }
+        backdrop.addEventListener('click', (e) => { if (e.target === backdrop) cleanup(); });
+        backdrop.querySelector('#editAdminCancelBtn').addEventListener('click', cleanup);
+        backdrop.querySelector('#editAdminPhone').addEventListener('input', function () {
+          this.value = this.value.replace(/\D/g, '').slice(0, 10);
+        });
+        backdrop.querySelector('#editAdminSaveBtn').addEventListener('click', async () => {
+          const fullName = backdrop.querySelector('#editAdminName').value.trim();
+          const phone = backdrop.querySelector('#editAdminPhone').value;
+          try {
+            await Qlinic.updatePlatformAdmin(admin.id, { fullName, phone });
+          } catch (err) {
+            showToast(err.message || 'Could not update this admin.');
+            return;
+          }
+          cleanup();
+          showToast('Admin updated');
+          loadAdmins();
+        });
+        backdrop.querySelector('#editAdminName').focus();
+      }
+
+      document.getElementById('newAdminPhone').addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').slice(0, 10);
+      });
+
+      document.getElementById('addAdminForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const note = document.getElementById('addAdminNote');
+        note.style.display = 'none';
+        const fullName = document.getElementById('newAdminName').value;
+        const email = document.getElementById('newAdminEmail').value;
+        const password = document.getElementById('newAdminPassword').value;
+        const phone = document.getElementById('newAdminPhone').value;
+        try {
+          await Qlinic.createPlatformAdmin({ email, password, fullName, phone });
+          note.style.display = 'block';
+          note.textContent = `Added. Share these with ${fullName}: email ${email}, password ${password}.`;
+          e.target.reset();
+          showToast('Platform admin added');
+          loadAdmins();
+        } catch (err) {
+          note.style.display = 'block';
+          note.textContent = err.message || 'Could not add this admin.';
+        }
+      });
+
+      loadClinics();
+      loadAdmins();
+    })();
+  </script>
+</body>
+</html>

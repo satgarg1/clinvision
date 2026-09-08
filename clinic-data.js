@@ -2813,6 +2813,112 @@
     if (error) throw error;
   }
 
+  // ---------------- platform admin (admin.html only — never a clinic
+  // role, never scoped by clinic_id; see 080_platform_admins.sql) ----
+
+  // Deliberately does NOT call requireLogin()/getClinic()/getMyProfile()
+  // — a platform admin has no clinics/profiles row at all, so those
+  // would misread "no profile" as a deactivated account and bounce them
+  // to account-deactivated.html. admin.html's own gate is just
+  // isLoggedIn() + this.
+  async function isPlatformAdmin() {
+    if (!(await isLoggedIn())) return false;
+    const { data, error } = await sb.rpc('is_platform_admin');
+    if (error) throw error;
+    return !!data;
+  }
+
+  function normalizeAdminClinic(row) {
+    return {
+      id: row.id,
+      name: row.name,
+      adminEmail: row.admin_email,
+      phone: row.phone,
+      subscriptionStatus: row.subscription_status,
+      trialEndsAt: row.trial_ends_at,
+      subscriptionFeeInr: row.subscription_fee_inr,
+      adminNote: row.admin_note,
+      subscriptionPaidFrom: row.subscription_paid_from,
+      subscriptionPaidTo: row.subscription_paid_to,
+      createdAt: row.created_at,
+    };
+  }
+
+  async function listPlatformClinics() {
+    const { data, error } = await sb.rpc('admin_list_clinics');
+    if (error) throw error;
+    return data.map(normalizeAdminClinic);
+  }
+
+  // fields: { status, paidFrom, paidTo, trialEndsAt, feeInr, note } — one
+  // call writes everything the manage-clinic popover's single Save
+  // changes button covers, matching that "all or nothing" behavior.
+  async function updateClinicSubscription(clinicId, fields) {
+    const { error } = await sb.rpc('admin_update_clinic_subscription', {
+      target_clinic_id: clinicId,
+      new_status: fields.status,
+      new_paid_from: fields.paidFrom || null,
+      new_paid_to: fields.paidTo || null,
+      new_trial_ends_at: fields.trialEndsAt || null,
+      new_fee_inr: fields.feeInr === '' || fields.feeInr == null ? null : Number(fields.feeInr),
+      new_note: fields.note || null,
+    });
+    if (error) throw error;
+  }
+
+  function normalizePlatformAdmin(row) {
+    return {
+      id: row.id,
+      email: row.email,
+      fullName: row.full_name,
+      phone: row.phone,
+      isActive: row.is_active,
+      createdAt: row.created_at,
+    };
+  }
+
+  async function listPlatformAdmins() {
+    const { data, error } = await sb.rpc('admin_list_platform_admins');
+    if (error) throw error;
+    return data.map(normalizePlatformAdmin);
+  }
+
+  // Same "throwaway, non-persisted client creates the auth account,
+  // then a security-definer RPC links it" pattern as createStaffAccount
+  // above — otherwise auth.signUp() would sign this browser tab in as
+  // the new partner admin instead of leaving the calling admin's own
+  // session alone.
+  async function createPlatformAdmin({ email, password, fullName, phone }) {
+    const tempClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data, error } = await tempClient.auth.signUp({ email, password });
+    if (error) throw error;
+    const { error: linkError } = await sb.rpc('create_platform_admin', {
+      new_user_id: data.user.id,
+      admin_full_name: fullName,
+      admin_phone: phone || null,
+    });
+    if (linkError) throw linkError;
+  }
+
+  async function updatePlatformAdmin(adminId, { fullName, phone }) {
+    const { error } = await sb.rpc('admin_update_platform_admin', {
+      target_id: adminId,
+      new_full_name: fullName,
+      new_phone: phone || null,
+    });
+    if (error) throw error;
+  }
+
+  async function setPlatformAdminActive(adminId, isActive) {
+    const { error } = await sb.rpc('set_platform_admin_active', {
+      target_id: adminId,
+      new_active: isActive,
+    });
+    if (error) throw error;
+  }
+
   // ---------------- appearance (local device preference, not synced
   // across devices; this is a personal UI setting, not clinic data)
   // ----------------
@@ -3239,6 +3345,14 @@
     updateStaffDoctorLink,
     updateStaffPhone,
     updateMyPhone,
+
+    isPlatformAdmin,
+    listPlatformClinics,
+    updateClinicSubscription,
+    listPlatformAdmins,
+    createPlatformAdmin,
+    updatePlatformAdmin,
+    setPlatformAdminActive,
 
     getTheme,
     setTheme,
