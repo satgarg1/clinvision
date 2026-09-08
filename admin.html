@@ -51,6 +51,7 @@
             <button type="button" data-tab="recent">Recent signups</button>
             <button type="button" data-tab="enquiries">Enquiries</button>
             <button type="button" data-tab="feedback">Feedback</button>
+            <button type="button" data-tab="errors">Errors</button>
           </div>
 
           <table class="qtable" id="clinicTable">
@@ -90,6 +91,21 @@
             </tbody>
           </table>
           <div class="pager" id="feedbackPager" style="display:none;"></div>
+
+          <!-- Also not tied to any one clinic -- a JS error anywhere in
+               the app used to fail silently for whoever hit it, with no
+               record anywhere (085_client_errors.sql). Grouped by
+               (page, message) server-side, not a raw row per
+               occurrence. -->
+          <table class="qtable" id="errorsTable" style="display:none;">
+            <thead>
+              <tr><th>Message</th><th>Page</th><th>Occurrences</th><th>Clinics affected</th><th>First seen</th><th>Last seen</th></tr>
+            </thead>
+            <tbody id="errorRows">
+              <tr><td colspan="6">Loading…</td></tr>
+            </tbody>
+          </table>
+          <div class="pager" id="errorPager" style="display:none;"></div>
         </div>
       </div>
 
@@ -255,7 +271,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=104"></script>
+  <script src="clinic-data.js?v=105"></script>
   <script>
     (async function () {
       if (!(await Qlinic.isLoggedIn())) {
@@ -417,6 +433,8 @@
         document.getElementById('enquiryPager').style.display = clinicTab === 'enquiries' ? '' : 'none';
         document.getElementById('feedbackTable').style.display = clinicTab === 'feedback' ? '' : 'none';
         document.getElementById('feedbackPager').style.display = clinicTab === 'feedback' ? '' : 'none';
+        document.getElementById('errorsTable').style.display = clinicTab === 'errors' ? '' : 'none';
+        document.getElementById('errorPager').style.display = clinicTab === 'errors' ? '' : 'none';
 
         if (isClinicView) renderClinicRows();
       });
@@ -514,6 +532,42 @@
         const pager = document.getElementById('feedbackPager');
         pager.innerHTML = Qlinic.pagerHtml(feedbackPage, totalPages);
         Qlinic.wirePager(pager, feedbackPage, totalPages, (p) => { feedbackPage = p; renderFeedbackRows(); });
+      }
+
+      // ==================== ERRORS (client_errors) ====================
+
+      let allErrors = [];
+      let errorPage = 1;
+      async function loadErrors() {
+        try {
+          allErrors = await Qlinic.adminListClientErrors();
+        } catch (err) {
+          document.getElementById('errorRows').innerHTML =
+            `<tr><td colspan="6" class="sub-line">Could not load: ${Qlinic.escapeHtml(err.message || 'unknown error')}</td></tr>`;
+          return;
+        }
+        renderErrorRows();
+      }
+      function renderErrorRows() {
+        const totalPages = Math.max(1, Math.ceil(allErrors.length / PAGE_SIZE));
+        if (errorPage > totalPages) errorPage = totalPages;
+        const start = (errorPage - 1) * PAGE_SIZE;
+        const pageRows = allErrors.slice(start, start + PAGE_SIZE);
+
+        document.getElementById('errorRows').innerHTML = pageRows.length ? pageRows.map((e) => `
+          <tr>
+            <td class="note-cell" title="${Qlinic.escapeHtml(e.message)}">${Qlinic.escapeHtml(e.message)}</td>
+            <td class="sub-line">${Qlinic.escapeHtml(e.page)}</td>
+            <td>${e.occurrenceCount}</td>
+            <td>${e.clinicCount}</td>
+            <td class="sub-line">${formatDate(e.firstSeen)}</td>
+            <td class="sub-line">${formatDate(e.lastSeen)}</td>
+          </tr>
+        `).join('') : '<tr><td colspan="6" class="sub-line">No errors reported. That\'s either great news, or nobody\'s hit one yet.</td></tr>';
+
+        const pager = document.getElementById('errorPager');
+        pager.innerHTML = Qlinic.pagerHtml(errorPage, totalPages);
+        Qlinic.wirePager(pager, errorPage, totalPages, (p) => { errorPage = p; renderErrorRows(); });
       }
 
       // ---- manage-clinic popover: date math (all UTC, see note below) ----
@@ -906,6 +960,7 @@
       loadAdmins();
       loadEnquiries();
       loadFeedback();
+      loadErrors();
     })();
   </script>
 </body>

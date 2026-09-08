@@ -42,6 +42,40 @@
   let currentClinicId = null;
   let currentClinic = null;
 
+  // ---------------- global client-error reporting (085_client_errors.sql)
+  // ----------------
+  // Installed once here, since clinic-data.js is loaded on every page --
+  // not something any individual page has to remember to wire up. Never
+  // throws itself (that would just create a new error for this same
+  // handler to catch, recursively) and never surfaces anything to the
+  // person who hit the error -- fire-and-forget, purely for a platform
+  // admin to see later. A page-load cap (not unlimited) stops a bug that
+  // fires on every animation frame from writing thousands of identical
+  // rows in seconds.
+  let clientErrorCount = 0;
+  const CLIENT_ERROR_CAP = 5;
+  function reportClientError(message, stack) {
+    if (clientErrorCount >= CLIENT_ERROR_CAP) return;
+    clientErrorCount++;
+    sb.from('client_errors').insert({
+      clinic_id: currentClinicId, // nullable -- may not be known yet (login.html, queue.html)
+      page: (window.location.pathname.split('/').pop() || 'unknown').split('?')[0],
+      message: String(message == null ? 'Unknown error' : message).slice(0, 2000),
+      stack: stack ? String(stack).slice(0, 4000) : null,
+      user_agent: navigator.userAgent,
+    }).then(() => {}, () => {}); // swallow -- never throw from an error handler
+  }
+  window.addEventListener('error', (e) => {
+    reportClientError(e.message, e.error && e.error.stack);
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    const reason = e.reason;
+    reportClientError(
+      reason && reason.message ? reason.message : String(reason),
+      reason && reason.stack
+    );
+  });
+
   // Patient/doctor names, addresses, and other free text are typed by
   // clinic staff (or, for a booking's own reason field, indirectly by
   // whoever asked them to write it down) and then get interpolated into
@@ -3039,6 +3073,22 @@
     }));
   }
 
+  // Grouped by (page, message) server-side, not a raw row dump -- "this
+  // error happened 40 times across 3 clinics this week" is the actual
+  // useful signal, not 40 individual identical rows.
+  async function adminListClientErrors() {
+    const { data, error } = await sb.rpc('admin_list_client_errors');
+    if (error) throw error;
+    return data.map((row) => ({
+      page: row.page,
+      message: row.message,
+      occurrenceCount: row.occurrence_count,
+      firstSeen: row.first_seen,
+      lastSeen: row.last_seen,
+      clinicCount: row.clinic_count,
+    }));
+  }
+
   // ---------------- appearance (local device preference, not synced
   // across devices; this is a personal UI setting, not clinic data)
   // ----------------
@@ -3483,6 +3533,7 @@
     adminListContactEnquiries,
     adminSetEnquiryStatus,
     adminListProductFeedback,
+    adminListClientErrors,
 
     getTheme,
     setTheme,
