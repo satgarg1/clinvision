@@ -1222,7 +1222,12 @@
             return;
           }
           cleanup();
-          showToast(p.status === 'booked' || p.status === 'no_show' ? 'Marked arrived' : 'Patient details updated');
+          // Leftover from when this modal used to mark arrival itself —
+          // it never does that anymore, so this toast always describes
+          // what actually just happened: details were saved, nothing
+          // about queue status changed, regardless of this patient's
+          // status before the edit.
+          showToast('Patient details updated');
           renderSearch();
           renderQueues();
         });
