@@ -1558,6 +1558,11 @@
         }
 
         let bookedForToday = true;
+        // Declared out here (not just inside the appointment branch below)
+        // so the "carry the time forward to the next booking" step after
+        // the form resets can still read it — stays null for a walk-in
+        // submission, which correctly skips that step entirely.
+        let time = null;
 
         if (patientMode === 'walkin') {
           const walkinTime = document.getElementById('pWalkinTime').value;
@@ -1589,7 +1594,7 @@
           renderNotificationPreview(addResult.message);
         } else {
           const date = document.getElementById('pDate').value;
-          const time = document.getElementById('pTime').value;
+          time = document.getElementById('pTime').value;
           const dateReason = closureReason(date, doctorId);
           if (dateReason) {
             updateClosedDayHint();
@@ -1653,6 +1658,22 @@
         setPatientMode(patientMode);
         document.getElementById('pDate').value = Qlinic.getTodayDate();
         resetTimePicker();
+        // Same reasoning as the doctor field above, for time: reception
+        // often takes a run of calls for roughly the same part of the day
+        // (a lot of Indian clinics book the whole morning's appointments
+        // in one sitting), so re-scrolling the whole picker from blank for
+        // every single one is avoidable friction. Re-check that same time
+        // against the doctor+date this form now shows (not necessarily the
+        // date just booked, since the date field above always resets to
+        // today) — if it's now full, land on the next open slot instead of
+        // one that would just bounce back with the same overbooking
+        // warning. avail.suggestion already computes that "next open slot"
+        // for the warning dialog above, reused here rather than recomputed.
+        if (time) {
+          const recheck = await Qlinic.getSlotAvailability(doctorId, Qlinic.getTodayDate(), time);
+          const nextTime = recheck && recheck.isFull ? recheck.suggestion : time;
+          if (nextTime) selectTime(nextTime, Qlinic.formatTime(Qlinic.parseTime(nextTime)));
+        }
         resetWalkinTimePicker();
         clearPatientLookupHint();
         clearFollowUpHint();
