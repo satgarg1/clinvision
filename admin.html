@@ -74,6 +74,7 @@
               <tr><td colspan="8">Loading…</td></tr>
             </tbody>
           </table>
+          <div class="pager" id="enquiryPager" style="display:none;"></div>
 
           <!-- Also not tied to any one clinic -- ClinVision's own
                post-visit product feedback, collected on queue.html and
@@ -88,6 +89,7 @@
               <tr><td colspan="5">Loading…</td></tr>
             </tbody>
           </table>
+          <div class="pager" id="feedbackPager" style="display:none;"></div>
         </div>
       </div>
 
@@ -412,15 +414,23 @@
         const isClinicView = clinicTab === 'all' || clinicTab === 'trial' || clinicTab === 'recent';
         document.getElementById('clinicTable').style.display = isClinicView ? '' : 'none';
         document.getElementById('enquiriesTable').style.display = clinicTab === 'enquiries' ? '' : 'none';
+        document.getElementById('enquiryPager').style.display = clinicTab === 'enquiries' ? '' : 'none';
         document.getElementById('feedbackTable').style.display = clinicTab === 'feedback' ? '' : 'none';
+        document.getElementById('feedbackPager').style.display = clinicTab === 'feedback' ? '' : 'none';
 
         if (isClinicView) renderClinicRows();
       });
+
+      // Same PAGE_SIZE/pager component as team.html's own list (10 rows,
+      // Qlinic.pagerHtml/wirePager) -- one shared pattern, not a
+      // one-off for this page.
+      const PAGE_SIZE = 10;
 
       // ==================== ENQUIRIES (contact_enquiries) ====================
 
       const ENQUIRY_STATUS_LABELS = { new: 'New', contacted: 'Contacted', closed: 'Closed' };
       let allEnquiries = [];
+      let enquiryPage = 1;
       async function loadEnquiries() {
         try {
           allEnquiries = await Qlinic.adminListContactEnquiries();
@@ -432,7 +442,12 @@
         renderEnquiryRows();
       }
       function renderEnquiryRows() {
-        document.getElementById('enquiryRows').innerHTML = allEnquiries.length ? allEnquiries.map((e) => `
+        const totalPages = Math.max(1, Math.ceil(allEnquiries.length / PAGE_SIZE));
+        if (enquiryPage > totalPages) enquiryPage = totalPages;
+        const start = (enquiryPage - 1) * PAGE_SIZE;
+        const pageRows = allEnquiries.slice(start, start + PAGE_SIZE);
+
+        document.getElementById('enquiryRows').innerHTML = pageRows.length ? pageRows.map((e) => `
           <tr>
             <td class="sub-line">${formatDate(e.createdAt)}</td>
             <td>${Qlinic.escapeHtml(e.name)}</td>
@@ -460,20 +475,33 @@
             }
           });
         });
+
+        const pager = document.getElementById('enquiryPager');
+        pager.innerHTML = Qlinic.pagerHtml(enquiryPage, totalPages);
+        Qlinic.wirePager(pager, enquiryPage, totalPages, (p) => { enquiryPage = p; renderEnquiryRows(); });
       }
 
       // ==================== FEEDBACK (product_feedback) ====================
 
+      let allFeedback = [];
+      let feedbackPage = 1;
       async function loadFeedback() {
-        let feedback;
         try {
-          feedback = await Qlinic.adminListProductFeedback();
+          allFeedback = await Qlinic.adminListProductFeedback();
         } catch (err) {
           document.getElementById('feedbackRows').innerHTML =
             `<tr><td colspan="5" class="sub-line">Could not load: ${Qlinic.escapeHtml(err.message || 'unknown error')}</td></tr>`;
           return;
         }
-        document.getElementById('feedbackRows').innerHTML = feedback.length ? feedback.map((f) => `
+        renderFeedbackRows();
+      }
+      function renderFeedbackRows() {
+        const totalPages = Math.max(1, Math.ceil(allFeedback.length / PAGE_SIZE));
+        if (feedbackPage > totalPages) feedbackPage = totalPages;
+        const start = (feedbackPage - 1) * PAGE_SIZE;
+        const pageRows = allFeedback.slice(start, start + PAGE_SIZE);
+
+        document.getElementById('feedbackRows').innerHTML = pageRows.length ? pageRows.map((f) => `
           <tr>
             <td class="sub-line">${formatDate(f.submittedAt)}</td>
             <td>${Qlinic.escapeHtml(f.clinicName)}</td>
@@ -482,6 +510,10 @@
             <td>${f.feedbackText ? Qlinic.escapeHtml(f.feedbackText) : '<span class="sub-line">No comment</span>'}</td>
           </tr>
         `).join('') : '<tr><td colspan="5" class="sub-line">No feedback yet.</td></tr>';
+
+        const pager = document.getElementById('feedbackPager');
+        pager.innerHTML = Qlinic.pagerHtml(feedbackPage, totalPages);
+        Qlinic.wirePager(pager, feedbackPage, totalPages, (p) => { feedbackPage = p; renderFeedbackRows(); });
       }
 
       // ---- manage-clinic popover: date math (all UTC, see note below) ----
