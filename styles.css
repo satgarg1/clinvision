@@ -2210,11 +2210,11 @@ a { color: inherit; }
   color: var(--grey-700);
   margin-bottom: 6px;
 }
-.field input, .field select {
+.field input, .field select, .field textarea {
   background: var(--white);
   color: var(--black);
 }
-.field input, .field select {
+.field input, .field select, .field textarea {
   width: 100%;
   box-sizing: border-box;
   padding: var(--space-3) var(--space-4);
@@ -2223,7 +2223,11 @@ a { color: inherit; }
   border-radius: var(--radius-sm);
   font-family: var(--font);
 }
-.field input:focus, .field select:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+.field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+/* input/select size from their own content; a textarea has none to size
+   from, so it needs an explicit floor -- admin.html's Internal note was
+   rendering at the browser's bare, unpadded default height without this. */
+.field textarea { min-height: 84px; line-height: 1.5; resize: vertical; }
 
 /* Inline "ghost text" autocomplete: the real input sits on top with a
    transparent background so the suggestion (rendered by a second,
@@ -5337,3 +5341,28 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
 .date-range-row .field { flex: 1; min-width: 0; }
 .grace-note { font-size: 12px; color: var(--grey-500); background: var(--grey-100); border-radius: var(--radius-sm); padding: 10px 12px; line-height: 1.5; }
 .grace-note b { color: var(--grey-700); font-weight: 600; }
+
+/* Feature access (082_clinic_feature_flags.sql) — one column of full-
+   width rows, color-coded per feature so four toggles of the same shape
+   don't read as one grey wall. No toggle-switch component existed
+   anywhere on the site before this; new, not a reskin of something
+   else. */
+.feature-list { display: flex; flex-direction: column; gap: 8px; }
+.feature-row { display: flex; align-items: center; gap: 12px; padding: 10px 13px; border: 1px solid var(--grey-200); border-radius: 10px; background: var(--white); box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.feature-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.feature-icon svg { width: 16px; height: 16px; }
+.feature-icon.icon-pharmacy { background: #e8f0fe; color: var(--accent-dark); }
+.feature-icon.icon-insights { background: #f1e9fd; color: #7c3aed; }
+.feature-icon.icon-billing_audit { background: var(--success-bg); color: var(--success); }
+.feature-icon.icon-patient_directory { background: #e3f4f3; color: #0f766e; }
+.feature-text { flex: 1; min-width: 0; }
+.feature-name { font-size: 14px; font-weight: 600; }
+.feature-desc { font-size: 11.5px; color: var(--grey-500); margin-top: 2px; }
+
+.switch { position: relative; display: inline-block; width: 40px; height: 23px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .track { position: absolute; inset: 0; background: var(--grey-300); border-radius: var(--radius-pill); transition: background 0.15s ease; cursor: pointer; }
+.switch .track::before { content: ''; position: absolute; width: 19px; height: 19px; left: 2px; top: 2px; background: var(--white); border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.25); transition: transform 0.15s ease; }
+.switch input:checked + .track { background: var(--success); }
+.switch input:checked + .track::before { transform: translateX(17px); }
+.switch input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }

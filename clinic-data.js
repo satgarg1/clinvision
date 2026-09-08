@@ -2919,6 +2919,64 @@
     if (error) throw error;
   }
 
+  // ---------------- per-clinic feature licensing (082_clinic_feature_
+  // flags.sql) — opt-out model, a missing row means enabled. ----------
+
+  // Memoized per key for this page load, same reasoning as
+  // getMyProfile()'s shared promise above — a page that both hides a
+  // nav link and redirect-guards its own destination would otherwise
+  // fire the same RPC twice.
+  const featureCache = {};
+  async function hasFeature(key) {
+    if (!(key in featureCache)) {
+      featureCache[key] = (async () => {
+        const { data, error } = await sb.rpc('has_feature', { target_feature_key: key });
+        if (error) throw error;
+        return !!data;
+      })();
+    }
+    return featureCache[key];
+  }
+
+  // Hides whatever gated nav links/panel cards exist on the CURRENT
+  // page — safe to call from any page regardless of which (if any) of
+  // these ids it has, since a missing id is just skipped. One shared
+  // map instead of duplicating per-page logic; add a new licensable
+  // feature here once and every page picks it up.
+  const FEATURE_NAV_MAP = {
+    revenueNavLink: 'insights',
+    trendsNavLink: 'insights',
+    medicinesPanel: 'pharmacy',
+    pharmacyOptionCard: 'pharmacy',
+    patientDirectoryPanel: 'patient_directory',
+    billingAuditPanel: 'billing_audit',
+  };
+  async function applyFeatureNavGating() {
+    for (const [id, key] of Object.entries(FEATURE_NAV_MAP)) {
+      const el = document.getElementById(id);
+      if (el && !(await hasFeature(key))) el.style.display = 'none';
+    }
+  }
+
+  async function adminGetClinicFeatures(clinicId) {
+    const { data, error } = await sb.rpc('admin_get_clinic_features', { target_clinic_id: clinicId });
+    if (error) throw error;
+    const flags = {};
+    data.forEach((row) => { flags[row.feature_key] = row.enabled; });
+    return flags; // { pharmacy, insights, billing_audit, patient_directory }
+  }
+
+  async function adminSetClinicFeatures(clinicId, flags) {
+    const { error } = await sb.rpc('admin_set_clinic_features', {
+      target_clinic_id: clinicId,
+      pharmacy_enabled: !!flags.pharmacy,
+      insights_enabled: !!flags.insights,
+      billing_audit_enabled: !!flags.billing_audit,
+      patient_directory_enabled: !!flags.patient_directory,
+    });
+    if (error) throw error;
+  }
+
   // ---------------- appearance (local device preference, not synced
   // across devices; this is a personal UI setting, not clinic data)
   // ----------------
@@ -3353,6 +3411,11 @@
     createPlatformAdmin,
     updatePlatformAdmin,
     setPlatformAdminActive,
+
+    hasFeature,
+    applyFeatureNavGating,
+    adminGetClinicFeatures,
+    adminSetClinicFeatures,
 
     getTheme,
     setTheme,
