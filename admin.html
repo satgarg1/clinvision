@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=314" />
+<link rel="stylesheet" href="styles.css?v=315" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -49,14 +49,43 @@
             <button type="button" data-tab="all" class="active">All clinics</button>
             <button type="button" data-tab="trial">Trial pipeline</button>
             <button type="button" data-tab="recent">Recent signups</button>
+            <button type="button" data-tab="enquiries">Enquiries</button>
+            <button type="button" data-tab="feedback">Feedback</button>
           </div>
 
-          <table class="qtable">
+          <table class="qtable" id="clinicTable">
             <thead>
               <tr><th>Clinic</th><th>Status</th><th>Renews / ends</th><th>Fee</th><th>Note</th><th></th></tr>
             </thead>
             <tbody id="clinicRows">
               <tr><td colspan="6">Loading…</td></tr>
+            </tbody>
+          </table>
+
+          <!-- Not tied to any one clinic -- inbound leads from the
+               marketing site's contact form (contact_enquiries), so it
+               sits as its own tab here rather than nested inside a
+               clinic's own row. -->
+          <table class="qtable" id="enquiriesTable" style="display:none;">
+            <thead>
+              <tr><th>Received</th><th>Name</th><th>Phone</th><th>Clinic type</th><th>Clinic name</th><th>City</th><th>Message</th><th>Status</th></tr>
+            </thead>
+            <tbody id="enquiryRows">
+              <tr><td colspan="8">Loading…</td></tr>
+            </tbody>
+          </table>
+
+          <!-- Also not tied to any one clinic -- ClinVision's own
+               post-visit product feedback, collected on queue.html and
+               deliberately unreadable by the clinic that generated it
+               (product_feedback has no select policy for authenticated
+               users at all; a platform admin is the intended reader). -->
+          <table class="qtable" id="feedbackTable" style="display:none;">
+            <thead>
+              <tr><th>Submitted</th><th>Clinic</th><th>Patient</th><th>Rating</th><th>Comment</th></tr>
+            </thead>
+            <tbody id="feedbackRows">
+              <tr><td colspan="5">Loading…</td></tr>
             </tbody>
           </table>
         </div>
@@ -175,6 +204,19 @@
       </div>
 
       <div class="manage-section">
+        <div class="manage-section-title" id="manageClinicTeamTitle">Team</div>
+        <div class="team-list" id="manageClinicTeamList"><div class="sub-line" style="text-align:center;">Loading…</div></div>
+      </div>
+
+      <div class="manage-section">
+        <div class="manage-section-title">Patient volume</div>
+        <div class="volume-row">
+          <select id="manageClinicVolumePeriod" class="pill-select"></select>
+          <div class="volume-chip" id="manageClinicVolumeChip">Loading…</div>
+        </div>
+      </div>
+
+      <div class="manage-section">
         <div class="manage-section-title">Feature access</div>
         <div class="feature-list" id="manageClinicFeatureList">
           <label class="feature-row">
@@ -211,7 +253,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=103"></script>
+  <script src="clinic-data.js?v=104"></script>
   <script>
     (async function () {
       if (!(await Qlinic.isLoggedIn())) {
@@ -361,8 +403,82 @@
         document.querySelectorAll('#clinicTabs button').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         clinicTab = btn.dataset.tab;
-        renderClinicRows();
+
+        const isClinicView = clinicTab === 'all' || clinicTab === 'trial' || clinicTab === 'recent';
+        document.getElementById('clinicStats').style.display = isClinicView ? '' : 'none';
+        document.getElementById('clinicTable').style.display = isClinicView ? '' : 'none';
+        document.getElementById('enquiriesTable').style.display = clinicTab === 'enquiries' ? '' : 'none';
+        document.getElementById('feedbackTable').style.display = clinicTab === 'feedback' ? '' : 'none';
+
+        if (isClinicView) renderClinicRows();
       });
+
+      // ==================== ENQUIRIES (contact_enquiries) ====================
+
+      const ENQUIRY_STATUS_LABELS = { new: 'New', contacted: 'Contacted', closed: 'Closed' };
+      let allEnquiries = [];
+      async function loadEnquiries() {
+        try {
+          allEnquiries = await Qlinic.adminListContactEnquiries();
+        } catch (err) {
+          document.getElementById('enquiryRows').innerHTML =
+            `<tr><td colspan="8" class="sub-line">Could not load: ${Qlinic.escapeHtml(err.message || 'unknown error')}</td></tr>`;
+          return;
+        }
+        renderEnquiryRows();
+      }
+      function renderEnquiryRows() {
+        document.getElementById('enquiryRows').innerHTML = allEnquiries.length ? allEnquiries.map((e) => `
+          <tr>
+            <td class="sub-line">${formatDate(e.createdAt)}</td>
+            <td>${Qlinic.escapeHtml(e.name)}</td>
+            <td>${Qlinic.escapeHtml(e.phone)}</td>
+            <td>${e.clinicType ? Qlinic.escapeHtml(e.clinicType) : '—'}</td>
+            <td>${e.clinicName ? Qlinic.escapeHtml(e.clinicName) : '—'}</td>
+            <td>${e.city ? Qlinic.escapeHtml(e.city) : '—'}</td>
+            <td class="note-cell" title="${Qlinic.escapeHtml(e.message || '')}">${e.message ? Qlinic.escapeHtml(e.message) : '—'}</td>
+            <td>
+              <select class="pill-select enquiry-status-select" data-id="${e.id}" style="font-size:12px;padding:5px 22px 5px 10px;">
+                ${Object.entries(ENQUIRY_STATUS_LABELS).map(([val, label]) =>
+                  `<option value="${val}" ${val === e.status ? 'selected' : ''}>${label}</option>`).join('')}
+              </select>
+            </td>
+          </tr>
+        `).join('') : '<tr><td colspan="8" class="sub-line">No enquiries yet.</td></tr>';
+
+        document.querySelectorAll('.enquiry-status-select').forEach((sel) => {
+          sel.addEventListener('change', async () => {
+            try {
+              await Qlinic.adminSetEnquiryStatus(sel.dataset.id, sel.value);
+              showToast('Status updated');
+            } catch (err) {
+              showToast(err.message || 'Could not update status.');
+            }
+          });
+        });
+      }
+
+      // ==================== FEEDBACK (product_feedback) ====================
+
+      async function loadFeedback() {
+        let feedback;
+        try {
+          feedback = await Qlinic.adminListProductFeedback();
+        } catch (err) {
+          document.getElementById('feedbackRows').innerHTML =
+            `<tr><td colspan="5" class="sub-line">Could not load: ${Qlinic.escapeHtml(err.message || 'unknown error')}</td></tr>`;
+          return;
+        }
+        document.getElementById('feedbackRows').innerHTML = feedback.length ? feedback.map((f) => `
+          <tr>
+            <td class="sub-line">${formatDate(f.submittedAt)}</td>
+            <td>${Qlinic.escapeHtml(f.clinicName)}</td>
+            <td>${Qlinic.escapeHtml(f.patientName)}</td>
+            <td>${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}</td>
+            <td>${f.feedbackText ? Qlinic.escapeHtml(f.feedbackText) : '<span class="sub-line">No comment</span>'}</td>
+          </tr>
+        `).join('') : '<tr><td colspan="5" class="sub-line">No feedback yet.</td></tr>';
+      }
 
       // ---- manage-clinic popover: date math (all UTC, see note below) ----
       const GRACE_DAYS = 3;
@@ -377,6 +493,41 @@
       // "1 month" while the actual From/To dates stayed correct underneath
       // -- the dropdown always defaulting to '1' regardless of the real
       // saved gap was a genuine bug, not just a cosmetic mismatch.
+      // Same preset list/labels patient-directory.html's own period
+      // selector already uses (no "Custom" here -- this is one compact
+      // stat inside a popover, not a filterable report).
+      const VOLUME_PRESETS = [
+        { key: 'all', label: 'All time' },
+        { key: 'currentmonth', label: 'Current month' },
+        { key: 'lastmonth', label: 'Last month' },
+        { key: 'last3months', label: 'Last 3 months' },
+        { key: 'last6months', label: 'Last 6 months' },
+        { key: 'last12months', label: 'Last 12 months' },
+      ];
+      function volumeRange(preset) {
+        const today = todayStr();
+        if (preset === 'currentmonth') {
+          const d = parseISO(today);
+          return { start: toISO(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1))), end: today };
+        }
+        if (preset === 'lastmonth') {
+          const d = parseISO(today);
+          const firstOfThisMonth = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+          const lastOfPrevMonth = new Date(firstOfThisMonth.getTime() - 86400000);
+          return {
+            start: toISO(new Date(Date.UTC(lastOfPrevMonth.getUTCFullYear(), lastOfPrevMonth.getUTCMonth(), 1))),
+            end: toISO(lastOfPrevMonth),
+          };
+        }
+        if (preset === 'last3months') return { start: addMonths(today, -3), end: today };
+        if (preset === 'last6months') return { start: addMonths(today, -6), end: today };
+        if (preset === 'last12months') return { start: addMonths(today, -12), end: today };
+        return null; // 'all'
+      }
+      document.getElementById('manageClinicVolumePeriod').innerHTML = VOLUME_PRESETS.map((p) =>
+        `<option value="${p.key}">${p.label}</option>`
+      ).join('');
+
       function detectDuration(fromStr, toStr) {
         for (const n of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 24]) {
           if (addMonths(fromStr, n) === toStr) return String(n);
@@ -507,10 +658,54 @@
           document.getElementById(checkboxId).checked = flags[key] !== false;
         });
 
+        document.getElementById('manageClinicVolumePeriod').value = 'currentmonth';
+        await Promise.all([loadClinicTeam(id), loadClinicVolume(id, 'currentmonth')]);
+
         manageModal.style.display = 'flex';
       }
       document.getElementById('manageClinicCancelBtn').addEventListener('click', () => { manageModal.style.display = 'none'; });
       manageModal.addEventListener('click', (e) => { if (e.target === manageModal) manageModal.style.display = 'none'; });
+
+      const ROLE_LABELS = { admin: 'Admin', reception: 'Reception', doctor: 'Doctor', pharmacist: 'Pharmacist' };
+      async function loadClinicTeam(clinicId) {
+        const listEl = document.getElementById('manageClinicTeamList');
+        let team;
+        try {
+          team = await Qlinic.adminGetClinicTeam(clinicId);
+        } catch (err) {
+          listEl.innerHTML = `<div class="sub-line" style="padding:10px 13px;">Could not load: ${Qlinic.escapeHtml(err.message || 'unknown error')}</div>`;
+          return;
+        }
+        const activeCount = team.filter((t) => t.isActive).length;
+        document.getElementById('manageClinicTeamTitle').textContent =
+          `Team (${team.length} ${team.length === 1 ? 'person' : 'people'}, ${activeCount} active)`;
+        listEl.innerHTML = team.length ? team.map((t) => `
+          <div class="team-row${t.isActive ? '' : ' inactive'}">
+            <div>
+              <div class="team-name">${Qlinic.escapeHtml(t.fullName || '(no name)')}</div>
+              <div class="team-email">${Qlinic.escapeHtml(t.email)}</div>
+            </div>
+            <span class="team-role">${ROLE_LABELS[t.role] || t.role}${t.isActive ? '' : ' · inactive'}</span>
+          </div>
+        `).join('') : '<div class="sub-line" style="padding:10px 13px;">No staff added yet.</div>';
+      }
+
+      async function loadClinicVolume(clinicId, preset) {
+        const chip = document.getElementById('manageClinicVolumeChip');
+        chip.textContent = 'Loading…';
+        const range = volumeRange(preset);
+        try {
+          const { bookedCount, seenCount } = await Qlinic.adminGetClinicPatientVolume(
+            clinicId, range ? range.start : null, range ? range.end : null
+          );
+          chip.innerHTML = `<b>${bookedCount}</b> booked &nbsp;·&nbsp; <b>${seenCount}</b> seen`;
+        } catch (err) {
+          chip.textContent = 'Could not load';
+        }
+      }
+      document.getElementById('manageClinicVolumePeriod').addEventListener('change', (e) => {
+        if (manageClinicId) loadClinicVolume(manageClinicId, e.target.value);
+      });
 
       document.getElementById('manageClinicSaveBtn').addEventListener('click', async () => {
         const status = statusSeg.querySelector('.status-seg.selected')?.dataset.status;
@@ -673,6 +868,8 @@
 
       loadClinics();
       loadAdmins();
+      loadEnquiries();
+      loadFeedback();
     })();
   </script>
 </body>

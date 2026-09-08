@@ -2977,6 +2977,68 @@
     if (error) throw error;
   }
 
+  // ---------------- platform admin: part C (084_platform_admin_
+  // insights.sql) — a clinic's own team roster, patient volume, the
+  // marketing site's contact/enquiry inbox, and ClinVision's own
+  // product feedback (never the clinic's data, by design). ----------
+
+  async function adminGetClinicTeam(clinicId) {
+    const { data, error } = await sb.rpc('admin_get_clinic_team', { target_clinic_id: clinicId });
+    if (error) throw error;
+    return data.map((row) => ({
+      id: row.id,
+      fullName: row.full_name,
+      email: row.email,
+      role: row.role,
+      isActive: row.is_active,
+    }));
+  }
+
+  async function adminGetClinicPatientVolume(clinicId, startDate, endDate) {
+    const { data, error } = await sb.rpc('admin_get_clinic_patient_volume', {
+      target_clinic_id: clinicId,
+      p_start: startDate || null,
+      p_end: endDate || null,
+    });
+    if (error) throw error;
+    const row = data[0] || { booked_count: 0, seen_count: 0 };
+    return { bookedCount: row.booked_count, seenCount: row.seen_count };
+  }
+
+  async function adminListContactEnquiries() {
+    const { data, error } = await sb.rpc('admin_list_contact_enquiries');
+    if (error) throw error;
+    return data.map((row) => ({
+      id: row.id,
+      createdAt: row.created_at,
+      name: row.name,
+      phone: row.phone,
+      clinicType: row.clinic_type,
+      clinicName: row.clinic_name,
+      city: row.city,
+      message: row.message,
+      status: row.status,
+    }));
+  }
+
+  async function adminSetEnquiryStatus(id, status) {
+    const { error } = await sb.rpc('admin_set_enquiry_status', { target_id: id, new_status: status });
+    if (error) throw error;
+  }
+
+  async function adminListProductFeedback() {
+    const { data, error } = await sb.rpc('admin_list_product_feedback');
+    if (error) throw error;
+    return data.map((row) => ({
+      id: row.id,
+      clinicName: row.clinic_name,
+      patientName: row.patient_name,
+      rating: row.rating,
+      feedbackText: row.feedback_text,
+      submittedAt: row.submitted_at,
+    }));
+  }
+
   // ---------------- appearance (local device preference, not synced
   // across devices; this is a personal UI setting, not clinic data)
   // ----------------
@@ -3416,6 +3478,11 @@
     applyFeatureNavGating,
     adminGetClinicFeatures,
     adminSetClinicFeatures,
+    adminGetClinicTeam,
+    adminGetClinicPatientVolume,
+    adminListContactEnquiries,
+    adminSetEnquiryStatus,
+    adminListProductFeedback,
 
     getTheme,
     setTheme,

@@ -5366,3 +5366,18 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
 .switch input:checked + .track { background: var(--success); }
 .switch input:checked + .track::before { transform: translateX(17px); }
 .switch input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Manage-clinic popover: Team roster + patient volume (084_platform_
+   admin_insights.sql) -- read-only clinic-snapshot rows, not editable
+   from here, so no field/switch styling needed, just a clean list. */
+.team-list { display: flex; flex-direction: column; gap: 0; max-height: 168px; overflow-y: auto; border: 1px solid var(--grey-200); border-radius: 10px; }
+.team-row { display: flex; align-items: center; gap: 10px; padding: 9px 13px; border-bottom: 1px solid var(--grey-100); }
+.team-row:last-child { border-bottom: none; }
+.team-row .team-name { font-size: 13px; font-weight: 600; color: var(--black); }
+.team-row .team-email { font-size: 11.5px; color: var(--grey-500); }
+.team-row .team-role { margin-left: auto; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--grey-500); background: var(--grey-100); padding: 3px 9px; border-radius: var(--radius-pill); white-space: nowrap; }
+.team-row.inactive { opacity: 0.55; }
+
+.volume-row { display: flex; align-items: center; gap: 12px; }
+.volume-chip { font-size: 13.5px; font-weight: 600; color: var(--black); background: var(--grey-100); border-radius: var(--radius-pill); padding: 8px 16px; white-space: nowrap; }
+.volume-chip b { color: var(--accent-dark); }
