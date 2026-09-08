@@ -1912,7 +1912,7 @@ a { color: inherit; }
   display: inline-flex; align-items: center; gap: 5px;
 }
 .now-chip .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-dark); }
-.chart-canvas-wrap { position: relative; height: 128px; }
+.chart-canvas-wrap { position: relative; height: 156px; }
 /* A hover-only highlight over the chart's real x-axis label zone, so
    the axis reads as clickable without any "click here" text -- the
    canvas's own JS sets its top (matching Chart.js's real scales.x.top
