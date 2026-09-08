@@ -533,6 +533,7 @@
               position: p.position,
               effectiveTime: p.effectiveTime,
               intendedTime: p.intendedTime,
+              arrivedAt: p.arrivedAt,
               createdAt: p.createdAt,
               isPriority: p.isPriority,
               tokenNumber: p.tokenNumber,
@@ -584,7 +585,16 @@
         if (arrivedLate) {
           return `${Qlinic.formatTimestamp(intended)}<span class="board-time-arrived-late">${T.arrivedLate}</span>`;
         }
-        const isLate = intended.getTime() <= Date.now();
+        // A 10-minute grace window before flagging this at all — showing
+        // "late" the instant the exact scheduled minute passes is twitchy
+        // and reads as alarmist for a 1-2 minute slip that's never
+        // actually noticeable to anyone. 10 minutes is comfortably inside
+        // where most delay indicators land (flight boards typically use
+        // ~15 minutes before showing "Delayed"; calendar/queue tools
+        // commonly use 5-10) — enough of a buffer that this only fires
+        // once a wait has become real, not on every trivial slip.
+        const LATE_GRACE_MS = 10 * 60 * 1000;
+        const isLate = Date.now() - intended.getTime() >= LATE_GRACE_MS;
         return `${Qlinic.formatTimestamp(intended)}${isLate ? `<span class="board-time-late">${T.runningLate}</span>` : ''}`;
       }
 
