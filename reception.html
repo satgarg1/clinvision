@@ -1131,6 +1131,11 @@
                 </div>
               </div>
             </div>
+            ${(p.status === 'booked' || p.status === 'no_show') ? `
+            <label class="doctor-form-field" style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;">
+              <input type="checkbox" id="editPatientMarkArrived" style="width:auto;" />
+              <span>Mark as arrived now, at this time</span>
+            </label>` : ''}
             <p class="modal-message" id="editPatientError" style="display:none;color:var(--danger);margin:6px 0 16px;font-size:13px;"></p>
             <div class="modal-actions">
               <button type="button" class="btn-sm primary" id="editPatientSaveBtn">Save</button>
@@ -1198,12 +1203,17 @@
           const feeTypeSelect = backdrop.querySelector('#editPatientFeeType');
           try {
             await Qlinic.updatePatientContact(p.id, update);
-            // Setting an effective time is how a late arrival or a
-            // revived no-show actually rejoins today's queue — one
-            // action, not a separate "Mark arrived" click after this
-            // one. An already-waiting patient just gets re-sorted by
-            // the new time instead.
-            if (p.status === 'booked' || p.status === 'no_show') {
+            // Marking arrived is now its own explicit checkbox above,
+            // never an automatic side effect of saving this modal — it
+            // used to fire any time a booked/no-show patient's time got
+            // touched at all, which wrongly marked someone arrived for
+            // something as unrelated as fixing a typo'd phone number.
+            // A late arrival or a revived no-show still rejoins today's
+            // queue in one action, reception just has to actually check
+            // the box for it, the same way "one action, not two clicks"
+            // was the original intent, just no longer an implicit one.
+            const markArrivedBox = backdrop.querySelector('#editPatientMarkArrived');
+            if (markArrivedBox && markArrivedBox.checked) {
               await Qlinic.markArrived(p.id);
             }
             // Recomputes the amount the same way syncAdjustAmount/Adjust
