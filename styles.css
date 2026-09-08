@@ -5316,6 +5316,11 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
    subscription-period fields are showing — capped with its own
    scroll rather than ever letting Save/Cancel get clipped off-screen. */
 .modal-card.modal-card-lg { max-width: 560px; max-height: calc(100vh - 56px); overflow-y: auto; }
+/* Scoped the same way .holiday-popup-modal .modal-title already is --
+   the shared .modal-title is left-aligned by default (right for a
+   short confirm-dialog heading), but this one names a whole clinic and
+   sits above centered content below it, so it reads better centered too. */
+#manageClinicModal .modal-title { text-align: center; }
 
 .manage-section { padding: 16px 0; border-bottom: 1px solid var(--grey-100); }
 .manage-section:first-of-type { padding-top: 0; }
