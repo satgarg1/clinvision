@@ -187,7 +187,10 @@
       // seeing a different subset of panels. The actual access boundary
       // still lives on each destination page (patient-directory.html,
       // team.html, etc.) — a hidden link here is convenience, not security.
-      const [amAdmin, amDoctor, amPharmacist] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor(), Qlinic.isPharmacist()]);
+      const [amAdmin, amDoctor, amPharmacist, canPharmacy, canBillingAudit, canPatientDirectory] = await Promise.all([
+        Qlinic.isAdmin(), Qlinic.isDoctor(), Qlinic.isPharmacist(),
+        Qlinic.hasFeature('pharmacy'), Qlinic.hasFeature('billing_audit'), Qlinic.hasFeature('patient_directory'),
+      ]);
       if (amDoctor) {
         document.getElementById('receptionNavLink').style.display = 'none';
         document.getElementById('billingNavLink').style.display = 'none';
@@ -205,8 +208,18 @@
       // selected (see applySettingsGrouping below). closedDatesPanel and
       // the three panels with no id (Account & security, Appearance,
       // Session) are never role-hidden, same as before.
+      //
+      // Feature flags go in this same set, not a one-time
+      // Qlinic.applyFeatureNavGating() call after the fact — this page's
+      // own applySettingsGrouping() recomputes every panel's
+      // style.display from roleHiddenIds alone on every group-tab click,
+      // which would silently re-show a feature-hidden panel (Medicines
+      // reappearing after switching tabs and back) if the feature check
+      // weren't part of the same set it actually reads.
       const roleHiddenIds = new Set();
       if (!amAdmin) { roleHiddenIds.add('clinicSettingsPanel'); roleHiddenIds.add('billingAuditPanel'); roleHiddenIds.add('doctorsPanel'); roleHiddenIds.add('teamPanel'); roleHiddenIds.add('endOfDayPanel'); }
+      if (!canBillingAudit) roleHiddenIds.add('billingAuditPanel');
+      if (!canPatientDirectory) roleHiddenIds.add('patientDirectoryPanel');
       // Doctors get read-only access to Closed Dates now (they can't add
       // or remove a closure, but benefit from seeing the list, same as
       // reception does) - never role-hidden, unlike the operational
@@ -217,6 +230,7 @@
       // here too so this hub doesn't offer a dead end. medicinesPanel
       // stays visible; that one IS theirs.
       if (amPharmacist) { roleHiddenIds.add('patientDirectoryPanel'); roleHiddenIds.add('noShowsPanel'); roleHiddenIds.add('displayScreenPanel'); }
+      if (!canPharmacy) roleHiddenIds.add('medicinesPanel');
       // Was hidden for reception -- Team Holidays now covers staff too
       // (reception manages their own the same way a doctor does), so
       // every role has a real reason to be here; nothing left to hide.

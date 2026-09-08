@@ -53,7 +53,7 @@
 
           <table class="qtable">
             <thead>
-              <tr><th>Clinic</th><th>Status</th><th>Trial ends</th><th>Fee</th><th>Note</th><th></th></tr>
+              <tr><th>Clinic</th><th>Status</th><th>Renews / ends</th><th>Fee</th><th>Note</th><th></th></tr>
             </thead>
             <tbody id="clinicRows">
               <tr><td colspan="6">Loading…</td></tr>
@@ -289,20 +289,28 @@
         `).join('');
       }
 
+      // Whatever end date actually applies to this clinic's current
+      // status -- trial_ends_at while trialing, subscription_paid_to
+      // while active -- shown here too, not only inside the manage
+      // popover, so a renewal coming up soon is visible without opening
+      // every clinic to check.
       function clinicRowHtml(c) {
         const statusLabel = c.subscriptionStatus.charAt(0).toUpperCase() + c.subscriptionStatus.slice(1);
-        let trialCell = '—';
-        if (c.subscriptionStatus === 'trialing' && c.trialEndsAt) {
-          const daysLeft = Math.ceil((new Date(c.trialEndsAt) - new Date()) / 86400000);
-          trialCell = daysLeft <= 3
+        let endDate = null;
+        if (c.subscriptionStatus === 'trialing') endDate = c.trialEndsAt;
+        else if (c.subscriptionStatus === 'active') endDate = c.subscriptionPaidTo;
+        let endCell = '—';
+        if (endDate) {
+          const daysLeft = Math.ceil((new Date(endDate) - new Date()) / 86400000);
+          endCell = daysLeft <= 7
             ? `<span class="trial-soon">${daysLeft <= 0 ? 'expired' : 'in ' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's')}</span>`
-            : formatDate(c.trialEndsAt);
+            : formatDate(endDate);
         }
         return `
           <tr>
             <td><div class="clinic-cell-name">${Qlinic.escapeHtml(c.name)}</div><div class="sub-line">${Qlinic.escapeHtml(c.adminEmail)}${c.phone ? ' · ' + Qlinic.escapeHtml(c.phone) : ''}</div></td>
             <td><span class="badge badge-${c.subscriptionStatus}">${statusLabel}</span></td>
-            <td>${trialCell}</td>
+            <td>${endCell}</td>
             <td class="fee-cell${c.subscriptionFeeInr ? '' : ' empty'}">${c.subscriptionFeeInr ? '₹' + c.subscriptionFeeInr.toLocaleString('en-IN') : '—'}</td>
             <td class="note-cell${c.adminNote ? '' : ' empty'}" title="${Qlinic.escapeHtml(c.adminNote || '')}">${Qlinic.escapeHtml(c.adminNote || 'No note')}</td>
             <td><button type="button" class="icon-btn manage-clinic-btn" data-id="${c.id}" title="Manage clinic" aria-label="Manage ${Qlinic.escapeHtml(c.name)}">${pencilIconSvg()}</button></td>
@@ -336,7 +344,13 @@
       }
 
       async function loadClinics() {
-        allClinics = await Qlinic.listPlatformClinics();
+        try {
+          allClinics = await Qlinic.listPlatformClinics();
+        } catch (err) {
+          document.getElementById('clinicRows').innerHTML =
+            `<tr><td colspan="6" class="sub-line">Could not load: ${Qlinic.escapeHtml(err.message || 'unknown error')}</td></tr>`;
+          return;
+        }
         renderStats();
         renderClinicRows();
       }
@@ -358,6 +372,17 @@
       function addMonths(dateStr, n) { const d = parseISO(dateStr); d.setUTCMonth(d.getUTCMonth() + n); return toISO(d); }
       function addDays(dateStr, n) { const d = parseISO(dateStr); d.setUTCDate(d.getUTCDate() + n); return toISO(d); }
       function formatNice(dateStr) { return parseISO(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }); }
+      // Reopening a clinic that was saved with, say, a 1-year period must
+      // show "1 year" in the dropdown, not silently default back to
+      // "1 month" while the actual From/To dates stayed correct underneath
+      // -- the dropdown always defaulting to '1' regardless of the real
+      // saved gap was a genuine bug, not just a cosmetic mismatch.
+      function detectDuration(fromStr, toStr) {
+        for (const n of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 24]) {
+          if (addMonths(fromStr, n) === toStr) return String(n);
+        }
+        return 'custom';
+      }
 
       const manageModal = document.getElementById('manageClinicModal');
       const statusSeg = document.getElementById('manageClinicStatusSeg');
@@ -460,9 +485,11 @@
         dateError.style.display = 'none';
         trialDateError.style.display = 'none';
 
-        durationSelect.value = '1';
         fromInput.value = c.subscriptionPaidFrom || '';
         toInput.value = c.subscriptionPaidTo || '';
+        durationSelect.value = (c.subscriptionPaidFrom && c.subscriptionPaidTo)
+          ? detectDuration(c.subscriptionPaidFrom, c.subscriptionPaidTo)
+          : '1';
         enforceRange(fromInput, toInput, dateError, 'Subscription');
         updateGraceNote();
 
@@ -523,7 +550,19 @@
       // ==================== PLATFORM ADMINS ====================
 
       async function loadAdmins() {
-        const admins = await Qlinic.listPlatformAdmins();
+        let admins;
+        try {
+          admins = await Qlinic.listPlatformAdmins();
+        } catch (err) {
+          // Was silently swallowed before -- the row stayed on "Loading…"
+          // forever with the real error only visible in the console. Now
+          // it surfaces the actual Postgres/PostgREST message so a
+          // missing grant or RLS issue is diagnosable from the page
+          // itself, not a guess.
+          document.getElementById('adminRows').innerHTML =
+            `<tr><td colspan="5" class="sub-line">Could not load: ${Qlinic.escapeHtml(err.message || 'unknown error')}</td></tr>`;
+          return;
+        }
         document.getElementById('adminRows').innerHTML = admins.length ? admins.map((a) => `
           <tr>
             <td>${Qlinic.escapeHtml(a.fullName)}</td>
