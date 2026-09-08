@@ -553,11 +553,18 @@
           heading.textContent = staffMembers[0] ? `Add a holiday for ${staffMembers[0].fullName || staffMembers[0].email}` : 'Add a holiday';
         } else {
           label.textContent = 'Doctor';
-          picker.innerHTML = doctors.map((d) =>
+          // Adding a new holiday only ever makes sense for a doctor who
+          // could actually take one -- doctorById (built from the full,
+          // includeInactive list above) still resolves an inactive
+          // doctor's name correctly wherever View Holidays shows their
+          // past entries; this picker is the "who am I adding a holiday
+          // for" list specifically, and stays active-only.
+          const pickableDoctors = doctors.filter((d) => d.isActive !== false);
+          picker.innerHTML = pickableDoctors.map((d) =>
             `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}</option>`
           ).join('');
-          targetDoctorId = doctors[0] ? doctors[0].id : null;
-          heading.textContent = doctors[0] ? `Add a holiday for ${doctors[0].name}` : 'Add a holiday';
+          targetDoctorId = pickableDoctors[0] ? pickableDoctors[0].id : null;
+          heading.textContent = pickableDoctors[0] ? `Add a holiday for ${pickableDoctors[0].name}` : 'Add a holiday';
         }
         loadHolidays();
       }

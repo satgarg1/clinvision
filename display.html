@@ -98,32 +98,68 @@
         if (ctx.state === 'suspended') ctx.resume();
       }
 
+      // Shared building block for every sound below -- start/dur are
+      // seconds from "now", peak is 0-1 gain, type is the oscillator
+      // waveform (sine=soft/pleasant, triangle=mellower/duller,
+      // square=sharper/more electronic, used deliberately per sound
+      // below so each one has its own character, not just its own notes).
+      function tone(freq, start, dur, peak, type) {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, now + start);
+        gain.gain.exponentialRampToValueAtTime(peak, now + start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now + start);
+        osc.stop(now + start + dur + 0.05);
+      }
+
+      // Same descending two-note "ding-dong" shape as a standard door/
+      // reception chime, pitched and pushed louder than the first pass so
+      // it actually carries across a real waiting room, not just a quiet
+      // desk. Volume is doing most of the real work here (0.35 peak gain
+      // -> 0.6, well under 1.0 so it doesn't clip/distort) -- pitch only
+      // went up moderately (880/659 -> 1046/880), not pushed sharply
+      // higher, since very high frequencies are exactly the range older
+      // ears lose first, and a clinic waiting room skews older than most
+      // rooms this kind of chime plays in.
       function playChime() {
         if (muted || !ctx) return;
-        var now = ctx.currentTime;
-        // Same descending two-note "ding-dong" shape as a standard door/
-        // reception chime, pitched and pushed louder than the first pass
-        // so it actually carries across a real waiting room, not just a
-        // quiet desk. Volume is doing most of the real work here (0.35
-        // peak gain -> 0.6, well under 1.0 so it doesn't clip/distort) --
-        // pitch only went up moderately (880/659 -> 1046/880), not
-        // pushed sharply higher, since very high frequencies are exactly
-        // the range older ears lose first (age-related high-frequency
-        // hearing loss is common), and a clinic waiting room skews older
-        // more than most rooms this kind of chime plays in.
-        [[1046, 0, 0.35], [880, 0.28, 0.55]].forEach(function (t) {
-          var freq = t[0], start = t[1], dur = t[2];
-          var osc = ctx.createOscillator();
-          var gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.value = freq;
-          gain.gain.setValueAtTime(0.0001, now + start);
-          gain.gain.exponentialRampToValueAtTime(0.6, now + start + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
-          osc.connect(gain).connect(ctx.destination);
-          osc.start(now + start);
-          osc.stop(now + start + dur + 0.05);
+        tone(1046, 0, 0.35, 0.6, 'sine');
+        tone(880, 0.28, 0.55, 0.6, 'sine');
+      }
+
+      // Doctor status changes get their own sounds, each deliberately a
+      // different shape (not just different notes on the same chime) so
+      // none of the four ever get confused for each other at a glance --
+      // a patient/staff member hearing the room shouldn't need to look up
+      // to know roughly what just happened.
+      //   - Break: one soft, low, mellow note (triangle -- duller than the
+      //     call chime's sine) -- informational, low urgency on purpose.
+      //   - Emergency: rapid alternating high tones, square wave (the
+      //     sharpest, most electronic-sounding of the four) and the
+      //     loudest -- deliberately the one sound on this board meant to
+      //     actually grab attention.
+      //   - Available again: a short two-note RISE (the call chime falls,
+      //     this climbs) -- reads as "resolved", the opposite feeling on
+      //     purpose.
+      function playBreakChime() {
+        if (muted || !ctx) return;
+        tone(392, 0, 0.6, 0.45, 'triangle');
+      }
+      function playEmergencyChime() {
+        if (muted || !ctx) return;
+        [0, 0.14, 0.28, 0.42].forEach(function (start, i) {
+          tone(i % 2 === 0 ? 784 : 988, start, 0.12, 0.65, 'square');
         });
+      }
+      function playAvailableChime() {
+        if (muted || !ctx) return;
+        tone(659, 0, 0.22, 0.45, 'sine');
+        tone(880, 0.16, 0.35, 0.45, 'sine');
       }
 
       document.addEventListener('click', unlock, { once: true });
@@ -145,7 +181,12 @@
         if (!muted) playChime(); // confirms it's actually on, right when they turn it on
       });
 
-      return { playChime: playChime };
+      return {
+        playChime: playChime,
+        playBreakChime: playBreakChime,
+        playEmergencyChime: playEmergencyChime,
+        playAvailableChime: playAvailableChime,
+      };
     })();
   </script>
 
@@ -232,6 +273,11 @@
       // whoever's already mid-consultation as a brand-new call and chime
       // for something that didn't just happen.
       let lastServedByDoctor = {};
+      // Doctor id -> their status last seen ('on_time'/'running_late'/
+      // 'on_break'/'emergency'), same reasoning and same first-render
+      // guard as lastServedByDoctor above -- a doctor who's already on a
+      // break when the board first loads didn't just start one.
+      let lastStatusByDoctor = {};
       let hasRenderedOnce = false;
 
       // Same 5-color identity palette used on reception and the doctor view:
@@ -553,17 +599,38 @@
         // per-doctor chime isn't worth the complexity for how rare that
         // actually is.
         let someoneNewlyCalled = false;
+        // Same one-sound-per-tick collapsing as the call chime, kept
+        // separate per status so a break and an emergency landing in the
+        // same 5s tick (rare, but possible with several doctors) don't
+        // silently cancel each other out -- each of the three can fire at
+        // most once per tick, independently.
+        let someoneWentOnBreak = false;
+        let someoneWentEmergency = false;
+        let someoneCameBack = false;
         const nextServedByDoctor = {};
+        const nextStatusByDoctor = {};
         all.forEach(({ doctor, queue }) => {
           const servingId = queue.nowServing ? queue.nowServing.id : null;
           nextServedByDoctor[doctor.id] = servingId;
           if (hasRenderedOnce && servingId && servingId !== lastServedByDoctor[doctor.id]) {
             someoneNewlyCalled = true;
           }
+
+          nextStatusByDoctor[doctor.id] = doctor.status;
+          const prevStatus = lastStatusByDoctor[doctor.id];
+          if (hasRenderedOnce && doctor.status !== prevStatus) {
+            if (doctor.status === 'on_break') someoneWentOnBreak = true;
+            else if (doctor.status === 'emergency') someoneWentEmergency = true;
+            else if (doctor.status === 'on_time' && (prevStatus === 'on_break' || prevStatus === 'emergency' || prevStatus === 'running_late')) someoneCameBack = true;
+          }
         });
         lastServedByDoctor = nextServedByDoctor;
+        lastStatusByDoctor = nextStatusByDoctor;
         hasRenderedOnce = true;
         if (someoneNewlyCalled) window.DisplaySound.playChime();
+        if (someoneWentOnBreak) window.DisplaySound.playBreakChime();
+        if (someoneWentEmergency) window.DisplaySound.playEmergencyChime();
+        if (someoneCameBack) window.DisplaySound.playAvailableChime();
 
         document.getElementById('doctorStrip').innerHTML = all.map(({ doctor, queue }, index) => {
           // Reaching this function at all means the doctor already passed
