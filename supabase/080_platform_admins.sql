@@ -33,13 +33,13 @@ create table public.platform_admins (
 
 alter table public.platform_admins enable row level security;
 
--- A platform admin can see the list of platform admins (to render
--- "Everyone with platform access" in admin.html); nobody else has any
--- policy here at all, so a normal clinic user's select simply returns
--- zero rows rather than erroring.
-create policy "platform admins select platform admins" on public.platform_admins
-  for select using (public.is_platform_admin());
-
+-- Defined BEFORE the policy below on purpose: CREATE POLICY resolves and
+-- validates its USING expression immediately (unlike a plpgsql function
+-- body, which is opaque text until it's actually called), so
+-- is_platform_admin() has to already exist or this file fails with
+-- "function public.is_platform_admin() does not exist" the moment the
+-- policy statement runs — a real ordering bug caught while testing this
+-- migration, not a hypothetical one.
 create or replace function public.is_platform_admin()
 returns boolean
 language sql
@@ -53,6 +53,13 @@ as $$
 $$;
 
 grant execute on function public.is_platform_admin() to authenticated;
+
+-- A platform admin can see the list of platform admins (to render
+-- "Everyone with platform access" in admin.html); nobody else has any
+-- policy here at all, so a normal clinic user's select simply returns
+-- zero rows rather than erroring.
+create policy "platform admins select platform admins" on public.platform_admins
+  for select using (public.is_platform_admin());
 
 -- ---------------- reading the platform-admin roster ----------------
 -- auth.users isn't reachable from the client directly (no REST access
