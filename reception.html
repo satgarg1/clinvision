@@ -1131,11 +1131,6 @@
                 </div>
               </div>
             </div>
-            ${(p.status === 'booked' || p.status === 'no_show') ? `
-            <label class="doctor-form-field" style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;">
-              <input type="checkbox" id="editPatientMarkArrived" style="width:auto;" />
-              <span>Mark as arrived now, at this time</span>
-            </label>` : ''}
             <p class="modal-message" id="editPatientError" style="display:none;color:var(--danger);margin:6px 0 16px;font-size:13px;"></p>
             <div class="modal-actions">
               <button type="button" class="btn-sm primary" id="editPatientSaveBtn">Save</button>
@@ -1203,19 +1198,13 @@
           const feeTypeSelect = backdrop.querySelector('#editPatientFeeType');
           try {
             await Qlinic.updatePatientContact(p.id, update);
-            // Marking arrived is now its own explicit checkbox above,
-            // never an automatic side effect of saving this modal — it
-            // used to fire any time a booked/no-show patient's time got
-            // touched at all, which wrongly marked someone arrived for
-            // something as unrelated as fixing a typo'd phone number.
-            // A late arrival or a revived no-show still rejoins today's
-            // queue in one action, reception just has to actually check
-            // the box for it, the same way "one action, not two clicks"
-            // was the original intent, just no longer an implicit one.
-            const markArrivedBox = backdrop.querySelector('#editPatientMarkArrived');
-            if (markArrivedBox && markArrivedBox.checked) {
-              await Qlinic.markArrived(p.id);
-            }
+            // This modal edits patient/appointment details only — it used
+            // to also mark a booked/no-show patient arrived automatically
+            // any time their time field got touched (even just saving an
+            // unrelated phone number fix), which is exactly the wrong
+            // scope for this action. Marking arrived stays the dedicated
+            // "Mark arrived" button's job, not something this modal does
+            // as a side effect, explicit or otherwise.
             // Recomputes the amount the same way syncAdjustAmount/Adjust
             // billing does — switching Consultation type here without
             // also updating the charged amount would leave a mismatched
