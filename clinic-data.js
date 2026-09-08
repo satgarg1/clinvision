@@ -66,6 +66,36 @@
     return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  // navigator.clipboard.writeText needs a secure context (https, or
+  // localhost) — falls back to the older execCommand('copy') trick via a
+  // throwaway offscreen textarea when it's unavailable, rather than
+  // failing silently on an http:// dev setup or an older browser.
+  // Returns true/false instead of throwing, so a call site can show
+  // "Copied" or "Couldn't copy" without wrapping every call in try/catch.
+  async function copyToClipboard(text) {
+    if (!text) return false;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (err) { /* fall through to the execCommand fallback below */ }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (err) {
+      return false;
+    }
+  }
+
   // Shared First/Prev/[jump]/Next/Last pager, replacing the plain
   // Prev/Page X of Y/Next markup every paginated table used to build by
   // hand — one implementation instead of eight near-identical copies
@@ -3129,6 +3159,7 @@
     doctorLabel,
     passwordStrength,
     attachPasswordMeter,
+    copyToClipboard,
 
     getQueueForDoctor,
     getAllQueues,

@@ -4804,6 +4804,14 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
   margin-bottom: 4px;
 }
 .dev-notification-preview a { color: var(--accent); font-weight: 600; word-break: break-all; }
+.dev-notification-phone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
 
 .sub-line {
   font-size: 12px;

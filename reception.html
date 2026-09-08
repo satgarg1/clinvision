@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=307" />
+<link rel="stylesheet" href="styles.css?v=308" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -385,12 +385,39 @@
       // see and click the patient's queue link right now. Surfaced here
       // specifically so we can test/harden queue.html against real bookings;
       // remove once real SMS delivery exists.
-      function renderNotificationPreview(message) {
+      // The form clears its own phone field the moment "Add appointment"/
+      // "Add walk-in" succeeds (same native reset() that now preserves
+      // doctor and time, on purpose, for the *next* patient) — but that
+      // also means the number reception just typed is gone from the
+      // screen entirely a moment later, with no automated WhatsApp/SMS
+      // send yet (see BACKLOG.md) to fall back on, copying it by hand
+      // into WhatsApp is the only way this message actually reaches
+      // anyone today. Surfaced here, next to the message it belongs to,
+      // instead of only ever living in a field that's about to reset.
+      function renderNotificationPreview(message, phone) {
         const box = document.getElementById('patientNotificationPreview');
         if (!message) { box.style.display = 'none'; return; }
         const linked = Qlinic.escapeHtml(message).replace(/(https?:\/\/\S+)/, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-        box.innerHTML = `<div class="dev-notification-eyebrow">Temporary — patient message preview, for testing the queue link</div>${linked}`;
+        box.innerHTML = `
+          <div class="dev-notification-eyebrow">Temporary — patient message preview, for testing the queue link</div>
+          ${phone ? `
+            <div class="dev-notification-phone">
+              <span>${Qlinic.escapeHtml(phone)}</span>
+              <button type="button" class="btn-sm" id="copyPatientPhoneBtn">Copy number</button>
+            </div>
+          ` : ''}
+          ${linked}
+        `;
         box.style.display = 'block';
+        if (phone) {
+          const btn = document.getElementById('copyPatientPhoneBtn');
+          btn.addEventListener('click', async () => {
+            const ok = await Qlinic.copyToClipboard(phone);
+            const original = btn.textContent;
+            btn.textContent = ok ? 'Copied' : 'Could not copy';
+            setTimeout(() => { btn.textContent = original; }, 1500);
+          });
+        }
       }
 
       async function refreshDoctorsCache() {
@@ -1591,7 +1618,7 @@
             return;
           }
           showToast(isPriority ? 'Emergency walk-in added — seen first' : 'Walk-in added to the queue');
-          renderNotificationPreview(addResult.message);
+          renderNotificationPreview(addResult.message, phone);
         } else {
           const date = document.getElementById('pDate').value;
           time = document.getElementById('pTime').value;
@@ -1634,7 +1661,7 @@
           }
           bookedForToday = date === Qlinic.getTodayDate();
           showToast(bookedForToday ? 'Appointment added' : `Appointment booked for ${Qlinic.formatDateLabel(date)} (${Qlinic.formatTime(Qlinic.parseTime(time))})`);
-          renderNotificationPreview(addResult.message);
+          renderNotificationPreview(addResult.message, phone);
         }
 
         // Jump the queue view to whichever doctor this patient was just
