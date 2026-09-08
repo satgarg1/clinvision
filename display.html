@@ -101,17 +101,24 @@
       function playChime() {
         if (muted || !ctx) return;
         var now = ctx.currentTime;
-        // A short descending two-note "ding-dong", the same shape as a
-        // standard door/reception chime -- immediately recognizable as
-        // "something just happened" without needing to be loud or long.
-        [[880, 0, 0.35], [659, 0.28, 0.55]].forEach(function (t) {
+        // Same descending two-note "ding-dong" shape as a standard door/
+        // reception chime, pitched and pushed louder than the first pass
+        // so it actually carries across a real waiting room, not just a
+        // quiet desk. Volume is doing most of the real work here (0.35
+        // peak gain -> 0.6, well under 1.0 so it doesn't clip/distort) --
+        // pitch only went up moderately (880/659 -> 1046/880), not
+        // pushed sharply higher, since very high frequencies are exactly
+        // the range older ears lose first (age-related high-frequency
+        // hearing loss is common), and a clinic waiting room skews older
+        // more than most rooms this kind of chime plays in.
+        [[1046, 0, 0.35], [880, 0.28, 0.55]].forEach(function (t) {
           var freq = t[0], start = t[1], dur = t[2];
           var osc = ctx.createOscillator();
           var gain = ctx.createGain();
           osc.type = 'sine';
           osc.frequency.value = freq;
           gain.gain.setValueAtTime(0.0001, now + start);
-          gain.gain.exponentialRampToValueAtTime(0.35, now + start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.6, now + start + 0.02);
           gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
           osc.connect(gain).connect(ctx.destination);
           osc.start(now + start);
