@@ -80,7 +80,13 @@ begin
     raise exception 'Not authorized.';
   end if;
   return query
-    select pa.id, u.email, pa.full_name, pa.phone, pa.is_active, pa.created_at
+    -- ::text is load-bearing, not decoration -- auth.users.email is
+    -- `character varying`, and RETURN QUERY requires an exact type
+    -- match against the declared `returns table` column (no implicit
+    -- varchar->text coercion the way a plain SELECT would allow), which
+    -- is exactly the "structure of query does not match function result
+    -- type" error this threw before the cast was added.
+    select pa.id, u.email::text, pa.full_name, pa.phone, pa.is_active, pa.created_at
     from public.platform_admins pa
     join auth.users u on u.id = pa.id
     order by pa.created_at asc;
