@@ -3971,6 +3971,24 @@ th.th-filterable { position: relative; }
 .qsection-note { font-size: 12px; color: var(--grey-500); font-weight: 400; }
 .qsection-body { padding-top: 6px; }
 
+/* Reviewed as a mockup first
+   (https://claude.ai/code/artifact/71ab98aa-de6a-4f79-b226-2b76f811586e) --
+   only "Booked, not yet arrived" gets tinted, not Waiting: it's the
+   section reception actually scans for who's overdue, Waiting is just
+   confirming what's already settled. Reuses --grey-100 (already the
+   Booked/Waiting badges' own color) rather than introducing a new grey
+   just for this. The badge and the No-show button both get an explicit
+   white background here so they still read as distinct chips against
+   the tint instead of blending into it. */
+.qsection-tinted {
+  background: var(--grey-100);
+  border-radius: 12px;
+  padding: 14px 16px 10px;
+  margin-top: -6px;
+}
+.qsection-tinted .badge-booked { background: var(--white); }
+.qsection-tinted .btn-sm.danger { background: var(--white); }
+
 .token-num { font-variant-numeric: tabular-nums; color: var(--grey-500); font-weight: 700; }
 .actions-cell { white-space: nowrap; }
 
