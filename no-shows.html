@@ -164,6 +164,7 @@
       let doctorFilterIds = new Set();
       let genderFilterValues = new Set();
       let typeFilterValues = new Set();
+      let sortDirection = 'asc'; // 'asc' = oldest appointment first, 'desc' = newest first
 
       function pad2(n) { return String(n).padStart(2, '0'); }
       function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
@@ -293,12 +294,21 @@
       }
 
       function filteredNoShows() {
-        return searchAndDateNoShows().filter((p) => {
+        const result = searchAndDateNoShows().filter((p) => {
           if (doctorFilterIds.size > 0 && !doctorFilterIds.has(p.doctorId)) return false;
           if (genderFilterValues.size > 0 && !genderFilterValues.has(genderKey(p.gender))) return false;
           if (typeFilterValues.size > 0 && !typeFilterValues.has(p.type)) return false;
           return true;
         });
+        // Appointment date first (this used to have no sort at all, so
+        // a range view showed rows in whatever order the underlying
+        // per-day queries happened to return, not chronological), ties
+        // on the same day broken alphabetically by name — same shape as
+        // Revenue's own visit-date sort, tie-break swapped for name since
+        // there's no invoice createdAt here to fall back on.
+        result.sort((a, b) => (a.tokenDate || '').localeCompare(b.tokenDate || '') || a.name.localeCompare(b.name));
+        if (sortDirection === 'desc') result.reverse();
+        return result;
       }
 
       function doctorFilterOptions() {
@@ -391,6 +401,10 @@
       function FILTER_ICON_SVG(className) {
         return `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>`;
       }
+      function SORT_ARROW_SVG() {
+        const rotated = sortDirection === 'desc' ? ' style="transform:rotate(180deg);"' : '';
+        return `<svg class="th-filter-icon active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"${rotated}><path d="M12 5v14M6 11l6-6 6 6"/></svg>`;
+      }
 
       function renderPager(total) {
         const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -451,7 +465,9 @@
               <col style="width:14%;"><col style="width:15%;"><col style="width:11%;"><col style="width:14%;">
             </colgroup>
             <thead><tr>
-              <th>Patient</th><th>Phone</th><th>Appointment date</th><th>Scheduled time</th>
+              <th>Patient</th><th>Phone</th>
+              <th class="th-filterable"><span class="th-filter-trigger" id="dateSortTrigger">Appointment date ${SORT_ARROW_SVG()}</span></th>
+              <th>Scheduled time</th>
               <th class="th-filterable"><span class="th-filter-trigger" id="doctorFilterTrigger" title="Click to filter by Doctor">Doctor ${FILTER_ICON_SVG(doctorIconClass)}</span></th>
               <th class="th-filterable"><span class="th-filter-trigger" id="genderFilterTrigger" title="Click to filter by Gender">Gender ${FILTER_ICON_SVG(genderIconClass)}</span></th>
               <th class="th-filterable"><span class="th-filter-trigger" id="typeFilterTrigger" title="Click to filter by Type">Type ${FILTER_ICON_SVG(typeIconClass)}</span></th>
@@ -478,6 +494,10 @@
             </tbody>
           </table>
         `;
+        document.getElementById('dateSortTrigger').addEventListener('click', () => {
+          sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+          renderTable();
+        });
         document.getElementById('doctorFilterTrigger').addEventListener('click', (e) => {
           e.stopPropagation();
           openColumnFilter('doctor', e.currentTarget.closest('th'), doctorFilterOptions(), doctorFilterIds, onNoShowFilterChange);
