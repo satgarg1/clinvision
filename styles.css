@@ -5340,6 +5340,11 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
    never a second one visible to divide from. */
 .manage-section { padding: 0; }
 .manage-section-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; color: var(--black); margin-bottom: 14px; text-align: center; }
+/* Sized to fit Subscription (the tallest tab, with the period fields
+   showing) so switching pills never visibly resizes the popover --
+   shorter tabs (Billing, Volume) just leave breathing room below
+   instead of the whole card jumping height on every click. */
+.manage-panels { min-height: 330px; }
 .manage-stack { display: flex; flex-direction: column; gap: 14px; }
 
 /* Subscription status: a segmented control, matching subscription_status's

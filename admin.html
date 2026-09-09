@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=319" />
+<link rel="stylesheet" href="styles.css?v=320" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -29,8 +29,11 @@
       </div>
       <nav>
         <a href="#" class="nav-link active" data-page="clinics">Clinics</a>
+        <a href="#" class="nav-link" data-page="enquiries">Enquiries</a>
+        <a href="#" class="nav-link" data-page="feedback">Feedback</a>
+        <a href="#" class="nav-link" data-page="errors">Errors</a>
         <a href="#" class="nav-link" data-page="admins">Platform Admins</a>
-        <a href="index.html" class="nav-link pinned-bottom leave-app-link">Back to main site</a>
+        <a href="#" id="logoutLink" class="btn-sm danger-solid" style="margin-top:auto;text-decoration:none;text-align:center;padding:10px 12px;">Log out</a>
       </nav>
     </aside>
 
@@ -49,9 +52,6 @@
             <button type="button" data-tab="all" class="active">All clinics</button>
             <button type="button" data-tab="trial">Trial pipeline</button>
             <button type="button" data-tab="recent">Recent signups</button>
-            <button type="button" data-tab="enquiries">Enquiries</button>
-            <button type="button" data-tab="feedback">Feedback</button>
-            <button type="button" data-tab="errors">Errors</button>
           </div>
 
           <table class="qtable" id="clinicTable">
@@ -62,12 +62,19 @@
               <tr><td colspan="7">Loading…</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
 
-          <!-- Not tied to any one clinic -- inbound leads from the
-               marketing site's contact form (contact_enquiries), so it
-               sits as its own tab here rather than nested inside a
-               clinic's own row. -->
-          <table class="qtable" id="enquiriesTable" style="display:none;">
+      <!-- ===================== ENQUIRIES ===================== -->
+      <!-- Not tied to any one clinic -- inbound leads from the marketing
+           site's contact form (contact_enquiries) -- its own page in the
+           sidebar now, not a tab buried inside Clinics. -->
+      <div class="page" id="page-enquiries" style="display:none;">
+        <div class="app-topbar">
+          <div><h1>Enquiries</h1></div>
+        </div>
+        <div class="panel">
+          <table class="qtable" id="enquiriesTable">
             <thead>
               <tr><th>Received</th><th>Name</th><th>Phone</th><th>Clinic type</th><th>Clinic name</th><th>City</th><th>Message</th><th>Status</th></tr>
             </thead>
@@ -75,14 +82,32 @@
               <tr><td colspan="8">Loading…</td></tr>
             </tbody>
           </table>
-          <div class="pager" id="enquiryPager" style="display:none;"></div>
+          <div class="pager" id="enquiryPager"></div>
+        </div>
+      </div>
 
-          <!-- Also not tied to any one clinic -- ClinVision's own
-               post-visit product feedback, collected on queue.html and
-               deliberately unreadable by the clinic that generated it
-               (product_feedback has no select policy for authenticated
-               users at all; a platform admin is the intended reader). -->
-          <div id="feedbackFilterRow" style="display:none;align-items:flex-end;gap:16px 24px;flex-wrap:wrap;margin-bottom:14px;">
+      <!-- ===================== FEEDBACK ===================== -->
+      <!-- Also not tied to any one clinic -- ClinVision's own post-visit
+           product feedback, collected on queue.html and deliberately
+           unreadable by the clinic that generated it (product_feedback
+           has no select policy for authenticated users at all; a
+           platform admin is the intended reader). -->
+      <div class="page" id="page-feedback" style="display:none;">
+        <div class="app-topbar">
+          <div><h1>Feedback</h1></div>
+        </div>
+        <div class="panel">
+          <!-- Sort pill leads the row, same as revenue.html's own
+               Single day/Range toggle -- margin-bottom:0 overrides
+               .period-pills' own default bottom margin, which otherwise
+               throws off align-items:flex-end against the labeled
+               selects beside it (the exact fix revenue.html's
+               #viewModeToggle already applies to the same collision). -->
+          <div id="feedbackFilterRow" style="display:flex;align-items:flex-end;gap:16px 24px;flex-wrap:wrap;margin-bottom:14px;">
+            <div class="period-pills" id="feedbackSortPills" style="margin-bottom:0;">
+              <button type="button" class="period-pill active" data-sort="newest">Newest first</button>
+              <button type="button" class="period-pill" data-sort="oldest">Oldest first</button>
+            </div>
             <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
               <label class="pill-label">Clinic</label>
               <select id="feedbackClinicFilter" class="pill-select"><option value="">All clinics</option></select>
@@ -98,12 +123,8 @@
                 <option value="1">1 star</option>
               </select>
             </div>
-            <div class="period-pills" id="feedbackSortPills">
-              <button type="button" class="period-pill active" data-sort="newest">Newest first</button>
-              <button type="button" class="period-pill" data-sort="oldest">Oldest first</button>
-            </div>
           </div>
-          <table class="qtable" id="feedbackTable" style="display:none;">
+          <table class="qtable" id="feedbackTable">
             <thead>
               <tr><th>Submitted</th><th>Clinic</th><th>Patient</th><th>Rating</th><th>Comment</th></tr>
             </thead>
@@ -111,14 +132,21 @@
               <tr><td colspan="5">Loading…</td></tr>
             </tbody>
           </table>
-          <div class="pager" id="feedbackPager" style="display:none;"></div>
+          <div class="pager" id="feedbackPager"></div>
+        </div>
+      </div>
 
-          <!-- Also not tied to any one clinic -- a JS error anywhere in
-               the app used to fail silently for whoever hit it, with no
-               record anywhere (085_client_errors.sql). Grouped by
-               (page, message) server-side, not a raw row per
-               occurrence. -->
-          <table class="qtable" id="errorsTable" style="display:none;">
+      <!-- ===================== ERRORS ===================== -->
+      <!-- Also not tied to any one clinic -- a JS error anywhere in the
+           app used to fail silently for whoever hit it, with no record
+           anywhere (085_client_errors.sql). Grouped by (page, message)
+           server-side, not a raw row per occurrence. -->
+      <div class="page" id="page-errors" style="display:none;">
+        <div class="app-topbar">
+          <div><h1>Errors</h1></div>
+        </div>
+        <div class="panel">
+          <table class="qtable" id="errorsTable">
             <thead>
               <tr><th>Message</th><th>Page</th><th>Occurrences</th><th>Clinics affected</th><th>First seen</th><th>Last seen</th></tr>
             </thead>
@@ -126,7 +154,7 @@
               <tr><td colspan="6">Loading…</td></tr>
             </tbody>
           </table>
-          <div class="pager" id="errorPager" style="display:none;"></div>
+          <div class="pager" id="errorPager"></div>
         </div>
       </div>
 
@@ -187,6 +215,13 @@
         <button type="button" class="period-pill" data-group="features">Features</button>
       </div>
 
+      <!-- Fixed height (see .manage-panels), not "whatever the visible
+           section happens to need" -- the popover was visibly resizing
+           on every pill click since Subscription's content is much
+           taller than Billing's, which reads as cheap/janky. Sized to
+           fit the tallest tab (Subscription, with the period fields
+           showing); shorter tabs just leave breathing room below. -->
+      <div class="manage-panels" id="manageClinicPanels">
       <div class="manage-section" data-group="subscription">
         <div class="manage-section-title">Subscription status</div>
         <div class="status-segmented" id="manageClinicStatusSeg">
@@ -289,6 +324,7 @@
           </label>
         </div>
       </div>
+      </div>
 
       <div class="modal-actions">
         <button type="button" class="btn-sm primary" id="manageClinicSaveBtn">Save changes</button>
@@ -344,9 +380,21 @@
           e.preventDefault();
           document.querySelectorAll('.app-sidebar .nav-link[data-page]').forEach((l) => l.classList.remove('active'));
           link.classList.add('active');
-          document.getElementById('page-clinics').style.display = link.dataset.page === 'clinics' ? '' : 'none';
-          document.getElementById('page-admins').style.display = link.dataset.page === 'admins' ? '' : 'none';
+          document.querySelectorAll('.app-main > .page').forEach((page) => {
+            page.style.display = page.id === 'page-' + link.dataset.page ? '' : 'none';
+          });
         });
+      });
+
+      document.getElementById('logoutLink').addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+          await Qlinic.logout();
+        } catch (err) {
+          showToast(err.message || 'Could not log out — please try again.');
+          return;
+        }
+        window.location.href = 'login.html';
       });
 
       // ==================== CLINICS ====================
@@ -480,23 +528,7 @@
         document.querySelectorAll('#clinicTabs button').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         clinicTab = btn.dataset.tab;
-
-        // MRR/Trialing/Suspended/Total clinics stay visible on every
-        // tab, including Enquiries and Feedback — they're headline
-        // business context, not something specific to the clinic list
-        // below them, so there's no reason to lose that context while
-        // triaging a lead or reading feedback.
-        const isClinicView = clinicTab === 'all' || clinicTab === 'trial' || clinicTab === 'recent';
-        document.getElementById('clinicTable').style.display = isClinicView ? '' : 'none';
-        document.getElementById('enquiriesTable').style.display = clinicTab === 'enquiries' ? '' : 'none';
-        document.getElementById('enquiryPager').style.display = clinicTab === 'enquiries' ? '' : 'none';
-        document.getElementById('feedbackFilterRow').style.display = clinicTab === 'feedback' ? 'flex' : 'none';
-        document.getElementById('feedbackTable').style.display = clinicTab === 'feedback' ? '' : 'none';
-        document.getElementById('feedbackPager').style.display = clinicTab === 'feedback' ? '' : 'none';
-        document.getElementById('errorsTable').style.display = clinicTab === 'errors' ? '' : 'none';
-        document.getElementById('errorPager').style.display = clinicTab === 'errors' ? '' : 'none';
-
-        if (isClinicView) renderClinicRows();
+        renderClinicRows();
       });
 
       // Same PAGE_SIZE/pager component as team.html's own list (10 rows,
