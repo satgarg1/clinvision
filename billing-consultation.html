@@ -249,6 +249,11 @@
       // row (otherwise it stays stuck on Billing Audit's "seen without an
       // invoice" list forever, even after being billed).
       let currentPatientId = null;
+      // Bumped on every checkPhoneLookup() call, so a response that comes
+      // back after a NEWER lookup has already started (phone blur firing
+      // just after a date change, or two date changes in quick succession)
+      // never overwrites the fresher one's result with a stale match.
+      let phoneLookupSeq = 0;
 
       function updateFeeTypeOptions() {
         const doctorId = document.getElementById('bDoctor').value;
@@ -314,6 +319,7 @@
       // typed the phone to look the patient up, so there's no extra
       // confirmation step, just editable fields ready to bill from.
       async function checkPhoneLookup() {
+        const mySeq = ++phoneLookupSeq;
         const phone = document.getElementById('bPhone').value.trim();
         const hint = document.getElementById('lookupHint');
         currentInvoiceId = null;
@@ -330,6 +336,11 @@
         // yesterday: it looks up THAT day's visit, not today's.
         const billingDate = document.getElementById('bDate').value || Qlinic.getTodayDate();
         const match = await Qlinic.getBillingPatientLookup(phone, billingDate);
+        // A newer lookup (another date/phone change fired while this one
+        // was still in flight) has already started and will supersede
+        // this result — applying it now would overwrite the fresher
+        // in-progress state with an outdated match. Discard.
+        if (mySeq !== phoneLookupSeq) return;
         if (!match) {
           hint.textContent = 'No previous visit found for this number, fill in details manually.';
           hint.className = 'slot-hint';
@@ -529,7 +540,33 @@
           document.getElementById('bPhone').focus();
           return;
         }
-        const invoiceDate = document.getElementById('bDate').value || Qlinic.getTodayDate();
+        let invoiceDate = document.getElementById('bDate').value || Qlinic.getTodayDate();
+
+        // currentPatientId/currentInvoiceId are set by checkPhoneLookup(),
+        // which runs on the phone field's blur and the date field's
+        // change — but checkPhoneLookup nulls both out the INSTANT it
+        // starts, then awaits a couple of Supabase round trips before
+        // setting them for real. Change the date and hit Print quickly
+        // (well within normal reception speed) and this submit handler
+        // used to run first, printing with whatever currentPatientId
+        // happened to be sitting at — often null right after a date
+        // change — so the bill never linked to that day's patients row
+        // and stayed stuck on Billing Audit's "seen without an invoice"
+        // list even though it had just been billed. Re-resolving fresh
+        // and awaited here, against exactly the phone + date on screen
+        // right now, makes correctness independent of that race entirely.
+        const freshMatch = await Qlinic.getBillingPatientLookup(phone, invoiceDate);
+        currentPatientId = (freshMatch && freshMatch.todayPatientId) || null;
+        currentInvoiceId = (freshMatch && freshMatch.todayInvoiceId) || null;
+        if (freshMatch && freshMatch.todayVisitDate) {
+          // Same correction checkPhoneLookup applies when the exact date
+          // has no visit but an unbilled one exists on a different day —
+          // keep the printed date and the patient_id it links to in sync,
+          // since this fresh check can supersede whatever the background
+          // lookup last left in the date field.
+          invoiceDate = freshMatch.todayVisitDate;
+          document.getElementById('bDate').value = invoiceDate;
+        }
 
         // This form has no built-in tie to a real visit — unlike the
         // auto-billed-on-arrival path (Reception's queue), which always
