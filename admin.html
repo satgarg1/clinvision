@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=318" />
+<link rel="stylesheet" href="styles.css?v=319" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -82,6 +82,27 @@
                deliberately unreadable by the clinic that generated it
                (product_feedback has no select policy for authenticated
                users at all; a platform admin is the intended reader). -->
+          <div id="feedbackFilterRow" style="display:none;align-items:flex-end;gap:16px 24px;flex-wrap:wrap;margin-bottom:14px;">
+            <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+              <label class="pill-label">Clinic</label>
+              <select id="feedbackClinicFilter" class="pill-select"><option value="">All clinics</option></select>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+              <label class="pill-label">Rating</label>
+              <select id="feedbackRatingFilter" class="pill-select">
+                <option value="">All ratings</option>
+                <option value="5">5 stars</option>
+                <option value="4">4 stars</option>
+                <option value="3">3 stars</option>
+                <option value="2">2 stars</option>
+                <option value="1">1 star</option>
+              </select>
+            </div>
+            <div class="period-pills" id="feedbackSortPills">
+              <button type="button" class="period-pill active" data-sort="newest">Newest first</button>
+              <button type="button" class="period-pill" data-sort="oldest">Oldest first</button>
+            </div>
+          </div>
           <table class="qtable" id="feedbackTable" style="display:none;">
             <thead>
               <tr><th>Submitted</th><th>Clinic</th><th>Patient</th><th>Rating</th><th>Comment</th></tr>
@@ -158,7 +179,15 @@
     <div class="modal-card modal-card-lg">
       <h2 class="modal-title" id="manageClinicTitle">Manage clinic</h2>
 
-      <div class="manage-section">
+      <div class="period-pills" id="manageClinicGroupTabs" style="margin:0 0 22px;justify-content:center;display:flex;">
+        <button type="button" class="period-pill active" data-group="subscription">Subscription</button>
+        <button type="button" class="period-pill" data-group="billing">Billing</button>
+        <button type="button" class="period-pill" data-group="team">Team</button>
+        <button type="button" class="period-pill" data-group="volume">Volume</button>
+        <button type="button" class="period-pill" data-group="features">Features</button>
+      </div>
+
+      <div class="manage-section" data-group="subscription">
         <div class="manage-section-title">Subscription status</div>
         <div class="status-segmented" id="manageClinicStatusSeg">
           <button type="button" class="status-seg" data-status="trialing">Trialing</button>
@@ -213,7 +242,7 @@
         </div>
       </div>
 
-      <div class="manage-section">
+      <div class="manage-section" data-group="billing">
         <div class="manage-section-title">Billing</div>
         <div class="manage-stack">
           <div class="field"><label>Fee (₹ / month)</label><input type="number" min="0" id="manageClinicFee" /></div>
@@ -221,12 +250,12 @@
         </div>
       </div>
 
-      <div class="manage-section">
+      <div class="manage-section" data-group="team">
         <div class="manage-section-title" id="manageClinicTeamTitle">Team</div>
         <div class="team-list" id="manageClinicTeamList"><div class="sub-line" style="text-align:center;">Loading…</div></div>
       </div>
 
-      <div class="manage-section">
+      <div class="manage-section" data-group="volume">
         <div class="manage-section-title">Patient volume</div>
         <div class="volume-row">
           <select id="manageClinicVolumePeriod" class="pill-select"></select>
@@ -235,7 +264,7 @@
         <p class="sub-line" id="manageClinicActivityLine" style="margin-top:10px;"></p>
       </div>
 
-      <div class="manage-section">
+      <div class="manage-section" data-group="features">
         <div class="manage-section-title">Feature access</div>
         <div class="feature-list" id="manageClinicFeatureList">
           <label class="feature-row">
@@ -461,6 +490,7 @@
         document.getElementById('clinicTable').style.display = isClinicView ? '' : 'none';
         document.getElementById('enquiriesTable').style.display = clinicTab === 'enquiries' ? '' : 'none';
         document.getElementById('enquiryPager').style.display = clinicTab === 'enquiries' ? '' : 'none';
+        document.getElementById('feedbackFilterRow').style.display = clinicTab === 'feedback' ? 'flex' : 'none';
         document.getElementById('feedbackTable').style.display = clinicTab === 'feedback' ? '' : 'none';
         document.getElementById('feedbackPager').style.display = clinicTab === 'feedback' ? '' : 'none';
         document.getElementById('errorsTable').style.display = clinicTab === 'errors' ? '' : 'none';
@@ -533,6 +563,10 @@
 
       let allFeedback = [];
       let feedbackPage = 1;
+      let feedbackClinicFilter = '';
+      let feedbackRatingFilter = '';
+      let feedbackSort = 'newest';
+
       async function loadFeedback() {
         try {
           allFeedback = await Qlinic.adminListProductFeedback();
@@ -541,13 +575,30 @@
             `<tr><td colspan="5" class="sub-line">Could not load: ${Qlinic.escapeHtml(err.message || 'unknown error')}</td></tr>`;
           return;
         }
+        const clinicNames = [...new Set(allFeedback.map((f) => f.clinicName))].sort();
+        document.getElementById('feedbackClinicFilter').innerHTML =
+          '<option value="">All clinics</option>' +
+          clinicNames.map((n) => `<option value="${Qlinic.escapeHtml(n)}">${Qlinic.escapeHtml(n)}</option>`).join('');
         renderFeedbackRows();
       }
+
+      function filteredSortedFeedback() {
+        let rows = allFeedback;
+        if (feedbackClinicFilter) rows = rows.filter((f) => f.clinicName === feedbackClinicFilter);
+        if (feedbackRatingFilter) rows = rows.filter((f) => f.rating === Number(feedbackRatingFilter));
+        rows = [...rows].sort((a, b) => {
+          const diff = new Date(a.submittedAt) - new Date(b.submittedAt);
+          return feedbackSort === 'oldest' ? diff : -diff;
+        });
+        return rows;
+      }
+
       function renderFeedbackRows() {
-        const totalPages = Math.max(1, Math.ceil(allFeedback.length / PAGE_SIZE));
+        const filtered = filteredSortedFeedback();
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
         if (feedbackPage > totalPages) feedbackPage = totalPages;
         const start = (feedbackPage - 1) * PAGE_SIZE;
-        const pageRows = allFeedback.slice(start, start + PAGE_SIZE);
+        const pageRows = filtered.slice(start, start + PAGE_SIZE);
 
         document.getElementById('feedbackRows').innerHTML = pageRows.length ? pageRows.map((f) => `
           <tr>
@@ -557,12 +608,32 @@
             <td>${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}</td>
             <td>${f.feedbackText ? Qlinic.escapeHtml(f.feedbackText) : '<span class="sub-line">No comment</span>'}</td>
           </tr>
-        `).join('') : '<tr><td colspan="5" class="sub-line">No feedback yet.</td></tr>';
+        `).join('') : '<tr><td colspan="5" class="sub-line">No feedback matches these filters.</td></tr>';
 
         const pager = document.getElementById('feedbackPager');
         pager.innerHTML = Qlinic.pagerHtml(feedbackPage, totalPages);
         Qlinic.wirePager(pager, feedbackPage, totalPages, (p) => { feedbackPage = p; renderFeedbackRows(); });
       }
+
+      document.getElementById('feedbackClinicFilter').addEventListener('change', (e) => {
+        feedbackClinicFilter = e.target.value;
+        feedbackPage = 1;
+        renderFeedbackRows();
+      });
+      document.getElementById('feedbackRatingFilter').addEventListener('change', (e) => {
+        feedbackRatingFilter = e.target.value;
+        feedbackPage = 1;
+        renderFeedbackRows();
+      });
+      document.getElementById('feedbackSortPills').addEventListener('click', (e) => {
+        const btn = e.target.closest('.period-pill');
+        if (!btn) return;
+        document.querySelectorAll('#feedbackSortPills .period-pill').forEach((p) => p.classList.remove('active'));
+        btn.classList.add('active');
+        feedbackSort = btn.dataset.sort;
+        feedbackPage = 1;
+        renderFeedbackRows();
+      });
 
       // ==================== ERRORS (client_errors) ====================
 
@@ -656,6 +727,26 @@
       }
 
       const manageModal = document.getElementById('manageClinicModal');
+
+      // The 5 sections used to just stack top to bottom, which meant
+      // scrolling past 4 of them to reach a 5th every single time.
+      // These pills swap one visible at a time instead -- same real
+      // .period-pills/.period-pill gradient-tab component Settings and
+      // Analytics already use, not a new one.
+      const manageGroupTabs = document.getElementById('manageClinicGroupTabs');
+      function showManageGroup(group) {
+        manageGroupTabs.querySelectorAll('.period-pill').forEach((p) => {
+          p.classList.toggle('active', p.dataset.group === group);
+        });
+        document.querySelectorAll('#manageClinicModal .manage-section[data-group]').forEach((s) => {
+          s.hidden = s.dataset.group !== group;
+        });
+      }
+      manageGroupTabs.addEventListener('click', (e) => {
+        const btn = e.target.closest('.period-pill');
+        if (btn) showManageGroup(btn.dataset.group);
+      });
+
       const statusSeg = document.getElementById('manageClinicStatusSeg');
       const activeFields = document.getElementById('manageClinicActiveFields');
       const trialFields = document.getElementById('manageClinicTrialFields');
@@ -745,6 +836,7 @@
         const c = allClinics.find((x) => x.id === id);
         if (!c) return;
         manageClinicId = id;
+        showManageGroup('subscription');
         document.getElementById('manageClinicTitle').textContent = 'Manage ' + c.name;
         feeInput.value = c.subscriptionFeeInr || '';
         noteInput.value = c.adminNote || '';
