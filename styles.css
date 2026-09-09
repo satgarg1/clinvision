@@ -5402,6 +5402,11 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
 .team-row .team-role { margin-left: auto; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--grey-500); background: var(--grey-100); padding: 3px 9px; border-radius: var(--radius-pill); white-space: nowrap; }
 .team-row.inactive { opacity: 0.55; }
 
-.volume-row { display: flex; align-items: center; gap: 12px; }
+/* Stacked and centered -- period picker, then the number it produced,
+   then the activity line, each reading as the result of the one above
+   it rather than two unrelated controls glued into one row. */
+.volume-stack { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.volume-stack select { width: 220px; text-align: center; }
 .volume-chip { font-size: 13.5px; font-weight: 600; color: var(--black); background: var(--grey-100); border-radius: var(--radius-pill); padding: 8px 16px; white-space: nowrap; }
 .volume-chip b { color: var(--accent-dark); }
+.volume-stack .sub-line { margin: 0; }
