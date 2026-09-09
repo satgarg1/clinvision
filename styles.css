@@ -5308,6 +5308,10 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
 .badge-trialing { background: var(--warning-bg); color: var(--warning); }
 .badge-suspended { background: var(--danger-bg); color: var(--danger); }
 .trial-soon { color: var(--warning); font-weight: 600; }
+/* A paying clinic that's gone quiet (086_clinic_activity_signal.sql) --
+   danger, not warning, since this is a churn risk on a clinic already
+   paying, a step more serious than a trial about to lapse. */
+.activity-quiet { color: var(--danger); font-weight: 600; }
 .fee-cell.empty, .note-cell.empty { color: var(--grey-500); }
 .note-cell { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 

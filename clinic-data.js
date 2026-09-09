@@ -2874,6 +2874,7 @@
       adminNote: row.admin_note,
       subscriptionPaidFrom: row.subscription_paid_from,
       subscriptionPaidTo: row.subscription_paid_to,
+      lastPatientAddedAt: row.last_patient_added_at,
       createdAt: row.created_at,
     };
   }
