@@ -22,7 +22,14 @@
 -- 085_client_errors.sql.
 -- ============================================================
 
-create or replace function public.admin_list_clinics()
+-- CREATE OR REPLACE FUNCTION cannot change a function's return row
+-- shape (adding a column to a RETURNS TABLE counts as a shape change,
+-- not just a body edit) -- Postgres requires the old one dropped first.
+-- Only this one call site (admin.html, via Qlinic.listPlatformClinics())
+-- depends on it, so dropping it here is safe.
+drop function if exists public.admin_list_clinics();
+
+create function public.admin_list_clinics()
 returns table (
   id uuid, name text, admin_email text, phone text,
   subscription_status text, trial_ends_at timestamptz,
