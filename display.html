@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=317" />
+<link rel="stylesheet" href="styles.css?v=318" />
 </head>
 <body class="display-body">
   <!-- Applied synchronously, before anything else renders, so a device
@@ -33,6 +33,18 @@
   <button class="display-theme-toggle display-sound-toggle" id="displaySoundToggle" aria-label="Turn call sound on or off">
     <svg class="icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
     <svg class="icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none;"><path d="M11 5 6 9H2v6h4l5 4z"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>
+  </button>
+  <!-- Same faint, quiet treatment as the two toggles above -- a per-
+       device fix for smart TV browsers that don't honor width=device-
+       width correctly and render this board oversized (or cut off) for
+       the actual screen. Set once by whoever installs the board on a
+       given TV, then never touched again; saved per-device below, same
+       as the theme toggle's own storage key. -->
+  <button class="display-theme-toggle display-zoom-out" id="displayZoomOut" aria-label="Shrink the board to fit this screen">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+  <button class="display-theme-toggle display-zoom-in" id="displayZoomIn" aria-label="Enlarge the board to fit this screen">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </button>
   <div class="display-theme-menu" id="displayThemeMenu">
     <button type="button" data-mode="dark" aria-label="Dark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button>
@@ -190,6 +202,41 @@
     })();
   </script>
 
+  <!-- Per-device fix for a smart TV browser that renders this board at
+       the wrong effective size (many don't honor width=device-width
+       correctly) -- shrinks or enlarges everything inside
+       #displayScaleWrap via a CSS transform, saved to this specific
+       screen's localStorage so it's set once during install and never
+       touched again. Same key-naming convention as the theme toggle's
+       own per-device storage above. -->
+  <script>
+    (function () {
+      var ZOOM_KEY = 'clinvision_display_zoom';
+      var MIN_ZOOM = 0.5, MAX_ZOOM = 1.5, STEP = 0.05;
+      var wrap = document.getElementById('displayScaleWrap');
+      var saved = parseFloat(localStorage.getItem(ZOOM_KEY));
+      var zoom = isNaN(saved) ? 1 : Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, saved));
+
+      function apply() {
+        wrap.style.transform = zoom === 1 ? '' : 'scale(' + zoom.toFixed(2) + ')';
+      }
+      apply();
+
+      function setZoom(next) {
+        zoom = Math.round(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, next)) * 100) / 100;
+        localStorage.setItem(ZOOM_KEY, String(zoom));
+        apply();
+      }
+
+      document.getElementById('displayZoomOut').addEventListener('click', function () { setZoom(zoom - STEP); });
+      document.getElementById('displayZoomIn').addEventListener('click', function () { setZoom(zoom + STEP); });
+    })();
+  </script>
+
+  <!-- Everything a patient actually reads lives in here -- the zoom
+       controls above stay outside it on purpose, so shrinking the board
+       never shrinks the controls needed to un-shrink it. -->
+  <div class="display-scale-wrap" id="displayScaleWrap">
   <div class="display-header">
     <div class="brand">
       <!-- Wordmark-led sitewide now, no icon -- the old inverted clock
@@ -240,6 +287,7 @@
       <span id="colPos">#</span><span id="colTime">Time</span><span id="colPatient">Patient</span><span id="colDoctor">Doctor</span><span id="colType">Type</span>
     </div>
     <div class="board-rows" id="boardRows"></div>
+  </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>

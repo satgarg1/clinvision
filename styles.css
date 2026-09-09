@@ -4722,7 +4722,16 @@ th.th-filterable { position: relative; }
    pair of quiet controls rather than one of them looking like an
    afterthought bolted on beside the other. */
 .display-sound-toggle { right: 22px; }
+/* Same faint pair treatment, one step further out again -- reads as a
+   third quiet control alongside theme/sound, not a bolted-on extra. */
+.display-zoom-out { right: 66px; }
+.display-zoom-in { right: 88px; }
 .display-theme-toggle svg { width: 11px; height: 11px; display: block; transition: transform 0.25s ease; }
+/* Anchored top-center: shrinking the board (scale < 1) keeps the header/
+   clock pinned where they already are instead of drifting toward a
+   corner, and centers the narrower board left-to-right rather than
+   leaving all the freed-up space on one side. */
+.display-scale-wrap { transform-origin: top center; transition: transform 0.15s ease; }
 .display-theme-toggle.open svg { transform: rotate(180deg); }
 .display-theme-menu {
   position: absolute; top: 2px; right: 65px;
