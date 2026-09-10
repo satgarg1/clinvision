@@ -160,7 +160,10 @@
       <div class="pw-meter"><div class="pw-meter-bar" id="${inputEl.id}Bar"></div></div>
       <div class="pw-meter-label" id="${inputEl.id}Label"></div>
     `;
-    inputEl.insertAdjacentElement('afterend', wrap);
+    // Sits after the whole field, including the show/hide wrapper when
+    // attachPasswordReveal has already run - order of the attach* calls
+    // then doesn't matter.
+    (inputEl.closest('.pw-reveal-wrap') || inputEl).insertAdjacentElement('afterend', wrap);
     const bar = wrap.querySelector('.pw-meter-bar');
     const label = wrap.querySelector('.pw-meter-label');
     function update() {
@@ -185,7 +188,7 @@
     const msg = document.createElement('div');
     msg.className = 'pw-match-msg';
     msg.hidden = true;
-    confirmEl.insertAdjacentElement('afterend', msg);
+    (confirmEl.closest('.pw-reveal-wrap') || confirmEl).insertAdjacentElement('afterend', msg);
     function update() {
       if (confirmEl.value.length === 0) { msg.hidden = true; return; }
       const ok = passwordEl.value === confirmEl.value;
@@ -196,6 +199,42 @@
     passwordEl.addEventListener('input', update);
     confirmEl.addEventListener('input', update);
     if (confirmEl.form) confirmEl.form.addEventListener('reset', () => setTimeout(update, 0));
+  }
+
+  const EYE_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const EYE_OFF_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+  // A show/hide eye toggle inside any password field. Wraps the input so
+  // the button can sit over its right edge, and hides the browsers' own
+  // native reveal control (see styles.css) so there's only ever one.
+  function attachPasswordReveal(inputEl) {
+    if (!inputEl || inputEl.dataset.revealAttached) return;
+    inputEl.dataset.revealAttached = '1';
+    const wrap = document.createElement('div');
+    wrap.className = 'pw-reveal-wrap';
+    inputEl.insertAdjacentElement('beforebegin', wrap);
+    wrap.appendChild(inputEl);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pw-reveal-btn';
+    wrap.appendChild(btn);
+    let shown = false;
+    function render() {
+      inputEl.type = shown ? 'text' : 'password';
+      btn.innerHTML = shown ? EYE_OFF_SVG : EYE_SVG;
+      btn.setAttribute('aria-label', shown ? 'Hide password' : 'Show password');
+      btn.setAttribute('aria-pressed', shown ? 'true' : 'false');
+    }
+    render();
+    btn.addEventListener('click', () => {
+      shown = !shown;
+      const start = inputEl.selectionStart;
+      const end = inputEl.selectionEnd;
+      render();
+      // keep the caret where it was - toggling .type drops the selection
+      try { inputEl.focus(); inputEl.setSelectionRange(start, end); } catch (e) { /* type=email etc. don't allow it */ }
+    });
+    if (inputEl.form) inputEl.form.addEventListener('reset', () => { shown = false; setTimeout(render, 0); });
   }
 
   function confirmDialog({ title, message, confirmLabel = 'Continue', cancelLabel = 'Cancel', danger = false } = {}) {
@@ -2602,6 +2641,7 @@
     passwordStrength,
     attachPasswordMeter,
     attachPasswordConfirm,
+    attachPasswordReveal,
     copyToClipboard,
 
     getQueueForDoctor,

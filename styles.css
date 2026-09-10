@@ -3479,6 +3479,35 @@ th.th-filterable { position: relative; }
   font-family: var(--font);
 }
 
+/* Show/hide eye toggle inside a password field
+   (Qlinic.attachPasswordReveal). The wrapper takes the input's place in
+   the .field so the button can overlay its right edge; the input gets
+   extra right padding so typed text never runs under the icon. This
+   selector sits after every .field/.inline-form input padding rule
+   above so its padding-right override always wins. */
+.pw-reveal-wrap { position: relative; }
+.field .pw-reveal-wrap input { padding-right: 44px; }
+.pw-reveal-btn {
+  position: absolute;
+  top: 0;
+  right: 1px;
+  height: 100%;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--grey-500);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.pw-reveal-btn:hover { color: var(--grey-700); }
+.pw-reveal-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* our toggle replaces the browsers' own reveal control so there's just one */
+input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
+
 /* Directory's date fields and period dropdown are the primary controls
    on that page (not a secondary filter bar like elsewhere inline-form
    is used), so they get a larger treatment than the standard

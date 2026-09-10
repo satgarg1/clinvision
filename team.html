@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=323" />
+<link rel="stylesheet" href="styles.css?v=324" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -89,11 +89,11 @@
           <div class="inline-form">
             <div class="field" style="max-width:320px;">
               <label>Password</label>
-              <input type="text" id="newStaffPassword" minlength="8" required placeholder="At least 8 characters" />
+              <input type="password" id="newStaffPassword" minlength="8" required placeholder="At least 8 characters" />
             </div>
             <div class="field" style="max-width:320px;">
               <label>Confirm password</label>
-              <input type="text" id="newStaffPasswordConfirm" minlength="8" required placeholder="Type the password again" />
+              <input type="password" id="newStaffPasswordConfirm" minlength="8" required placeholder="Type the password again" />
             </div>
             <div class="field" style="flex:0;min-width:190px;">
               <label>&nbsp;</label>
@@ -120,13 +120,15 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=109"></script>
+  <script src="clinic-data.js?v=110"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
 
       Qlinic.attachPasswordMeter(document.getElementById('newStaffPassword'));
       Qlinic.attachPasswordConfirm(document.getElementById('newStaffPassword'), document.getElementById('newStaffPasswordConfirm'));
+      Qlinic.attachPasswordReveal(document.getElementById('newStaffPassword'));
+      Qlinic.attachPasswordReveal(document.getElementById('newStaffPasswordConfirm'));
 
       document.querySelector('a.brand').addEventListener('click', async (e) => {
         e.preventDefault();
