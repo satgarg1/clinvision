@@ -1783,6 +1783,12 @@ a { color: inherit; }
 .pw-meter-label.pw-meter-good { color: var(--accent); }
 .pw-meter-label.pw-meter-strong { color: var(--success); }
 
+/* Live match feedback under a confirm-password field
+   (Qlinic.attachPasswordConfirm). Same size/rhythm as .pw-meter-label. */
+.pw-match-msg { font-size: 12px; margin-top: 6px; font-weight: 500; }
+.pw-match-msg.pw-match-ok { color: var(--success); }
+.pw-match-msg.pw-match-no { color: var(--danger); }
+
 /* queue.html only — wider than the auth-card default so the merged
    appointment sentence has room to breathe instead of wrapping tightly. */
 .login-card-wide { max-width: 560px; }
@@ -3351,12 +3357,14 @@ th.th-filterable { position: relative; }
    other pages rely on for their own flex-end alignment. */
 #clinicForm.inline-form { align-items: flex-start; }
 
-/* Team's "Add a staff member" form is deliberately three literal
-   .inline-form rows (name/email/phone, then the password pair, then
-   role/doctor/the submit button) rather than one row left to
-   .inline-form's own flex-wrap to break wherever it happens to -- that
-   would land the split at a different point depending on viewport
-   width, not the grouping actually intended. */
+/* Team's "Add a staff member" form is deliberately two literal
+   .inline-form rows (name/email/phone/role, then password/confirm/the
+   submit button) rather than one row left to .inline-form's own
+   flex-wrap to break wherever it happens to -- that would land the
+   split at a different point depending on viewport width, not the
+   grouping actually intended. Per-field max-widths keep row 1's four
+   fields on one line; "Which doctor" (hidden unless role = doctor)
+   wraps to its own line when it appears. */
 #addStaffForm .inline-form + .inline-form { margin-top: 14px; }
 
 /* The password field carries a strength meter underneath it (added by

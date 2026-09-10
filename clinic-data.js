@@ -177,6 +177,27 @@
     if (inputEl.form) inputEl.form.addEventListener('reset', () => setTimeout(update, 0));
   }
 
+  // Live "do these two match?" feedback under a confirm-password field, so
+  // the user finds out as they type rather than only when they hit submit.
+  function attachPasswordConfirm(passwordEl, confirmEl) {
+    if (!passwordEl || !confirmEl || confirmEl.dataset.confirmAttached) return;
+    confirmEl.dataset.confirmAttached = '1';
+    const msg = document.createElement('div');
+    msg.className = 'pw-match-msg';
+    msg.hidden = true;
+    confirmEl.insertAdjacentElement('afterend', msg);
+    function update() {
+      if (confirmEl.value.length === 0) { msg.hidden = true; return; }
+      const ok = passwordEl.value === confirmEl.value;
+      msg.hidden = false;
+      msg.textContent = ok ? 'Passwords match' : 'Passwords do not match yet';
+      msg.className = 'pw-match-msg ' + (ok ? 'pw-match-ok' : 'pw-match-no');
+    }
+    passwordEl.addEventListener('input', update);
+    confirmEl.addEventListener('input', update);
+    if (confirmEl.form) confirmEl.form.addEventListener('reset', () => setTimeout(update, 0));
+  }
+
   function confirmDialog({ title, message, confirmLabel = 'Continue', cancelLabel = 'Cancel', danger = false } = {}) {
     return new Promise((resolve) => {
       const backdrop = document.createElement('div');
@@ -2580,6 +2601,7 @@
     doctorLabel,
     passwordStrength,
     attachPasswordMeter,
+    attachPasswordConfirm,
     copyToClipboard,
 
     getQueueForDoctor,

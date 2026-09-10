@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
-<link rel="icon" type="image/png" href="clinvision-favicon.png?v=1" />
-<link rel="stylesheet" href="styles.css?v=322" />
+<link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
+<link rel="stylesheet" href="styles.css?v=323" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -55,34 +55,22 @@
         </p>
         <form id="addStaffForm">
           <div class="inline-form">
-            <div class="field">
+            <div class="field" style="max-width:280px;">
               <label>Full name</label>
               <input type="text" id="newStaffName" placeholder="Priya Sharma" required />
             </div>
-            <div class="field">
+            <div class="field" style="max-width:280px;">
               <label>Email</label>
               <input type="email" id="newStaffEmail" required />
             </div>
-            <div class="field">
+            <div class="field" style="flex:0 1 250px;">
               <label>Phone <span class="sub-line">(for phone login)</span></label>
               <div style="display:flex;gap:8px;">
-                <input type="text" value="+91" disabled style="flex:0 0 60px;text-align:center;" />
+                <input type="text" value="+91" disabled style="flex:0 0 56px;text-align:center;" />
                 <input type="tel" id="newStaffPhone" inputmode="numeric" maxlength="10" placeholder="10-digit number" style="flex:1;min-width:0;" />
               </div>
             </div>
-          </div>
-          <div class="inline-form">
-            <div class="field">
-              <label>Password</label>
-              <input type="text" id="newStaffPassword" minlength="8" required placeholder="At least 8 characters" />
-            </div>
-            <div class="field">
-              <label>Confirm password</label>
-              <input type="text" id="newStaffPasswordConfirm" minlength="8" required placeholder="Type the password again" />
-            </div>
-          </div>
-          <div class="inline-form">
-            <div class="field" style="max-width:220px;">
+            <div class="field" style="max-width:150px;">
               <label>Role</label>
               <select id="newStaffRole">
                 <option value="reception">Reception</option>
@@ -91,11 +79,21 @@
                 <option value="admin">Admin</option>
               </select>
             </div>
-            <div class="field" id="newStaffDoctorField" style="display:none;max-width:260px;">
+            <div class="field" id="newStaffDoctorField" style="display:none;max-width:220px;">
               <label>Which doctor</label>
               <select id="newStaffDoctorId">
                 <option value="">— link later —</option>
               </select>
+            </div>
+          </div>
+          <div class="inline-form">
+            <div class="field" style="max-width:320px;">
+              <label>Password</label>
+              <input type="text" id="newStaffPassword" minlength="8" required placeholder="At least 8 characters" />
+            </div>
+            <div class="field" style="max-width:320px;">
+              <label>Confirm password</label>
+              <input type="text" id="newStaffPasswordConfirm" minlength="8" required placeholder="Type the password again" />
             </div>
             <div class="field" style="flex:0;min-width:190px;">
               <label>&nbsp;</label>
@@ -122,12 +120,13 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=108"></script>
+  <script src="clinic-data.js?v=109"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
 
       Qlinic.attachPasswordMeter(document.getElementById('newStaffPassword'));
+      Qlinic.attachPasswordConfirm(document.getElementById('newStaffPassword'), document.getElementById('newStaffPasswordConfirm'));
 
       document.querySelector('a.brand').addEventListener('click', async (e) => {
         e.preventDefault();
