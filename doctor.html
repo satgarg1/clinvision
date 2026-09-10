@@ -61,49 +61,22 @@
           <div>
             <div class="next-appt-eyebrow">Next appointment</div>
             <div class="next-appt-line" id="nextAppointmentLine"></div>
-            <!-- Moved here from #statusPanel's own summary line -- this
-                 number is worth seeing constantly, unlike the status
-                 buttons below it, so it shouldn't disappear behind the
-                 same collapse. -->
             <div class="next-appt-waiting-line" id="nextAppointmentWaitingLine" style="display:none;"></div>
           </div>
         </div>
 
-        <!-- Collapsed by default -- a doctor only touches this a handful
-             of times a day; the rest of the time it was dead space
-             between Next appointment and Now serving, the two panels
-             actually read continuously through the day. No persisted
-             state on purpose: it starts collapsed every load, expanded
-             only for as long as it's actually needed. -->
         <div class="panel panel-collapsed" id="statusPanel">
           <div class="panel-header">
             <h2>Your status</h2>
-            <!-- Only visible while collapsed (see #statusPanel:not(.panel-collapsed)
-                 in styles.css) -- a doctor shouldn't have to expand this
-                 just to see their own current status. Kept updated in
-                 render() regardless of visibility, so it's never stale
-                 the moment the panel is opened. -->
             <span class="status-header-pill" id="statusHeaderPill" style="margin-left:8px;"></span>
             <button type="button" class="panel-toggle-btn" id="statusToggleBtn" aria-expanded="false" aria-controls="statusPanelBody" aria-label="Show status controls" style="margin-left:auto;">
               <svg class="panel-toggle-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
             </button>
           </div>
           <div id="statusPanelBody" style="display:none;">
-            <!-- Was a doctor-identity block (name/specialty) here -- a
-                 doctor already knows who they are; the sidebar and the
-                 panel header already carry that context, so this was
-                 pure redundancy every time the panel opened. -->
             <p style="font-size:13px;color:var(--grey-500);margin:0 0 16px;">
               One tap updates every waiting patient's estimate and the waiting-room screen, no one needs to interrupt you to ask.
             </p>
-            <!-- Was one gradient-track pill holding all three actions --
-                 that shared capsule made "Clear status" read as a peer
-                 of "On a break"/"Emergency" even though it's a
-                 different kind of action (undoing a state, not
-                 declaring one). Now exactly one of these two blocks
-                 shows at a time, toggled in render(): the two real
-                 actions while available, or the away banner below once
-                 one's been set. -->
             <div class="inline-form" id="statusAvailableActions" style="margin-bottom:10px;">
               <button class="btn-sm accent-outline" data-status="on_break">Take a break</button>
               <button class="btn-sm danger-outline" data-status="emergency">Declare emergency</button>
@@ -154,11 +127,6 @@
           <div id="nowServingBox"></div>
           <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;">Call next patient</button>
           <button class="btn-sm primary" id="finishCurrentBtn" style="margin-top:14px;margin-left:8px;">Done</button>
-          <!-- A toast in the corner is easy to miss at exactly the moment
-               it matters most - right after tapping the button, before
-               looking back up at the patient. This sits right on top of
-               the panel the doctor's thumb is already on, so there's no
-               ambiguity about whether the tap registered. -->
           <div class="call-confirm-overlay" id="callConfirmOverlay"><span class="call-confirm-check">✓</span>Next patient called</div>
         </div>
 
@@ -184,18 +152,13 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
 
-      // Scoped to the pharmacy counter and catalog only -- this page shows
-      // patient/staff data a pharmacist has no business seeing.
       if (await Qlinic.isPharmacist()) { window.location.href = 'pharmacy.html'; return; }
 
-      // The sidebar logo links to the marketing site, which has no way
-      // back into the app without logging in again, worth a heads-up
-      // before someone loses their place by accident.
       document.querySelector('a.brand').addEventListener('click', async (e) => {
         e.preventDefault();
         if (await Qlinic.confirmDialog({ message: "Going to the homepage will end your session here, you'll need to log in again to get back in." })) {
@@ -209,9 +172,6 @@
         document.getElementById('receptionNavLink').style.display = 'none';
         document.getElementById('billingNavLink').style.display = 'none';
         document.getElementById('displayNavLink').style.display = 'none';
-        // A doctor only ever sees their own queue — no dropdown, no way
-        // to pick someone else's data, matching the same restriction
-        // already enforced on Dashboard/Insights for a linked doctor.
         document.getElementById('viewingPanel').style.display = 'none';
       }
       if (!amAdmin) {
@@ -220,41 +180,16 @@
       if (!amAdmin && !amDoctor) {
         document.getElementById('trendsNavLink').style.display = 'none';
       }
-      // Body starts hidden (see the <body> tag) so nobody sees the full
-      // nav (or the doctor-picker panel a linked doctor shouldn't have)
-      // for a moment before the role-based hiding above finishes.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
       let doctors = [];
-      // Set at the end of every render(), so the status-button click
-      // handler below can check who's currently being seen without a
-      // redundant extra fetch of its own.
       let currentQueue = null;
       let currentDoctor = null;
-      // The live Waiting list itself (not the "Today's full schedule"
-      // modal) — reception paginates its own Waiting/Booked tables at
-      // 5/page for the same reason; a doctor's Waiting list can run just
-      // as long once appointments and walk-ins pile up.
       const DOCTOR_WAITING_PAGE_SIZE = 5;
       let doctorWaitingPage = 0;
-      // Guardrail against forgetting to mark a visit Done - reported
-      // after a real 2-hour miss (stepped away mid-consultation, never
-      // came back to hit "Done," only noticed on a manual check later).
-      // Checked whenever currentQueue refreshes (every render(), plus a
-      // 30s ambient tick below) - no extra fetch, just reads the
-      // calledAt already in memory. Client-side only: this fires while
-      // someone happens to have this doctor's page open, not as a
-      // background/push notification (nothing in this app sends those).
       const LONG_CONSULT_THRESHOLD_MINS = 25;
-      const LONG_CONSULT_REPEAT_MINS = 10; // re-prompt this often past the threshold if still not marked done
-      // `${patientId}::${bucket}` - guards against re-asking on every tick
-      // once already prompted for this bucket. Kept in sessionStorage, not
-      // just a plain variable, so a page reload mid-consultation doesn't
-      // forget it already asked and prompt again immediately - it now
-      // survives exactly as long as the tab does, same as the guard is
-      // meant to. sessionStorage (not localStorage) on purpose: this
-      // shouldn't linger into tomorrow if the tab happens to stay open.
+      const LONG_CONSULT_REPEAT_MINS = 10;
       const LONG_CONSULT_PROMPT_KEY = 'clinvision_long_consult_prompted';
       let longConsultDialogOpen = false;
       async function checkLongConsultation() {
@@ -281,23 +216,11 @@
             showToast('Visit marked as done');
           }
         } catch (err) {
-          // Best-effort reminder - a failed finishCurrentPatient here
-          // shouldn't be silent, but it also shouldn't block anything
-          // else on the page.
           showToast(err.message || 'Could not update the queue');
         } finally {
           longConsultDialogOpen = false;
         }
       }
-      // render() can be kicked off from three independent places (the
-      // doctor dropdown, the live-change subscription, and its own
-      // initial call) - with no guard, two overlapping calls' fetches
-      // can resolve out of order, and whichever happens to finish last
-      // wins even if it was the older, staler one. Bumped at the start
-      // of every render() call; a call only commits its result if it's
-      // still the most recently started one by the time its fetch
-      // returns, so a slow, superseded call can never clobber a newer
-      // one's already-current state.
       let renderToken = 0;
 
       function showToast(msg) {
@@ -307,10 +230,6 @@
         setTimeout(() => t.classList.remove('show'), 2200);
       }
 
-      // A corner toast for "Next patient called" was too easy to miss —
-      // it's the one confirmation a doctor genuinely needs to see before
-      // looking away from this panel. Flashes right over the panel
-      // instead, briefly, so there's no doubt the tap registered.
       let callConfirmTimer = null;
       function flashCallConfirm() {
         const el = document.getElementById('callConfirmOverlay');
@@ -327,13 +246,6 @@
         }[status] || status;
       }
 
-      // Every duration this page can broadcast comes from DURATION_OPTIONS
-      // further down (5 min through 4 hr, in 30-min steps once past an
-      // hour) — its own labels already read "1 hr"/"1.5 hr", never "90
-      // min". Anywhere delayMins gets displayed back needs to match that
-      // same convention instead of printing the raw minute count, or a
-      // 2-hour break reads as "120 min" right next to a picker that
-      // would have called the exact same value "2 hr".
       function formatDurationLabel(mins) {
         if (mins < 60) return `${mins} min`;
         if (mins % 60 === 0) return `${mins / 60} hr`;
@@ -345,10 +257,6 @@
         return document.getElementById('doctorSelect').value;
       }
 
-      // Same 5-color identity palette used app-wide; whichever doctor is
-      // selected here tints all three panels, so switching doctors is
-      // confirmed at a glance, and the color matches this doctor everywhere
-      // else too.
       const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
       function applyDoctorAccent(doctorId) {
         const idx = doctors.findIndex((d) => d.id === doctorId);
@@ -360,26 +268,11 @@
         });
       }
 
-      // The list is sorted by scheduled/effective time, not raw arrival time:
-      // a walk-in's slot is when they arrived, an appointment's is its booked
-      // time plus any doctor delay. Only ever called on patients already in
-      // the live queue, where arrivedAt is always set regardless of type —
-      // the sub-line always shows when they actually walked in, not when an
-      // appointment was originally booked (often identical to the primary
-      // time above it and redundant here).
       function queueTimeCell(p) {
         const primary = Qlinic.formatTimestamp(p.effectiveTime);
         return `<div>${primary}</div><div class="sub-line">arrived ${Qlinic.formatTimestamp(p.arrivedAt)}</div>`;
       }
 
-      // Walk-ins share the same token_number sequence as appointments (a
-      // single shared ordering the public queue-status page relies on for
-      // its "how many ahead of me" math, so it can't be split at the
-      // database level without rewriting that too). Walk-ins instead get
-      // a "W"-prefixed rank computed here, purely for display: ranked by
-      // their existing token_number among today's walk-ins for this
-      // doctor, across every status so the number stays stable as they
-      // move from waiting to done.
       function buildWalkinRanks(q) {
         const ranks = new Map();
         const walkins = [
@@ -396,11 +289,6 @@
         return String(p.tokenNumber);
       }
 
-      // Pulled out of render() so a page-flip through the Waiting list
-      // doesn't have to pay for a full network refetch of every doctor's
-      // queue just to slice a different 5 rows out of data already in
-      // hand — same "re-render from what's already fetched" split
-      // reception.html's own pagination uses.
       function renderWaitingList(q) {
         const walkinRanks = buildWalkinRanks(q);
         const totalWaitingPages = Math.max(1, Math.ceil(q.waiting.length / DOCTOR_WAITING_PAGE_SIZE));
@@ -428,12 +316,6 @@
         Qlinic.wirePager(document.getElementById('doctorWaitingPagerWrap'), doctorWaitingPage + 1, totalWaitingPages, (p) => { doctorWaitingPage = p - 1; renderWaitingList(q); });
       }
 
-      // "Next appointment" only ever looks at who's actually waiting —
-      // that's the pool Call next patient pulls from, so it's the only
-      // honest answer to "how long until I see someone." A booked
-      // appointment that hasn't checked in yet isn't "next," it's just
-      // scheduled; showing a countdown to it would be a guess about
-      // whether they'll actually arrive on time.
       function minsUntil(patient) {
         return Math.round((new Date(patient.effectiveTime).getTime() - Date.now()) / 60000);
       }
@@ -448,8 +330,6 @@
         const waitingEl = document.getElementById('nextAppointmentWaitingLine');
         if (!q.waiting.length) {
           el.textContent = 'No one else waiting today';
-          // "0 patients waiting" would just repeat what the line above
-          // already says — dropped entirely rather than shown redundantly.
           waitingEl.style.display = 'none';
           return;
         }
@@ -459,11 +339,6 @@
         waitingEl.style.display = '';
       }
 
-      // Booked/waiting/in_consult only ever get a token if they made it
-      // into today's queue at all — done/no_show already carry whatever
-      // token they were assigned before resolving, so every row here
-      // sorts by the same clock: booked_time if the visit was ever
-      // scheduled to one, otherwise when they actually walked in.
       function scheduleMinutesFor(p) {
         if (p.bookedTime) return Qlinic.parseTime(p.bookedTime);
         if (p.arrivedAt) {
@@ -489,48 +364,23 @@
       function formatPatientAge(p) {
         return p.age != null ? `${p.age}yr` : '—';
       }
-      // Same nowServing+waiting+booked+done+noShow combination
-      // buildWalkinRanks already uses — the full day's queue was always
-      // being fetched, just never all shown together in one place. Modeled
-      // on reception's "View day's schedule" button+popup flow (same
-      // modal-backdrop/modal-card pattern, same on-demand trigger instead
-      // of an always-visible panel) but with patient-level detail instead
-      // of bucketed slot counts, since a doctor wants to know who, not
-      // just how many.
-      // Three groups instead of one long chronological list: "Arrived"
-      // (in-consultation + waiting) is what a doctor actually opens this
-      // for, and defaults to shown; Booked and Done are one click away
-      // instead of something to scroll past to reach the arrived ones.
       function openFullScheduleModal(q, doc) {
-        // Everything below is rebuilt from scratch by recompute() -
-        // called once now, and again every tick of this modal's own
-        // refresh interval below. Without that, a doctor who leaves it
-        // open shows a snapshot frozen from the moment it was clicked -
-        // "1 scheduled" for someone already long finished, or "Now:
-        // 11 AM-12 PM" chip well after 1 PM.
         let ranks, GROUPS, allAppts, chartBuckets, visibleBuckets, currentBucket, stillToSee, showChart, nowMin;
         let scheduleChart = null;
         let activeTab = 'active';
         let intervalPopoverOpen = false;
 
-        // Bucket width: doctor-configurable (backlog item, 2026-09-01),
-        // a personal device-local preference exactly like qlinic_theme
-        // above, just keyed per doctor since two doctors sharing a
-        // clinic could reasonably want different granularity for their
-        // own schedule view. Four fixed presets, not free entry -- a
-        // discrete set needs no min/max validation UI at all, unlike
-        // the typed-number version this was originally scoped with.
         const BUCKET_PRESETS_MIN = [60, 120, 180, 240];
         function bucketWidthStorageKey() { return 'qlinic_schedule_bucket_' + doc.id; }
         function loadBucketWidth() {
           try {
             const n = parseInt(localStorage.getItem(bucketWidthStorageKey()), 10);
             if (BUCKET_PRESETS_MIN.includes(n)) return n;
-          } catch (e) { /* ignore */ }
+          } catch (e) { }
           return 60;
         }
         function saveBucketWidth(n) {
-          try { localStorage.setItem(bucketWidthStorageKey(), String(n)); } catch (e) { /* ignore */ }
+          try { localStorage.setItem(bucketWidthStorageKey(), String(n)); } catch (e) { }
         }
         let bucketWidthMin = loadBucketWidth();
 
@@ -543,16 +393,6 @@
             done: sortByTime([...queueSnapshot.done, ...queueSnapshot.noShow]),
           };
 
-          // ---- Booking load chart (Booked tab only) ----
-          // Every booking with a real slot counts toward its hour once,
-          // regardless of current status - a Done or No-show still counts
-          // in the hour it was booked into, so the bars show how the day
-          // was actually loaded, not just who's still outstanding. Only
-          // which hours are visible moves forward as the day goes on.
-          // Walk-ins count here too as long as reception gave them a
-          // preferred time (bookedTime) - one with no assigned time was
-          // never meant to land in an hour slot, so it's correctly left
-          // out rather than silently miscounted somewhere.
           allAppts = [
             ...(queueSnapshot.nowServing ? [queueSnapshot.nowServing] : []), ...queueSnapshot.waiting, ...queueSnapshot.booked, ...queueSnapshot.done, ...queueSnapshot.noShow,
           ].filter((p) => p.bookedTime);
@@ -575,21 +415,12 @@
             }
           }
           nowMin = new Date().getHours() * 60 + new Date().getMinutes();
-          // An hour clocking out doesn't mean everyone in it has actually
-          // been seen - a doctor running behind can still have real
-          // patients sitting in an "elapsed" hour. Keep that bar around
-          // (faded, so it reads as overdue rather than "now") until every
-          // visit in it is actually resolved, instead of dropping it the
-          // moment the clock ticks past.
           chartBuckets.forEach((b) => {
             const resolved = (b.byStatus.done || 0) + (b.byStatus.no_show || 0);
             b.isBacklog = b.end <= nowMin && b.total > 0 && resolved < b.total;
           });
           visibleBuckets = chartBuckets.filter((b) => b.end > nowMin || b.isBacklog);
           currentBucket = visibleBuckets.find((b) => nowMin >= b.start && nowMin < b.end);
-          // Status-driven, not hour-driven - this drops a visit the moment
-          // it's marked Done or No-show, unlike the bars above which never
-          // move once drawn.
           stillToSee = allAppts.filter((p) => p.status === 'booked' || p.status === 'waiting' || p.status === 'in_consult').length;
           showChart = chartBuckets.length > 0;
         }
@@ -606,34 +437,9 @@
             </tr>
           `;
         }
-        // A busy doctor's Done list especially can run to 100+ rows a
-        // day - dumping all of them into one scrolling table buries the
-        // 5 that are actually likely to be what someone just clicked in
-        // for. Done always links out instead of expanding in place: an
-        // old completed visit is a record to look up, not something
-        // still needing action here, so it goes to the same Dashboard
-        // breakdown page every other "view all" in the app already uses
-        // (statBreakdownDialog's own viewAllHref link, same styling).
-        // Arrived/Pending expand in place instead - those ARE patients a
-        // doctor might still act on right now.
         const SCHEDULE_PREVIEW_COUNT = 5;
         const SCHEDULE_EXPAND_STEP = 20;
-        // Tracks how many rows are currently shown per tab, not just an
-        // expanded/collapsed flag - a doctor with 60 booked patients
-        // dumping all 55 extra rows in on one click ("Show 50 more") is
-        // its own wall of text to scroll through. Reveals in pages of 20
-        // instead (5, then +20, +20, ... capped at the list length) so
-        // "Show more" only ever adds a manageable chunk.
         let expandedScheduleTab = { active: SCHEDULE_PREVIEW_COUNT, booked: SCHEDULE_PREVIEW_COUNT };
-        // GROUPS.done is sorted ascending by scheduled/arrival time (same
-        // sortByTime as every other group, for a sensible full-day
-        // reading order) - taking the first 5 off THAT list surfaces the
-        // day's earliest patients, not its most recent ones. "Recent"
-        // for Done specifically means most-recently-finished, so this
-        // sorts a copy by doneAt (falling back to calledAt, then
-        // arrivedAt, for the no-show rows this tab also includes, which
-        // never get a doneAt) before slicing - independent of the
-        // ascending order the tab's own full list still uses elsewhere.
         function doneRecencyKey(p) { return p.doneAt || p.calledAt || p.arrivedAt || ''; }
         function rowsHtmlFor(list, tabKey) {
           if (list.length === 0) return '<tr><td colspan="5" style="text-align:center;color:var(--grey-500);">Nothing here right now.</td></tr>';
@@ -692,12 +498,6 @@
             type: 'bar',
             plugins: [valueLabelPlugin],
             data: {
-              // Qlinic.formatTime, not a bare hour - buckets are anchored
-              // to the clinic's real opening time, which isn't always a
-              // round hour ("2:30 PM-3:30 PM" is a real bucket for a
-              // 9:30 AM opening), and rounding the label down to "2 PM"
-              // made a correctly-counted bar look like it was counting
-              // the wrong hour entirely.
               labels: visibleBuckets.map((b) => Qlinic.formatTime(b.start)),
               datasets: [{
                 data: visibleBuckets.map((b) => b.total),
@@ -710,10 +510,6 @@
                 backgroundColor(context) {
                   const { chart, dataIndex } = context;
                   const bucket = visibleBuckets[dataIndex];
-                  // A backlog bar (elapsed hour, still unresolved) fades
-                  // flat grey - it's overdue, not part of the day's
-                  // upcoming shape - and drops the gradient/shadow that
-                  // marks an active bar.
                   if (bucket && bucket.isBacklog) return cGrey300;
                   if (!chart.chartArea) return '#5aa4ef';
                   const value = context.dataset.data[dataIndex] || 0;
@@ -762,22 +558,6 @@
               },
             },
           });
-          // Bug found on the live page, root-caused against a standalone
-          // Chart.js 4.5.1 harness: options.onClick/onHover are wired
-          // and fire for nothing here -- chart.options.onClick was
-          // confirmed correctly registered and 'click' was confirmed
-          // present in chart.options.events, but the callback itself
-          // never actually ran for a real or synthetic click on this
-          // Chart.js build. A plain native listener on the canvas
-          // element works reliably instead (confirmed in the same
-          // harness), using the same chart.scales.x.top boundary -- the
-          // real edge between the plot area and the axis's own box
-          // (ticks + labels) -- so this opens exactly where the time
-          // labels are drawn, not a separate strip that might miss them
-          // (that was the ORIGINAL bug, one build before this one).
-          // stopPropagation only on the axis hit, so a click elsewhere
-          // on the chart still reaches the backdrop's own delegated
-          // handler and closes an open popover as normal.
           chartInstance.canvas.addEventListener('click', (e) => {
             const y = e.clientY - chartInstance.canvas.getBoundingClientRect().top;
             if (y >= chartInstance.scales.x.top) {
@@ -786,13 +566,6 @@
               renderAll();
             }
           });
-          // .chart-axis-hover is a plain sibling element, not a click
-          // target of its own -- pointer-events stay off it (see its
-          // CSS) so it can never intercept the click above; this only
-          // ever sets its position/visibility, in lockstep with the
-          // exact same scales.x.top boundary the click and cursor
-          // checks use, so all three always agree on where "the axis"
-          // actually is.
           const axisHoverEl = canvasEl.parentElement.querySelector('.chart-axis-hover');
           if (axisHoverEl) axisHoverEl.style.top = chartInstance.scales.x.top + 'px';
           chartInstance.canvas.addEventListener('mousemove', (e) => {
@@ -808,11 +581,6 @@
           return chartInstance;
         }
 
-        // Lives inside .chart-canvas-wrap (position:relative already,
-        // for the canvas itself) so it anchors right under the chart
-        // regardless of where in the canvas the click that opened it
-        // landed -- the open/close logic is the canvas's own native
-        // click listener above, not a click on this div.
         function intervalPopoverHtml() {
           const chips = BUCKET_PRESETS_MIN.map((m) => `
             <button type="button" class="chip${m === bucketWidthMin ? ' active' : ''}" data-min="${m}">${m / 60} hr</button>
@@ -867,9 +635,6 @@
         `;
         document.body.appendChild(backdrop);
 
-        // One render path for the initial paint and every later refresh
-        // (queue change, or the clock ticking forward) - so both cases
-        // can never drift out of sync with each other.
         function renderAll() {
           backdrop.querySelector('#scheduleFilterSeg').innerHTML = `
             <button type="button" data-tab="active" class="${activeTab === 'active' ? 'active' : ''}">Arrived <span class="count">${GROUPS.active.length}</span></button>
@@ -900,8 +665,6 @@
           renderAll();
         });
 
-        // Delegated once rather than re-attached per render, since
-        // scheduleTbody's whole innerHTML is replaced on every renderAll().
         backdrop.querySelector('#scheduleTbody').addEventListener('click', (e) => {
           const btn = e.target.closest('button[data-expand-tab]');
           if (!btn) return;
@@ -914,20 +677,8 @@
           renderAll();
         });
 
-        // Delegated on the backdrop, not #scheduleChartWrap directly --
-        // the chart block (popover included) gets torn down and
-        // rebuilt by every renderAll(), including the 15s auto-refresh
-        // below, so a listener on the wrap's own innerHTML wouldn't
-        // survive past the first render. Picking a chip applies it and
-        // closes the popover in one click (no Apply/Cancel) per the
-        // reviewed mockup; anywhere else in the modal closes an open
-        // popover without changing the width. Opening it happens in
-        // the chart's own onClick above (clicking the canvas's real
-        // axis labels), not here -- that handler stops the click's
-        // propagation on its way up specifically so it never also hits
-        // this "anywhere else closes it" branch on the same click.
         backdrop.addEventListener('click', (e) => {
-          if (e.target === backdrop) return; // the backdrop-click-closes-modal listener below owns this case
+          if (e.target === backdrop) return;
           const chip = e.target.closest('.chart-interval-popover .chip');
           if (chip) {
             bucketWidthMin = Number(chip.dataset.min);
@@ -943,14 +694,6 @@
           }
         });
 
-        // Owns its own clock instead of waiting to be pushed to by
-        // render() or some other timer - simpler, and it means this
-        // modal staying current never depends on anything happening
-        // to fire elsewhere on the page while it's open. currentQueue
-        // is the same module-level variable render() already keeps
-        // fresh for the rest of the page; reading it here each tick
-        // (rather than a value captured once) is what actually catches
-        // a patient getting called/finished while this is open.
         const refreshIntervalId = setInterval(() => {
           if (!document.body.contains(backdrop)) { clearInterval(refreshIntervalId); return; }
           if (currentQueue) {
@@ -965,10 +708,6 @@
           backdrop.remove();
           document.removeEventListener('keydown', onKey);
         }
-        // Layered like every other popover-over-a-panel in this app --
-        // Escape closes the nearer thing first. A doctor mid-pick on
-        // the interval shouldn't have their first Escape blow past it
-        // and dismiss the whole schedule.
         function onKey(e) {
           if (e.key !== 'Escape') return;
           if (intervalPopoverOpen) { intervalPopoverOpen = false; renderAll(); return; }
@@ -981,9 +720,6 @@
 
       async function render() {
         const myRenderToken = ++renderToken;
-        // A doctor login not yet linked to a doctors row (Team settings)
-        // has no data to scope to — same guard already used on
-        // Dashboard/Insights for this exact case.
         if (amDoctor && !myDoctorId) {
           document.getElementById('doctorPanels').style.display = 'none';
           document.getElementById('noDoctorsPanel').style.display = 'block';
@@ -991,16 +727,9 @@
             '<div class="empty-state">Your account isn\'t linked to a doctor profile yet — ask your admin to link it from Team settings.</div>';
           return;
         }
-        // Fetching only this one doctor, rather than the full clinic
-        // list and hiding the rest in the UI, means a doctor login never
-        // has another doctor's queue in memory to begin with.
         doctors = amDoctor ? [await Qlinic.getDoctor(myDoctorId)].filter(Boolean) : await Qlinic.getDoctors();
         const sel = document.getElementById('doctorSelect');
         const prevSelected = sel.value;
-        // Same "N waiting, M booked" counts reception's own doctor
-        // dropdown already shows — an admin picking who to view
-        // shouldn't have to open each doctor in turn just to find out
-        // who's actually got a queue backing up right now.
         const dropdownQueues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id, undefined, d)));
         sel.innerHTML = doctors.map((d, i) => {
           const dq = dropdownQueues[i];
@@ -1019,10 +748,6 @@
         const doctorId = currentDoctorId();
         const doc = doctors.find((d) => d.id === doctorId);
         const q = await Qlinic.getQueueForDoctor(doctorId);
-        // A newer render() call has since started - its own fetch will
-        // commit instead, so this now-stale result (however it happened
-        // to resolve) is dropped rather than overwriting more current
-        // data or, worse, momentarily flashing it on screen.
         if (myRenderToken !== renderToken) return;
         currentDoctor = doc;
         currentQueue = q;
@@ -1030,55 +755,17 @@
         applyDoctorAccent(doctorId);
         renderNextAppointment(q);
 
-        // Used to repeat the whole status ("Currently: On a break for
-        // 20 min · "In a meeting".") right below the colored away
-        // banner above, which already says exactly that ("On a break
-        // for 20 min", "In a meeting" as the note) -- same fact, two
-        // places. This line now only carries what the banner doesn't:
-        // when the status was actually set. formatDateTime (not
-        // formatTimestamp) -- a status left unset since a prior day
-        // (nothing ever automatically clears it) used to show a bare
-        // time with no date, reading as if it happened today. The date
-        // matters here precisely because it might not be. ", " -> " at "
-        // to read as a sentence rather than a comma-spliced fragment.
         document.getElementById('currentStatusLine').innerHTML =
           `Last updated: ${Qlinic.formatDateTime(doc.statusUpdatedAt).replace(', ', ' at ')}`;
-        // Hidden for as long as the duration picker sits open — content
-        // and visibility are set together, right here, so a background
-        // refresh (a live update from another device, the 15s poll)
-        // while the doctor is still mid-pick can never re-reveal this
-        // with fresh data the doctor hasn't actually broadcast yet, and
-        // can never leave it hidden with data that's already stale.
         document.getElementById('currentStatusLine').style.display =
           document.getElementById('delayInputWrap').style.display === 'block' ? 'none' : '';
 
-        // Once the day is closed, the status actions (Take a break/
-        // Declare emergency/I'm back) and "Call next patient" are
-        // locked — broadcasting a new delay, or calling someone in, to
-        // patients who've already been told you're done for the day
-        // doesn't make sense. The separate #reopenDoctorDayBtn ("I'm
-        // back", in the End of day panel below) is the only way out of
-        // a closed day. A persistent note (not a hover tooltip alone)
-        // explains why, plus a native title attribute as a light hover
-        // reinforcement.
         const dayIsClosed = !!doc.dayClosedAt;
         const lockTitle = dayIsClosed ? 'Day closed — press "I\'m back" below to regain control.' : '';
 
-        // Kept current regardless of whether the panel is actually
-        // collapsed right now — CSS alone decides visibility (see
-        // #statusPanel:not(.panel-collapsed) .status-header-pill in
-        // styles.css), so there's no risk of this showing a stale
-        // status from before the panel was last opened/closed. Bold,
-        // colored text (not a chip background, and no delay minutes)
-        // -- plain grey text turned out too easy to miss entirely;
-        // color still tells the story at a glance without the visual
-        // weight of a full pill.
         const headerPill = document.getElementById('statusHeaderPill');
         headerPill.className = 'status-header-pill ' + (dayIsClosed ? 'closed' : doc.status);
         headerPill.textContent = dayIsClosed ? 'Day closed' : statusLabel(doc.status);
-        // Each button also gets a plain-language title explaining what
-        // clicking it actually does — the label alone says the action
-        // but not who sees it or what changes.
         const STATUS_BTN_TITLES = {
           on_time: 'Return to available.',
           on_break: 'Broadcasts a delay and reason to every waiting patient and the display screen.',
@@ -1089,16 +776,6 @@
           btn.title = dayIsClosed ? lockTitle : STATUS_BTN_TITLES[btn.getAttribute('data-status')];
         });
 
-        // Was a permanently-visible "Clear status" button, disabled
-        // whenever there was nothing to clear — read as a peer of "On a
-        // break"/"Emergency" even though it's a different kind of
-        // action (undoing a state, not declaring one), and a doctor
-        // coming back to a disabled Call next patient had to correctly
-        // guess that this greyed-out button was the fix. Now exactly
-        // one of these two blocks shows: the two real actions while
-        // available, or a colored banner naming the away state with one
-        // obvious "I'm back" button — never three controls competing,
-        // never a button that's sometimes a no-op.
         const isAway = doc.status === 'on_break' || doc.status === 'emergency';
         const availableActions = document.getElementById('statusAvailableActions');
         const awayBanner = document.getElementById('statusAwayBanner');
@@ -1107,11 +784,6 @@
           awayBanner.style.display = 'none';
         } else if (isAway) {
           availableActions.style.display = 'none';
-          // inline-flex, matching .status-away-banner's own CSS -- was
-          // 'flex' here, which as an inline style beat the stylesheet's
-          // inline-flex regardless of specificity, silently undoing the
-          // width fix and stretching the banner across the panel's full
-          // width again.
           awayBanner.style.display = 'inline-flex';
           awayBanner.className = 'status-away-banner ' + doc.status;
           document.getElementById('statusAwayText').textContent =
@@ -1125,11 +797,6 @@
           awayBanner.style.display = 'none';
         }
 
-        // Call next patient also locks while on a break or in an
-        // emergency — not the status actions themselves, since "I'm
-        // back" is exactly how a doctor gets back out of either state.
-        // Otherwise nothing stopped a new patient from being pulled in
-        // while the doctor had just said they're unavailable.
         const awayPhrase = doc.status === 'on_break' ? "you're on a break" : "you're in an emergency";
         const noOneWaiting = q.waiting.length === 0;
         const callNextBtn = document.getElementById('callNextBtn');
@@ -1139,16 +806,6 @@
         else if (noOneWaiting) callNextBtn.title = 'No one is waiting right now.';
         else callNextBtn.removeAttribute('title');
 
-        // Deliberately restricted to "nobody's waiting" rather than
-        // "someone's in consultation" (which would make it usable
-        // alongside Call next patient at the same time): with anyone
-        // in the queue, finishing without also calling the next person
-        // in just stalls the queue until a second click happens — Call
-        // next patient already does both in one action. Done exists
-        // specifically for clearing the last patient of a lull, when
-        // there's genuinely no one to call in next. This also means
-        // the two buttons are never both enabled at once — whichever
-        // one makes sense for the current queue state is the one lit up.
         const finishCurrentBtn = document.getElementById('finishCurrentBtn');
         const nothingToFinish = !q.nowServing || q.waiting.length > 0;
         finishCurrentBtn.disabled = dayIsClosed || nothingToFinish;
@@ -1165,10 +822,6 @@
           lockedNote.style.display = 'none';
         }
 
-        // The empty state matters here specifically: once a currently-
-        // seen patient is marked done (see the on-a-break/emergency
-        // confirm below), the generic "Tap Call next patient" message
-        // would be actively wrong — that button is disabled right now.
         document.getElementById('nowServingBox').innerHTML = q.nowServing
           ? `<div style="font-size:20px;font-weight:700;">${Qlinic.escapeHtml(q.nowServing.name)}</div><div style="font-size:13px;color:var(--grey-500);">${q.nowServing.address ? Qlinic.escapeHtml(q.nowServing.address) + ' · ' : ''}${q.nowServing.type === 'appointment' ? 'Appointment' : 'Walk-in'}${q.nowServing.calledAt ? ' · called in at ' + Qlinic.formatTimestamp(q.nowServing.calledAt) : ''}</div>`
           : isAway
@@ -1187,15 +840,6 @@
           `
           : `
             <p class="panel-note">Let reception and the waiting screen know you're done for today. You'll disappear from the display screen 3 minutes after closing.</p>
-            <!-- Was .accent-outline with inline border/color overrides
-                 to fake red -- the base class's own :hover rule
-                 (background: var(--accent), blue) still applied since
-                 nothing inline overrode background, while the inline
-                 color:red always won regardless of hover state (inline
-                 styles beat any class rule, hover included) -- blue
-                 fill, red text/border on hover. .danger-outline already
-                 exists with the correct red default + red-fill-white-
-                 text hover built in; no inline overrides needed. -->
             <button class="btn-sm danger-outline" id="closeDoctorDayBtn">Close my day</button>
           `;
         const closeBtn = document.getElementById('closeDoctorDayBtn');
@@ -1226,18 +870,6 @@
         }
       }
 
-      // Ghost-text autocomplete for the Reason field: type the start of
-      // one of these, see the rest fade in, press Tab to accept — same
-      // "don't retype the same handful of reasons every time" idea as
-      // an email client's subject-line suggestions. Case-insensitive
-      // match against the start of the typed text; the accepted text
-      // always uses the suggestion's own casing, not whatever case was
-      // typed. Deliberately one entry per starting letter (matchingReason
-      // takes the first array match for a given prefix, so two reasons
-      // sharing a first letter would make the second permanently
-      // unreachable) — chosen to cover the letters a doctor's own
-      // shorthand is actually likely to start with, not just what
-      // happened to get added first.
       const COMMON_REASONS = [
         'Lunch', 'In a meeting', 'On a call', 'Hospital rounds',
         'Personal emergency', 'Family emergency', 'Traffic delay', 'Stepped out briefly',
@@ -1255,30 +887,6 @@
         const idx = text.lastIndexOf(' ');
         return idx === -1 ? 0 : idx + 1;
       }
-      // Keep completing whatever reason the doctor is already a prefix
-      // of — this is what correctly finishes multi-word reasons like
-      // "Personal em" -> "...ergency" instead of restarting mid-phrase
-      // and hijacking into an unrelated reason ("Emergency surgery")
-      // that happens to share that fragment. It also naturally stops
-      // suggesting once the phrase is fully typed (nothing longer left
-      // to match), so no separate "already complete" check is needed.
-      // Only once the WHOLE typed text stops being a prefix of anything
-      // — the doctor has genuinely moved on to their own words — do we
-      // restart matching at just the word being typed now, so an
-      // earlier mismatch doesn't block suggestions for the rest of the
-      // entry. A single stray letter is too weak a signal once you're
-      // past the first word (e.g. the "t" in "went t" isn't a real cue
-      // for "Traffic delay"), so that fallback requires 2+ characters;
-      // the first word keeps its single-letter shortcut (e.g. "m" ->
-      // Meeting), since that's the common case of starting the field fresh.
-      // Crucially, a fallback match is capped to the CURRENT WORD's own
-      // boundary, not the rest of whatever reason it happens to match —
-      // "in an em" completes to "in an emergency", never spilling into
-      // "...emergency surgery", since the words before "em" have nothing
-      // to do with that other, unrelated reason. This also makes a
-      // separate "already typed the full reason" check unnecessary: once
-      // there's nothing left to add within the current word itself, the
-      // fallback naturally has nothing to suggest.
       const FALLBACK_MIN_WORD_LENGTH = 2;
       function suggestionFor(typed) {
         if (!typed) return null;
@@ -1312,15 +920,10 @@
         const s = suggestionFor(typed);
         if (!s) return;
         e.preventDefault();
-        // Only the word being completed gets replaced — whatever the
-        // doctor already typed before it (their own custom text) stays
-        // exactly as they wrote it.
         input.value = typed.slice(0, s.wordStart) + s.match;
         updateReasonGhost();
       });
 
-      // "On a break" asks for a duration before broadcasting: the doctor
-      // picks how it'll show up, then confirms.
       const DURATION_CONFIG = {
         on_break: {
           label: 'How long is your break?', button: 'Broadcast break',
@@ -1329,14 +932,6 @@
       };
       let pendingStatus = null;
 
-      // Short durations in round minutes, longer ones in half-hour steps:
-      // "90 min" reads slower than "1.5 hr" once you're past an hour.
-      // 5 and 15 min slotted in below/between the old 10-min steps — a
-      // quick nature call is a real, common reason to step away, and
-      // shouldn't force rounding up to a break twice as long as it
-      // needs to be. Listed explicitly rather than a finer-grained loop
-      // so the dropdown doesn't also grow 25/35/45/55, which nobody
-      // asked for and would just make the common options slower to scan.
       const DURATION_OPTIONS = [
         { value: 5, label: '5 min' }, { value: 10, label: '10 min' }, { value: 15, label: '15 min' },
       ];
@@ -1388,12 +983,6 @@
         btn.addEventListener('click', async () => {
           const status = btn.getAttribute('data-status');
 
-          // A misclick on either of these while actively seeing someone
-          // had no real way back — the only prompt that existed (below,
-          // same two statuses) asked "did you finish with them," and
-          // either answer still went on to change the status. This one's
-          // a genuine full stop: Cancel here means nothing happens at
-          // all, full stop, before anything else is asked.
           if (currentQueue && currentQueue.nowServing && (status === 'on_break' || status === 'emergency')) {
             const proceed = await Qlinic.confirmDialog({
               message: `You're currently seeing ${currentQueue.nowServing.name}.`,
@@ -1403,16 +992,6 @@
             if (!proceed) return;
           }
 
-          // Going on a break or into an emergency while someone's still
-          // in consultation is genuinely ambiguous: did the visit just
-          // finish and the doctor hasn't called the next patient yet, or
-          // are they stepping away mid-visit with this same patient still
-          // in the room? Only the doctor knows, so ask instead of
-          // guessing — a wrong guess either way is misleading on the
-          // display board. "Done" clears them via finishCurrentPatient,
-          // not callNextPatient — nobody should get pulled in while the
-          // doctor isn't available. "Still with them" leaves Now Serving
-          // untouched, exactly as it already worked before this.
           if ((status === 'on_break' || status === 'emergency') && currentQueue && currentQueue.nowServing) {
             const isDone = await Qlinic.confirmDialog({
               title: `Have you finished with ${currentQueue.nowServing.name}?`,
@@ -1436,16 +1015,6 @@
             document.getElementById('delayInputLabel').textContent = config.label;
             document.getElementById('confirmDelayBtn').textContent = config.button;
 
-            // Reopening for the status that's ALREADY active (extending a
-            // break or delay already in progress) pre-selects the
-            // doctor's current duration instead of whatever was last
-            // picked in this session, AND — the actually useful part —
-            // shows WHEN they picked it and how long ago that was. A
-            // pre-filled dropdown alone doesn't tell a doctor whether
-            // they're 2 minutes or 40 minutes into a "30 min" break;
-            // the elapsed time is what actually tells them whether to
-            // extend. Switching to a genuinely different status starts
-            // fresh with no history note.
             const historyNote = document.getElementById('delayHistoryNote');
             const reasonInput = document.getElementById('delayReasonInput');
             if (currentDoctor && currentDoctor.status === status && currentDoctor.delayMins) {
@@ -1456,10 +1025,6 @@
               const elapsedMin = Math.max(0, Math.round((Date.now() - setAt.getTime()) / 60000));
               historyNote.textContent = config.historyNote(durationLabel, Qlinic.formatTimestamp(setAt), elapsedMin);
               historyNote.style.display = 'block';
-              // Extending an already-active break/delay keeps whatever
-              // reason was already broadcast, since it's very likely
-              // still the same one — the doctor can still edit or clear
-              // it before re-broadcasting.
               reasonInput.value = currentDoctor.statusNote || '';
             } else {
               selectDelay(30, '30 min');
@@ -1469,23 +1034,10 @@
             updateReasonGhost();
 
             document.getElementById('delayInputWrap').style.display = 'block';
-            // Still shows the PREVIOUS status change's timestamp at this
-            // point — nothing has actually been broadcast yet, the doctor
-            // is still picking a duration. Left showing, it reads as "did
-            // my last action even register," right when the doctor is
-            // mid-click on a new one. Hidden until either Broadcast
-            // confirms a real new status (render() below repopulates it),
-            // or Cancel backs out and it's restored unchanged.
             document.getElementById('currentStatusLine').style.display = 'none';
             return;
           }
 
-          // Emergency (and Clear status) deliberately stay one click with
-          // no confirm dialog — the earlier "should Call next patient
-          // stay reachable during a break" call was that Emergency must
-          // never gain friction, since that's exactly the moment it
-          // matters least. A mis-click here is already one click away
-          // from undone: hitting "Clear status" reverses it immediately.
           document.getElementById('delayInputWrap').style.display = 'none';
           try {
             await Qlinic.setDoctorStatus(currentDoctorId(), status, 0, '');
@@ -1497,10 +1049,6 @@
         });
       });
 
-      // Collapsed by default every load, no persisted state — see the
-      // comment on #statusPanel itself for why. panel-collapsed trims
-      // .panel's own padding down to a slim bar while collapsed — see
-      // its own comment in styles.css.
       document.getElementById('statusToggleBtn').addEventListener('click', () => {
         const btn = document.getElementById('statusToggleBtn');
         const body = document.getElementById('statusPanelBody');
@@ -1511,19 +1059,9 @@
         btn.setAttribute('aria-expanded', String(!isOpen));
       });
 
-      // Closes the picker without broadcasting anything — for the case a
-      // status button (e.g. "On a break") got clicked by mistake. Nothing
-      // was sent to setDoctorStatus yet at this point, so this genuinely
-      // leaves things exactly as if it had never been clicked, not just
-      // visually hidden.
       document.getElementById('cancelDelayBtn').addEventListener('click', () => {
         document.getElementById('delayInputWrap').style.display = 'none';
         document.getElementById('delayHistoryNote').style.display = 'none';
-        // Nothing was actually broadcast — render() isn't re-run here, so
-        // currentStatusLine's own content never changed underneath it;
-        // this just un-hides it (delayInputWrap is now 'none', so
-        // render()'s own visibility check would agree) without waiting
-        // on a fresh fetch for what's already showing the right thing.
         document.getElementById('currentStatusLine').style.display = '';
         pendingStatus = null;
       });
@@ -1534,10 +1072,6 @@
         try {
           await Qlinic.setDoctorStatus(currentDoctorId(), pendingStatus, mins, reason);
           document.getElementById('delayInputWrap').style.display = 'none';
-          // Awaited, not fire-and-forget — currentStatusLine must not
-          // reappear until render() has actually replaced its content
-          // with the freshly-broadcast status; render() itself decides
-          // to show it now that delayInputWrap is 'none'.
           await render();
           showToast(pendingStatus === 'on_break' ? 'Break broadcast to all waiting patients' : 'Delay broadcast to all waiting patients');
         } catch (err) {
@@ -1549,9 +1083,6 @@
         try {
           const result = await Qlinic.callNextPatient(currentDoctorId());
           render();
-          // Only the actual success case gets the on-screen confirmation —
-          // "no one is waiting" isn't a confirmation of anything, it's an
-          // edge case explaining why nothing happened, so it stays a toast.
           if (result.called) flashCallConfirm();
           else showToast('No one is waiting in the queue');
         } catch (err) {
@@ -1588,24 +1119,11 @@
         document.getElementById('clinicLogoThumb').style.display = 'none';
       }
       document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
-      // Re-renders the countdown text from the queue already in memory —
-      // no re-fetch — so "in 23 min" doesn't sit there stale for however
-      // long it is until the next real change triggers a full render().
       setInterval(() => {
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
         if (currentQueue) renderNextAppointment(currentQueue);
         checkLongConsultation();
       }, 30000);
-      // render() itself only ever ran on load and on Qlinic.onLiveChange()'s
-      // Realtime push -- fine for actions taken from this same tab (Call
-      // next patient/Done call render() directly after their own write),
-      // but a patient added or marked arrived from reception depends
-      // entirely on that push arriving. When it doesn't (a dropped socket,
-      // a reconnect gap), the Waiting list and the Call next
-      // patient/Done buttons' disabled states sit stuck until the doctor
-      // manually reloads -- same gap just fixed on reception.html, and
-      // the higher-stakes side of it: a doctor who thinks no one's
-      // waiting because the button's still greyed out.
       setInterval(render, 15000);
 
       render();

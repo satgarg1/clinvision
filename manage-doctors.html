@@ -95,14 +95,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
 
-      // The sidebar logo links to the marketing site, which has no way
-      // back into the app without logging in again, worth a heads-up
-      // before someone loses their place by accident.
       document.querySelector('a.brand').addEventListener('click', async (e) => {
         e.preventDefault();
         if (await Qlinic.confirmDialog({ message: "Going to the homepage will end your session here, you'll need to log in again to get back in." })) {
@@ -114,10 +111,6 @@
         window.location.href = 'dashboard.html';
         return;
       }
-      // Body starts hidden (see the <body> tag) specifically so a non-
-      // admin hitting this URL never sees this admin-only page's content
-      // even for a moment before the redirect above fires -- reveal only
-      // once we know for certain they're allowed to be here.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
@@ -155,8 +148,6 @@
       ];
       const OTHER_SPECIALTY = '__other__';
 
-      // Passive heads-up only, same as the no-show note on Reception: it
-      // never blocks Save, it just flags a fee that's worth a second look.
       const HIGH_FEE_THRESHOLD = 4000;
       function feeWarningMessage(normal, emergency) {
         const highNormal = normal > HIGH_FEE_THRESHOLD;
@@ -187,8 +178,6 @@
       function filteredDoctors() {
         const term = searchTerm.trim().toLowerCase();
         const base = !term ? allDoctors : allDoctors.filter((d) => d.name.toLowerCase().includes(term));
-        // Same active-first sort as Team's roster -- deactivated doctors
-        // sink to the bottom instead of interleaving with active ones.
         return [...base].sort((a, b) => (a.isActive ? 0 : 1) - (b.isActive ? 0 : 1));
       }
 
@@ -260,9 +249,6 @@
         if (doctor) openEditDoctorModal(doctor);
       }
 
-      // A dialog, not an inline row-edit — keeps the table itself plain
-      // text always, rather than turning into a form the moment you touch
-      // one row (which is the exact "looks cheap" complaint this replaced).
       function openEditDoctorModal(doctor) {
         const isKnown = SPECIALTIES.includes(doctor.specialty);
         const backdrop = document.createElement('div');

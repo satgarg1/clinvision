@@ -1,9 +1,3 @@
-<!--
-  TODO before this goes live to real visitors: WHATSAPP_NUMBER below is a
-  placeholder (91XXXXXXXXXX). Replace it with the real business WhatsApp
-  number (country code, no +, no spaces or dashes) before sharing this
-  page or its link anywhere public.
--->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -101,10 +95,6 @@
     </div>
   </nav>
 
-  <!-- Two-pane dark band. Reviewed as a mockup (5 background swatches,
-       several rounds of feedback) before shipping -- see styles.css's
-       .contact-dark-band block for the full history. Nav/footer stay
-       their normal light selves on purpose. -->
   <div class="contact-dark-band">
     <div class="contact-split">
       <div class="contact-media">
@@ -116,10 +106,6 @@
         <div class="contact-panel-inner">
           <div class="eyebrow">We're here to help!</div>
           <h1 class="mkt-h2">Get in touch</h1>
-          <!-- nowrap on the first sentence -- at narrower widths it was
-               breaking mid-sentence ("...interest in" / "ClinVision.")
-               before the <br /> even kicked in, so "one line, not two"
-               needed forcing, not just the manual break. -->
           <p class="mkt-sub"><span style="white-space:nowrap;">Thanks for your interest in ClinVision.</span><br />Reach us directly, or fill in the form below and we'll reach out to you.</p>
 
           <div class="contact-cta-row">
@@ -135,18 +121,11 @@
 
           <div class="contact-divider">or</div>
 
-          <!-- Everything from here down -- heading, note, and the form
-               itself -- gets replaced by showSuccess() on submit, not
-               just the form: leaving "Contact us"/"Share a few
-               details..." visible above the confirmation read oddly,
-               since the form they refer to would already be gone. -->
           <div id="contactFormSection">
             <h2 class="pg-h2">Contact us</h2>
             <p class="contact-form-note">Share a few details and we'll get in touch with you.</p>
             <p id="contactFormError" class="contact-form-error" style="display:none;"></p>
             <form id="contactForm">
-              <!-- Honeypot -- see migration 061's own note. Left blank by
-                   a real visitor, often filled in by a simple bot. -->
               <div class="field contact-honeypot" aria-hidden="true">
                 <label for="cWebsite">Leave this field blank</label>
                 <input type="text" id="cWebsite" tabindex="-1" autocomplete="off" />
@@ -163,10 +142,6 @@
               </div>
               <div class="field">
                 <label for="cClinicType">Clinic type</label>
-                <!-- value= stays the short form -- matches the check
-                     constraint on contact_enquiries.clinic_type
-                     (migration 061) exactly; only the visible label
-                     carries the explanation. -->
                 <select id="cClinicType">
                   <option value="">Select your clinic type</option>
                   <option value="Solo practice">Solo practice (1 doctor)</option>
@@ -206,7 +181,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
   <script>
-    // Placeholder: see the TODO comment at the top of this file.
     const WHATSAPP_NUMBER = '91XXXXXXXXXX';
     const heroWhatsappLink = document.getElementById('heroWhatsapp');
     heroWhatsappLink.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi, I'd like to know more about ClinVision.")}`;
@@ -215,17 +189,10 @@
       this.value = this.value.replace(/[0-9]/g, '');
     });
 
-    // Digits only, capped at 10 -- maxlength/inputmode above cover most
-    // real input, this catches paste and non-numeric-keyboard typing.
     document.getElementById('cPhone').addEventListener('input', function () {
       this.value = this.value.replace(/\D/g, '').slice(0, 10);
     });
 
-    // Lightweight, dedicated client for this one public insert -- this
-    // page doesn't need clinic-data.js's full app logic (auth session,
-    // clinic-scoped queries), just an anon-key insert into a table with
-    // no clinic context at all. Same supabase.createClient pattern
-    // login.html and clinic-data.js already use.
     const sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
     const form = document.getElementById('contactForm');
@@ -236,8 +203,6 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      // Honeypot: a real visitor never sees or fills this field. If it's
-      // filled, silently pretend success without writing a row.
       if (document.getElementById('cWebsite').value.trim()) {
         showSuccess();
         return;
@@ -282,12 +247,6 @@
     });
 
     function showSuccess() {
-      // Lock in the whole section's rendered height before swapping it
-      // out -- otherwise the much shorter success message collapses the
-      // pane, which read as an odd size jump between the two states.
-      // Swaps "Contact us"/the note/the form all at once, not just the
-      // form: leaving that heading and note above the confirmation read
-      // oddly once the form they refer to was already gone.
       const heightBefore = formSection.getBoundingClientRect().height;
       formSection.style.minHeight = heightBefore + 'px';
       formSection.innerHTML = `

@@ -51,10 +51,6 @@
         <div class="empty-state">Your account isn't linked to a doctor profile yet — ask your admin to link it from Team settings.</div>
       </div>
 
-      <!-- Admin-only: switches between managing one person's holidays
-           and the combined cross-team view below. A doctor or staff
-           member managing only their own list never sees this -- one
-           person, one list, no reason for a mode to pick between. -->
       <div class="mode-toggle" id="viewModeToggle" style="display:none;">
         <button type="button" class="mode-btn active" data-view="manage">Add / manage</button>
         <button type="button" class="mode-btn" data-view="all">View Holidays</button>
@@ -63,7 +59,6 @@
       <div class="panel" id="holidaysPanel" style="display:none;">
         <div class="panel-header"><h2 id="addHolidayHeading">Add a holiday</h2></div>
 
-        <!-- Admin-only: which roster this form/list is scoped to. -->
         <div class="mode-toggle sm" id="personTypeToggle" style="display:none;">
           <button type="button" class="mode-btn sm active" data-type="doctor">Doctor</button>
           <button type="button" class="mode-btn sm" data-type="staff">Staff</button>
@@ -91,12 +86,6 @@
         <div id="holidaysTableWrap" style="margin-top:20px;"></div>
       </div>
 
-      <!-- Admin-only combined view -- everyone's holidays, doctors and
-           staff together. A role pill (All/Doctor/Staff/Admin) plus an
-           Excel-style filter on "Who" (same interaction as Revenue's
-           own column filters) so this stays findable once there are
-           genuinely 30+ doctors and 20+ staff, not just a flat list
-           that only works at a handful of people. -->
       <div class="panel" id="allHolidaysPanel" style="display:none;">
         <div class="panel-header">
           <h2>View Holidays</h2>
@@ -120,11 +109,6 @@
         <div class="active-filter-chips" id="allHolidaysChips"></div>
 
         <table class="qtable qtable-fixed">
-          <!-- Equal thirds -- the panel is now capped to what these 3
-               columns need (see #allHolidaysPanel max-width), so
-               splitting the table itself evenly across Date/Role and
-               Name/Reason is what actually makes them read as filling
-               it, rather than sizing each column to its own content. -->
           <colgroup>
             <col style="width:33.33%;"><col style="width:33.33%;"><col style="width:33.34%;">
           </colgroup>
@@ -150,13 +134,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
 
-      // Scoped to the pharmacy counter and catalog only -- this page shows
-      // patient/staff data a pharmacist has no business seeing.
       if (await Qlinic.isPharmacist()) { window.location.href = 'pharmacy.html'; return; }
 
       document.querySelector('a.brand').addEventListener('click', async (e) => {
@@ -167,10 +149,6 @@
       });
 
       const [amAdmin, amDoctor, myProfile] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor(), Qlinic.getMyProfile()]);
-      // Was redirected away for reception role -- with only three roles
-      // total (admin/doctor/reception) and reception now managing their
-      // own holiday the same way a doctor does, everyone who can log in
-      // has a real reason to be on this page. No redirect left.
       const amStaff = !amAdmin && !amDoctor;
       if (amDoctor) {
         document.getElementById('receptionNavLink').style.display = 'none';
@@ -180,8 +158,6 @@
       if (!amAdmin) {
         document.getElementById('revenueNavLink').style.display = 'none';
       }
-      // Body starts hidden (see the <body> tag) so nobody sees the full
-      // nav for a moment before the role-based hiding above finishes.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
@@ -192,12 +168,6 @@
         setTimeout(() => t.classList.remove('show'), 2200);
       }
 
-      // A doctor or staff member manages only their own holidays (no
-      // picker, target is fixed); an admin can manage anyone's on their
-      // behalf — e.g. a doctor calling in sick and unable to log in
-      // themselves. personType ('doctor' | 'staff') decides which API
-      // (Qlinic.*DoctorHoliday* vs *StaffHoliday*) and which target id
-      // is live -- admin is the only role that ever switches it.
       let personType = amStaff ? 'staff' : 'doctor';
       let doctors = [];
       let staffMembers = [];
@@ -219,20 +189,13 @@
         return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
       }
 
-      // "View Holidays"' relative-time signal -- today already gets its
-      // own strong "Today" badge; this is the lighter-weight one for
-      // "coming up soon" so a date further down a long, paginated list
-      // doesn't need mental math against today's date to place it.
-      // Capped at 2 weeks out on purpose (per direct instruction) --
-      // beyond that a plain date is enough, the signal isn't meant to
-      // compete with Today's badge for attention on every single row.
       function daysUntil(dateStr) {
         const [y1, m1, d1] = TODAY_STR.split('-').map(Number);
         const [y2, m2, d2] = dateStr.split('-').map(Number);
         return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000);
       }
       function relativeSoonBadge(dateStr) {
-        if (dateStr <= TODAY_STR) return ''; // today has its own badge; past has none
+        if (dateStr <= TODAY_STR) return '';
         const n = daysUntil(dateStr);
         if (n <= 6) return `<span class="soon-badge">In ${n} day${n === 1 ? '' : 's'}</span>`;
         if (n <= 13) return '<span class="soon-badge">In about 1 week time</span>';
@@ -253,12 +216,6 @@
           wrap.innerHTML = '<div class="empty-state">No holidays added yet.</div>';
           return;
         }
-        // Same date treatment "View Holidays" already uses -- past rows
-        // fade out, today gets its badge, and anything within 2 weeks
-        // gets the lighter "coming up soon" signal -- so a doctor or
-        // staff member scanning their own list gets the same at-a-glance
-        // read admin already has, and an admin managing someone else's
-        // list from this same panel sees it too.
         wrap.innerHTML = `
           <table class="qtable">
             <thead><tr><th>Date</th><th>Reason</th><th style="width:90px;"></th></tr></thead>
@@ -296,9 +253,6 @@
         renderHolidays();
       }
 
-      // "View Holidays" state -- separate from the Add/manage state
-      // above (personType/targetDoctorId/etc.), since this is admin
-      // browsing everyone's holidays, not managing one person's.
       let allHolidaysRows = [];
       let allHolidaysRole = 'all';
       let allHolidaysNameFilter = new Set();
@@ -332,9 +286,6 @@
         const filtered = allHolidaysNameFilter.size === 0 ? scoped : scoped.filter((r) => allHolidaysNameFilter.has(r.name));
         return filtered.slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
       }
-      // "12 holidays across the team" / "3 holidays across doctors" --
-      // scoped to the current role pill, not a fixed grand total, since
-      // the phrase names the scope it's counting.
       function allHolidaysScopeLabel() {
         if (allHolidaysRole === 'doctor') return 'across doctors';
         if (allHolidaysRole === 'reception') return 'across staff';
@@ -365,11 +316,6 @@
         pager.innerHTML = `<span class="sub-line">${summary}</span>${Qlinic.pagerHtml(allHolidaysPage, totalPages)}`;
         Qlinic.wirePager(pager, allHolidaysPage, totalPages, (p) => { allHolidaysPage = p; renderAllHolidaysRows(); });
       }
-      // Past fades to reduced opacity, today gets a tinted background +
-      // left border stripe + bold text + a small badge (same "make the
-      // one row that matters findable while scanning" pattern Doctor
-      // View's own row highlights already use) -- meant to be
-      // unmissable at a glance, not read carefully to notice.
       function renderAllHolidaysRows() {
         const all = allHolidaysVisible();
         const start = (allHolidaysPage - 1) * ALL_HOLIDAYS_PAGE_SIZE;
@@ -511,8 +457,6 @@
           loadHolidays();
         });
 
-        // Not the date field: focusing a native date input auto-selects
-        // its first segment (a blue-highlighted day number).
         backdrop.querySelector('#editHolidayNote').focus();
       }
       window.doDeleteHoliday = doDeleteHoliday;
@@ -554,12 +498,6 @@
           heading.textContent = staffMembers[0] ? `Add a holiday for ${staffMembers[0].fullName || staffMembers[0].email}` : 'Add a holiday';
         } else {
           label.textContent = 'Doctor';
-          // Adding a new holiday only ever makes sense for a doctor who
-          // could actually take one -- doctorById (built from the full,
-          // includeInactive list above) still resolves an inactive
-          // doctor's name correctly wherever View Holidays shows their
-          // past entries; this picker is the "who am I adding a holiday
-          // for" list specifically, and stays active-only.
           const pickableDoctors = doctors.filter((d) => d.isActive !== false);
           picker.innerHTML = pickableDoctors.map((d) =>
             `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}</option>`
@@ -579,15 +517,10 @@
           document.getElementById('holidaysPanel').style.display = 'block';
         }
       } else if (amStaff) {
-        // Same no-picker, straight-to-"your own list" experience a
-        // doctor already gets -- self-service, target is fixed to this
-        // profile's own row, never a picker.
         document.getElementById('pageHeading').textContent = 'Your holidays';
         document.getElementById('addHolidayHeading').textContent = 'Add a holiday';
         document.getElementById('holidaysPanel').style.display = 'block';
       } else {
-        // Admin: the only role that sees the Add/manage <-> View Holidays
-        // toggle, the Doctor/Staff picker, and the combined view.
         document.getElementById('pageHeading').textContent = 'Team holidays';
         document.getElementById('viewModeToggle').style.display = 'inline-flex';
         document.getElementById('personTypeToggle').style.display = 'inline-flex';
@@ -635,9 +568,6 @@
           });
         }
 
-        // Persisted per device (same pattern qlinic_theme already uses)
-        // so a refresh lands back on whichever tab the admin was
-        // actually looking at, instead of always resetting to Add/manage.
         const VIEW_MODE_KEY = 'qlinic_team_holidays_view';
         function applyViewMode(view) {
           document.querySelectorAll('#viewModeToggle .mode-btn').forEach((b) =>

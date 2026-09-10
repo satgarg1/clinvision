@@ -55,7 +55,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -71,10 +71,6 @@
         window.location.href = 'dashboard.html';
         return;
       }
-      // Body starts hidden (see the <body> tag) specifically so a non-
-      // admin hitting this URL never sees this admin-only page's content
-      // even for a moment before the redirect above fires -- reveal only
-      // once we know for certain they're allowed to be here.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
@@ -85,13 +81,6 @@
         setTimeout(() => t.classList.remove('show'), 2200);
       }
 
-      // Its own page, off the sidebar below Revenue, rather than a panel on
-      // Dashboard (glanced at constantly) or bolted onto Revenue (visited
-      // for a different reason): admin/reception have to come here
-      // deliberately, so this can't be clicked by accident. Reopening only
-      // clears the closed flag, it doesn't try to undo the no-shows
-      // closing just created, since there's no reliable way to tell those
-      // apart from a no-show marked manually earlier in the day.
       async function renderEndOfDay() {
         const clinic = await Qlinic.getClinic();
         const closedToday = clinic && clinic.last_closed_date === Qlinic.getTodayDate();

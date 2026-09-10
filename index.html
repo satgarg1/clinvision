@@ -43,13 +43,6 @@
 <body>
 
   <nav class="mkt-nav">
-    <!-- ClinVision rebrand (2026-08-31): wordmark-led, no icon -- the
-         clock mark is gone on purpose, not missing, sitewide now.
-         The bar sits INSIDE brand-word-wrap (not as a sibling of
-         brand-top) specifically so it can center against the word's
-         own rendered width, not the nav's left edge -- .brand's own
-         flex-start column alignment would otherwise pin a sibling bar
-         flush left under the "C" instead of centered under the word. -->
     <a href="/" class="brand">
       <span class="brand-top">
         <span class="brand-word-wrap">
@@ -118,7 +111,6 @@
     </div>
   </nav>
 
-  <!-- HERO -->
   <div class="mkt-fullbleed" style="background:var(--mkt-paper);">
     <div class="hero-stage">
       <div class="hero-glow" aria-hidden="true"></div>
@@ -168,9 +160,6 @@
   </div>
 
   <script>
-    // TODO before this goes live to real visitors: same placeholder number
-    // as contact.html's WHATSAPP_NUMBER -- replace with the real business
-    // WhatsApp number, in one place, once it exists.
     (function () {
       var WHATSAPP_NUMBER = '91XXXXXXXXXX';
       var msg = "Hi, I saw your website and want to know more about ClinVision.";
@@ -178,9 +167,6 @@
       if (link) link.href = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(msg);
     })();
 
-    // Hero entrance sequence -- real setTimeout timers + a .show class,
-    // not CSS animation-delay (which didn't reliably fire for the
-    // headline spans in testing). See styles.css's .hero-fx rules.
     (function () {
       var seq = [
         ['heroFxEyebrow', 0],
@@ -204,7 +190,6 @@
     })();
   </script>
 
-  <!-- TRUST -->
   <section class="trust">
     <div class="trust-glow" aria-hidden="true"></div>
     <div class="trust-head">
@@ -240,9 +225,6 @@
   </section>
 
   <script>
-    // Scroll-triggered reveal for the trust row -- this section sits below
-    // the fold, so it plays on intersection rather than a fixed timer like
-    // the hero's own entrance sequence.
     (function () {
       var items = document.querySelectorAll('.trust-item');
       var obs = new IntersectionObserver(function (entries) {
@@ -256,14 +238,6 @@
       items.forEach(function (el) { obs.observe(el); });
     })();
 
-    // Line up the "support" line under items 1, 2, 4 and 5 -- item 3 has no
-    // support line and is deliberately left out of this, its longer lead
-    // is allowed to run taller than the rest. A fixed min-height can't work
-    // here: how many lines each lead wraps to changes with viewport width
-    // (measured 2 lines at 1600px, 3 lines at 750px for these same leads),
-    // so the shorter ones are padded to match whichever is tallest at the
-    // CURRENT width, recomputed on resize and once webfonts finish loading
-    // (metric-fallback text can reflow once Fraunces/Inter actually apply).
     (function () {
       var leadIds = ['trustItem1', 'trustItem2', 'trustItem4', 'trustItem5'];
       function equalizeTrustLeads() {
@@ -292,7 +266,6 @@
     })();
   </script>
 
-  <!-- FULL SUITE -->
   <section class="suite">
     <div class="suite-glow" aria-hidden="true"></div>
     <div class="suite-head">
@@ -361,19 +334,12 @@
         </div>
       </div>
     </div>
-    <!-- Second button ("Is this for my clinic?" -> who-its-for.html)
-         removed -- that page no longer exists, replaced by the nav's
-         own "Solutions" hover menu, which is always visible up top
-         rather than needing a duplicate in-page prompt down here. -->
     <div class="mkt-cta-row" style="position:relative; z-index:1; margin-top:90px;">
       <a href="/contact" class="btn btn-accent btn-large">Book a Demo</a>
     </div>
   </section>
 
   <script>
-    // Scroll-triggered reveal for the Full Suite rows -- same pattern as
-    // the Trust row just above: this section sits below the fold, so it
-    // plays on intersection rather than a fixed timer like the hero's.
     (function () {
       var rows = document.querySelectorAll('.suite-row');
       var obs = new IntersectionObserver(function (entries) {
@@ -388,7 +354,6 @@
     })();
   </script>
 
-  <!-- COMPARISON -->
   <section class="compare">
     <div class="compare-glow" aria-hidden="true"></div>
     <div class="compare-inner">
@@ -422,10 +387,6 @@
   </section>
 
   <script>
-    // Scroll-triggered reveal for the two comparison cards -- same
-    // pattern as Trust's items and Full Suite's rows, just applied here
-    // too so this section doesn't stand out as the one static block on
-    // an otherwise all-animated page.
     (function () {
       var cols = document.querySelectorAll('.compare-col');
       var obs = new IntersectionObserver(function (entries) {
@@ -440,7 +401,6 @@
     })();
   </script>
 
-  <!-- FAQ -->
   <section class="faq reveal">
     <div class="faq-glow" aria-hidden="true"></div>
     <div class="faq-inner">
@@ -535,9 +495,6 @@
   </section>
 
   <script>
-    // Accordion open/close -- measures each answer's real scrollHeight
-    // rather than guessing a fixed max-height, so the expand/collapse
-    // animation matches its actual content length exactly.
     document.querySelectorAll('.faq-question').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var item = btn.closest('.faq-item');
@@ -554,7 +511,6 @@
     });
   </script>
 
-  <!-- FINAL CTA BAND -->
   <section class="final-cta reveal">
     <div class="final-cta-glow" aria-hidden="true"></div>
     <div class="final-cta-inner">

@@ -53,31 +53,6 @@
 
       <input type="text" id="patientSearch" placeholder="Search by patient name..." />
 
-      <!-- One shared row instead of the pill sitting alone above 2-3
-           stacked rows of date fields below it - singleDayFilters/
-           rangePresetField/customRangeFilters are still toggled by the
-           exact same JS (.style.display = 'flex'/'none' by id), just
-           nested here as flex children instead of separate top-level
-           blocks, so a hidden one simply drops out of this row's flow.
-           "Date"/"Period" labels dropped as redundant (a calendar icon
-           and a dropdown are self-explanatory on their own) - From/To
-           keep theirs since nothing else distinguishes them. Each
-           nested group (singleDayFilters/customRangeFilters) is
-           flex-wrap:nowrap on itself - only the OUTER row is allowed to
-           wrap. Without that, Date and Today (now bare siblings with no
-           wrapping div of their own since their labels were dropped)
-           could wrap independently of each other and visually
-           interleave with the pill in a scrambled order.
-
-           Alignment: the pill/Date/Today/Custom-dropdown have no label
-           of their own, but From/To do ("From"/"To" - nothing else
-           distinguishes them) - align-items:flex-end bottom-aligns
-           every group's actual control regardless of that difference,
-           since flex-end lines up each item's own bottom edge rather
-           than the whole column's midpoint. No spacer needed. Every
-           control in the row is also height/shape-matched in
-           styles.css (search "Revenue/No-shows' filter row") so
-           nothing here reads shorter or squarer than its neighbours. -->
       <div style="display:flex;align-items:flex-end;flex-wrap:wrap;gap:16px 24px;margin-bottom:10px;">
         <div class="period-pills" id="viewModeToggle" style="margin-bottom:0;">
           <button type="button" class="period-pill active" data-mode="single">Single day</button>
@@ -124,7 +99,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -144,10 +119,6 @@
         window.location.href = 'dashboard.html';
         return;
       }
-      // Body starts hidden (see the <body> tag) specifically so a non-
-      // admin hitting this URL never sees this admin-only page's content
-      // even for a moment before the redirect above fires -- reveal only
-      // once we know for certain they're allowed to be here.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
@@ -158,26 +129,19 @@
       let allInvoices = [];
       let currentPage = 1;
       let doctorById = {};
-      let doctorsListCache = []; // same doctors as doctorById, kept as an ordered array too - only needed for the revenue chip's doctor-color dots
-      let viewMode = 'single'; // 'single' | 'range'
+      let doctorsListCache = [];
+      let viewMode = 'single';
       let rangePreset = 'lastweek';
-      let customRange = null; // exact {start,end} for the 'custom' preset
+      let customRange = null;
       let doctorFilterIds = new Set();
       let typeFilterValues = new Set();
       let paymentModeFilterValues = new Set();
-      let sortDirection = 'asc'; // 'asc' = oldest visit first, 'desc' = newest first
+      let sortDirection = 'asc';
       let outstandingOnly = false;
 
       function pad2(n) { return String(n).padStart(2, '0'); }
       function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
 
-      // Presets split into two families: "complete prior period" ones
-      // (last week/month/3-6-12 months/FY — a finished statement, like a
-      // bank statement) and "current, in-progress period" ones (current
-      // week/month/FY — capped at today since it hasn't finished yet).
-      // Both live here now; Trends' own presets are separately still
-      // always "current, in-progress," which is a deliberate difference
-      // in what each page answers, not an inconsistency.
       function computeLastWeekRange() {
         const today = new Date();
         const day = today.getDay();
@@ -212,9 +176,6 @@
         const firstOfLastMonth = new Date(lastOfLastMonth.getFullYear(), lastOfLastMonth.getMonth(), 1);
         return { start: toDateStr(firstOfLastMonth), end: toDateStr(lastOfLastMonth) };
       }
-      // N complete calendar months immediately before the current one —
-      // "Current month" covers the in-progress one separately, so these
-      // two never overlap.
       function computeLastNMonthsRange(n) {
         const today = new Date();
         const firstOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -222,8 +183,6 @@
         const start = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth() - n, 1);
         return { start: toDateStr(start), end: toDateStr(end) };
       }
-      // Indian financial year: April 1 - March 31. If we're in Jan-Mar,
-      // the current FY started in April of the previous calendar year.
       const CURRENT_FY_START_YEAR = (() => {
         const today = new Date();
         return today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
@@ -245,11 +204,6 @@
       function fyLabel(startYear) {
         return `Apr '${String(startYear).slice(-2)} - Mar '${String(startYear + 1).slice(-2)}`;
       }
-      // Custom is the only preset with visible date fields - real
-      // From/To calendars (Qlinic.attachDatePicker, same component as
-      // the single-day filter above) rather than Month+Year dropdowns,
-      // so an exact day can be picked, not just "somewhere in March
-      // 2026." No cap on how far apart From/To can be.
       const RANGE_PRESETS = [
         { key: 'lastweek', label: 'Last week', compute: computeLastWeekRange },
         { key: 'currentweek', label: 'Current week', compute: computeCurrentWeekRange },
@@ -267,9 +221,6 @@
         return entry && entry.compute ? entry.compute() : null;
       }
 
-      // Clicking a bar on Trends links here with ?start=&end= — same page,
-      // just opened straight into Range mode with those dates pre-filled,
-      // not a special one-way "linked view."
       const urlParams = new URLSearchParams(window.location.search);
       const linkedStart = urlParams.get('start');
       const linkedEnd = urlParams.get('end');
@@ -296,10 +247,6 @@
         a.remove();
         URL.revokeObjectURL(url);
       }
-      // Exports exactly what's currently filtered/visible (search, doctor,
-      // type), not just the current page of the table — matches Reception's
-      // own "Export CSV" the same way, so both act the same on the current
-      // view, not just what fits on screen.
       function buildRevenueCsv(invoices) {
         const rows = [['Patient', 'Phone', 'Age', 'Address', 'Doctor', 'Type', 'Payment mode', 'Amount billed', 'Amount received', 'Balance']];
         invoices.forEach((inv) => {
@@ -321,25 +268,17 @@
       }
 
       async function loadDoctorFilterOptions() {
-        // includeInactive so a deactivated doctor's past invoices still
-        // show a real name in the filter and table, not a blank/missing one.
         const doctors = await Qlinic.getDoctors({ includeInactive: true });
         doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
         doctorsListCache = doctors;
       }
 
-      // Same 5-color identity palette used app-wide (Reception, Doctor
-      // View, the waiting-room board) - only used here for the revenue
-      // chip's doctor dots.
       const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
       function accentForDoctor(doctorId) {
         const idx = doctorsListCache.findIndex((d) => d.id === doctorId);
         return ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
       }
 
-      // Same "yesterday at the same clock time, not yesterday's whole
-      // day" fairness rule as Dashboard's own trend chips - percentChip
-      // itself is a straight copy of that function.
       function percentChip(todayVal, yesterdayVal, higherIsGood) {
         if (!yesterdayVal || todayVal == null) return null;
         const pct = Math.round(((todayVal - yesterdayVal) / yesterdayVal) * 100);
@@ -348,14 +287,6 @@
         return { text: `${Math.abs(pct)}%`, arrow: isIncrease ? '▲' : '▼', good: isIncrease === higherIsGood };
       }
 
-      // One-tap insights chip: today vs. yesterday, this month's best/
-      // worst day, the busiest doctor today and this week (by distinct
-      // patients, not revenue - a doctor earnings ranking was pulled per
-      // feedback), and all-time outstanding balances with phone numbers
-      // for follow-up. Every number here is read from
-      // getInvoicesForDateRange/getOutstandingInvoices - both already
-      // used elsewhere in this app - nothing new is fetched beyond one
-      // extra range query and one extra outstanding query.
       async function renderRevenueChip() {
         const todayStr = Qlinic.getTodayDate();
         const cutoffYesterday = new Date(Date.now() - 24 * 3600000);
@@ -383,7 +314,6 @@
 
         document.getElementById('revenueChipText').innerHTML = `₹${todayTotal} today ${trendBadge}`;
 
-        // Best/worst day this month, by amount actually collected.
         const monthInvoices = rangeInvoices.filter((inv) => inv.invoiceDate >= monthStart);
         const byDay = {};
         monthInvoices.forEach((inv) => { byDay[inv.invoiceDate] = (byDay[inv.invoiceDate] || 0) + inv.amountReceived; });
@@ -391,15 +321,6 @@
         const bestDay = dayEntries[0] || null;
         const worstDay = dayEntries.length ? dayEntries[dayEntries.length - 1] : null;
 
-        // Busiest doctor by distinct patients seen, not revenue. patientId
-        // is null for a manually-billed invoice with no linked queue row
-        // (a real, accepted gap - see createInvoice's own comment) -
-        // several such invoices would otherwise all add the same `null`
-        // to the Set and collapse into one "patient," undercounting a
-        // doctor who's actually seen more people than that. Each null
-        // patientId is given its own unique placeholder key instead, so
-        // it counts as its own distinct visit rather than merging with
-        // every other unlinked one.
         function busiestDoctor(invs) {
           const byDoctor = {};
           invs.forEach((inv) => {
@@ -529,11 +450,6 @@
         return document.getElementById('patientSearch').value.trim().toLowerCase();
       }
 
-      // Search + date-range only, before any of the three column filters
-      // or the outstanding-only toggle — the base set the filter-dropdown
-      // checklists count against, so each option shows how many bills it
-      // would match given the current search/date range, not narrowed by
-      // whatever's already selected in that same or another checklist.
       function searchAndDateInvoices() {
         const search = searchTerm();
         return allInvoices.filter((inv) => !search || inv.patientName.toLowerCase().includes(search));
@@ -572,14 +488,6 @@
           .filter((o) => o.count > 0);
       }
 
-      // ---------------- Excel-style column-header filter dropdowns ----------------
-      // Checking/unchecking a box filters instantly and closes the
-      // dropdown right away, so the filtered table is immediately
-      // visible — picking a second value in the same column means
-      // reopening it (one filter decision at a time), which reads more
-      // predictably than a dropdown that lingers open. Clearing every
-      // active filter at once (across all columns) is the separate
-      // global Reset button next to Export CSV, not a per-dropdown one.
       let openFilterColumn = null;
       function closeColumnFilter() {
         openFilterColumn = null;
@@ -618,16 +526,6 @@
       }
       document.addEventListener('click', () => closeColumnFilter());
 
-      // Every summary card — Total revenue, Outstanding, Patients served,
-      // and the three type-breakdown counts — tracks every active filter
-      // (doctor, type, payment mode, search) exactly the same way the
-      // Bills table does. Picking Type = Follow up correctly zeroes out
-      // Consultation/Emergency here, rather than only zeroing the Bills
-      // table while the cards kept showing the unfiltered breakdown —
-      // one filtered view, not two disagreeing ones. Patients served
-      // counts distinct people
-      // (by patientId), not invoices — one patient can have more than one
-      // bill in a range.
       function renderSummary() {
         const inSummary = searchAndDateInvoices().filter((inv) =>
           (doctorFilterIds.size === 0 || doctorFilterIds.has(inv.doctorId)) &&
@@ -637,10 +535,6 @@
 
         const totalCollected = inSummary.reduce((sum, inv) => sum + inv.amountReceived, 0);
         const totalOutstanding = inSummary.reduce((sum, inv) => sum + Math.max(0, inv.amount - inv.amountReceived), 0);
-        // Same null-patientId fix as busiestDoctor above - a manually-
-        // billed invoice with no linked queue row has patientId null, and
-        // several of those would otherwise all collapse into one "patient"
-        // in the Set, undercounting how many people were actually served.
         const patientsServedCount = new Set(inSummary.map((inv) => inv.patientId || `unlinked:${inv.id}`)).size;
         const consultationCount = inSummary.filter((inv) => inv.feeType === 'consultation').length;
         const emergencyCount = inSummary.filter((inv) => inv.feeType === 'emergency').length;
@@ -670,10 +564,6 @@
         const summary = `<span class="pager-summary">Showing ${total === 0 ? 0 : start + 1}-${end} of ${total}</span>`;
         const pager = document.getElementById('revenuePager');
         pager.innerHTML = `${summary}${Qlinic.pagerHtml(currentPage, totalPages)}`;
-        // Prev/Next/First/Last/jump sit at the bottom of a long table,
-        // but the new page's rows start at the top — without this,
-        // switching pages leaves the reader staring at the same pager
-        // buttons with a table that's silently changed above them.
         Qlinic.wirePager(pager, currentPage, totalPages, (p) => {
           currentPage = p;
           renderTable();
@@ -681,12 +571,6 @@
         });
       }
 
-      // One removable chip per active column filter, so a filtered Bills
-      // table is visibly and specifically flagged as filtered (which
-      // column, which values) rather than looking identical to the
-      // unfiltered table. Outstanding-only keeps its own red chip (an
-      // alert, not just a filter); the rest render in .filter-chip's
-      // neutral accent-blue.
       function activeFilterChipsHtml() {
         const chips = [];
         if (doctorFilterIds.size > 0) {
@@ -726,11 +610,6 @@
         const filtered = filteredInvoices();
         const wrap = document.getElementById('revenueTableWrap');
 
-        // Rendered into the panel-header row (next to Export CSV/Reset
-        // filters) rather than as its own block above the table, so
-        // filtering doesn't shift the table down or move it back up when
-        // cleared — and it stays visible even when a filter zeroes out
-        // every row, so there's still something to clear.
         document.getElementById('activeFilterChipsRow').innerHTML = activeFilterChipsHtml();
         document.querySelectorAll('#activeFilterChipsRow .clear-filter-chip').forEach((btn) => {
           btn.addEventListener('click', () => clearFilterByKey(btn.dataset.key));
@@ -811,14 +690,6 @@
         renderPager(filtered.length);
       }
 
-      // Was its own inline .adj-box copy (identical markup to Reception's,
-      // duplicated separately) — now the same shared
-      // Qlinic.openAdjustBillingModal modal reception.html uses, reviewed
-      // as a mockup first
-      // (https://claude.ai/code/artifact/60b97fa0-c07c-4605-b379-4ee19e3eeaed).
-      // The Balance line (this page's only real difference from
-      // Reception's own billingCell) is unaffected — that's a plain
-      // computed display, not part of the editor.
       function billingCell(inv, doctor) {
         const balance = inv.amount - inv.amountReceived;
         return `
@@ -845,11 +716,6 @@
       }
 
       async function loadInvoices() {
-        // Fired here, not just from onLiveChange - every filter/date
-        // change on this page calls loadInvoices() directly right after
-        // itself, without waiting for the realtime round-trip (same fix
-        // as Reception's waiting-chip needed after it shipped lagging
-        // behind local actions).
         renderRevenueChip();
         const range = currentRange();
         allInvoices = viewMode === 'range'
@@ -865,9 +731,6 @@
         document.getElementById('dateFilter').value = Qlinic.getTodayDate();
         loadInvoices();
       });
-      // ISO "YYYY-MM-DD" strings compare correctly with plain <=/>=, so
-      // no Date parsing needed here - just swap if From ends up after To
-      // rather than silently returning an empty/backwards range.
       function updateCustomRangeFromInputs() {
         const s = document.getElementById('rangeStartDate').value;
         const e = document.getElementById('rangeEndDate').value;
@@ -919,20 +782,12 @@
       Qlinic.attachDatePicker(document.getElementById('dateFilter'));
       document.getElementById('dateFilter').max = Qlinic.getTodayDate();
       document.getElementById('dateFilter').value = Qlinic.getTodayDate();
-      // Today/Tomorrow/In a week dropped - jumping just one end of a
-      // custom range to "today" independent of the other rarely makes
-      // sense as a range boundary. (dateFilter above keeps them - it's
-      // picking a single specific day, where the jump is useful.)
       Qlinic.attachDatePicker(document.getElementById('rangeStartDate'), { quickButtons: false });
       Qlinic.attachDatePicker(document.getElementById('rangeEndDate'), { quickButtons: false });
       document.getElementById('rangeStartDate').max = Qlinic.getTodayDate();
       document.getElementById('rangeEndDate').max = Qlinic.getTodayDate();
       renderRangePresetOptions();
       if (linkedStart && linkedEnd) {
-        // A Trends bar links to an exact day-level range - now that From/
-        // To are real date pickers rather than Month+Year dropdowns, it's
-        // shown exactly as given instead of the previous best-effort
-        // month-level approximation.
         viewMode = 'range';
         rangePreset = 'custom';
         customRange = { start: linkedStart, end: linkedEnd };

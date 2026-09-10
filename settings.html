@@ -44,16 +44,6 @@
         <h1>Settings</h1>
       </div>
 
-      <!-- 12 panels, previously one long stacked column, are grouped into
-           4 gradient pill-tabs (same .period-pills component used
-           everywhere else) and laid out as a grid within each so a group
-           of 3-4 cards fits without scrolling. Every panel keeps its own
-           per-role display toggle exactly as before (set in the script
-           below) - data-group only decides which pill it belongs to.
-           A pill itself is hidden when nothing in its group is visible
-           for the current role (a plain doctor has nothing in Records),
-           computed alongside the per-card visibility in applySettingsGrouping()
-           further down. -->
       <div class="period-pills" id="settingsGroupTabs" style="margin-bottom:20px;"></div>
 
       <div class="settings-card-grid" id="settingsCardGrid">
@@ -168,14 +158,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
 
-      // The sidebar logo links to the marketing site, which has no way
-      // back into the app without logging in again, worth a heads-up
-      // before someone loses their place by accident.
       document.querySelector('a.brand').addEventListener('click', async (e) => {
         e.preventDefault();
         if (await Qlinic.confirmDialog({ message: "Going to the homepage will end your session here, you'll need to log in again to get back in." })) {
@@ -183,10 +170,6 @@
         }
       });
 
-      // No page-wide redirect here: every role reaches this hub now, each
-      // seeing a different subset of panels. The actual access boundary
-      // still lives on each destination page (patient-directory.html,
-      // team.html, etc.) — a hidden link here is convenience, not security.
       const [amAdmin, amDoctor, amPharmacist, canPharmacy, canBillingAudit, canPatientDirectory] = await Promise.all([
         Qlinic.isAdmin(), Qlinic.isDoctor(), Qlinic.isPharmacist(),
         Qlinic.hasFeature('pharmacy'), Qlinic.hasFeature('billing_audit'), Qlinic.hasFeature('patient_directory'),
@@ -202,61 +185,25 @@
       if (!amAdmin && !amDoctor) {
         document.getElementById('trendsNavLink').style.display = 'none';
       }
-      // Same per-role access rules as before - just collected into a set
-      // of hidden panel ids instead of writing .style.display directly,
-      // since actual visibility now also depends on which group pill is
-      // selected (see applySettingsGrouping below). closedDatesPanel and
-      // the three panels with no id (Account & security, Appearance,
-      // Session) are never role-hidden, same as before.
-      //
-      // Feature flags go in this same set, not a one-time
-      // Qlinic.applyFeatureNavGating() call after the fact — this page's
-      // own applySettingsGrouping() recomputes every panel's
-      // style.display from roleHiddenIds alone on every group-tab click,
-      // which would silently re-show a feature-hidden panel (Medicines
-      // reappearing after switching tabs and back) if the feature check
-      // weren't part of the same set it actually reads.
       const roleHiddenIds = new Set();
       if (!amAdmin) { roleHiddenIds.add('clinicSettingsPanel'); roleHiddenIds.add('billingAuditPanel'); roleHiddenIds.add('doctorsPanel'); roleHiddenIds.add('teamPanel'); roleHiddenIds.add('endOfDayPanel'); }
       if (!canBillingAudit) roleHiddenIds.add('billingAuditPanel');
       if (!canPatientDirectory) roleHiddenIds.add('patientDirectoryPanel');
-      // Doctors get read-only access to Closed Dates now (they can't add
-      // or remove a closure, but benefit from seeing the list, same as
-      // reception does) - never role-hidden, unlike the operational
-      // panels above.
       if (amDoctor) { roleHiddenIds.add('patientDirectoryPanel'); roleHiddenIds.add('noShowsPanel'); roleHiddenIds.add('displayScreenPanel'); roleHiddenIds.add('medicinesPanel'); }
-      // A pharmacist's own destination pages (patient-directory.html,
-      // no-shows.html) now redirect them away entirely — hide the links
-      // here too so this hub doesn't offer a dead end. medicinesPanel
-      // stays visible; that one IS theirs.
       if (amPharmacist) { roleHiddenIds.add('patientDirectoryPanel'); roleHiddenIds.add('noShowsPanel'); roleHiddenIds.add('displayScreenPanel'); }
       if (!canPharmacy) roleHiddenIds.add('medicinesPanel');
-      // Was hidden for reception -- Team Holidays now covers staff too
-      // (reception manages their own the same way a doctor does), so
-      // every role has a real reason to be here; nothing left to hide.
       document.getElementById('doctorHolidaysNote').textContent = amDoctor
         ? 'Add the days you\'re away, so reception is warned before booking you.'
         : amAdmin
         ? 'Track who\'s away — doctors and staff — and see the whole team\'s holidays at once.'
         : 'Add the days you\'re away.';
 
-      // Group pill-tabs (same .period-pills component used everywhere
-      // else) replace the old one-long-column layout. A pill disappears
-      // entirely when nothing in its group survives role-visibility -
-      // Records has nothing for a plain doctor (Patient Directory,
-      // No-shows, and Billing Audit are all hidden for that role).
       const SETTINGS_GROUPS = [
         { slug: 'clinic-setup', label: 'Clinic Setup' },
         { slug: 'records', label: 'Records' },
         { slug: 'team-access', label: 'Team & Access' },
         { slug: 'preferences', label: 'Preferences' },
       ];
-      // Persisted, not just an in-memory variable - reading this back on
-      // a fresh load is what makes the browser's own back button return
-      // to whichever group tab was actually open, instead of always
-      // resetting to the first one. sessionStorage (not localStorage) on
-      // purpose: this is "where was I on this page," not a lasting
-      // preference worth carrying into a whole new session tomorrow.
       const SETTINGS_GROUP_KEY = 'clinvision_settings_active_group';
       let activeSettingsGroup = sessionStorage.getItem(SETTINGS_GROUP_KEY);
       function applySettingsGrouping() {
@@ -282,10 +229,6 @@
         });
       }
       applySettingsGrouping();
-      // Body starts hidden (see the <body> tag) so the un-grouped, all-
-      // panels-visible layout never paints before applySettingsGrouping
-      // above has a chance to run -- this is the actual fix for the
-      // grouping flash, not a separate thing.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
@@ -311,8 +254,6 @@
           : `${active} active of ${doctors.length} total.`;
       }
 
-      // The dedicated Clinic Settings page owns the full clinic record now;
-      // this page only needs the name/logo for the sidebar.
       async function loadClinic() {
         const clinic = await Qlinic.getClinic();
         if (!clinic) return;

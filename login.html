@@ -42,15 +42,6 @@
         </div>
 
         <form id="loginForm">
-          <!-- Two separate, stable inputs -- never one input whose type
-               gets swapped by the pill toggle. A browser keys saved
-               credentials off a field's own type/name/autocomplete, so
-               mutating those mid-session on one shared input confused
-               that matching: a saved email+password combo was landing
-               inside the phone field, with no way for autofill to know
-               it no longer meant the same thing. Each field now keeps
-               its own identity for the page's whole lifetime; only
-               which one is VISIBLE changes. -->
           <div class="field" id="phoneField">
             <label for="identifierPhone">Mobile number</label>
             <input type="tel" id="identifierPhone" name="phone" autocomplete="tel" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number" />
@@ -59,16 +50,6 @@
             <label for="identifierEmail">Email</label>
             <input type="email" id="identifierEmail" name="email" autocomplete="username" />
           </div>
-          <!-- Same split as the identifier fields above, extended to
-               password -- mutating one shared password field's name/
-               autocomplete at runtime (tried first) stopped the browser
-               from offering the saved credential in Email mode at all:
-               a password manager evaluates the form's fields once, close
-               to page load, and doesn't reliably re-recognize a field
-               after JS renames it later. Two permanently stable password
-               inputs, each paired with its own identifier, avoids that
-               entirely -- the email pair's identity never changes, so
-               the browser can actually learn and offer it. -->
           <div class="field" id="phonePasswordField">
             <label for="passwordPhone">Password</label>
             <input type="password" id="passwordPhone" name="password-phone" autocomplete="off" required />
@@ -94,12 +75,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
-    // Pill toggle: shows/hides the two separate identifier fields --
-    // never mutates either one's type. required moves with visibility,
-    // so the hidden field never blocks submit and the visible one still
-    // enforces itself.
     (function () {
       const pill = document.getElementById('idPill');
       const phoneField = document.getElementById('phoneField');
@@ -141,8 +118,6 @@
           }
         });
       });
-      // Strips anything non-numeric as they type, same as every other
-      // phone field sitewide (billing, Team, signup).
       phoneInput.addEventListener('input', function () {
         this.value = this.value.replace(/\D/g, '').slice(0, 10);
       });
@@ -166,9 +141,6 @@
           if (!/^[0-9]{10}$/.test(phone)) {
             throw new Error('Please enter a valid 10-digit mobile number.');
           }
-          // Pre-login lookup: a temporary, non-persisted client, never
-          // the shared authenticated one -- same reasoning as Team's own
-          // staff-account creation using a throwaway client for signUp.
           const tempClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
             auth: { persistSession: false, autoRefreshToken: false },
           });
@@ -180,25 +152,13 @@
           email = document.getElementById('identifierEmail').value;
         }
 
-        // Set BEFORE login() -- the shared client's storage adapter
-        // (clinic-data.js) reads this flag on every token read/write,
-        // so it has to be in place before the session is created, not
-        // after.
         const rememberMe = document.getElementById('rememberMe').checked;
         localStorage.setItem('qlinic_remember_me', rememberMe ? '1' : '0');
 
         await Qlinic.login(email, password);
-        // A platform admin has no clinic/profile row at all — this is
-        // the one place that decides which app they land in, based
-        // purely on whether their account id is in platform_admins
-        // (080_platform_admins.sql), not on anything clinic-scoped.
         window.location.href = (await Qlinic.isPlatformAdmin()) ? 'admin.html' : 'dashboard.html';
         return;
       } catch (err) {
-        // Surfaces whatever Supabase actually said (wrong password, rate
-        // limit, unconfirmed email, etc.) instead of a single hardcoded
-        // "incorrect password" that used to show for every failure alike,
-        // making a rate-limit cooldown indistinguishable from a typo.
         errorBox.textContent = err.message || 'Something went wrong logging in.';
         errorBox.style.display = 'block';
       } finally {

@@ -70,10 +70,6 @@
             <div class="num" id="doneTokenNumber"></div>
           </div>
 
-          <!-- Internal ClinVision product feedback, not a review of the
-               clinic/doctor -- see BACKLOG.md and migration 058. Only
-               ever shown for a genuinely completed visit, never no-show
-               (toggled in showDone() below). -->
           <div class="queue-feedback" id="feedbackBlock" style="display:none;">
             <p class="queue-feedback-q" id="feedbackQuestion"></p>
             <div class="queue-feedback-stars" id="feedbackStars">
@@ -143,7 +139,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       const params = new URLSearchParams(window.location.search);
@@ -156,21 +152,9 @@
       const doneEl = document.getElementById('doneState');
       const statusEl = document.getElementById('statusState');
       const footerEl = document.getElementById('footerNote');
-      // Set once the 20s poll starts, below — showDone() clears it, since a
-      // done/no-show visit has nothing left that could ever change.
       let pollIntervalId = null;
-      // The latest render's data, kept around so the queue-details popup
-      // (opened on demand, not on every render) always has something to
-      // show immediately, and so a background poll can refresh it in place.
       let currentData = null;
 
-      // ---- Language toggle + Hindi transliteration ----
-      // Ported verbatim from display.html's own localization system — this
-      // page duplicates it rather than sharing a module, same as every
-      // other helper in the app. Unlike display.html (whose language
-      // follows a clinic-wide setting), this is the one patient-facing
-      // page where the viewer picks for themselves, via the chip toggle
-      // below — same filter-seg pattern as doctor.html's schedule tabs.
       const HI_WORD_DICT = {
         garg: 'गर्ग', gupta: 'गुप्ता', sharma: 'शर्मा', verma: 'वर्मा', yadav: 'यादव',
         singh: 'सिंह', kumar: 'कुमार', kumari: 'कुमारी', devi: 'देवी', khan: 'खान',
@@ -210,18 +194,7 @@
         gandhi: 'गांधी', civil: 'सिविल', lines: 'लाइंस', shastri: 'शास्त्री',
         model: 'मॉडल', town: 'टाउन', old: 'ओल्ड', city: 'सिटी', new: 'न्यू',
         near: 'नियर', market: 'मार्केट', demo: 'डेमो', patient: 'पेशेंट',
-        // The phonetic fallback below has no notion of a consonant
-        // cluster needing a halant ("cl" -> just "क"+"ल" reads as two
-        // full syllables, "ka-li-nik" instead of "kli-nik") - clinic
-        // names virtually always contain this word, so it's worth its
-        // own entry rather than a wrong sound on every single one.
         clinic: 'क्लिनिक',
-        // Same reasoning for the rest of a typical Indian clinic's own
-        // name ("X Clinic and Diagnostic Centre/Center", "X Hospital",
-        // "X Medical Centre") — every one of these was coming out as an
-        // unreadable syllable-by-syllable guess (e.g. "and" -> "अनद",
-        // "diagnostic" -> "दिअगनोसतिक"). Fixed for every clinic that
-        // uses these words, not just one name.
         and: 'एंड', diagnostic: 'डायग्नोस्टिक', centre: 'सेण्टर', center: 'सेण्टर',
         hospital: 'हॉस्पिटल', medical: 'मेडिकल',
       };
@@ -255,7 +228,7 @@
           }
           const vow = vowels.find(([pat]) => w.startsWith(pat, i));
           if (vow) { out += vow[1]; i += vow[0].length; continue; }
-          out += w[i]; // digits/punctuation pass through
+          out += w[i];
           i += 1;
         }
         return out;
@@ -272,9 +245,6 @@
         }).join('');
       }
 
-      // Specialty is picked from a fixed dropdown, so unlike names it has
-      // a real, known-good Hindi translation rather than a phonetic
-      // guess; free-text "Other" specialties fall back to transliteration.
       const SPECIALTY_HI = {
         'General Physician': 'सामान्य चिकित्सक',
         'Pediatrician': 'बाल रोग विशेषज्ञ',
@@ -296,10 +266,6 @@
         'Physiotherapist': 'फिजियोथेरेपिस्ट',
       };
 
-      // Only these fixed UI strings are ever "translated" for meaning —
-      // names, the clinic's own name, and any free text a doctor typed
-      // (their status reason) only ever get phonetically transliterated
-      // via localizeName below, never guessed at semantically.
       const STRINGS = {
         en: {
           loading: 'Loading your queue status…',
@@ -310,10 +276,6 @@
           clinicClosedTitle: "We're closed for the day",
           clinicClosedBody: 'Thanks for your patience today — the clinic will reopen tomorrow.',
           notYetNote: (dateLabel) => `This link isn't active yet — please come back and open it again on the morning of ${dateLabel} to see your live position in the queue.`,
-          // Full sentences, not fragments — Hindi needs the doctor's
-          // name before the postposition ("X ke saath"), the opposite
-          // order from English's "for X", so each language builds its
-          // own word order instead of both sharing one prefix string.
           apptLineWithTime: (doctorName, specialty, timeStr) =>
             `Your appointment is booked for <b>${doctorName}</b><span style="display:block;margin-top:2px;">${specialty} at ${timeStr}</span>`,
           apptLineFutureDate: (doctorName, specialty, dateLabel) =>
@@ -351,19 +313,10 @@
           noShowHeadline: 'This appointment was marked as a no-show',
           noShowSub: (clinicName) => `If this was a mistake, please contact ${clinicName} directly.`,
           visitCompleteHeadline: 'Your visit is complete',
-          // Split into 2 strings (was 1, <br>-joined) so the visit
-          // record and the closing note can be styled distinctly.
           visitCompleteSeenBy: (doctorName, specialty) => `You were seen by ${doctorName}${specialty}.`,
           visitCompleteExpired: 'Thank you for visiting: This link has now expired.',
           tokenWas: 'Your token was',
           needAnythingElse: 'Need anything else? Please contact the clinic directly.',
-          // Internal ClinVision product feedback, not a review of the
-          // clinic/doctor — deliberately never names either. See
-          // BACKLOG.md ("Post-visit rating of ClinVision itself").
-          // Deliberately names ClinVision and both surfaces a patient
-          // might have actually used (this link, the waiting-room
-          // screen) -- "how was checking your status" tested as still
-          // reading like a review of the clinic/visit, not the tool.
           feedbackQuestion: "How was your experience with ClinVision's queue link and display screen today?",
           feedbackPlaceholder: "Anything you'd like to add? (optional)",
           feedbackSend: 'Send feedback',
@@ -374,39 +327,16 @@
           detailsPassedNotCalled: (apptStr, nowStr) => `Your appointment time (${apptStr}) has passed and you haven't checked in yet — here's where things stand right now (${nowStr}).`,
           detailsFromNowThrough: (nowStr, apptStr) => `Showing details from now (${nowStr}) through your appointment at ${apptStr}.`,
           detailsFallback: 'Showing details from now through your position in the queue.',
-          // Advisory shown in place of the stat grid when the patient is
-          // more than 2 hours from their own slot and hasn't checked in —
-          // a far-out "0 arrived" reads as broken/alarming rather than
-          // just too early to mean anything (BACKLOG.md).
           detailsAdvisoryEarly: (apptStr) => `<b>It's a bit early</b> to show queue details for your ${apptStr} appointment — check back within 2 hours of your slot to see exactly how things stand.`,
-          // Booked/arrived/not-checked-in labels split into a "not passed
-          // yet" set and a "your slot already passed" set — re-anchored to
-          // the patient's own slot time and naming it out loud, instead of
-          // the old static "Booked in this window" that read as genuinely
-          // ambiguous once the doctor fell behind (BACKLOG.md Problem 1b).
           windowBookedUpToSlot: 'Booked up to your slot',
           windowBookedBySlot: (apptStr) => `Booked by ${apptStr}`,
           arrivedWaiting: 'Arrived & waiting',
           windowArrivedByThen: 'Arrived by then',
-          // Same wording in both cases (not just the not-passed one) —
-          // "Haven't shown up" read as a claim about where the patient
-          // physically is, when all this actually knows is whether
-          // they're marked checked-in in the system.
           windowNotCheckedIn: "Haven't checked in yet",
           windowIncludingYou: '(including you)',
           windowFriendlyNote: "Most people arrive a little later than their slot — this isn't unusual.",
-          // "How's today going" persistent summary (BACKLOG.md Problem 2).
-          // Doctor status/delay reason reuse doctorStatusSentence/
-          // forDuration/since below, the same composition the main page's
-          // own doctorStatusBlock already uses — not a second, slightly
-          // different phrasing of the same fact.
           summaryDoctorOnTime: 'Doctor is on time today.',
           summaryStartedSeeing: (t) => `Started seeing patients at ${t}.`,
-          // bookedTodayCount is deliberately never shown here — a doctor
-          // may not want their total daily booking volume surfaced to
-          // their own patients (decided 2026-09-03). windowBookedUpToSlot/
-          // windowBookedBySlot above are a different, much narrower number
-          // (capped at this one patient's own slot) and are unaffected.
           summaryBreaksToday: (n, d) => (n === 1 ? `1 break/emergency today, ${d} total.` : `${n} breaks/emergencies today, ${d} total.`),
           summaryOngoingSuffix: ' (still ongoing)',
           close: 'Close',
@@ -420,10 +350,6 @@
           clinicClosedTitle: 'आज के लिए बंद हैं',
           clinicClosedBody: 'आज आपके धैर्य के लिए धन्यवाद — क्लिनिक कल फिर खुलेगा।',
           notYetNote: (dateLabel) => `यह लिंक अभी सक्रिय नहीं है — कृपया ${dateLabel} की सुबह वापस आकर इसे दोबारा खोलें, ताकि आप कतार में अपनी लाइव स्थिति देख सकें।`,
-          // Name (+ specialty) leads, then "ke saath" right after it,
-          // then the time-plus-verb together on their own line ("at
-          // TIME is booked") - the adverbial phrase belongs right
-          // before the verb in Hindi, not stranded at the very end.
           apptLineWithTime: (doctorName, specialty, timeStr) =>
             `आपकी अपॉइंटमेंट <b>${doctorName}</b>${specialty ? ' ' + specialty : ''} के साथ<span style="display:block;margin-top:2px;">${timeStr} पर बुक है</span>`,
           apptLineFutureDate: (doctorName, specialty, dateLabel) =>
@@ -494,12 +420,8 @@
       let T = STRINGS.en;
       try {
         if (localStorage.getItem('qlinic_queue_lang') === 'hi') T = STRINGS.hi;
-      } catch (e) { /* private browsing etc — default to English */ }
+      } catch (e) { }
 
-      // Escaping happens at each call site (textContent needs none,
-      // innerHTML does) exactly like the rest of this file already did
-      // before localization — baking it in here would double-escape
-      // every textContent assignment.
       function localizeName(text) {
         if (!text) return text;
         return T === STRINGS.hi ? toDevanagari(text) : text;
@@ -509,14 +431,6 @@
         if (T !== STRINGS.hi) return text;
         return SPECIALTY_HI[text] || toDevanagari(text);
       }
-      // Qlinic.formatDateLabel is shared with every internal English admin
-      // page (reception, billing, revenue...), so it always returns "Today"/
-      // "Tomorrow" in English regardless of this page's own language toggle
-      // -- that literal English word was landing inside an otherwise-Hindi
-      // sentence ("...बुक हो गई है Tomorrow के लिए..."). Only those two
-      // near-term labels get translated; anything further out already
-      // renders as a plain weekday+date ("Fri, Aug 28"), which reads fine
-      // dropped into either language as-is.
       function localizeDateLabel(label) {
         if (T !== STRINGS.hi) return label;
         if (label === 'Today') return 'आज';
@@ -547,28 +461,11 @@
         const btn = e.target.closest('button');
         if (!btn || btn.dataset.lang === undefined) return;
         T = btn.dataset.lang === 'hi' ? STRINGS.hi : STRINGS.en;
-        try { localStorage.setItem('qlinic_queue_lang', btn.dataset.lang); } catch (e2) { /* ignore */ }
+        try { localStorage.setItem('qlinic_queue_lang', btn.dataset.lang); } catch (e2) { }
         applyStaticStrings();
-        // Re-fetching (rather than re-rendering cached data) keeps this
-        // simple and correct for every screen this page can be on —
-        // loading/error/closed/not-yet/done/status — with one code path,
-        // at the cost of one extra request on a deliberate, rare action.
-        // handleRefreshError, not showError - this booking already proved
-        // itself real on the initial load; a failed re-fetch here just
-        // means try again, not "this link doesn't exist."
         render().catch(handleRefreshError);
       });
 
-      // A refresh failing after the page already showed a real status
-      // once - a dropped poll, or (rarely) this same re-fetch on a
-      // language switch - does NOT mean the booking stopped existing.
-      // showError() below is reserved for the very first load, where
-      // "we don't know yet if this booking is real" is actually true;
-      // from here on, this page runs unattended in waiting rooms on
-      // phones, where a lost signal is common and routine - the safer
-      // read is to leave the last good screen up and let the next poll
-      // try again, not flip to "Link not found" and alarm someone over
-      // a booking that's completely fine.
       function handleRefreshError(err) {
         console.warn('Could not refresh queue status:', err);
       }
@@ -583,11 +480,6 @@
         errorEl.style.display = 'block';
       }
 
-      // A visit that's over is over — there's no "link expiring" to do at
-      // the database layer (each booking already has its own unique link,
-      // never shared across patients or visits), just a different, final
-      // screen instead of live queue mechanics that will never update
-      // again. Polling stops here too, since nothing left can change.
       function showDone(data) {
         loadingEl.style.display = 'none';
         errorEl.style.display = 'none';
@@ -604,15 +496,8 @@
         if (isNoShow) {
           document.getElementById('doneHeadline').textContent = T.noShowHeadline;
           document.getElementById('doneSubText').textContent = T.noShowSub(localizeName(data.clinicName));
-          // No-show has no "this link has expired" line — .queue-done-
-          // expired:empty hides it entirely rather than leaving a blank
-          // paragraph with its own margin.
           document.getElementById('doneExpiredText').textContent = '';
         } else {
-          // Split into 2 elements, not 1 <br>-joined paragraph — per
-          // feedback they need to look visually distinct: the actual
-          // visit record (who saw them) stays bold/prominent, the
-          // closing "link expired" note is secondary, smaller, muted.
           const specialty = data.doctorSpecialty ? ` (${Qlinic.escapeHtml(localizeSpecialty(data.doctorSpecialty))})` : '';
           document.getElementById('doneHeadline').textContent = T.visitCompleteHeadline;
           document.getElementById('doneSubText').innerHTML = T.visitCompleteSeenBy(Qlinic.escapeHtml(localizeName(data.doctorName)), specialty);
@@ -622,11 +507,6 @@
         document.getElementById('doneTokenNumber').textContent = data.tokenDisplay || '·';
         document.getElementById('doneFooterText').textContent = T.needAnythingElse;
 
-        // Never for a no-show — there's no experience to rate on a visit
-        // that never happened. feedbackSubmitted comes from
-        // get_queue_status() itself (migration 058) rather than a direct
-        // select on product_feedback, which this page has no access to
-        // by design — see that table's own RLS comment.
         const feedbackBlock = document.getElementById('feedbackBlock');
         if (isNoShow) {
           feedbackBlock.style.display = 'none';
@@ -642,15 +522,6 @@
         if (pollIntervalId) { clearInterval(pollIntervalId); pollIntervalId = null; }
       }
 
-      // Only reached for a patient who hasn't been seen yet — done/no-show
-      // is checked earlier in render() and shown via showDone() instead,
-      // since "closed for the day" would be a confusing thing to see on an
-      // old link once the visit is already over.
-      // isClinicClosed distinguishes the admin's own clinic-wide "End of
-      // day" closure (migration 055/056's clinicClosedAt) from a single
-      // doctor closing their own day — same panel, but the doctor's name
-      // line is dropped (this isn't about any one doctor) and the
-      // title/body swap to the clinic-wide wording.
       function showClosed(data, isClinicClosed) {
         loadingEl.style.display = 'none';
         errorEl.style.display = 'none';
@@ -666,11 +537,6 @@
         document.getElementById('closedBody').textContent = isClinicClosed ? T.clinicClosedBody : T.closedBody;
       }
 
-      // An appointment days out shouldn't show today's queue mechanics
-      // (position, now-serving, even "doctor closed today") at all — none
-      // of it is relevant yet, and showing it invites exactly the "why am
-      // I checking this a week early" confusion the message is meant to
-      // head off.
       function showNotYet(data) {
         loadingEl.style.display = 'none';
         errorEl.style.display = 'none';
@@ -686,21 +552,11 @@
         document.getElementById('notYetNote').textContent = T.notYetNote(dateLabel);
       }
 
-      // Sentence fragments, not standalone labels — doctorStatusSentence
-      // reads as "Doctor is {this}", so on_time is never looked up (the
-      // whole line is hidden instead, same as before).
-
-      // "Your appointment is booked for Dr. X (Specialty) at 11:30 AM" only
-      // makes sense for an actual appointment with a scheduled time — a
-      // walk-in was never "booked for" a time, so it gets its own phrasing.
       function appointmentLineHtml(data) {
         const doctorName = Qlinic.escapeHtml(localizeName(data.doctorName));
         const specialty = data.doctorSpecialty ? ` (${Qlinic.escapeHtml(localizeSpecialty(data.doctorSpecialty))})` : '';
         if (data.type === 'appointment' && data.bookedTime) {
           const timeStr = Qlinic.formatTime(Qlinic.parseTime(data.bookedTime));
-          // Specialty + time forced onto their own line — left to wrap
-          // wherever the browser happened to break it, this line split
-          // mid-parenthetical in a way that read badly.
           return T.apptLineWithTime(doctorName, specialty.trim(), timeStr);
         }
         return T.inQueueLine(doctorName, specialty);
@@ -713,33 +569,16 @@
           return;
         }
 
-        // Terminal states, checked first: nothing else here (future-date,
-        // closed-today, live position) is still relevant once a visit is
-        // actually over.
         if (data.status === 'done' || data.status === 'no_show') {
           showDone(data);
           return;
         }
 
-        // type==='appointment' is only ever true alongside status==='booked'
-        // as a documenting check anyway — addWalkIn always inserts
-        // status:'waiting', so a walk-in can never reach this branch — but
-        // it keeps the intent explicit instead of leaning on that
-        // invariant silently. Checked before the closed-for-today state
-        // below: a week-out appointment isn't expected today at all, so
-        // "doctor closed today" would be a non sequitur.
         if (data.status === 'booked' && data.type === 'appointment' && data.bookedDate && data.bookedDate > Qlinic.getTodayDate()) {
           showNotYet(data);
           return;
         }
 
-        // Mirrors the waiting-room display screen: a patient who hasn't
-        // been seen yet should know the doctor closed for the day just
-        // as clearly as someone sitting in the waiting room would. The
-        // clinic-wide closure (admin's "End of day") is checked first and
-        // wins regardless of this specific doctor's own status — closing
-        // the whole clinic doesn't require every doctor to have separately
-        // tapped "close my day" too.
         const isClinicClosed = Qlinic.isClosedUntilReset(data.clinicClosedAt);
         const isDoctorClosed = Qlinic.isDoctorClosedToday({ dayClosedAt: data.doctorDayClosedAt });
         if ((isClinicClosed || isDoctorClosed) && (data.status === 'booked' || data.status === 'waiting')) {
@@ -758,9 +597,6 @@
         const statusMsgEl = document.getElementById('statusMsgText');
         statusMsgEl.innerHTML = `<span class="pill">${Qlinic.escapeHtml(T.statusMessage[data.status] || '')}</span>`;
         statusMsgEl.classList.toggle('is-waiting', data.status === 'waiting');
-        // Already prefixed by the RPC ("#12" for an appointment, "W3" for
-        // a walk-in) — token_number itself is no longer a single shared
-        // sequence, so the client can't derive the right prefix on its own.
         document.getElementById('tokenNumber').textContent = data.tokenDisplay || '·';
         document.getElementById('tokenLabel').textContent = data.patientName
           ? T.tokenLabelNamed(localizeName(data.patientName))
@@ -769,18 +605,6 @@
         const doctorStatusBlock = document.getElementById('doctorStatusBlock');
         if (data.doctorStatus && data.doctorStatus !== 'on_time') {
           const base = T.doctorStatusSentence[data.doctorStatus] || `Doctor status: ${data.doctorStatus}`;
-          // The doctor's own typed reason ("In a meeting") folded into the
-          // same sentence instead of a separate line below "Waiting" — one
-          // fact about the doctor, said once, set apart in its own color
-          // so it reads as the doctor's actual words rather than more
-          // templated copy. escapeHtml since this is free text landing on
-          // a public, unauthenticated page. Never run through
-          // localizeName: that's a word-by-word phonetic transliteration
-          // built for proper nouns (names, addresses), not English
-          // sentences — "In a meeting" came out as "इन अ मीटिंग", each
-          // word sounded out on its own with no grammar tying them
-          // together. display.html's own doctor-note line has the same
-          // free-text shape and was never transliterated either.
           const notePart = Qlinic.isRealStatusReason(data.doctorStatusNote)
             ? `: <span class="doc-note-quote">"${Qlinic.escapeHtml(data.doctorStatusNote)}"</span>`
             : '';
@@ -805,7 +629,6 @@
         const nowServingBlock = document.getElementById('nowServingBlock');
         if (data.nowServingToken != null) {
           nowServingBlock.style.display = 'block';
-          // Already prefixed by the RPC — see tokenDisplay above.
           document.getElementById('nowServingNum').textContent = data.nowServingToken;
           document.getElementById('nowServingMeta').textContent = data.nowServingCalledAt
             ? T.calledAt(Qlinic.formatTimestamp(data.nowServingCalledAt))
@@ -817,7 +640,6 @@
         const nearbyBlock = document.getElementById('nearbyBlock');
         if (data.nearbyTokens && data.nearbyTokens.length) {
           nearbyBlock.style.display = 'block';
-          // Already prefixed by the RPC — see tokenDisplay above.
           document.getElementById('nearbyTokens').innerHTML = data.nearbyTokens
             .map((t) => `<span class="badge badge-waiting" style="font-size:17px;">${Qlinic.escapeHtml(t)}</span>`)
             .join('');
@@ -827,14 +649,7 @@
 
         currentData = data;
         const detailsOpenWrap = document.getElementById('detailsOpenWrap');
-        // Never once the patient is actually with the doctor — the modal
-        // behind this button is entirely about queue position/timing
-        // relative to everyone else, and there's no queue left to check
-        // once you're already being seen.
         detailsOpenWrap.style.display = (data.windowBookedCount != null && data.status !== 'in_consult') ? 'block' : 'none';
-        // If the popup is already open when a poll refreshes the page and
-        // the patient has since moved into consultation, close it rather
-        // than leave it open showing numbers that no longer apply.
         if (document.getElementById('queueDetailsBackdrop')) {
           if (data.status === 'in_consult') {
             document.getElementById('queueDetailsBackdrop').remove();
@@ -844,19 +659,6 @@
         }
       }
 
-      // Scoped to "now through your own turn" — everyone still booked/
-      // waiting/in_consult whose slot falls at or before this patient's own
-      // (already excludes anyone done/no-show, since those statuses are
-      // never counted server-side), never the whole day and never anyone
-      // after this patient. Same modal-card look confirmDialog uses
-      // elsewhere in the app.
-      // Computes the 2 facts detailsScopeText/detailsWindowHtml both
-      // need: whether the patient's own slot has already passed "now",
-      // and whether the stat grid should show at all yet (BACKLOG.md:
-      // within 2 hours of the slot, or already checked in, whichever
-      // comes first — a far-out "0 arrived" reads as broken/alarming,
-      // not just early). Walk-ins have no future slot to be "far out"
-      // from, so they always show.
       function slotContext(data) {
         if (data.type === 'appointment' && data.bookedTime) {
           const now = new Date();
@@ -874,11 +676,6 @@
 
       function detailsScopeText(data, ctx) {
         const nowStr = Qlinic.formatTimestamp(new Date());
-        // "Haven't checked in yet" only ever applies to status==='booked'
-        // — once a patient has actually checked in (waiting) or is with
-        // the doctor (in_consult), they've moved past their original
-        // slot time entirely, so re-checking the clock against it (as the
-        // booked-only branch below does) doesn't apply to them anymore.
         if (data.status === 'in_consult') {
           return T.detailsInConsult(nowStr);
         }
@@ -886,13 +683,6 @@
           return T.detailsWaiting(nowStr);
         }
         if (ctx.apptMins != null) {
-          // A running-behind doctor (or just a backlog) means the
-          // patient's own slot time can already be in the past even
-          // though they haven't checked in — "now (10:32) through your
-          // appointment at 10:15" would read as a backwards range. The
-          // counts themselves are still correct either way (scoped by
-          // the patient's slot, not by "now"); only this sentence needs
-          // to say so honestly instead of an inverted time span.
           if (ctx.passed) {
             return T.detailsPassedNotCalled(ctx.apptStr, nowStr);
           }
@@ -901,14 +691,6 @@
         return T.detailsFallback;
       }
 
-      // "How's today going" — BACKLOG.md Problem 2, a persistent summary
-      // shown at every distance, not just a far-out fallback: a stalled
-      // queue right when a patient expected movement is more alarming
-      // than the same thing hours early, and a doctor's whole-day pace
-      // is invisible to a window that only looks forward from "now".
-      // Doctor status/delay reason reuse the exact same composition as
-      // the main page's own doctorStatusBlock (below, in render()) —
-      // not a second, slightly different phrasing of the same fact.
       function detailsSummaryHtml(data) {
         const lines = [];
 
@@ -924,12 +706,6 @@
           lines.push(`<span class="doc-status">${T.summaryDoctorOnTime}</span>`);
         }
 
-        // seenTodayCount deliberately never shown (decided 2026-09-03,
-        // same reasoning as bookedTodayCount above it) — how many
-        // patients a doctor has seen isn't something a patient needs to
-        // know. Only the start time is shown, and only once the doctor
-        // has actually called someone today; before that, this line is
-        // omitted entirely rather than showing a blank.
         if (data.firstCalledAtToday) {
           lines.push(T.summaryStartedSeeing(Qlinic.formatTimestamp(data.firstCalledAtToday)));
         }
@@ -953,20 +729,9 @@
           `;
         }
 
-        // The "your slot passed and you're still not checked in" relabel
-        // only ever makes sense for status==='booked' — once a patient
-        // has actually checked in, their slot being in the past is just
-        // normal (that's when most people check in), not the ambiguous
-        // case this re-anchoring exists for. Gated on status here too,
-        // not just ctx.passed, so a waiting patient never sees "Booked by
-        // 11:00 AM" / "Arrived by then" just because their appointment
-        // time happens to be behind "now".
         const relabel = data.status === 'booked' && ctx.passed;
         const bookedLabel = relabel ? T.windowBookedBySlot(ctx.apptStr) : T.windowBookedUpToSlot;
         const arrivedLabel = relabel ? T.windowArrivedByThen : T.arrivedWaiting;
-        // "(including you)" lands on whichever cell matches the viewing
-        // patient's own status — in_consult never reaches this modal at
-        // all (see detailsOpenWrap below), so only these 2 cases apply.
         const arrivedYou = data.status === 'waiting' ? ` <span class="you">${T.windowIncludingYou}</span>` : '';
         const notCheckedInYou = data.status === 'booked' ? ` <span class="you">${T.windowIncludingYou}</span>` : '';
 
@@ -1016,10 +781,6 @@
 
       document.getElementById('detailsOpenBtn').addEventListener('click', openDetailsModal);
 
-      // Post-visit ClinVision product feedback (BACKLOG.md, migration
-      // 058) — attached once here, not inside showDone() itself, since
-      // these elements are static markup rendered once, not regenerated
-      // per render() the way e.g. nearbyTokens is.
       let feedbackPicked = 0;
       function paintFeedbackStars(n) {
         document.querySelectorAll('.queue-feedback-star').forEach((s) => {
@@ -1043,9 +804,6 @@
           await Qlinic.submitProductFeedback(patientId, feedbackPicked, document.getElementById('feedbackTextInput').value);
           document.getElementById('feedbackBlock').classList.add('submitted');
         } catch (err) {
-          // Best-effort — a failed submit here shouldn't block or alarm a
-          // patient reading "your visit is complete"; just leave the
-          // form up so they can try again.
           btn.disabled = false;
         }
       });
@@ -1062,11 +820,7 @@
         return;
       }
 
-      // Not started at all if the very first render already landed on the
-      // done/no-show screen — showDone() has nothing to clear in that case,
-      // it just never gets set.
       if (doneEl.style.display !== 'block') {
-        // handleRefreshError, not showError - see its own comment above.
         pollIntervalId = setInterval(() => { render().catch(handleRefreshError); }, 20000);
       }
     })();

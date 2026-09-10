@@ -11,35 +11,15 @@
 <link rel="stylesheet" href="styles.css?v=321" />
 </head>
 <body class="display-body">
-  <!-- Applied synchronously, before anything else renders, so a device
-       already set to light doesn't flash dark first. Per-device only
-       (localStorage) -- this screen's own toggle below, not a clinic
-       setting; see BACKLOG.md, "Day/night mode on the waiting-room
-       display screen". -->
   <script>document.body.setAttribute('data-board-mode', localStorage.getItem('clinvision_display_board_theme') === 'light' ? 'light' : 'dark');</script>
 
-  <!-- Deliberately outside .display-header so it doesn't become a third
-       flex item in that row -- sits in the page's own top padding
-       instead, right above the clock, small enough (17px) that a patient
-       glancing at the board reads it as a faint mark, not a control. -->
   <button class="display-theme-toggle" id="displayThemeToggle" aria-label="Change screen appearance">
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="4,16 12,7 20,16 12,13"/></svg>
   </button>
-  <!-- Same small/faint treatment as the theme toggle right next to it --
-       a clinic that doesn't want the call chime needs a way to turn it
-       off without touching Settings, and a device that hasn't had its
-       one required tap yet (browsers block unprompted audio) shows this
-       lit up rather than silently doing nothing when a patient's called. -->
   <button class="display-theme-toggle display-sound-toggle" id="displaySoundToggle" aria-label="Turn call sound on or off">
     <svg class="icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
     <svg class="icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none;"><path d="M11 5 6 9H2v6h4l5 4z"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>
   </button>
-  <!-- Same faint, quiet treatment as the two toggles above -- a per-
-       device fix for smart TV browsers that don't honor width=device-
-       width correctly and render this board oversized (or cut off) for
-       the actual screen. Set once by whoever installs the board on a
-       given TV, then never touched again; saved per-device below, same
-       as the theme toggle's own storage key. -->
   <button class="display-theme-toggle display-zoom-out" id="displayZoomOut" aria-label="Shrink the board to fit this screen">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </button>
@@ -84,19 +64,6 @@
     })();
   </script>
 
-  <!-- Standard reception/token-counter practice everywhere from banks to
-       government offices: a call is announced with a sound, not left to
-       a silent screen update someone across a waiting room has to
-       happen to be looking at. Synthesized with the Web Audio API
-       (a plain two-tone chime) rather than shipping an audio file --
-       one fewer asset to host, and it means nobody has to be handed a
-       specific sound to license or replace.
-       Browsers block audio with sound until the page has had at least
-       one real click -- unavoidable, not a bug -- so this also wires a
-       one-time "unlock" to the very first click anywhere on the page,
-       not just this button, since staff setting the screen up for the
-       day will tap it for some other reason (the theme toggle, waking
-       the display) well before the first patient's ever called. -->
   <script>
     window.DisplaySound = (function () {
       var MUTE_KEY = 'clinvision_display_sound_muted';
@@ -110,11 +77,6 @@
         if (ctx.state === 'suspended') ctx.resume();
       }
 
-      // Shared building block for every sound below -- start/dur are
-      // seconds from "now", peak is 0-1 gain, type is the oscillator
-      // waveform (sine=soft/pleasant, triangle=mellower/duller,
-      // square=sharper/more electronic, used deliberately per sound
-      // below so each one has its own character, not just its own notes).
       function tone(freq, start, dur, peak, type) {
         var now = ctx.currentTime;
         var osc = ctx.createOscillator();
@@ -129,35 +91,12 @@
         osc.stop(now + start + dur + 0.05);
       }
 
-      // Same descending two-note "ding-dong" shape as a standard door/
-      // reception chime, pitched and pushed louder than the first pass so
-      // it actually carries across a real waiting room, not just a quiet
-      // desk. Volume is doing most of the real work here (0.35 peak gain
-      // -> 0.6, well under 1.0 so it doesn't clip/distort) -- pitch only
-      // went up moderately (880/659 -> 1046/880), not pushed sharply
-      // higher, since very high frequencies are exactly the range older
-      // ears lose first, and a clinic waiting room skews older than most
-      // rooms this kind of chime plays in.
       function playChime() {
         if (muted || !ctx) return;
         tone(1046, 0, 0.35, 0.6, 'sine');
         tone(880, 0.28, 0.55, 0.6, 'sine');
       }
 
-      // Doctor status changes get their own sounds, each deliberately a
-      // different shape (not just different notes on the same chime) so
-      // none of the four ever get confused for each other at a glance --
-      // a patient/staff member hearing the room shouldn't need to look up
-      // to know roughly what just happened.
-      //   - Break: one soft, low, mellow note (triangle -- duller than the
-      //     call chime's sine) -- informational, low urgency on purpose.
-      //   - Emergency: rapid alternating high tones, square wave (the
-      //     sharpest, most electronic-sounding of the four) and the
-      //     loudest -- deliberately the one sound on this board meant to
-      //     actually grab attention.
-      //   - Available again: a short two-note RISE (the call chime falls,
-      //     this climbs) -- reads as "resolved", the opposite feeling on
-      //     purpose.
       function playBreakChime() {
         if (muted || !ctx) return;
         tone(392, 0, 0.6, 0.45, 'triangle');
@@ -190,7 +129,7 @@
         muted = !muted;
         localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
         reflectMuted();
-        if (!muted) playChime(); // confirms it's actually on, right when they turn it on
+        if (!muted) playChime();
       });
 
       return {
@@ -202,21 +141,9 @@
     })();
   </script>
 
-  <!-- Everything a patient actually reads lives in here -- the zoom
-       controls above stay outside it on purpose, so shrinking the board
-       never shrinks the controls needed to un-shrink it. -->
   <div class="display-scale-wrap" id="displayScaleWrap">
   <div class="display-header">
     <div class="brand">
-      <!-- Wordmark-led sitewide now, no icon -- the old inverted clock
-           mark (needed only because this board's background is
-           permanently dark) is gone along with the icon concept
-           itself. White fill on brand-word specifically, since the
-           usual navy ink would disappear into this dark background
-           exactly the way the old dark-filled icon used to. Full
-           wordmark+bar+tagline stack now, same as every other page --
-           this board had been left as a bare single-line wordmark,
-           which was the one place the rebrand didn't actually land. -->
       <span class="brand-word-wrap">
         <span class="brand-word">ClinVision</span>
         <span class="brand-word-bar"></span>
@@ -226,20 +153,10 @@
     <div style="text-align:right;">
       <div class="clock"><span id="clockTime">--</span></div>
       <div class="clock-date" id="clockDate"></div>
-      <!-- Same green-dot-blinks pattern as queue.html's own live
-           indicator, not the old bare live-dot pulse next to the
-           clock (unlabeled, and now redundant next to this). Sits
-           below the date, not the time -- reads as a status footnote
-           to "today", not a rival to the clock itself. -->
       <div class="display-live-line"><span class="dot" aria-hidden="true"></span><span id="liveStatusText">Live queue</span></div>
     </div>
   </div>
 
-  <!-- "Doctor status" label removed -- each row already shows a name and
-       an AVAILABLE/ON A BREAK pill, so the section heading was just
-       taking up a line without telling a patient anything the rows
-       don't already say. Freed-up space lets the strip sit closer to
-       the header, leaving more room for the waiting-list rows below. -->
   <div class="display-strip" id="doctorStrip"></div>
 
   <div class="display-all-closed" id="allClosedMessage" style="display:none;">
@@ -259,18 +176,6 @@
   </div>
   </div>
 
-  <!-- Per-device fix for a smart TV browser that renders this board at
-       the wrong effective size (many don't honor width=device-width
-       correctly) -- shrinks or enlarges everything inside
-       #displayScaleWrap via a CSS transform, saved to this specific
-       screen's localStorage so it's set once during install and never
-       touched again. Same key-naming convention as the theme toggle's
-       own per-device storage above.
-       Placed here, not right after the buttons themselves further up --
-       #displayScaleWrap doesn't exist in the DOM yet at that point in
-       the page, so getElementById('displayScaleWrap') was returning
-       null and every click silently threw. This is the actual fix, not
-       a workaround for the TV. -->
   <script>
     (function () {
       var ZOOM_KEY = 'clinvision_display_zoom';
@@ -297,7 +202,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -307,42 +212,20 @@
         return;
       }
 
-      // Every name/address/reason rendered on this board is free text
-      // typed by staff (or a patient's own booking reason) — this screen
-      // is meant to run unattended on a waiting-room TV, so it's escaped
-      // before going into innerHTML anywhere it appears.
       const escapeHtml = Qlinic.escapeHtml;
 
       const PAGE_SIZE = 8;
-      const ROTATE_MS = 7000; // digital-signage convention is 5-8s per page; 7s gives enough time to actually read a name before it flips
+      const ROTATE_MS = 7000;
       const REFRESH_MS = 5000;
 
       let combined = [];
       let currentPage = 0;
-      // Doctor id -> the nowServing patient id last seen for them, so a
-      // refresh can tell "someone was just called" apart from "still
-      // showing the same patient as five seconds ago". Starts empty on
-      // purpose: the very first render of the day would otherwise treat
-      // whoever's already mid-consultation as a brand-new call and chime
-      // for something that didn't just happen.
       let lastServedByDoctor = {};
-      // Doctor id -> their status last seen ('on_time'/'running_late'/
-      // 'on_break'/'emergency'), same reasoning and same first-render
-      // guard as lastServedByDoctor above -- a doctor who's already on a
-      // break when the board first loads didn't just start one.
       let lastStatusByDoctor = {};
       let hasRenderedOnce = false;
 
-      // Same 5-color identity palette used on reception and the doctor view:
-      // each doctor keeps the same color everywhere, so on a board mixing
-      // every doctor's patients together, a glance at the dot tells you
-      // whose it is without reading the name column.
       const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
 
-      // This board is read by patients, not staff, so its language follows
-      // the clinic-wide "Display screen" setting (Settings), not the
-      // per-device day/night theme. Patient/doctor names and addresses are
-      // real data, never translated; only these fixed UI labels are.
       const STRINGS = {
         en: {
           taglineFull: 'Where clinics run better',
@@ -364,10 +247,6 @@
           emergency: 'Emergency',
           dayClosed: 'Day closed',
           fadingLabel: 'Fading from screen in',
-          // Matches doctor.html's own duration picker labels ("1 hr",
-          // never "60 min") and queue.html's identical formatDuration --
-          // three different pages describing the exact same broadcast
-          // value need to agree on how it reads.
           formatDuration(mins) {
             if (mins < 60) return `${mins} min`;
             const h = Math.floor(mins / 60), m = mins % 60;
@@ -431,17 +310,6 @@
       };
       let T = STRINGS.en;
 
-      // Doctor/patient names and addresses are free text typed by staff in
-      // Latin script; there's no fixed translation for a person's name,
-      // only a phonetic transliteration into Devanagari. Plain English
-      // spelling is genuinely ambiguous about Hindi vowel length (e.g.
-      // "Yadav" is pronounced with a long first "a", यादव, not यदव, that
-      // a purely mechanical letter-by-letter pass can't know), so common
-      // Indian names/surnames/place-words are special-cased here for
-      // accuracy; anything not in this list falls back to the phonetic
-      // approximation below, which won't always be perfect. This only
-      // affects what's rendered on this board; the stored data (and every
-      // other screen) always shows exactly what was typed.
       const HI_WORD_DICT = {
         garg: 'गर्ग', gupta: 'गुप्ता', sharma: 'शर्मा', verma: 'वर्मा', yadav: 'यादव',
         singh: 'सिंह', kumar: 'कुमार', kumari: 'कुमारी', devi: 'देवी', khan: 'खान',
@@ -481,18 +349,7 @@
         gandhi: 'गांधी', civil: 'सिविल', lines: 'लाइंस', shastri: 'शास्त्री',
         model: 'मॉडल', town: 'टाउन', old: 'ओल्ड', city: 'सिटी', new: 'न्यू',
         near: 'नियर', market: 'मार्केट', demo: 'डेमो', patient: 'पेशेंट',
-        // The phonetic fallback below has no notion of a consonant
-        // cluster needing a halant ("cl" -> just "क"+"ल" reads as two
-        // full syllables, "ka-li-nik" instead of "kli-nik") - clinic
-        // names virtually always contain this word, so it's worth its
-        // own entry rather than a wrong sound on every single one.
         clinic: 'क्लिनिक',
-        // Same reasoning for the rest of a typical Indian clinic's own
-        // name ("X Clinic and Diagnostic Centre/Center", "X Hospital",
-        // "X Medical Centre") — every one of these was coming out as an
-        // unreadable syllable-by-syllable guess (e.g. "and" -> "अनद",
-        // "diagnostic" -> "दिअगनोसतिक"). Fixed for every clinic that
-        // uses these words, not just one name.
         and: 'एंड', diagnostic: 'डायग्नोस्टिक', centre: 'सेण्टर', center: 'सेण्टर',
         hospital: 'हॉस्पिटल', medical: 'मेडिकल',
       };
@@ -526,7 +383,7 @@
           }
           const vow = vowels.find(([pat]) => w.startsWith(pat, i));
           if (vow) { out += vow[1]; i += vow[0].length; continue; }
-          out += w[i]; // digits/punctuation pass through
+          out += w[i];
           i += 1;
         }
         return out;
@@ -543,10 +400,6 @@
         }).join('');
       }
 
-      // Specialty is picked from a fixed dropdown (Settings > Doctors), so
-      // unlike names it has a real, known-good Hindi translation rather
-      // than a phonetic guess, used whenever the value matches a known
-      // specialty; free-text "Other" specialties fall back to transliteration.
       const SPECIALTY_HI = {
         'General Physician': 'सामान्य चिकित्सक',
         'Pediatrician': 'बाल रोग विशेषज्ञ',
@@ -568,9 +421,6 @@
         'Physiotherapist': 'फिजियोथेरेपिस्ट',
       };
 
-      // Escaped first, then transliterated — toDevanagari only rewrites
-      // Latin letters, so any HTML-special characters in the original
-      // text pass through it unchanged and reach escapeHtml either way.
       function localizeName(text) {
         return escapeHtml(T === STRINGS.hi ? toDevanagari(text) : text);
       }
@@ -587,33 +437,14 @@
         }[status] || status;
       }
 
-      // Spells the delay out in full words on its own line, rather than
-      // burying "+20m" inside the pill: patients should be able to read
-      // it at a glance from across the waiting room, not squint at an
-      // abbreviation.
       function statusDetailLine(doctor) {
         const since = Qlinic.formatTimestamp(doctor.statusUpdatedAt);
-        // The reason goes on its own line, not tacked onto the end of the
-        // duration/time sentence with a dash — that read as one long
-        // run-on line that wrapped wherever it happened to run out of
-        // room, instead of breaking in a sensible place.
         const note = Qlinic.isRealStatusReason(doctor.statusNote) ? `<br>${escapeHtml(doctor.statusNote)}` : '';
         if (doctor.status === 'on_break') return T.onBreakDetail(T.formatDuration(doctor.delayMins || 0), since) + note;
         if (doctor.status === 'emergency') return T.emergencyDetail;
         return '';
       }
 
-      // Walk-ins share the same underlying token_number sequence as
-      // appointments (that single shared ordering is what the public
-      // queue-status page uses to compute "how many ahead of me," so it
-      // can't be split into independent per-type counters without also
-      // rewriting that RPC's position math). Rather than touch the
-      // database, walk-ins just get their own 1-based "W" label computed
-      // here for display only: rank a doctor's walk-ins today by their
-      // existing token_number and prefix the rank. Scoped per doctor,
-      // rebuilt fresh from the full day's patients (not just whoever's
-      // currently on the board) every refresh, so a walk-in's number
-      // never changes as they move between waiting/booked/done.
       let walkinRanks = new Map();
       function buildWalkinRanks(allQueues) {
         const ranks = new Map();
@@ -633,9 +464,6 @@
         return String(p.tokenNumber);
       }
 
-      // Departure-board style: up to 3 upcoming tokens, then a "+N" chip
-      // rather than trying to list every waiting patient — at busy times
-      // (10+ waiting) that would either wrap the row or run off the edge.
       function buildNextChips(waiting) {
         if (!waiting.length) return '';
         const shown = waiting.slice(0, 3).map((p) => formatToken(p)).filter(Boolean);
@@ -646,17 +474,7 @@
       }
 
       function renderDoctorStrip(all) {
-        // One chime per refresh tick even if two doctors happened to call
-        // someone in the same 5s window -- overlapping tones would just
-        // read as noise, not as "two calls happened", and a distinct
-        // per-doctor chime isn't worth the complexity for how rare that
-        // actually is.
         let someoneNewlyCalled = false;
-        // Same one-sound-per-tick collapsing as the call chime, kept
-        // separate per status so a break and an emergency landing in the
-        // same 5s tick (rare, but possible with several doctors) don't
-        // silently cancel each other out -- each of the three can fire at
-        // most once per tick, independently.
         let someoneWentOnBreak = false;
         let someoneWentEmergency = false;
         let someoneCameBack = false;
@@ -686,19 +504,10 @@
         if (someoneCameBack) window.DisplaySound.playAvailableChime();
 
         document.getElementById('doctorStrip').innerHTML = all.map(({ doctor, queue }, index) => {
-          // Reaching this function at all means the doctor already passed
-          // the refreshData filter above, so they're either still inside
-          // their 3-minute "just closed" window, or past their 4am reset —
-          // never in between (that gap is exactly what's hidden).
           const closedToday = !!doctor.dayClosedAt && (Date.now() - new Date(doctor.dayClosedAt).getTime() < DAY_CLOSED_FADE_MS);
           const notArrived = !!doctor.dayClosedAt && !closedToday;
           const statusText = (closedToday || notArrived) ? '' : statusDetailLine(doctor);
 
-          // The detail column always has something useful in it, not just
-          // when a doctor is running late: a fade countdown while closing,
-          // "not arrived yet" while stale-closed, the delay/break reason
-          // while away, or a preview of who's up next while available —
-          // never empty space next to the doctor's row.
           let detailHtml;
           if (closedToday) {
             detailHtml = `<div class="dboard-detail-line dboard-detail-muted" data-day-closed-at="${doctor.dayClosedAt}"></div>`;
@@ -748,9 +557,6 @@
         }).join('');
       }
 
-      // One combined, clinic-wide board sorted by scheduled/effective time:
-      // an appointment for 9:15 outranks a walk-in that happened to arrive
-      // first, same as the reception and doctor screens.
       function computeCombinedWaiting(all) {
         const rows = [];
         all.forEach(({ doctor, queue }, index) => {
@@ -773,12 +579,6 @@
             });
           });
         });
-        // Mirrors compareQueueOrder in clinic-data.js: priority patients
-        // first, then effectiveTime (doctor-availability-aware), then
-        // each patient's own unclamped intendedTime as the tiebreak for
-        // patients bunched at the same delay floor, then createdAt as a
-        // purely technical last resort for a genuine coincidence — never
-        // token number, which only reflects booking order.
         rows.sort((a, b) => {
           if (!!a.isPriority !== !!b.isPriority) return a.isPriority ? -1 : 1;
           return (a.effectiveTime - b.effectiveTime) || (a.intendedTime - b.intendedTime) || (new Date(a.createdAt) - new Date(b.createdAt));
@@ -786,30 +586,6 @@
         return rows;
       }
 
-      // effectiveTime folds in the doctor's live delay — exactly right for
-      // ordering the queue, wrong for a "when is my appointment" column a
-      // room full of people is reading: it visibly rewrote itself the
-      // moment a doctor went on/came off a break (a patient's own booked
-      // slot appearing to jump forward, then back, with no warning),
-      // which reads as the board being broken. intendedTime is the same
-      // raw booked/arrival moment used as this list's own tiebreak above
-      // — it never moves for a doctor's status, so it's shown as-is,
-      // always, in full. Once it's actually in the past, that alone
-      // isn't a problem to hide — it's simply true the slot has come and
-      // gone while they're still waiting — so a small amber note is
-      // added underneath instead of replacing the real time.
-      // Two different situations both land on "the booked slot has come and
-      // gone," and a room full of people watching this board need to be
-      // able to tell them apart, not lumped into one ambiguous amber note:
-      //   - the clinic is running behind (doctor delay, a busy morning) --
-      //     not this patient's doing, stays the existing runningLate note.
-      //   - this specific patient checked in after their own booked time
-      //     (arrivedAt is later than intendedTime) -- which is exactly
-      //     what explains an earlier token sitting later in the visible
-      //     order than a later-booked one, and reads as the board being
-      //     wrong/broken if it's left unexplained. Only possible for an
-      //     appointment (intendedTime IS arrivedAt for a walk-in, so the
-      //     comparison is never true for one).
       function boardTimeCell(p) {
         const intended = p.intendedTime instanceof Date ? p.intendedTime : new Date(p.intendedTime);
         const arrived = p.arrivedAt ? new Date(p.arrivedAt) : null;
@@ -817,14 +593,6 @@
         if (arrivedLate) {
           return `${Qlinic.formatTimestamp(intended)}<span class="board-time-arrived-late">${T.arrivedLate}</span>`;
         }
-        // A 10-minute grace window before flagging this at all — showing
-        // "late" the instant the exact scheduled minute passes is twitchy
-        // and reads as alarmist for a 1-2 minute slip that's never
-        // actually noticeable to anyone. 10 minutes is comfortably inside
-        // where most delay indicators land (flight boards typically use
-        // ~15 minutes before showing "Delayed"; calendar/queue tools
-        // commonly use 5-10) — enough of a buffer that this only fires
-        // once a wait has become real, not on every trivial slip.
         const LATE_GRACE_MS = 10 * 60 * 1000;
         const isLate = Date.now() - intended.getTime() >= LATE_GRACE_MS;
         return `${Qlinic.formatTimestamp(intended)}${isLate ? `<span class="board-time-late">${T.runningLate}</span>` : ''}`;
@@ -879,14 +647,6 @@
 
       const DAY_CLOSED_FADE_MS = 3 * 60 * 1000;
 
-      // 4am, not midnight: comparing calendar dates meant a doctor who
-      // closed at 11:58pm and one who closed at 12:03am landed on
-      // opposite sides of "today" purely because the clock ticked over —
-      // one kept showing "Not arrived yet" for hours, the other vanished
-      // within minutes, for what's functionally the same event. No
-      // clinic operates through 4am, so anchoring the reset there instead
-      // means every closure — 5pm or 2am — waits for the SAME next
-      // checkpoint, and two closures a few minutes apart behave the same.
       const RESET_HOUR = 4;
       function nextResetAfter(closedAtIso) {
         const closedAt = new Date(closedAtIso);
@@ -896,11 +656,6 @@
         return reset;
       }
 
-      // Runs every second (independent of the 5s REFRESH_MS data poll) so
-      // the "3:00, 2:59, ..." countdown actually ticks in real time instead
-      // of jumping in 5-second steps. Reads the closed-at timestamp back
-      // off the DOM rather than keeping separate JS state, so it stays
-      // correct across every re-render without extra bookkeeping.
       function formatCountdown(dayClosedAtIso) {
         const remainingMs = Math.max(0, DAY_CLOSED_FADE_MS - (Date.now() - new Date(dayClosedAtIso).getTime()));
         const totalSec = Math.ceil(remainingMs / 1000);
@@ -923,34 +678,12 @@
         applyStaticStrings();
         const allQueues = await Qlinic.getAllQueues();
         walkinRanks = buildWalkinRanks(allQueues);
-        // A doctor who's closed their day keeps showing (with the "Day
-        // closed" pill and a live countdown) for a 3-minute grace window,
-        // then drops off the board entirely — no patients still waiting
-        // on them, nothing left to say. They stay off the board until the
-        // next 4am checkpoint after they closed (see nextResetAfter
-        // above), at which point renderDoctorStrip brings them back as
-        // "Not arrived yet" — signaling a new day's queue can start once
-        // they log back in, same as before, just no longer keyed off
-        // literal midnight.
         const all = allQueues.filter(({ doctor }) => {
           if (!doctor.dayClosedAt) return true;
           if (Date.now() - new Date(doctor.dayClosedAt).getTime() < DAY_CLOSED_FADE_MS) return true;
           return Date.now() >= nextResetAfter(doctor.dayClosedAt).getTime();
         });
 
-        // Once every doctor is either closed-and-hidden or simply has no
-        // data, the strip/board would render empty — indistinguishable
-        // from a frozen or broken screen to anyone glancing at it. Swap to
-        // one big unmistakable message instead, reusing the same `all`
-        // filter above rather than a separate calendar check: the message
-        // clears itself the instant even one doctor has something to show
-        // (available, or past their reset showing "Not arrived yet").
-        //
-        // The admin's own clinic-wide "End of day" closure overrides all
-        // of that outright — it's checked first and wins regardless of
-        // what any individual doctor's own status says, since admin
-        // closing the whole clinic doesn't require every doctor to have
-        // separately tapped "close my day" first.
         const clinicClosedNow = Qlinic.isClinicClosedToday(clinic);
         const allClosedToday = clinicClosedNow || (allQueues.length > 0 && all.length === 0);
         document.getElementById('doctorStrip').style.display = allClosedToday ? 'none' : '';
@@ -980,10 +713,10 @@
       }
 
       refreshData();
-      setInterval(refreshData, REFRESH_MS); // catches anything Realtime might miss
+      setInterval(refreshData, REFRESH_MS);
       setInterval(tickFadeCountdowns, 1000);
-      setInterval(rotatePage, ROTATE_MS); // airport-board style: cycle to the next set of names
-      Qlinic.onLiveChange(refreshData); // instant update the moment reception/doctor changes anything, genuinely cross-device now
+      setInterval(rotatePage, ROTATE_MS);
+      Qlinic.onLiveChange(refreshData);
     })();
   </script>
 </body>

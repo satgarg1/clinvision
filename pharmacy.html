@@ -166,7 +166,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -176,15 +176,9 @@
       const amPharmacist = await Qlinic.isPharmacist();
       const [amAdmin, amDoctor] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor()]);
 
-      // A pure pharmacist gets exactly the two pages BACKLOG.md scoped
-      // for the role — everything else in the nav is hidden, not just
-      // redirect-blocked, same "no link to a page you can't open"
-      // convention dashboard.html already follows for other roles.
       if (amPharmacist) {
         ['dashboardNavLink', 'receptionNavLink', 'doctorNavLink', 'billingNavLink', 'revenueNavLink', 'trendsNavLink', 'displayNavLink']
           .forEach((id) => { document.getElementById(id).style.display = 'none'; });
-        // billing.html is admin/reception only — a pharmacist has no
-        // "Billing" to go back up to, this page already is their home.
         document.getElementById('billingBreadcrumb').style.display = 'none';
       } else {
         if (amDoctor) {
@@ -213,16 +207,14 @@
       function money(n) { return '₹' + Number(n).toFixed(2); }
 
       let catalog = await Qlinic.getMedicines({ activeOnly: true });
-      let selectedPatient = null; // { id, name, phone } or null for walk-in
-      let cart = []; // [{ medicineId, name, dispenseUnit, unitPrice, gstRate, stockQuantity, qty }]
+      let selectedPatient = null;
+      let cart = [];
 
       function scheduleBadge(s) {
         if (s === 'h1' || s === 'x') return `<span class="badge" style="background:var(--danger-bg); color:var(--danger);">Schedule ${s.toUpperCase()}</span>`;
         if (s === 'h') return `<span class="badge" style="background:var(--warning-bg); color:var(--warning);">Schedule H</span>`;
         return `<span class="badge" style="background:var(--grey-100); color:var(--grey-700);">OTC</span>`;
       }
-      // mrp/sellingPrice are priced per PACK (a strip of 10) — what gets
-      // charged per unit sold is that divided by pack_size.
       function unitPriceOf(m) { return Math.round((m.sellingPrice / (m.packSize || 1)) * 100) / 100; }
 
       function findMedicineMatches(q) {
@@ -253,12 +245,6 @@
       }
 
       document.getElementById('medSearch').addEventListener('input', (e) => renderMeds(e.target.value));
-      // A barcode scanner is a "keyboard wedge" — it just types the
-      // scanned code into whatever field is focused, then sends Enter,
-      // exactly like a very fast typist. So the entire integration is:
-      // catch Enter here, and if the typed/scanned value exactly
-      // matches one medicine's barcode or reference number, add it and
-      // clear the box for the next scan — no driver, no browser API.
       document.getElementById('medSearch').addEventListener('keydown', (e) => {
         if (e.key !== 'Enter') return;
         e.preventDefault();
@@ -288,10 +274,6 @@
         if (existing) existing.qty += 1;
         else cart.push({ medicineId: m.id, name: m.name, dispenseUnit: m.dispenseUnit, unitPrice: unitPriceOf(m), gstRate: m.gstRate, stockQuantity: m.stockQuantity, qty: 1 });
         renderCart();
-        // Ready for the next scan or search immediately — a scanner
-        // firing several items in a row shouldn't need a manual clear
-        // between each one, and a search that just found its medicine
-        // shouldn't leave a stale results list sitting under the cart.
         const searchBox = document.getElementById('medSearch');
         searchBox.value = '';
         renderMeds('');
@@ -355,7 +337,6 @@
         if (rm) removeLine(rm.getAttribute('data-remove'));
       });
 
-      // Patient search — debounced, dropdown of matches, click to pick.
       let patientSearchTimer = null;
       document.getElementById('patientInput').addEventListener('input', (e) => {
         selectedPatient = null;
@@ -405,13 +386,6 @@
           return;
         }
 
-        // The sale is already committed server-side the moment
-        // createPharmacyInvoice resolves — stock deducted, invoice
-        // number issued. Reset the cart right here, before any of the
-        // read-back calls below, so a transient failure fetching the
-        // receipt can never leave the cart populated with the buttons
-        // re-enabled, which previously let a retry click re-run the
-        // whole sale a second time against the same cart.
         cart = [];
         renderCart();
         selectedPatient = null;
@@ -425,8 +399,6 @@
           const freshClinic = await Qlinic.getClinic();
           document.getElementById('nextInvoiceHint').textContent = 'PH-' + String(freshClinic.next_pharmacy_invoice_number).padStart(4, '0');
         } catch (err) {
-          // The sale itself already succeeded — only the receipt/refresh
-          // failed, so this is informational, not something to retry.
           showToast('Sale completed (PH-' + String(invoice.invoiceNumber).padStart(4, '0') + '), but the receipt could not be loaded — check Stock details for the record.');
         }
       }

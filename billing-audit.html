@@ -78,7 +78,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -90,9 +90,6 @@
         }
       });
 
-      // Same as Clinic Settings and every other admin-only Settings
-      // sub-page - billing itself is fully admin-only (canAccessBilling/
-      // isAdmin elsewhere), so a compliance view over it is too.
       if (!(await Qlinic.isAdmin())) {
         window.location.href = 'dashboard.html';
         return;
@@ -101,10 +98,6 @@
         window.location.href = 'dashboard.html';
         return;
       }
-      // Body starts hidden (see the <body> tag) specifically so a non-
-      // admin hitting this URL never sees this admin-only page's content
-      // even for a moment before the redirect above fires -- reveal only
-      // once we know for certain they're allowed to be here.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
@@ -120,11 +113,6 @@
         const wrap = document.getElementById('summaryCards');
         const hasInvoices = audit.totalInvoices > 0;
         const rangeLabel = hasInvoices ? `#RC-${String(audit.minInvoiceNumber).padStart(4, '0')} – #RC-${String(audit.maxInvoiceNumber).padStart(4, '0')}` : '—';
-        // The range is gap-free by construction (the counter only ever
-        // moves forward by exactly 1, right before the matching insert -
-        // see 013/016/031's shared UPDATE...RETURNING pattern) - this is
-        // arithmetic, not a live scan, spelled out so "gap-free" isn't
-        // just an assertion to take on faith.
         const isGapFree = !hasInvoices || (audit.maxInvoiceNumber - audit.minInvoiceNumber + 1 === audit.totalInvoices);
         const unbilledCount = audit.unbilledPatients.length;
         wrap.innerHTML = `
@@ -148,11 +136,6 @@
       }
       renderSummary();
 
-      // Doctor filter narrows the same already-fetched list in memory,
-      // same pattern as Insights' appointment-distribution chart - the
-      // list is small enough that a second query is never worth it.
-      // The field itself is skipped entirely when the gap only ever
-      // touches one doctor - nothing to filter down from.
       let unbilledDoctorFilter = 'all';
       function unbilledDoctorOptions() {
         const counts = {};

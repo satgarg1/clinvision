@@ -63,13 +63,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
 
-      // Scoped to the pharmacy counter and catalog only -- this page shows
-      // patient/staff data a pharmacist has no business seeing.
       if (await Qlinic.isPharmacist()) { window.location.href = 'pharmacy.html'; return; }
 
       document.querySelector('a.brand').addEventListener('click', async (e) => {
@@ -93,29 +91,15 @@
       if (!amAdmin && !amDoctor) {
         document.getElementById('trendsNavLink').style.display = 'none';
       }
-      // Body starts hidden (see the <body> tag) so nobody sees the full
-      // nav for a moment before the role-based hiding above finishes.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
-      // Every dashboard stat card links here instead of each getting its
-      // own near-identical page — metric picks the filter/columns, doctor
-      // and date (both optional query params) narrow it further. A
-      // doctor viewing their own dashboard is scoped the same way
-      // dashboard.html itself is: the doctor param is forced to their own
-      // id regardless of what's in the URL, so they can't page-hop into
-      // another doctor's patient list.
       const params = new URLSearchParams(window.location.search);
       const metric = params.get('metric');
       const dateStr = params.get('date') || Qlinic.getTodayDate();
       const requestedDoctorId = params.get('doctor') || null;
 
       const TYPE_LABELS = { appointment: 'Appointment', walkin: 'Walk-in' };
-      // A walk-in's own priority flag (the true-emergency override,
-      // distinct from a "priority" appointment status elsewhere) is
-      // otherwise invisible in this list — worth surfacing right next
-      // to the type, since it's the reason one walk-in jumped the queue
-      // ahead of others booked earlier.
       function typeLabel(p) {
         if (p.type === 'appointment') return 'Appointment';
         return p.isPriority ? 'Walk-in (Emg)' : 'Walk-in (Standard)';
@@ -158,10 +142,6 @@
           columns: ['Name', 'Phone', 'Doctor', 'Was booked for'],
           row: (p, doctorName) => [p.name, p.phone, doctorName, p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '—'],
           filters: ['doctor'],
-          // No arrival/call timestamp exists for a no-show (never showed
-          // up) - createdAt (when the booking/walk-in record itself was
-          // made) is the only real chronological field left, so this one
-          // keeps the default rather than a metric-specific override.
         },
         bookedToday: {
           title: 'Booked today',
@@ -188,9 +168,6 @@
           needsWait: true,
           filters: ['doctor'],
         },
-        // One row per doctor (their single longest wait today), not every
-        // patient — showing every patient here duplicated Average wait's
-        // own drill-down page with nothing to tell them apart.
         longestWait: {
           title: 'Longest wait today, by patient',
           filter: (p) => ['waiting', 'in_consult', 'done'].includes(p.status),
@@ -214,18 +191,9 @@
 
       const supportsDoctorFilter = !!(config.filters && config.filters.includes('doctor'));
       const supportsTypeFilter = !!(config.filters && config.filters.includes('type'));
-      // A doctor's own view stays locked to their own patients (nothing to
-      // filter), except priorityWaiting: that one is explicitly clinic-wide
-      // for everyone — an emergency is an emergency regardless of doctor —
-      // so its doctor filter still makes sense even for a doctor viewer.
       const showDoctorFilter = supportsDoctorFilter && (config.ignoreDoctor || !amDoctor);
       const showTypeFilter = supportsTypeFilter;
 
-      // priorityWaiting ignores any doctor param unconditionally, same as
-      // before. Otherwise a doctor is always locked to their own data; for
-      // admin/reception, a metric that offers a doctor filter fetches
-      // clinic-wide so the filter actually has more than one option —
-      // narrowing then happens client-side, same as Revenue's own columns.
       const fetchDoctorId = config.ignoreDoctor
         ? null
         : (myDoctorId || (supportsDoctorFilter ? null : requestedDoctorId));
@@ -246,24 +214,8 @@
         return Math.max(0, Math.round((end - start) / 60000));
       }
 
-      // ---------------- Recency sort ----------------
-      // getPatientsInRange has no ORDER BY of its own, so without this
-      // every list here was rendering in whatever order Postgres happened
-      // to return rows in - not wrong, exactly, but not a real order
-      // either, which is what actually made it look unsortable. Each
-      // metric's sortKey matches whatever timestamp its own visible
-      // column already shows (calledAt for done's "Seen at", arrivedAt
-      // for waiting's "Arrived", etc.) - sorting by a DIFFERENT field
-      // than the one on screen (createdAt, say, when the column reads
-      // "Seen at") is what made "Newest first" look broken: the toggle
-      // was doing something real, just not the thing the visible column
-      // implied. createdAt is the fallback for a metric with no better
-      // field of its own (no-show has no arrival/call moment at all).
-      // Metrics with their own explicit ordering (avgWait/longestWait,
-      // sorted by wait duration) keep that instead - a recency toggle
-      // next to a duration-sorted list would just be confusing.
       const showSortToggle = !config.needsWait;
-      let recencyDesc = true; // true = newest first
+      let recencyDesc = true;
       function renderSortToggle() {
         document.getElementById('sortToggleSeg').innerHTML = `
           <button type="button" data-sort="desc" class="${recencyDesc ? 'active' : ''}">Newest first</button>
@@ -278,12 +230,8 @@
         render();
       });
 
-      // ---------------- Column-header filters (same pattern as Revenue) ----------------
       let doctorFilterIds = new Set();
       let typeFilterValues = new Set();
-      // Arriving from one doctor's row on the Dashboard modal still opens
-      // scoped to that doctor; Reset (or clearing the chip) broadens back
-      // to every doctor without navigating back and picking "view all."
       if (showDoctorFilter && requestedDoctorId && !amDoctor) doctorFilterIds.add(requestedDoctorId);
 
       function baseRows() {

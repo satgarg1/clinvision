@@ -189,9 +189,6 @@
         <div class="receipt-footer-address" id="rFooterAddress"></div>
       </div>
     </div>
-    <!-- Always present regardless of GSTIN - this is compliance text
-         about the service (Notification No. 12/2017-CT (Rate), Entry
-         74), not about whether the clinic happens to hold a GSTIN. -->
     <div class="receipt-exempt-line">GST: Exempt — Healthcare services, Notification No. 12/2017-CT (Rate), Entry 74</div>
   </div>
 
@@ -199,7 +196,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -219,10 +216,6 @@
         document.getElementById('revenueNavLink').style.display = 'none';
         document.getElementById('trendsNavLink').style.display = 'none';
       }
-      // Body starts hidden (see the <body> tag) so nobody who can't
-      // access billing sees it flash before the redirect above fires,
-      // and so nobody sees the full nav for a moment before the
-      // role-based hiding above finishes.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
@@ -237,22 +230,8 @@
       let myProfile = null;
       let allDoctors = [];
       let currentAmount = 0;
-      // Set whenever checkPhoneLookup finds an invoice already billed for
-      // this phone+date (most often the auto-invoice-on-arrival trigger) —
-      // submit then corrects THAT invoice instead of creating a second one
-      // for the same visit. Cleared on phone/date changes that find no
-      // match, and after a successful submit.
       let currentInvoiceId = null;
-      // Set whenever the phone lookup finds a real queued patient for the
-      // selected date, whether or not they're already billed - passed to
-      // createInvoice so a new bill actually links back to that patients
-      // row (otherwise it stays stuck on Billing Audit's "seen without an
-      // invoice" list forever, even after being billed).
       let currentPatientId = null;
-      // Bumped on every checkPhoneLookup() call, so a response that comes
-      // back after a NEWER lookup has already started (phone blur firing
-      // just after a date change, or two date changes in quick succession)
-      // never overwrites the fresher one's result with a stale match.
       let phoneLookupSeq = 0;
 
       function updateFeeTypeOptions() {
@@ -273,11 +252,6 @@
         updateTotal();
       }
 
-      // Amount received defaults to the full fee whenever the fee itself
-      // changes (doctor or fee type), since a consultation is almost
-      // always paid in full; it stays freely editable for the rare
-      // partial-payment case without that edit surviving a fee change
-      // that would make it stale.
       function updateTotal() {
         const doctor = allDoctors.find((d) => d.id === document.getElementById('bDoctor').value);
         const feeType = document.getElementById('bFeeType').value;
@@ -301,9 +275,6 @@
           allDoctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)}</option>`).join('');
       }
 
-      // Strips anything non-numeric as they type, matching reception's
-      // patient forms and registration's phone field, so a pasted or
-      // typed letter/symbol never even lands in the input.
       document.getElementById('bPhone').addEventListener('input', function () {
         this.value = this.value.replace(/\D/g, '').slice(0, 10);
       });
@@ -315,9 +286,6 @@
         this.value = this.value.replace(/[0-9]/g, '');
       });
 
-      // Direct autofill, not a suggestion card: the receptionist already
-      // typed the phone to look the patient up, so there's no extra
-      // confirmation step, just editable fields ready to bill from.
       async function checkPhoneLookup() {
         const mySeq = ++phoneLookupSeq;
         const phone = document.getElementById('bPhone').value.trim();
@@ -330,16 +298,8 @@
           hint.className = 'slot-hint';
           return;
         }
-        // Keyed off whatever's in the Consultation date field, not
-        // literally "today" — that's what makes autofill work correctly
-        // when reception is backdating a bill for a patient seen
-        // yesterday: it looks up THAT day's visit, not today's.
         const billingDate = document.getElementById('bDate').value || Qlinic.getTodayDate();
         const match = await Qlinic.getBillingPatientLookup(phone, billingDate);
-        // A newer lookup (another date/phone change fired while this one
-        // was still in flight) has already started and will supersede
-        // this result — applying it now would overwrite the fresher
-        // in-progress state with an outdated match. Discard.
         if (mySeq !== phoneLookupSeq) return;
         if (!match) {
           hint.textContent = 'No previous visit found for this number, fill in details manually.';
@@ -352,14 +312,6 @@
         if (match.age) document.getElementById('bAge').value = match.age;
         if (match.gender) document.getElementById('bGender').value = match.gender;
 
-        // Doctor + fee type autofill from a visit on the selected billing
-        // date when there is one (see getBillingPatientLookup). When
-        // there isn't — the actual gap this used to leave open — fall
-        // back to their most recent visit's doctor/fee type instead of
-        // leaving reception to pick everything from scratch for a
-        // returning patient, and pull the date field to match that visit
-        // too (set directly, not dispatched, so it doesn't re-trigger
-        // this same lookup). Still freely editable either way.
         let usedRecentFallback = false;
         if (match.todayDoctorId) {
           document.getElementById('bDoctor').value = match.todayDoctorId;
@@ -367,11 +319,6 @@
           if (match.todayFeeType === 'consultation' || match.todayFeeType === 'emergency') {
             document.getElementById('bFeeType').value = match.todayFeeType;
           }
-          // todayVisitDate is only ever set when the matched visit is an
-          // unbilled one on a DIFFERENT date than what's currently in this
-          // field (see getBillingPatientLookup) - correcting it here is
-          // what makes the printed receipt show that visit's real date
-          // instead of whatever the field happened to be sitting on.
           if (match.todayVisitDate) document.getElementById('bDate').value = match.todayVisitDate;
         } else if (match.mostRecentDoctorId) {
           usedRecentFallback = true;
@@ -383,11 +330,6 @@
           if (match.mostRecentVisitDate) document.getElementById('bDate').value = match.mostRecentVisitDate;
         }
 
-        // An invoice already exists for this visit — most often auto-
-        // billed the moment they arrived. Submitting now corrects THAT
-        // invoice (fee type, payment mode, amount) instead of creating a
-        // second one, so its actual payment mode/amount are what should
-        // be shown here, not a freshly-recomputed default.
         if (match.todayInvoiceId) {
           currentInvoiceId = match.todayInvoiceId;
           if (match.todayPaymentMode) document.getElementById('bPaymentMode').value = match.todayPaymentMode;
@@ -398,10 +340,6 @@
           updateTotal();
         }
 
-        // Recomputed from the (possibly just-corrected) date field, not
-        // the original billingDate - once todayVisitDate has overwritten
-        // it above, the hint below needs to describe THAT date, not the
-        // one reception happened to have typed in.
         const dateLabel = Qlinic.formatDateLabel(document.getElementById('bDate').value || billingDate);
         hint.textContent = match.todayInvoiceId
           ? `Found ${match.name} — already billed for ${dateLabel}, changes here correct that bill rather than adding a new one.`
@@ -410,15 +348,6 @@
           : match.todayDoctorId
           ? `Found ${match.name} — ${dateLabel}'s consultation details filled in, double-check before printing.`
           : usedRecentFallback
-          // dateLabel is out for this one specifically -- it's read off
-          // bDate AFTER line 374 already overwrote it with
-          // mostRecentVisitDate, so "no visit on {dateLabel}" would
-          // silently quote the fallback date instead of the date that
-          // was actually searched (billingDate, captured before either
-          // mutation site runs). That's what produced "no visit on Fri,
-          // Aug 28 ... last visit (Fri, Aug 28)" for a today-dated
-          // search that fell back to a Aug 28 visit -- both clauses were
-          // reading the same, already-corrected field.
           ? `Found ${match.name} — no visit on ${Qlinic.formatDateLabel(billingDate)}, filled in from their last visit (${Qlinic.formatDateLabel(match.mostRecentVisitDate)}) instead. Double-check before printing.`
           : `Found ${match.name}, details filled in, edit anything that's changed.`;
         hint.className = 'slot-hint ok';
@@ -433,11 +362,6 @@
       const PAYMENT_MODE_LABELS = { cash: 'Paid via cash', upi: 'Paid via UPI', card: 'Paid via card' };
       const FEE_TYPE_LABELS = { consultation: 'Consultation fee', emergency: 'Emergency fee', waived: 'Follow up' };
 
-      // invoice.createdAt comes straight from the database's own
-      // created_at default (set the instant create_invoice() inserts the
-      // row), never a client-side new Date() — so the printed date/time
-      // is always exactly when the receipt was generated, not when the
-      // browser happened to render it.
       function renderReceipt(invoice) {
         const doctor = allDoctors.find((d) => d.id === invoice.doctorId);
         const addressParts = [clinic.address_line, clinic.city, clinic.state && clinic.pincode ? `${clinic.state} ${clinic.pincode}` : clinic.state].filter(Boolean);
@@ -464,16 +388,6 @@
           rFooterLogo.style.display = 'none';
         }
         document.getElementById('rInvoiceNumber').textContent = `#RC-${String(invoice.invoiceNumber).padStart(4, '0')}`;
-        // invoiceDate (the consultation date, editable on the form) and
-        // createdAt (the honest audit timestamp of when this receipt was
-        // actually printed) can differ for a backdated bill, so both are
-        // always shown, labeled, rather than collapsing to one line only
-        // when they disagree — a receipt is a permanent record, so it
-        // states both plainly instead of making the reader infer which
-        // date is which. Visit date uses a plain day/month/year (no
-        // "Today"/weekday label) for the same reason: those relative
-        // labels are only meaningful the day they're read, not on a
-        // record someone might look at again next month.
         document.getElementById('rBilledOn').textContent = `Billed on: ${Qlinic.formatDateTime(invoice.createdAt)}`;
         const [vy, vm, vd] = invoice.invoiceDate.split('-').map(Number);
         const visitDateLabel = new Date(vy, vm - 1, vd).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -499,16 +413,6 @@
         document.getElementById('rPaymentMode').textContent = PAYMENT_MODE_LABELS[invoice.paymentMode] || invoice.paymentMode;
       }
 
-      // renderReceipt() just set the logo <img> elements' src a moment
-      // ago; that's an async load, and window.print() doesn't wait for
-      // pending images on its own. Most of the time the logo's already
-      // browser-cached (the small clinicLogoThumb preview at the top of
-      // this same page loads the identical URL first, well before the
-      // user ever submits), which is exactly why this bug was so easy to
-      // miss - it only shows up when that cache is cold (first load,
-      // cleared cache, a different browser). Waiting for both logo
-      // <img>s (a no-op if already .complete) closes that race properly
-      // instead of relying on incidental cache timing.
       function waitForReceiptLogos() {
         var imgs = [document.getElementById('rClinicLogo'), document.getElementById('rFooterLogo')];
         return Promise.all(imgs.map(function (img) {
@@ -542,40 +446,14 @@
         }
         let invoiceDate = document.getElementById('bDate').value || Qlinic.getTodayDate();
 
-        // currentPatientId/currentInvoiceId are set by checkPhoneLookup(),
-        // which runs on the phone field's blur and the date field's
-        // change — but checkPhoneLookup nulls both out the INSTANT it
-        // starts, then awaits a couple of Supabase round trips before
-        // setting them for real. Change the date and hit Print quickly
-        // (well within normal reception speed) and this submit handler
-        // used to run first, printing with whatever currentPatientId
-        // happened to be sitting at — often null right after a date
-        // change — so the bill never linked to that day's patients row
-        // and stayed stuck on Billing Audit's "seen without an invoice"
-        // list even though it had just been billed. Re-resolving fresh
-        // and awaited here, against exactly the phone + date on screen
-        // right now, makes correctness independent of that race entirely.
         const freshMatch = await Qlinic.getBillingPatientLookup(phone, invoiceDate);
         currentPatientId = (freshMatch && freshMatch.todayPatientId) || null;
         currentInvoiceId = (freshMatch && freshMatch.todayInvoiceId) || null;
         if (freshMatch && freshMatch.todayVisitDate) {
-          // Same correction checkPhoneLookup applies when the exact date
-          // has no visit but an unbilled one exists on a different day —
-          // keep the printed date and the patient_id it links to in sync,
-          // since this fresh check can supersede whatever the background
-          // lookup last left in the date field.
           invoiceDate = freshMatch.todayVisitDate;
           document.getElementById('bDate').value = invoiceDate;
         }
 
-        // This form has no built-in tie to a real visit — unlike the
-        // auto-billed-on-arrival path (Reception's queue), which always
-        // links straight to a patient row, this is just typed fields, so
-        // nothing stopped billing a phone number that never actually
-        // showed up in the queue that day. Warn (but still allow an
-        // override) rather than hard-block, since a legitimate edge case
-        // — a patient billed without ever being added to the digital
-        // queue — does exist.
         const hasAppointment = await Qlinic.hasAppointmentOnDate(phone, invoiceDate);
         if (!hasAppointment) {
           const proceed = await Qlinic.confirmDialog({
@@ -592,13 +470,6 @@
         btn.disabled = true;
         btn.textContent = 'Printing…';
         try {
-          // currentInvoiceId is set whenever the phone lookup found this
-          // visit already billed (almost always the auto-invoice-on-
-          // arrival trigger) — correcting fee type/payment mode/amount
-          // here has to update THAT invoice, not create a second one for
-          // the same visit. Name/address/age/gender/doctor on an
-          // already-billed invoice aren't editable from this path, same
-          // as Reception's own inline "Adjust" correction.
           const invoice = currentInvoiceId
             ? await Qlinic.updateInvoicePayment({
                 invoiceId: currentInvoiceId,
@@ -617,11 +488,6 @@
                 paymentMode: document.getElementById('bPaymentMode').value,
                 amountReceived: Number(document.getElementById('bAmountReceived').value) || 0,
                 invoiceDate,
-                // Links this bill back to the real patients row the phone
-                // lookup found for this date (null for a genuine walk-in-
-                // manual bill with no queue row at all) - without this the
-                // patient stays stuck on Billing Audit's "seen without an
-                // invoice" list even after being billed.
                 patientId: currentPatientId,
               });
           if (currentInvoiceId) showToast('Existing bill corrected, not duplicated');
@@ -647,21 +513,10 @@
       }
       myProfile = await Qlinic.getMyProfile();
       await loadDoctors();
-      // Today/Tomorrow/In a week dropped - a bill is never future-dated
-      // (capped at today just below), so "Tomorrow"/"In a week" would
-      // sit there permanently disabled, and "Today" duplicates what the
-      // field already defaults to.
       Qlinic.attachDatePicker(document.getElementById('bDate'), { quickButtons: false });
-      // Backdating is the whole point of this field (billing a patient
-      // seen yesterday, forgot at the time), but a bill dated in the
-      // FUTURE never makes sense — capped at today.
       document.getElementById('bDate').value = Qlinic.getTodayDate();
       document.getElementById('bDate').max = Qlinic.getTodayDate();
 
-      // Reception's "Print receipt" link on an already auto-billed
-      // queue row lands here instead of on the form: the bill already
-      // exists (created by the arrival trigger), so this just reprints
-      // it, no re-entry, no risk of accidentally creating a duplicate.
       const invoiceId = new URLSearchParams(window.location.search).get('invoiceId');
       if (invoiceId) {
         const invoice = await Qlinic.getInvoiceById(invoiceId);

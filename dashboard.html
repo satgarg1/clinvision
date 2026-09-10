@@ -69,20 +69,13 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
 
-      // Every login lands on dashboard.html first (login.html's own
-      // redirect), regardless of role — a pharmacist has no real use
-      // for this dashboard (doctor status, queue-wide stats), so send
-      // them straight to their one page instead of showing it first.
       if (await Qlinic.isPharmacist()) { window.location.href = 'pharmacy.html'; return; }
 
-      // The sidebar logo links to the marketing site, which has no way
-      // back into the app without logging in again, worth a heads-up
-      // before someone loses their place by accident.
       document.querySelector('a.brand').addEventListener('click', async (e) => {
         e.preventDefault();
         if (await Qlinic.confirmDialog({ message: "Going to the homepage will end your session here, you'll need to log in again to get back in." })) {
@@ -93,10 +86,6 @@
       const [amAdmin, amDoctor, myProfile] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor(), Qlinic.getMyProfile()]);
       const myDoctorId = amDoctor ? myProfile.doctorId : null;
 
-      // Hidden, not just redirect-blocked: a visible link to a page you
-      // can't open is worse than no link at all — it invites a "why
-      // can't I get in" question to admin for something that was never
-      // meant to be there in the first place.
       if (amDoctor) {
         document.getElementById('receptionNavLink').style.display = 'none';
         document.getElementById('billingNavLink').style.display = 'none';
@@ -108,9 +97,6 @@
       if (!amAdmin && !amDoctor) {
         document.getElementById('trendsNavLink').style.display = 'none';
       }
-      // Body starts hidden (see the <body> tag) so nobody sees the full
-      // nav (every link, regardless of role) for a moment before the
-      // role-based hiding above finishes.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
@@ -121,11 +107,6 @@
         setTimeout(() => t.classList.remove('show'), 2200);
       }
 
-      // #statCards' own innerHTML is fully replaced every render(), but the
-      // container itself persists — one delegated listener here, reading
-      // whichever cards array render() most recently built, rather than
-      // rebinding per-card listeners on every re-render (including the
-      // realtime ones from onLiveChange below).
       let currentCards = [];
       document.getElementById('statCards').addEventListener('click', (e) => {
         const card = e.target.closest('.stat-card');
@@ -134,10 +115,6 @@
         if (c && c.onClick) c.onClick();
       });
 
-      // "updated 5:38 PM" reads fine minutes after the fact, but is
-      // useless (or actively misleading) once it's been sitting there
-      // since yesterday or longer — the day it happened matters just as
-      // much as the time.
       function formatStatusTimestamp(value) {
         if (!value) return '·';
         const date = new Date(value);
@@ -152,28 +129,18 @@
         }[status] || status;
       }
 
-      // Matches doctor.html's own DURATION_OPTIONS labels ("1 hr", "1.5
-      // hr", never "90 min") — this pill and that picker describe the
-      // exact same value, so they need to read the same way.
       function formatDurationLabel(mins) {
         if (mins < 60) return `${mins} min`;
         if (mins % 30 === 0) return `${mins / 60} hr`;
         return `${Math.floor(mins / 60)} hr ${mins % 60} min`;
       }
 
-      // Same 5-color identity palette as the rest of the app; each doctor
-      // keeps the same color everywhere, based on their position in the
-      // clinic's doctor list.
       const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
       function accentForDoctor(doctorId, doctors) {
         const idx = doctors.findIndex((d) => d.id === doctorId);
         return ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
       }
 
-      // Hidden entirely with nothing upcoming — a chip that's always
-      // there but usually empty just becomes one more thing to ignore.
-      // It only earns its place in the topbar once there's actually
-      // something to check.
       function renderHolidayChip(upcoming, doctors) {
         const wrap = document.getElementById('holidayChipWrap');
         if (upcoming.length === 0) {
@@ -204,11 +171,6 @@
           <div class="holiday-popover-footer"><a href="doctor-holidays.html">Manage in Team Holidays →</a></div>
         `;
       }
-      // Day-of-holiday popup — separate from the chip above (that one's
-      // an always-there reference; this is a one-time heads-up the
-      // moment it's actually relevant). "Dr." for a doctor, "(Role)"
-      // suffix for anyone else, so the sentence reads naturally
-      // regardless of which roles are actually on holiday together.
       function roleLabelFor(role) { return role === 'admin' ? 'Admin' : role === 'doctor' ? 'Doctor' : 'Reception'; }
       function personHeadingPhrase(p) {
         return p.role === 'doctor' ? `Dr. ${p.name}` : `${p.name} (${roleLabelFor(p.role)})`;
@@ -268,13 +230,6 @@
       function pad2(n) { return String(n).padStart(2, '0'); }
       function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
 
-      // Percent change vs. yesterday's count AT THE SAME CLOCK TIME — not
-      // yesterday's full-day total, which would always read as "behind"
-      // until today is actually over and say nothing real. No chip when
-      // yesterday's comparable count was 0 (nothing to divide by) or the
-      // change rounds to 0% (not worth a chip). higherIsGood decides which
-      // direction of change counts as good vs. bad for THIS metric — more
-      // footfall is good, but more wait time is not.
       function percentChip(todayVal, yesterdayVal, higherIsGood) {
         if (!yesterdayVal || todayVal == null) return null;
         const pct = Math.round(((todayVal - yesterdayVal) / yesterdayVal) * 100);
@@ -302,9 +257,6 @@
           document.getElementById('clinicLogoThumb').style.display = 'none';
         }
 
-        // A doctor whose login hasn't been linked to a doctors row yet
-        // (see Team settings) has no data to scope to — nothing else on
-        // this page can render meaningfully until that's fixed.
         if (amDoctor && !myDoctorId) {
           document.getElementById('statCards').innerHTML = '';
           document.getElementById('doctorStatusList').innerHTML =
@@ -312,9 +264,6 @@
           return;
         }
 
-        // Exactly 24 hours ago, not just "yesterday's date" — the cutoff
-        // itself is what makes the trend chips below a fair comparison
-        // (same point in the day on both sides), not just a per-day total.
         const cutoffYesterday = new Date(Date.now() - 24 * 3600000);
         const yesterdayStr = toDateStr(cutoffYesterday);
 
@@ -322,24 +271,12 @@
           Qlinic.getDailySummary(undefined, myDoctorId || undefined),
           amDoctor ? Qlinic.getDoctor(myDoctorId) : Qlinic.getDoctors(),
           Qlinic.getPatientsInRange(yesterdayStr, yesterdayStr, myDoctorId || undefined),
-          // Every one of today's patients regardless of current status —
-          // what "today's peak wait" (below) is computed from, since a
-          // patient's own wait time doesn't stop being real just because
-          // they've since been called in or finished.
           Qlinic.getPatientsInRange(Qlinic.getTodayDate(), Qlinic.getTodayDate(), myDoctorId || undefined),
         ]);
-        // getDoctor() (the doctor's own view) returns one row or null;
-        // getDoctors() (everyone else's view) already returns an array.
         const doctors = amDoctor ? (doctorsRaw ? [doctorsRaw] : []) : doctorsRaw;
         const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
         const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id, undefined, d)));
 
-        // Admin-only: the "how do I keep track of 50 doctors'/staff's
-        // holidays without checking Settings" problem is an owner/admin
-        // concern, not something a doctor needs surfaced about their
-        // own colleagues. Doctor and staff holidays merged into one
-        // date-sorted list -- same shape Team Holidays' own "View
-        // Holidays" tab uses.
         if (amAdmin) {
           const [allDoctorHolidays, allStaffHolidays, team] = await Promise.all([
             Qlinic.getDoctorHolidays(),
@@ -362,15 +299,6 @@
             .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
           renderHolidayChip(upcoming, doctors);
 
-          // Day-of-holiday popup — once per calendar day, admin only,
-          // only when someone's holiday actually lands on today.
-          // Reuses "upcoming" above (it already starts at >= today, so
-          // today's own rows are already in there) rather than a
-          // second fetch. Tracked via a "last checked" date in
-          // localStorage, same per-device pattern qlinic_theme already
-          // uses — set regardless of whether there was anyone to show,
-          // so a quiet day doesn't re-run this fetch on every reload,
-          // and reset naturally at midnight with no cleanup needed.
           const holidayPopupCheckedKey = 'qlinic_holiday_popup_checked_date';
           if (localStorage.getItem(holidayPopupCheckedKey) !== today) {
             const todayPeople = upcoming.filter((h) => h.date === today);
@@ -383,17 +311,8 @@
           ['waiting', 'in_consult', 'done'].includes(p.status) && p.arrivedAt && new Date(p.arrivedAt) <= cutoffYesterday
         ).length;
 
-        // Every doctor gets a row even at 0, so a breakdown popup never
-        // silently drops a doctor who just happens to have nothing in
-        // that particular bucket today.
         const perDoctorById = Object.fromEntries(summary.perDoctor.map((p) => [p.doctorId, p]));
 
-        // Every dashboard card links into the SAME shared page
-        // (patient-breakdown.html) instead of nine near-identical pages —
-        // metric picks which filter/columns it shows, doctor/date narrow
-        // it further. Row-level links in the popup are doctor-scoped;
-        // viewAllHref (shown once, above the table) drops the doctor
-        // filter entirely.
         function breakdownUrl(metric, doctorId) {
           const qs = new URLSearchParams({ metric, date: Qlinic.getTodayDate() });
           if (doctorId) qs.set('doctor', doctorId);
@@ -442,9 +361,6 @@
             onClick: perDoctorDialog('No-shows, by doctor', 'No-shows', (p) => (p ? p.noShow : 0), 'noShow'),
           },
           {
-            // Everyone added today, phoned-in or walk-in — totalAppointments
-            // alone left walk-ins out, which was why this never lined up
-            // with Seen/Waiting/No-shows (footfall counts both types).
             label: 'Booked today',
             value: summary.totalBookedToday,
             accent: 'indigo',
@@ -452,40 +368,21 @@
           },
         ];
 
-        // The queue-health cards below all read from the SAME waiting
-        // lists (and doctor statuses) the "Doctor status" panel further
-        // down already fetches — computed here once and reused, rather
-        // than a second round-trip.
         if (doctors.length > 0) {
           const allWaiting = queues.flatMap((q) => q.waiting);
           const nowMs = Date.now();
-          // effectiveTime (already computed by getQueueForDoctor, same
-          // logic the live queue itself orders by) is the LATER of the
-          // patient's scheduled time and their actual arrival — an
-          // appointment booked for 6pm who arrives at 5pm hasn't been kept
-          // waiting by the clinic at all until 6pm actually arrives. Using
-          // raw arrivedAt here counted that whole early arrival as "wait,"
-          // which is wrong: the clinic's own delay only starts once the
-          // patient's actual slot (or the doctor's turn) has come and gone.
           const waitMinsFor = (p) => Math.max(0, Math.round((nowMs - p.effectiveTime.getTime()) / 60000));
 
           const avgWaitMins = allWaiting.length
             ? Math.round(allWaiting.reduce((sum, p) => sum + waitMinsFor(p), 0) / allWaiting.length)
             : null;
 
-          // Reconstructs "who was still waiting" at yesterday's cutoff
-          // moment from the same fields used for everyone else: arrived by
-          // then, and not yet called in by then (or never called at all).
           const yesterdayWaitingAtCutoff = yesterdayPatients.filter((p) =>
             p.arrivedAt && new Date(p.arrivedAt) <= cutoffYesterday && (!p.calledAt || new Date(p.calledAt) > cutoffYesterday)
           );
           const yesterdayAvgWaitAtCutoff = yesterdayWaitingAtCutoff.length
             ? Math.round(yesterdayWaitingAtCutoff.reduce((sum, p) => sum + Math.max(0, Math.round((cutoffYesterday - new Date(p.arrivedAt)) / 60000)), 0) / yesterdayWaitingAtCutoff.length)
             : null;
-          // The overall Avg/Longest cards above are global numbers; their
-          // popups break the SAME wait-time math down per doctor, using
-          // each doctor's own slice of queues (queues[i].waiting) rather
-          // than a second query.
           function perDoctorWaitDialog(title, pickFn, metric) {
             return () => Qlinic.statBreakdownDialog({
               title,
@@ -507,16 +404,6 @@
               (w) => Math.round(w.reduce((sum, p) => sum + waitMinsFor(p), 0) / w.length), 'avgWait'),
           });
 
-          // Today's PEAK wait, not just whoever's currently waiting — the
-          // card used to drop to "—" the instant the slowest patient got
-          // called in, even though that wait genuinely happened and the
-          // queue emptying out doesn't erase it. calledAt freezes an
-          // already-called/done patient's wait at the moment they were
-          // actually seen; a still-waiting patient's keeps counting up
-          // against now. Booked/no-show are excluded — they never
-          // actually waited (booked hasn't arrived yet, no-show never
-          // came), so intendedMoment alone would misrepresent them as
-          // having sat since their appointment time.
           function peakWaitMinsFor(p) {
             const start = Qlinic.effectiveMoment(p, doctorById[p.doctorId]).getTime();
             const end = p.status === 'waiting' ? nowMs : (p.calledAt ? new Date(p.calledAt).getTime() : nowMs);
@@ -529,8 +416,6 @@
           cards.push({
             label: 'Longest wait today (min)',
             value: longestWaiting ? peakWaitMinsFor(longestWaiting) : '—',
-            // Patient names don't belong on a dashboard this visible — the
-            // time alone is enough to flag that something needs attention.
             sub: longestWaiting ? null : 'No one has waited today',
             accent: 'pink',
             onClick: () => Qlinic.statBreakdownDialog({
@@ -545,21 +430,7 @@
             }),
           });
 
-          // Both cards below compare doctors against each other (who's
-          // away out of how many, whose queue is longest) — with a single
-          // doctor there's nothing to compare, and the answer is already
-          // fully visible in the one row of the Doctor status panel below,
-          // so both are dropped rather than shown as a redundant "1/1" or
-          // a "busiest" queue that's trivially the only queue there is.
           if (doctors.length > 1) {
-            // dayClosedAt is a separate field from status (see the Doctor
-            // status row rendering below) — a doctor can close their day
-            // while their last status is still 'on_time', so that has to be
-            // checked on its own. Deliberately plain truthiness, matching
-            // the "Day closed" badge below exactly (not isDoctorClosedToday,
-            // which excludes a stale prior-day closure the doctor forgot to
-            // clear — that badge stays up indefinitely until "I'm back" is
-            // tapped, so this card should agree with what's actually on screen).
             const awayDoctors = doctors.filter((d) => d.status === 'on_break' || d.status === 'emergency' || d.dayClosedAt);
             cards.push({
               label: 'Doctors away',
@@ -568,12 +439,6 @@
               onClick: () => Qlinic.statBreakdownDialog({
                 title: 'Doctors away',
                 columns: ['Doctor', 'Status'],
-                // The doctor's own typed reason ("In a meeting") is the
-                // actual useful part of this popup for an admin deciding
-                // whether to step in — a bare "On a break" with no
-                // reason answers "who" but not "why". statBreakdownDialog
-                // escapes every cell itself, so this stays raw text, not
-                // pre-escaped (escaping it here too would double-escape).
                 rows: awayDoctors.map((d) => [
                   d.name,
                   d.dayClosedAt
@@ -603,10 +468,6 @@
             label: 'Priority waiting',
             value: priorityWaitingCount,
             accent: 'green',
-            // Global by design (an emergency is an emergency regardless of
-            // doctor) — no per-doctor row links here, just one link to the
-            // full list, matching patient-breakdown.html's own
-            // ignoreDoctor handling for this metric.
             onClick: () => Qlinic.statBreakdownDialog({
               title: 'Priority waiting, by doctor',
               columns: ['Doctor', 'Priority waiting'],
@@ -634,17 +495,6 @@
         }
         document.getElementById('doctorStatusList').innerHTML = doctors.map((d, i) => {
           const q = queues[i];
-          // dayClosedAt is a separate field from status (a doctor can close
-          // their day while status is still whatever it last was), so it
-          // has to be checked on its own — otherwise a closed doctor keeps
-          // showing their old "On time"/"On a break" pill here even
-          // though doctor.html and the display board both already know
-          // they're done for the day.
-          // An active consultation is a more concrete, time-bound fact
-          // than whatever status pill happens to be set (which can go
-          // stale — a doctor can still be mid-visit after clearing an
-          // old "on break"), so it takes over the row's highlight
-          // whenever there's someone actually in the chair right now.
           const rowClass = d.dayClosedAt
             ? 'row-status-closed'
             : (q.nowServing ? 'row-in-consult' : (d.status !== 'on_time' ? 'row-status-' + d.status : ''));

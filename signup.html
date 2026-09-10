@@ -107,18 +107,13 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     Qlinic.attachPasswordMeter(document.getElementById('password'));
 
     document.getElementById('state').innerHTML = '<option value="">Select state</option>' +
       Qlinic.INDIA_STATES_AND_UTS.map((s) => `<option value="${s}">${s}</option>`).join('');
 
-    // The pincode API's state names don't always exactly match the
-    // dropdown's official names (e.g. abbreviated forms); rather than
-    // silently dropping a match-less value, add it as a one-off option so
-    // nothing the API found is ever lost, and it's still a one-click fix
-    // via the dropdown if it doesn't look right.
     function setStateValue(selectEl, state) {
       if (!state) return;
       const hasMatch = Array.from(selectEl.options).some((o) => o.value === state);
@@ -131,12 +126,6 @@
       selectEl.value = state;
     }
 
-    // Starts the lookup the moment the 6th digit is typed, not only once
-    // the field is blurred: that means the network round-trip is already
-    // in flight (or done) by the time the user's attention has moved to
-    // City/State, instead of only starting after they've already clicked
-    // away and are staring at an empty field. lastLookedUp skips a
-    // redundant repeat call for the exact same value.
     let lastLookedUp = '';
     async function runPincodeLookup(value) {
       const clean = (value || '').trim();
@@ -158,9 +147,6 @@
       runPincodeLookup(this.value);
     });
 
-    // Strips anything non-numeric as they type, so a pasted or typed
-    // letter/symbol never even lands in the field rather than being
-    // rejected after the fact.
     document.getElementById('phoneNumber').addEventListener('input', function () {
       this.value = this.value.replace(/\D/g, '').slice(0, 10);
     });
@@ -177,11 +163,6 @@
     }
     document.getElementById('phoneNumber').addEventListener('blur', validatePhone);
 
-    // Held in memory only — the actual Storage upload happens after
-    // Qlinic.signUp() below, once a clinic row (and therefore a clinic_id
-    // to scope the file to) actually exists. A File object can't survive
-    // navigating to a different page, so this only works for the
-    // immediate-session path; see the submit handler's comment.
     let selectedLogoFile = null;
     document.getElementById('chooseLogoBtn').addEventListener('click', () => {
       document.getElementById('logoFileInput').click();
@@ -223,10 +204,6 @@
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const clinicPhone = '+91' + document.getElementById('phoneNumber').value.trim();
-        // Split into Amazon-style Building / Area-Street-Sector / Landmark
-        // fields for easier entry, then joined back into one line — the
-        // clinics table still stores address as a single column, and
-        // nothing else in the app needs the parts separately.
         const building = document.getElementById('buildingLine').value.trim();
         const area = document.getElementById('areaLine').value.trim();
         const landmark = document.getElementById('landmark').value.trim();
@@ -241,11 +218,6 @@
         const result = await Qlinic.signUp(email, password, clinicName, clinicAddress, clinicPhone);
 
         if (result.session) {
-          // Email confirmation is off for this project: clinic is set up
-          // and the user is already logged in, so a clinic_id already
-          // exists to scope the upload to. Best-effort: a failed logo
-          // upload shouldn't block a successful signup — they can always
-          // add one later from Settings.
           if (selectedLogoFile) {
             try {
               await Qlinic.uploadClinicLogo(selectedLogoFile);
@@ -257,9 +229,6 @@
           return;
         }
 
-        // Email confirmation is required: the clinic gets created
-        // automatically the moment they confirm and log in for the first
-        // time (see finishClinicSetupIfNeeded in clinic-data.js).
         document.getElementById('signupForm').style.display = 'none';
         document.getElementById('signupHint').innerHTML =
           `<strong>Check your email</strong> to confirm your account. Once confirmed, ` +

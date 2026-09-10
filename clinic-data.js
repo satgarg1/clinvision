@@ -1,31 +1,8 @@
-/**
- * Qlinic: real backend client, backed by Supabase (Postgres + Auth +
- * Realtime). Replaces the old data.js, which stored everything in
- * localStorage as a stand-in for a real database.
- *
- * Exposes the same window.Qlinic global with mostly the same function
- * names as before, so the page-level code changes are additive
- * (mainly: await the calls, since these now hit the network) rather
- * than a rewrite. See supabase/schema.sql for the database side.
- */
 (function (global) {
   if (!window.SUPABASE_URL || window.SUPABASE_URL.indexOf('YOUR-PROJECT-REF') !== -1) {
     console.error('Qlinic: fill in clinic-config.js with your real Supabase project URL and anon key.');
   }
 
-  // "Remember me" (login.html) needs the session to land in localStorage
-  // (survives closing the browser -- today's only behavior, before this
-  // existed) when checked, or sessionStorage (cleared when the tab/
-  // browser closes) when unchecked. This ONE client is shared by every
-  // logged-in page, created long before any particular login attempt's
-  // checkbox state exists, so the choice can't be made at creation time
-  // -- it has to be deferred to read/write time instead. This adapter
-  // checks a small flag in localStorage (set by login.html right before
-  // calling login(), so it's already in place before the session is
-  // written) and delegates every actual read/write to whichever real
-  // Storage that flag currently points at. Any page that never sets the
-  // flag (signup, or a session already established before this existed)
-  // gets today's exact default: localStorage, remembered.
   const authStorage = {
     _target() {
       return localStorage.getItem('qlinic_remember_me') === '0' ? sessionStorage : localStorage;
@@ -42,28 +19,18 @@
   let currentClinicId = null;
   let currentClinic = null;
 
-  // ---------------- global client-error reporting (085_client_errors.sql)
-  // ----------------
-  // Installed once here, since clinic-data.js is loaded on every page --
-  // not something any individual page has to remember to wire up. Never
-  // throws itself (that would just create a new error for this same
-  // handler to catch, recursively) and never surfaces anything to the
-  // person who hit the error -- fire-and-forget, purely for a platform
-  // admin to see later. A page-load cap (not unlimited) stops a bug that
-  // fires on every animation frame from writing thousands of identical
-  // rows in seconds.
   let clientErrorCount = 0;
   const CLIENT_ERROR_CAP = 5;
   function reportClientError(message, stack) {
     if (clientErrorCount >= CLIENT_ERROR_CAP) return;
     clientErrorCount++;
     sb.from('client_errors').insert({
-      clinic_id: currentClinicId, // nullable -- may not be known yet (login.html, queue.html)
+      clinic_id: currentClinicId,
       page: (window.location.pathname.split('/').pop() || 'unknown').split('?')[0],
       message: String(message == null ? 'Unknown error' : message).slice(0, 2000),
       stack: stack ? String(stack).slice(0, 4000) : null,
       user_agent: navigator.userAgent,
-    }).then(() => {}, () => {}); // swallow -- never throw from an error handler
+    }).then(() => {}, () => {});
   }
   window.addEventListener('error', (e) => {
     reportClientError(e.message, e.error && e.error.stack);
@@ -76,23 +43,6 @@
     );
   });
 
-  // Patient/doctor names, addresses, and other free text are typed by
-  // clinic staff (or, for a booking's own reason field, indirectly by
-  // whoever asked them to write it down) and then get interpolated into
-  // innerHTML template strings all over the app to build tables, cards,
-  // and the public display/queue screens. None of that text was ever
-  // escaped, so a name containing HTML would be parsed as markup on
-  // every page that shows it — including queue.html and display.html,
-  // which have no login at all. Shared here so every page uses the same
-  // one function rather than each re-implementing it slightly differently.
-  //
-  // Escapes quotes too, not just &/</>: several call sites use this
-  // inside value="${...}" (editable table rows), where a raw " would
-  // close the attribute early and let anything after it — including a
-  // new onXXX="..." attribute — get parsed as a live event handler.
-  // textContent-via-a-detached-div only escapes &/</> (correct for a
-  // text node, not for an attribute value), so quotes are handled
-  // manually on top of that.
   function escapeHtml(text) {
     if (text == null) return '';
     const div = document.createElement('div');
@@ -100,12 +50,6 @@
     return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
-  // navigator.clipboard.writeText needs a secure context (https, or
-  // localhost) — falls back to the older execCommand('copy') trick via a
-  // throwaway offscreen textarea when it's unavailable, rather than
-  // failing silently on an http:// dev setup or an older browser.
-  // Returns true/false instead of throwing, so a call site can show
-  // "Copied" or "Couldn't copy" without wrapping every call in try/catch.
   async function copyToClipboard(text) {
     if (!text) return false;
     try {
@@ -113,7 +57,7 @@
         await navigator.clipboard.writeText(text);
         return true;
       }
-    } catch (err) { /* fall through to the execCommand fallback below */ }
+    } catch (err) { }
     try {
       const ta = document.createElement('textarea');
       ta.value = text;
@@ -130,18 +74,6 @@
     }
   }
 
-  // Shared First/Prev/[jump]/Next/Last pager, replacing the plain
-  // Prev/Page X of Y/Next markup every paginated table used to build by
-  // hand — one implementation instead of eight near-identical copies
-  // across reception, doctor.html, Team, Doctor holidays, Patient
-  // directory, Revenue, and No-shows. `page` and `totalPages` are both
-  // 1-based (the human-readable page number), so callers using a
-  // 0-based page index pass `page + 1` and convert back inside
-  // onChange — this keeps every existing 0-based `xPage` variable and
-  // its slice() math untouched, only the render/wiring for the pager
-  // control itself changes. Mockup reviewed and approved by the user
-  // (Option A: click the page number to type a new one) before this
-  // was rolled out everywhere.
   function pagerHtml(page, totalPages) {
     if (totalPages <= 1) return '';
     return `
@@ -155,13 +87,6 @@
     `;
   }
 
-  // Wires up whichever pager was just rendered into containerEl (its own
-  // innerHTML was just replaced, so nothing stale to unbind). onChange
-  // receives the new 1-based page to switch to; the caller re-renders
-  // from there exactly like its existing Prev/Next click already did.
-  // Safe to call with a containerEl that has no .pager inside it (the
-  // page count was 1, so pagerHtml returned '') — every querySelector
-  // below just finds nothing and the optional-call guards no-op.
   function wirePager(containerEl, page, totalPages, onChange) {
     if (!containerEl) return;
     const first = containerEl.querySelector('[data-pager-action="first"]');
@@ -179,9 +104,6 @@
       const input = jump.querySelector('input');
       input.focus();
       input.select();
-      // Enter commits, then the re-render this triggers removes `input`
-      // from the DOM, which also fires its own blur — guarded so that
-      // doesn't fire a second, redundant onChange with a still-old page.
       let committed = false;
       function commit() {
         if (committed) return;
@@ -196,21 +118,11 @@
       input.addEventListener('blur', commit);
     }
     jump.addEventListener('click', startEdit);
-    // Keyboard-only access (tabindex above) — Enter/Space opens the same
-    // edit state a click would, matching how a real button responds.
     jump.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startEdit(); }
     });
   }
 
-  // Length matters more than composition rules for real-world password
-  // strength (NIST 800-63B dropped forced uppercase/number/symbol rules
-  // for exactly this reason: they push people toward "Password1!"
-  // instead of a longer, harder-to-guess phrase) — so length drives most
-  // of the score here, character variety adds a little on top, and a
-  // handful of common weak passwords/patterns get capped low regardless
-  // of length. This only ever encourages (a live meter), it never blocks
-  // submission — a hard length minimum stays on the input itself.
   const COMMON_WEAK_PASSWORDS = ['password', 'password1', '12345678', '123456789', 'qwertyui', 'letmein1', 'admin123', 'welcome1'];
   function passwordStrength(pw) {
     if (!pw) return { level: 'empty', label: '', percent: 0 };
@@ -235,10 +147,6 @@
     return { level: 'strong', label: 'Strong', percent: 100 };
   }
 
-  // Wires a live strength meter under a password <input> — inserts the
-  // meter markup itself right after the field, so every call site is one
-  // line instead of copy-pasting the same three DOM nodes three times
-  // (signup, add-staff, reset-password all need this).
   function attachPasswordMeter(inputEl) {
     if (!inputEl || inputEl.dataset.meterAttached) return;
     inputEl.dataset.meterAttached = '1';
@@ -260,17 +168,6 @@
     });
   }
 
-  // Every confirmation in the app used to be window.confirm() — a native
-  // browser dialog with no styling hook at all (unlike everything else
-  // here, it's drawn by the browser itself, outside the page's DOM).
-  // This is the shared replacement: one dynamically-injected modal that
-  // every page calls the same way. Resolves true/false instead of
-  // returning synchronously, so every call site becomes
-  // `if (await Qlinic.confirmDialog({...}))` in place of `if (confirm(...))`.
-  // Real confirm/cancel labels (not a fixed "OK"/"Cancel") let a call site
-  // spell out exactly what each button does, which matters most for the
-  // handful of dialogs where OK/Cancel used to carry specific, opposite
-  // meanings spelled out awkwardly inside the message text itself.
   function confirmDialog({ title, message, confirmLabel = 'Continue', cancelLabel = 'Cancel', danger = false } = {}) {
     return new Promise((resolve) => {
       const backdrop = document.createElement('div');
@@ -299,24 +196,10 @@
       backdrop.addEventListener('click', (e) => { if (e.target === backdrop) cleanup(false); });
       backdrop.querySelector('#modalCancelBtn').addEventListener('click', () => cleanup(false));
       backdrop.querySelector('#modalConfirmBtn').addEventListener('click', () => cleanup(true));
-      // A destructive action's Cancel gets focus, not its Confirm — so
-      // hitting Enter/Space right after the dialog opens (a reflexive
-      // dismiss, or focus arriving from whatever was just clicked)
-      // backs out instead of completing the destructive action.
       backdrop.querySelector(danger ? '#modalCancelBtn' : '#modalConfirmBtn').focus();
     });
   }
 
-  // Was two nearly-identical inline "in-place row edit" boxes
-  // (reception.html's and revenue.html's own copies of the exact same
-  // .adj-box markup, each with its own editingInvoiceId/startEditInvoice/
-  // saveInvoiceEdit/syncAdjustAmount) — one shared modal instead, same
-  // .modal-backdrop/.modal-card shell as Edit doctor/Edit team member,
-  // reviewed and approved as a mockup before this replaced them
-  // (https://claude.ai/code/artifact/60b97fa0-c07c-4605-b379-4ee19e3eeaed).
-  // Void, not Promise-returning — matches the Edit-doctor/Edit-team-member
-  // modals' own shape (an onSaved callback), not confirmDialog's
-  // yes/no shape, since this isn't a decision, it's a form.
   function openAdjustBillingModal({ invoice, doctor, onSaved }) {
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop';
@@ -360,9 +243,6 @@
     const amountInput = backdrop.querySelector('#adjModalAmount');
     const preview = backdrop.querySelector('#adjModalPreview');
     function feeForType(t) { return t === 'waived' ? 0 : t === 'emergency' ? feeEmergency : feeNormal; }
-    // Same job the old .adj-box's syncAdjustAmount did — recomputing the
-    // amount the instant fee type changes is what keeps Save's actual
-    // submitted value correct, not just the label under it.
     function syncPreview() {
       preview.textContent = doctor
         ? `${FEE_LABELS[feeTypeSelect.value]} fee for ${doctor.name}: ₹${amountInput.value || 0}`
@@ -403,26 +283,6 @@
     });
   }
 
-  // ---------------- custom date picker, replacing the bare native
-  // <input type="date"> everywhere it shows up: a trigger showing the
-  // picked date + Today/Tomorrow/In-a-week quick picks above a
-  // calendar. (A second "week strip" variant was mocked up and tried
-  // for the always-reopened filters, but didn't land — every field
-  // uses this one shape now.)
-  //
-  // Hides the real <input> (kept in the DOM, not removed) rather than
-  // replacing it, so every existing call site — .value reads/writes,
-  // .min/.max/.required, 'change' listeners, validation .focus() calls
-  // — keeps working completely unmodified. A property override on the
-  // element's own .value catches every future assignment (not just
-  // ones made through this widget), so code that sets the date
-  // programmatically after this runs still stays in sync.
-  //
-  // opts.quickButtons: false drops the Today/Tomorrow/In-a-week row -
-  // useful for a single "which day" filter, but meaningless on a
-  // consultation date (never future-dated) or a From/To range boundary
-  // (jumping either end to "today" independent of the other rarely
-  // makes sense). Defaults to true (unchanged for every other caller).
   function attachDatePicker(input, opts) {
     opts = opts || {};
     if (input._qlinicDatePicker) return input._qlinicDatePicker;
@@ -447,9 +307,6 @@
       if (sameDay(d, tmr)) return `Tomorrow, ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}`;
       return `${DOW_FULL[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}`;
     }
-    // .min/.max are read fresh every time, not cached at attach time —
-    // reception sets pDate.min only after this runs, so caching it here
-    // would silently ignore that constraint forever.
     function isDisabled(d) {
       const day = startOfDay(d);
       if (input.min) { const mn = parseISO(input.min); if (mn && day < startOfDay(mn)) return true; }
@@ -489,13 +346,6 @@
       });
     }
 
-    // Jumping to a date more than a month or two away by clicking ‹ ›
-    // one month at a time doesn't scale - clicking the "August 2026"
-    // label instead drills into a year grid, then a month grid, then
-    // lands back on the day grid above (like most native date pickers).
-    // Purely a browsing aid: picking a year or month only moves
-    // viewDate, it never commits a value the way clicking an actual day
-    // does - that still only happens in buildCalendarGrid above.
     let yearPage = 0;
     function buildYearGrid(el) {
       el.innerHTML = '';
@@ -630,10 +480,6 @@
         wrap.querySelector('.qdp-trigger-label').classList.toggle('qdp-placeholder', !selected);
         pop.querySelectorAll('[data-quick]').forEach((btn) => {
           const d = startOfDay(new Date()); d.setDate(d.getDate() + Number(btn.dataset.quick));
-          // A field capped at today (a historical filter — can't pull
-          // revenue that hasn't happened yet) has no honest way to offer
-          // "Tomorrow"/"In a week" - hidden rather than left clickable
-          // and silently doing nothing.
           btn.style.display = isDisabled(d) ? 'none' : '';
           btn.classList.toggle('selected', !!selected && sameDay(d, selected));
         });
@@ -641,9 +487,6 @@
       var updateLabelFn = updateLabel;
     }
 
-    // Every date change (chip pick, calendar click, or a plain code
-    // assignment via the .value override below) always funnels through
-    // here.
     const nativeValueDesc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
     function commit(d) {
       selected = d;
@@ -662,10 +505,6 @@
       get() { return nativeValueDesc.get.call(input); },
       set(v) { nativeValueDesc.set.call(input, v); syncFromInput(); },
     });
-    // A native date input auto-selects its first segment on focus (a
-    // stray blue-highlighted day number) — focusing the visible trigger
-    // instead is both the fix and the only thing "focus the date field"
-    // can sensibly mean once the real input is hidden.
     input.focus = () => triggerEl.focus();
 
     updateLabelFn();
@@ -682,10 +521,6 @@
     return api;
   }
 
-  // ---------------- time-of-day helpers (unchanged from the old data.js:
-  // these operate on "HH:MM" strings like <input type="time"> values, not
-  // on real timestamps, so they don't need to change just because the
-  // backend did). ----------------
   function parseTime(hhmm) {
     const [h, m] = hhmm.split(':').map(Number);
     return h * 60 + m;
@@ -707,16 +542,12 @@
     return `${h}:${m}`;
   }
 
-  // ---------------- real-timestamp helpers (new: this is what replaces
-  // the simulated clinic clock) ----------------
   function formatTimestamp(value) {
     if (!value) return '·';
     const date = value instanceof Date ? value : new Date(value);
     return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   }
 
-  // Date + time together, for records like an invoice where "when" matters
-  // as much as "what time" (formatTimestamp above only shows the time).
   function formatDateTime(value) {
     if (!value) return '·';
     const date = value instanceof Date ? value : new Date(value);
@@ -751,14 +582,6 @@
     return Math.floor(parseTime(hhmm) / intervalMins) * intervalMins;
   }
 
-  // ---------------- queue-ordering logic ----------------
-  // Every patient — walk-in or appointment — has an "intended moment":
-  // an appointment's booked slot, or (for walk-ins) either the moment
-  // they checked in, or a later time staff assigned them if the desk
-  // was too busy to see them right away. bookedDate/bookedTime being
-  // present is what distinguishes "has a real intended time" now,
-  // rather than patient.type — a walk-in given an explicit time flows
-  // through the exact same formula as an appointment.
   function intendedMoment(patient) {
     if (patient.bookedDate && patient.bookedTime) {
       return new Date(`${patient.bookedDate}T${patient.bookedTime}`);
@@ -766,16 +589,6 @@
     return patient.arrivedAt ? new Date(patient.arrivedAt) : new Date();
   }
 
-  // The doctor genuinely cannot see anyone before they're back from a
-  // declared delay — this clamps ANY patient's intended moment forward
-  // to that point, not just appointments, so a walk-in arriving mid-
-  // break can't leapfrog patients who were already due before the
-  // doctor stepped away. Only active while a delay is actually in
-  // effect (delayMins > 0): clearing status or going to emergency
-  // always resets delayMins to 0 (see setDoctorStatus), so this is
-  // naturally inert the rest of the time — no separate on/off branch
-  // needed. The already-arrived floor below is unchanged from before,
-  // now just applied uniformly to both types.
   function effectiveMoment(patient, doctor) {
     let moment = intendedMoment(patient);
     if (doctor && doctor.delayMins) {
@@ -790,17 +603,6 @@
     return moment;
   }
 
-  // Priority patients always go first, full stop — a true emergency
-  // bypasses time-based ordering entirely rather than being modeled as
-  // "an early time." Otherwise: the doctor-availability-aware effective
-  // moment governs, with each patient's own unclamped intended moment
-  // as the tiebreak for patients bunched at the same delay floor (so
-  // someone due earlier keeps priority even when a break pins several
-  // patients to the same "available again" instant), and row-creation
-  // order as a purely technical last-resort for a genuine coincidence
-  // (same intended moment, same doctor) — never token number, which
-  // only reflects booking order and has no relationship to when
-  // someone is actually due to be seen.
   function compareQueueOrder(a, b, doctor) {
     if (!!a.isPriority !== !!b.isPriority) return a.isPriority ? -1 : 1;
     const diff = effectiveMoment(a, doctor) - effectiveMoment(b, doctor);
@@ -851,10 +653,6 @@
     };
   }
 
-  // All 28 states + 8 union territories, for a dropdown rather than free
-  // text — auto-fill from the pincode API still writes into this same
-  // field (see lookupCityStateForPincode below); the dropdown is what
-  // lets someone fix it with a couple clicks if the API guesses wrong.
   const INDIA_STATES_AND_UTS = [
     'Andaman and Nicobar Islands', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar',
     'Chandigarh', 'Chhattisgarh', 'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Goa',
@@ -864,18 +662,6 @@
     'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
   ];
 
-  // ---------------- pincode lookup (for clinic address auto-fill) ----------------
-
-  // A hand-maintained prefix table can't actually resolve this correctly
-  // (adjacent pincodes like 247001/Saharanpur/UP and 247667/Roorkee/
-  // Uttarakhand share the same 3-digit prefix but are different states),
-  // so this calls India Post's own public pincode API instead of
-  // guessing. Free, no key, no auth. City is the post office's district
-  // (there's no separate "city" concept in India Post's data — District
-  // is the closest single value shared across every post office under
-  // that pincode). Any failure (offline, API down, unknown pincode)
-  // resolves both fields to '' — City/State stay normal editable inputs
-  // either way, so a miss is a one-click fix, not a blocker.
   async function lookupCityStateForPincode(pincode) {
     const clean = (pincode || '').trim();
     if (!/^\d{6}$/.test(clean)) return { city: '', state: '' };
@@ -892,8 +678,6 @@
     }
   }
 
-  // ---------------- clinic / auth context ----------------
-
   async function ensureClinicContext() {
     if (currentClinicId) return currentClinicId;
     const { data: { session } } = await sb.auth.getSession();
@@ -904,10 +688,6 @@
     return currentClinicId;
   }
 
-  // If a user confirmed their email (or confirmation is off and they got
-  // a session immediately) but has no profile/clinic yet, the clinic name
-  // they typed at signup time is sitting in their auth user_metadata,
-  // finish creating their clinic automatically instead of asking again.
   async function finishClinicSetupIfNeeded(session) {
     const { data: existing, error } = await sb.from('profiles').select('clinic_id').eq('id', session.user.id).maybeSingle();
     if (error) throw error;
@@ -917,11 +697,6 @@
       const { data: clinicId, error: rpcError } = await sb.rpc('register_clinic', { clinic_name: pendingName });
       if (rpcError) throw rpcError;
       currentClinicId = clinicId;
-      // The address was collected at signup but the clinic row (and this
-      // user's admin profile, which "update own clinic" RLS checks) only
-      // exists from this point on, so it's applied here rather than at
-      // signUp() time — covers both the immediate-session path and the
-      // email-confirmation path, where this runs on first login instead.
       const pendingAddress = session.user.user_metadata && session.user.user_metadata.pending_clinic_address;
       const pendingPhone = session.user.user_metadata && session.user.user_metadata.pending_clinic_phone;
       if (pendingAddress || pendingPhone) {
@@ -946,8 +721,6 @@
     return currentClinic;
   }
 
-  // fields: { name, graceWindowMins, slotIntervalMins, slotCapacity }, any
-  // subset. Used by the Settings page for clinic profile + queue rules.
   async function updateClinic(fields) {
     const clinicId = await ensureClinicContext();
     const payload = {};
@@ -971,19 +744,12 @@
     if (fields.logoUrl !== undefined) payload.logo_url = fields.logoUrl;
     const { error } = await sb.from('clinics').update(payload).eq('id', clinicId);
     if (error) throw error;
-    currentClinic = null; // force a fresh read next time
+    currentClinic = null;
   }
-
-  // ---------------- clinic logo ----------------
 
   const LOGO_BUCKET = 'clinic-logos';
   const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
-  // One fixed path per clinic ("{clinicId}/logo", no extension — the
-  // content-type is set explicitly below, so the extension isn't needed
-  // for the browser to render it correctly) — a re-upload always
-  // overwrites the same file rather than accumulating orphaned ones for
-  // clinics that change their logo more than once.
   async function uploadClinicLogo(file) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) throw new Error('No clinic to upload a logo for yet.');
@@ -994,8 +760,6 @@
     });
     if (uploadError) throw uploadError;
     const { data } = sb.storage.from(LOGO_BUCKET).getPublicUrl(path);
-    // Cache-busted so a changed logo shows immediately instead of
-    // whatever the browser cached for the previous file at this same path.
     const url = `${data.publicUrl}?t=${Date.now()}`;
     await updateClinic({ logoUrl: url });
     return url;
@@ -1007,8 +771,6 @@
     await sb.storage.from(LOGO_BUCKET).remove([`${clinicId}/logo`]);
     await updateClinic({ logoUrl: null });
   }
-
-  // ---------------- clinic closures (one-off closed dates) ----------------
 
   function normalizeClosure(row) {
     return { id: row.id, date: row.closure_date, note: row.note || '' };
@@ -1046,14 +808,10 @@
     if (error) throw error;
   }
 
-  // ---------------- doctor holidays (per-doctor leave dates) ----------------
-
   function normalizeDoctorHoliday(row) {
     return { id: row.id, doctorId: row.doctor_id, date: row.holiday_date, note: row.note || '' };
   }
 
-  // Omit doctorId for every doctor's holidays clinic-wide (reception's
-  // booking-time lookup); pass it to scope to one doctor's own list.
   async function getDoctorHolidays(doctorId) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
@@ -1086,17 +844,10 @@
     if (error) throw error;
   }
 
-  // Staff (admin/reception) half of "Team Holidays" — same shape as
-  // the doctor_holidays functions above, just keyed to profiles.id
-  // (migration 059) instead of doctors.id. See that migration's own
-  // comment for why this is a separate table rather than a merged one.
   function normalizeStaffHoliday(row) {
     return { id: row.id, profileId: row.profile_id, date: row.holiday_date, note: row.note || '' };
   }
 
-  // Omit profileId for every staff member's holidays clinic-wide (the
-  // "View Holidays" combined admin view); pass it to scope to one
-  // person's own list.
   async function getStaffHolidays(profileId) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
@@ -1129,10 +880,6 @@
     if (error) throw error;
   }
 
-  // Defaults to active doctors only: that's what every operational screen
-  // (reception, doctor view, dashboard, display) should ever see. Settings
-  // passes { includeInactive: true } since it's the one place that needs to
-  // manage doctors who've been deactivated too.
   async function getDoctors(opts) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
@@ -1143,11 +890,6 @@
     return data.map(normalizeDoctor);
   }
 
-  // A single targeted row, not the whole table filtered down in JS — this
-  // used to call getDoctors() (every doctor in the clinic) just to find
-  // one by id, which turned any per-doctor loop (getQueueForDoctor across
-  // all doctors, called on every queue render) into that many redundant
-  // full-table fetches.
   async function getDoctor(doctorId) {
     if (!doctorId) return null;
     const { data, error } = await sb.from('doctors').select('*').eq('id', doctorId).maybeSingle();
@@ -1175,13 +917,6 @@
     if (error) throw error;
   }
 
-  // Deactivating (not deleting) a doctor: see supabase/002_doctor_active_flag.sql
-  // for why: patients.doctor_id cascades on delete, so a hard delete would
-  // wipe that doctor's entire patient history.
-  // Cascades to the doctor's own staff login too (078_cascade_deactivation.sql)
-  // -- deactivating a doctor's roster entry used to leave their login working
-  // normally end to end, since no RLS check anywhere keys off doctors.is_active,
-  // only profiles.is_active does. This RPC flips both atomically.
   async function setDoctorActive(doctorId, isActive) {
     const { error } = await sb.rpc('set_doctor_active_cascade', {
       target_doctor_id: doctorId,
@@ -1190,24 +925,11 @@
     if (error) throw error;
   }
 
-  // Revenue and Insights deliberately keep showing a deactivated doctor's
-  // real name (includeInactive: true on every getDoctors() call they make)
-  // rather than anonymizing historical numbers -- that revenue was earned
-  // under their name and erasing it would make trend data meaningless.
-  // This just tags it clearly as no longer current staff, wherever a
-  // doctor's full name (not a truncated first-name chart label) renders.
   function doctorLabel(doctor) {
     if (!doctor) return '';
     return doctor.isActive === false ? `${doctor.name} (Inactive)` : doctor.name;
   }
 
-  // ---------------- patient queries ----------------
-
-  // Filtering by token_date directly in the query (rather than fetching
-  // broadly and filtering client-side) is what actually scopes this to
-  // one day: token_date is set correctly for both walk-ins and
-  // appointments at booking time, so this correctly includes walk-ins
-  // on past-date views too, not just today's.
   async function fetchPatientsForDoctorAndDate(doctorId, dateStr) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
@@ -1219,14 +941,6 @@
     return data.map(normalizePatient);
   }
 
-  // Returns { nowServing, waiting: [...with .position/.effectiveTime],
-  // booked: [...with .effectiveTime], done, noShow }.
-  // Defaults to today; pass a dateStr to browse a different day.
-  // doctorHint (optional): skips the getDoctor() lookup when the caller
-  // already has the doctor object in hand — e.g. looping every doctor's
-  // queue via Promise.all(doctors.map(...)), where re-fetching each one
-  // individually is a redundant round-trip per doctor for data the caller
-  // already loaded to build that same loop.
   async function getQueueForDoctor(doctorId, dateStr, doctorHint) {
     const targetDate = dateStr || todayDateStr();
     const [doctor, mine] = await Promise.all([
@@ -1259,15 +973,6 @@
     return doctors.map((d, i) => ({ doctor: d, queue: queues[i] }));
   }
 
-  // Searches today's queue entries: booked (hasn't arrived — "mark
-  // arrived" applies), waiting (already checked in — here so a typo in
-  // their name/phone can still be fixed), or no_show (finalized by
-  // End of day closing, but still findable so reception can revive a
-  // late arrival — set a real effective time via Edit — without
-  // re-entering them as a brand-new walk-in). token_date (not
-  // booked_date, which is always null for a walk-in that was never
-  // given an intended time) is the field that's reliably set across
-  // every one of these.
   async function searchBookedPatients(query) {
     const clinicId = await ensureClinicContext();
     const q = query.trim();
@@ -1283,27 +988,11 @@
       .eq('token_date', today)
       .or(`name.ilike.%${q}%,phone.ilike.%${q}%`);
     if (error) throw error;
-    // Supabase returns matches in whatever order the DB happens to give
-    // (no order-by was ever specified) — with no explicit sort, two rows
-    // matching the same search term can come back in a confusing order,
-    // most visibly two same-named patients with their earlier slot
-    // shown second. Sort by each patient's own effective moment
-    // (booked slot, or arrival time for a plain ASAP walk-in) so the
-    // earliest-due patient always lists first, matching how the queue
-    // itself is ordered.
     return data.map(normalizePatient).map((p) => Object.assign({}, p, {
       effectiveTime: effectiveMoment(p, doctorById[p.doctorId]),
     })).sort((a, b) => a.effectiveTime - b.effectiveTime);
   }
 
-  // Fixes a mistake caught after a patient was already added, and also
-  // powers Reception's "Edit" time-editor (a walk-in/appointment/no_show
-  // row's bookedTime can be corrected the same way, setting a real
-  // effective queue time for a late arrival or a revived no-show) — used
-  // from Reception's search results, not part of the normal add-patient
-  // flow. doctorId can be corrected for any patient; token_date is kept
-  // mirrored to bookedDate whenever that's given, since token_date is
-  // the field every other query filters by.
   async function updatePatientContact(patientId, { name, phone, doctorId, bookedDate, bookedTime }) {
     const payload = {};
     if (name !== undefined) payload.name = name;
@@ -1325,13 +1014,6 @@
     if (error) throw error;
   }
 
-  // bookedTime is optional — most walk-ins stay "as soon as possible"
-  // (no bookedDate/bookedTime, exactly as before), but reception can
-  // give a busy-desk walk-in a specific later time instead, so they
-  // flow through the same doctor-availability-aware ordering as an
-  // appointment rather than always racing to the front by raw arrival.
-  // isPriority is the true-emergency override, bypassing time-based
-  // ordering entirely.
   async function addWalkIn(info) {
     const clinicId = await ensureClinicContext();
     const { data, error } = await sb.from('patients').insert({
@@ -1383,20 +1065,10 @@
     return { id: data.id, message, tokenNumber: data.token_number };
   }
 
-  // Looks up a phone number against past visits in this clinic, so
-  // reception can reuse a returning patient's details instead of
-  // retyping them, and see if they've been missing appointments. Exact
-  // phone match only, no attempt to normalize spacing/formatting.
   async function getPatientLookupByPhone(phone) {
     const clinicId = await ensureClinicContext();
     const cleanPhone = (phone || '').trim();
     if (!clinicId || !cleanPhone) return null;
-    // 200 is a safety cap, not a real-world limit -- one phone number's
-    // full visit history is nowhere near that in practice, unlike
-    // getPatientDirectory's whole-clinic fetch below (which genuinely
-    // needs real pagination). Still ordered by created_at desc so the
-    // no-show check right below keeps its original "last 5 visits"
-    // meaning exactly as it was, unaffected by the wider fetch.
     const { data, error } = await sb
       .from('patients')
       .select('name, gender, address, age, status, token_date, doctor_id')
@@ -1408,8 +1080,6 @@
     if (!data || data.length === 0) return null;
     const latest = data[0];
     const lastFive = data.slice(0, 5);
-    // Same "actually arrived" definition getPatientDirectory uses below --
-    // a booking nobody showed up to, or a no-show, isn't a visit.
     const visited = data.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status));
     const recentVisits = visited
       .slice()
@@ -1428,19 +1098,6 @@
     };
   }
 
-  // Supabase/PostgREST caps how many rows a single request can return
-  // (commonly 1000) — a query with no explicit limit doesn't error past
-  // that cap, it just silently truncates, which is worse than an error:
-  // the result looks complete. Only two queries in this file genuinely
-  // need a clinic's ENTIRE history rather than some date-scoped slice
-  // (getPatientDirectory, getOutstandingInvoices below) — this pages
-  // through in fixed-size chunks via .range() until a page comes back
-  // short of a full page, guaranteeing every matching row is seen
-  // regardless of how large the clinic's history has grown. pageSize is
-  // kept well under any realistic server-side cap on purpose: if it
-  // were set AT the actual cap (unknown from here) and the server
-  // silently capped a request below what was asked for, a full page and
-  // a truncated one would look identical and the loop would stop early.
   async function fetchAllRows(buildQuery, pageSize) {
     pageSize = pageSize || 500;
     let allRows = [];
@@ -1455,38 +1112,9 @@
     return allRows;
   }
 
-  // A clinic-wide, deduplicated-by-phone directory of everyone who has
-  // actually been seen at least once (same waiting/in_consult/done
-  // footfall definition used everywhere else in the app) — built for
-  // admin reference (record-keeping, reporting), not day-to-day queue
-  // work, so unlike the rest of the app it isn't scoped to any date
-  // range: it fetches the clinic's entire patient history at once.
-  //
-  // Phone number is the only practical dedup key available (no email or
-  // ID is collected): a shared family phone will merge into one row,
-  // and a different number on a later visit will show up as a separate
-  // one. A phone whose only rows are 'booked'/'no_show' (never actually
-  // arrived) is left out entirely — that's a booking attempt, not
-  // patient history.
-  //
-  // A blank phone used to be dropped the same way — silently, with no
-  // row at all, even for a real visited patient (confirmed bug, found
-  // 2026-09-03 while explaining a Patient Directory/Billing Audit count
-  // mismatch: some of that gap was ordinary multi-visit patients, but
-  // part of it was blank-phone visits invisible here despite being
-  // billed and counted there). Fixed by giving each blank-phone row its
-  // own single-visit entry instead — it can't be merged with anything
-  // else the way a real phone number can (there's no shared identifier
-  // that actually means "same person"), so it isn't merged with other
-  // blank-phone rows either, on the same reasoning.
   async function getPatientDirectory() {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    // A secondary tiebreak on id, not just created_at, keeps paging
-    // stable across requests — two rows sharing the exact same
-    // timestamp (a realistic case: rows inserted in the same trigger-
-    // driven transaction) would otherwise have no guaranteed order
-    // between pages, risking the same row appearing twice or not at all.
     const data = await fetchAllRows((from, to) => sb
       .from('patients')
       .select('name, phone, age, gender, address, doctor_id, token_date, status, created_at')
@@ -1507,7 +1135,7 @@
     function addEntry(phone, rows) {
       const visited = rows.filter((r) => ['waiting', 'in_consult', 'done'].includes(r.status));
       if (visited.length === 0) return;
-      const latest = rows[0]; // rows inherit the query's created_at-desc order within each group
+      const latest = rows[0];
       const visitDates = visited.map((r) => r.token_date).sort();
       directory.push({
         phone,
@@ -1527,17 +1155,6 @@
     return directory;
   }
 
-  // Follow-up fee waiver check: does this patient's most recent
-  // COMPLETED visit with this exact doctor fall within the clinic's
-  // configured follow-up window (Settings -> Queue rules)? Anchored to
-  // the last 'done' visit specifically, not any booking attempt — a
-  // no-show doesn't extend or preserve the free-visit window, since as
-  // far as eligibility is concerned they never actually came in.
-  //
-  // Returns null when there's nothing worth telling reception: the
-  // feature is off (bufferDays 0), or this patient has no prior
-  // completed visit with this doctor at all (first-time patient, the
-  // normal fee applies with nothing special to flag).
   async function checkFollowUpEligibility({ doctorId, phone, visitDate }) {
     const clinicId = await ensureClinicContext();
     const cleanPhone = (phone || '').trim();
@@ -1572,23 +1189,11 @@
     };
   }
 
-  // ---------------- billing ----------------
-
-  // Patients here are per-visit rows (see getPatientLookupByPhone
-  // above), not one canonical profile, so this takes age from the most
-  // recent booking (Reception's own "age" field), falling back to the
-  // most recent invoice's age for patients billed before that field
-  // existed.
   async function getBillingPatientLookup(phone, dateStr) {
     const clinicId = await ensureClinicContext();
     const cleanPhone = (phone || '').trim();
     if (!clinicId || !cleanPhone) return null;
 
-    // Patients and invoices are looked up independently: neither should
-    // be able to sink the other. A clinic with no invoices yet (or a
-    // migration that hasn't run) must not break the name/address/gender
-    // autofill that's been working since Reception's own phone lookup,
-    // and vice versa.
     let patient = null;
     try {
       const { data, error } = await sb.from('patients').select('name, gender, address, age')
@@ -1596,7 +1201,7 @@
         .order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (error) throw error;
       patient = data;
-    } catch (e) { /* best-effort */ }
+    } catch (e) { }
 
     let invoice = null;
     try {
@@ -1605,45 +1210,15 @@
         .order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (error) throw error;
       invoice = data;
-    } catch (e) { /* best-effort */ }
+    } catch (e) { }
 
-    // A visit on the SELECTED billing date specifically (not just "most
-    // recent ever") is what makes doctor/fee-type autofill trustworthy —
-    // pairing a patient with whichever doctor they saw months ago would
-    // be actively wrong more often than it'd help. Defaults to today when
-    // the caller doesn't pass a date, matching billing-consultation.html's
-    // own date field default; passing a backdated date here is what makes
-    // that field's autofill actually look up the right day's visit. If
-    // they've seen more than one doctor that day, this picks whichever
-    // visit was created most recently; the caller's "double-check before
-    // printing" hint is the guard against that edge case rather than
-    // trying to disambiguate it here.
     let todayDoctorId = null;
-    // Fed straight into createInvoice's p_patient_id so a manually-billed
-    // invoice for a real queued patient (the exact "seen without an
-    // invoice" case the billing audit flags) actually links back to that
-    // patients row - without it, get_billing_audit()'s `not exists
-    // (... where patient_id = p.id)` check never sees the new invoice as
-    // theirs, and the same patient stays stuck on the audit list forever
-    // even after being billed. This value used to be fetched here and
-    // silently dropped before returning - that was the bug.
     let todayPatientId = null;
-    // Set only by the "unbilled visit, any date" tier below (never by an
-    // exact same-date match, which needs no correcting) - the caller uses
-    // this to fix the Consultation date field to the visit's REAL date,
-    // since clearing a Billing Audit entry from days ago while the date
-    // field is still sitting on today would print a receipt for the
-    // wrong day even though patient_id now links correctly.
     let todayVisitDate = null;
     let todayFeeType = null;
     let todayInvoiceId = null;
     let todayPaymentMode = null;
     let todayAmountReceived = null;
-    // Populated only when there's no visit on the selected date at all —
-    // the fallback that lets a returning patient's most recent doctor/fee
-    // type/date autofill instead of leaving reception to pick everything
-    // from scratch just because the billing date field doesn't happen to
-    // match their last visit. Always freely editable afterward either way.
     let mostRecentDoctorId = null;
     let mostRecentFeeType = null;
     let mostRecentVisitDate = null;
@@ -1657,13 +1232,6 @@
       if (todayPatient) {
         todayDoctorId = todayPatient.doctor_id;
         todayPatientId = todayPatient.id;
-        // Fee type only exists once they're actually billed (e.g. the
-        // auto-invoice-on-arrival trigger already ran); a booked-but-not-
-        // arrived visit has a doctor but no fee type yet, left for
-        // reception to pick. todayInvoiceId is what lets the caller
-        // correct THIS invoice (fee type, payment mode, amount) instead of
-        // creating a second one for the same visit — see
-        // billing-consultation.html's submit handler.
         const { data: todayInvoice, error: invoiceErr } = await sb.from('invoices')
           .select('id, fee_type, payment_mode, amount_received')
           .eq('clinic_id', clinicId).eq('patient_id', todayPatient.id).eq('invoice_type', 'consultation')
@@ -1676,18 +1244,6 @@
           todayAmountReceived = todayInvoice.amount_received;
         }
       } else {
-        // No visit on the exact requested date - before falling back to
-        // "just autofill from whatever they were last billed for" (which
-        // can't link a new invoice to anything), check whether they have
-        // an unbilled visit on a DIFFERENT date at all. This is exactly
-        // the Billing Audit workflow: reception looks a patient up by
-        // phone to clear them off the "seen without an invoice" list,
-        // with no reason to also hunt down and set the exact original
-        // visit date first. Without this tier, billing them here would
-        // silently fall into the read-only "most recent" autofill path
-        // (which never sets todayPatientId), reproducing the exact bug
-        // this was meant to fix: patient_id stays null, the audit count
-        // never moves, even though a real invoice now exists.
         let unbilledVisit = null;
         try {
           const { data: candidates, error: candErr } = await sb.from('patients')
@@ -1706,7 +1262,7 @@
             const billedIds = new Set((existingInvoices || []).map((i) => i.patient_id));
             unbilledVisit = candidates.find((c) => !billedIds.has(c.id)) || null;
           }
-        } catch (e) { /* best-effort */ }
+        } catch (e) { }
 
         if (unbilledVisit) {
           todayDoctorId = unbilledVisit.doctor_id;
@@ -1730,7 +1286,7 @@
           }
         }
       }
-    } catch (e) { /* best-effort */ }
+    } catch (e) { }
 
     if (!patient && !invoice && !todayDoctorId && !mostRecentDoctorId) return null;
     return {
@@ -1772,16 +1328,6 @@
     };
   }
 
-  // Consultation billing's manual form (unlike the auto-billed-on-arrival
-  // path in 016, which always links straight to a real patients row) has
-  // no built-in tie to an actual visit — it's just typed fields, so
-  // nothing stopped a bill being created for a phone number that never
-  // showed up in the queue at all on that date. token_date already
-  // mirrors "which day this patient belongs to" for both walk-ins and
-  // appointments (see getPatientsInRange), so it's the same field to
-  // check here: does ANY patient row for this clinic have this phone and
-  // this token_date, regardless of status (a no-show or already-finished
-  // visit still proves the appointment existed).
   async function hasAppointmentOnDate(phone, dateStr) {
     const clinicId = await ensureClinicContext();
     if (!clinicId || !phone) return false;
@@ -1794,13 +1340,6 @@
     return data.length > 0;
   }
 
-  // patientId (optional) links the new invoice back to a real patients
-  // row - the exact link get_billing_audit() checks for when deciding
-  // whether someone was "seen without an invoice." Left null for a
-  // genuinely walk-in-manual bill with no queue row to link to at all;
-  // billing-consultation.html passes it whenever its phone lookup found
-  // a real visit for the selected date (see getBillingPatientLookup's
-  // todayPatientId).
   async function createInvoice({ doctorId, feeType, patientName, patientPhone, patientAddress, patientAge, patientGender, paymentMode, amountReceived, invoiceDate, patientId }) {
     const { data, error } = await sb.rpc('create_invoice', {
       p_doctor_id: doctorId,
@@ -1819,28 +1358,6 @@
     return normalizeInvoice(data);
   }
 
-  // Auto-billed invoices (see migration 016) never come through
-  // createInvoice at all — the database creates them itself the moment
-  // a patient's status becomes "waiting". This is how Reception finds
-  // out which of today's queued patients already got billed, so it
-  // can show the auto-billed status instead of prompting anyone to
-  // re-enter it.
-  // invoice_date (migration 024) is a plain date column, not a
-  // timestamp — it's "which day this bill is for," editable on the
-  // billing form and separate from created_at's role as an honest audit
-  // timestamp of when the row was actually inserted. A straight equality/
-  // range filter here, no local-time-boundary conversion needed (that
-  // was only ever a workaround for created_at being a timestamptz).
-  // Every caller of these four functions (reception's per-patient billing
-  // lookup, Revenue, Insights, outstanding-balance chasing) is about a
-  // patient's CONSULTATION visit — none of them are meant to see a
-  // pharmacy sale mixed in. Without this filter a patient who only
-  // bought medicine (no consultation bill yet) would wrongly show as
-  // "already billed" in reception's queue, and Revenue/Insights totals
-  // would silently include pharmacy revenue nobody asked to combine.
-  // Pharmacy's own reporting is scoped separately (pharmacy.html,
-  // manage-medicines.html's stock ledger) — deliberately not merged
-  // here, reversing the "roll up together" plan in BACKLOG.md.
   async function getInvoicesForDate(dateStr) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
@@ -1870,21 +1387,9 @@
     return data.map(normalizeInvoice);
   }
 
-  // Unlike every other invoice query on this page, deliberately NOT
-  // scoped to a date range - an unpaid bill from last month is exactly
-  // as worth chasing today as one from this morning. amount > amount
-  // received can't be pushed down as a column-to-column filter in a
-  // plain PostgREST query, so this fetches every invoice for the clinic
-  // and filters client-side, same as Revenue's own outstandingOnly
-  // toggle already does within whatever range it's currently viewing.
-  // Oldest-first, so the longest-overdue balance surfaces first.
   async function getOutstandingInvoices() {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    // Same unbounded-history concern as getPatientDirectory above -
-    // paged via fetchAllRows so a clinic with a long invoice history
-    // doesn't silently drop older unpaid bills off the end of a
-    // server-capped single request.
     const data = await fetchAllRows((from, to) => sb.from('invoices').select('*')
       .eq('clinic_id', clinicId)
       .eq('invoice_type', 'consultation')
@@ -1894,9 +1399,6 @@
     return data.map(normalizeInvoice).filter((inv) => inv.amount > inv.amountReceived);
   }
 
-  // token_date is a plain date column (not a timestamp), so a range filter
-  // here doesn't need the local-time-boundary conversion getInvoicesForDate
-  // needs for created_at.
   async function getPatientsInRange(startDateStr, endDateStr, doctorId) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
@@ -1910,11 +1412,6 @@
     return data.map(normalizePatient);
   }
 
-  // Same token_date field, same range-filter shape as getPatientsInRange —
-  // just narrowed to status='no_show', which only ever happens to a
-  // 'booked' appointment closeDayNoShows() never saw arrive by the time
-  // the day was closed (walk-ins go straight to 'waiting' and can't reach
-  // this status at all).
   async function getNoShowsForDate(dateStr) {
     return getNoShowsForDateRange(dateStr, dateStr);
   }
@@ -1936,10 +1433,6 @@
     return data ? normalizeInvoice(data) : null;
   }
 
-  // Server-side coverage check (get_billing_audit(), migration 045) -
-  // computed in Postgres rather than fetched-and-checked client-side,
-  // since confirming the invoice_number range is gap-free only needs a
-  // count/min/max, not every invoice row over a clinic's whole history.
   async function getBillingAudit() {
     const { data, error } = await sb.rpc('get_billing_audit');
     if (error) throw error;
@@ -1953,11 +1446,6 @@
     };
   }
 
-  // The correction path for an auto-billed invoice: wrong payment
-  // method, an emergency fee, or a genuinely free visit ('waived',
-  // which zeroes the amount). Never required, only used for the
-  // exceptions — see update_invoice_payment() in migration 016 for why
-  // the amount still isn't trusted from the client even here.
   async function updateInvoicePayment({ invoiceId, feeType, paymentMode, amountReceived }) {
     const { data, error } = await sb.rpc('update_invoice_payment', {
       p_invoice_id: invoiceId,
@@ -1969,34 +1457,15 @@
     return normalizeInvoice(data);
   }
 
-  // ---------------- patient notifications ----------------
-  // The tech for "text the patient their appointment time," built without
-  // a live SMS provider connected. Every booking composes a message and
-  // logs it as 'pending' in the notifications table; nothing is actually
-  // delivered yet. Wiring up a real provider later means adding a
-  // Supabase Edge Function that processes pending rows and flips them to
-  // sent/failed; the booking flow itself won't need to change.
-
-  // The queue-status page lives next to whatever page is doing the
-  // booking (reception.html today), so building the link off the
-  // current page's own URL means this works on localhost, a staging
-  // copy, or the real GitHub Pages site without any hardcoded domain.
   function queueLinkFor(patientId) {
     const dir = window.location.href.replace(/[^/]*$/, '');
     return `${dir}queue.html?id=${patientId}`;
   }
 
-  // Composing the message needs the clinic's name and the doctor's name
-  // and specialty; never lets a failure here block the booking itself,
-  // since the SMS log is a nice-to-have, not the core action.
   async function queueBookingNotification({ patientId, phone, doctorId, kind, bookedDate, bookedTime, tokenNumber }) {
     try {
       const clinicId = await ensureClinicContext();
       const [clinic, doctor] = await Promise.all([getClinic(), getDoctor(doctorId)]);
-      // Appointments and walk-ins are separate token sequences (see
-      // migration 037) — a walk-in's raw number is offset by 100000, so
-      // it needs the same "W"-prefixed display as everywhere else it's
-      // shown, not the raw number.
       const tokenDisplay = tokenNumber ? (tokenNumber > 100000 ? 'W' + (tokenNumber - 100000) : '#' + tokenNumber) : null;
       const tokenLine = tokenDisplay ? ` Your token number is ${tokenDisplay}.` : '';
       const link = tokenNumber ? queueLinkFor(patientId) : '';
@@ -2006,11 +1475,6 @@
       if (kind === 'appointment') {
         const dateLabel = formatDateLabel(bookedDate);
         const timeLabel = formatTime(parseTime(bookedTime));
-        // A booking days out shouldn't invite "see the current token
-        // being served" — there's no queue to see yet. Said plainly
-        // instead, with the actual date, so no one clicks in early
-        // expecting something and gets confused by queue.html's own
-        // "not yet" screen (see showNotYet in queue.html).
         const isFuture = bookedDate && bookedDate > todayDateStr();
         const queuePart = !link ? ''
           : isFuture
@@ -2035,26 +1499,12 @@
     }
   }
 
-  // ---------------- public queue lookup (Phase 1 of the live-queue
-  // feature: no page reads this yet) ----------------
-  // Anonymous, no login required; this is the client-side counterpart
-  // to the get_queue_status() database function. Knowing a patient's own
-  // id (an unguessable UUID) is what authorizes seeing this; the
-  // function itself returns only a sanitized subset (never other
-  // patients' names/phone numbers).
   async function getQueueStatus(patientId) {
     const { data, error } = await sb.rpc('get_queue_status', { p_patient_id: patientId });
     if (error) throw error;
     return data;
   }
 
-  // Post-visit rating of ClinVision itself (the queue/status-checking
-  // experience), not the clinic — internal product feedback, see
-  // BACKLOG.md and migration 058. Same anonymous trust model as
-  // getQueueStatus: the patient's own id is the only credential this
-  // runs on. Idempotent server-side (migration 058's ON CONFLICT), so
-  // calling this twice for the same visit never double-inserts — the
-  // returned alreadySubmitted flag just reports which happened.
   async function submitProductFeedback(patientId, rating, feedbackText) {
     const { data, error } = await sb.rpc('submit_product_feedback', {
       p_patient_id: patientId,
@@ -2067,9 +1517,6 @@
 
   async function callNextPatient(doctorId) {
     const today = todayDateStr();
-    // Independent fetches (neither needs the other's result) — run in
-    // parallel instead of adding a full extra round-trip in front of the
-    // app's single most-clicked button.
     const [doctor, mine] = await Promise.all([
       getDoctor(doctorId),
       fetchPatientsForDoctorAndDate(doctorId, today),
@@ -2078,19 +1525,9 @@
     if (current) {
       const doneAt = new Date();
       const updatePayload = { status: 'done', done_at: doneAt.toISOString() };
-      // Data collection for the wait-time-estimation backlog item --
-      // recorded here and nowhere else read from yet. calledAt should
-      // always be set on a genuinely in_consult patient (set atomically
-      // below when they're called), but guarded rather than assumed.
       if (current.calledAt) {
         updatePayload.consultation_duration_seconds = Math.max(0, Math.round((doneAt.getTime() - new Date(current.calledAt).getTime()) / 1000));
       }
-      // Both writes below used to go unchecked - a failed one (a dropped
-      // connection, a stale session) meant this function returned as if
-      // nothing went wrong, and the caller's toast said "Next patient
-      // called in" even though nobody actually moved. Thrown here so the
-      // caller's own error handling (or lack of it) is what decides what
-      // the doctor sees, instead of a silent false positive.
       const { error } = await sb.from('patients').update(updatePayload).eq('id', current.id);
       if (error) throw error;
     }
@@ -2101,13 +1538,6 @@
     return { called: true };
   }
 
-  // Half of callNextPatient, deliberately: marks the current in-consult
-  // patient done WITHOUT pulling the next waiting patient in. Used when a
-  // doctor goes on a break or has an emergency right after finishing with
-  // someone — they're stepping away, not ready to see anyone new, so
-  // nothing should get pulled into the room. doctor.html's "Call next
-  // patient" stays disabled the whole time regardless, so there's no
-  // window where an empty in-consult slot could get auto-filled anyway.
   async function finishCurrentPatient(doctorId) {
     const today = todayDateStr();
     const mine = await fetchPatientsForDoctorAndDate(doctorId, today);
@@ -2115,14 +1545,9 @@
     if (current) {
       const doneAt = new Date();
       const updatePayload = { status: 'done', done_at: doneAt.toISOString() };
-      // Same data collection as callNextPatient - see its identical
-      // comment.
       if (current.calledAt) {
         updatePayload.consultation_duration_seconds = Math.max(0, Math.round((doneAt.getTime() - new Date(current.calledAt).getTime()) / 1000));
       }
-      // See callNextPatient's identical comment - this used to go
-      // unchecked, so a failed write here still showed "Visit marked as
-      // done" at every call site.
       const { error } = await sb.from('patients').update(updatePayload).eq('id', current.id);
       if (error) throw error;
     }
@@ -2138,14 +1563,6 @@
     if (error) throw error;
   }
 
-  // ---------------- slot capacity ----------------
-
-  // No type filter — a walk-in given a preferred time now competes for the
-  // same slot as a phoned-in appointment, so it has to count against the
-  // same capacity or reception could unknowingly double-book a slot that
-  // only looked open because walk-ins were invisible to this check. A
-  // walk-in with no preferred time has booked_time null and is correctly
-  // excluded below (it was never assigned a slot to begin with).
   async function countActiveAtSlot(doctorId, dateStr, timeStr, excludePatientId) {
     const clinicId = await ensureClinicContext();
     const clinic = await getClinic();
@@ -2176,13 +1593,6 @@
     return formatHHMM(bucket);
   }
 
-  // windowStart/windowEnd expose the actual bucket a given time falls
-  // into (see bucketStartMinutes) — "4 booked around this time" was
-  // genuinely confusing when Queue Rules' slot length is narrower than
-  // the reasonable-looking gap between two times a receptionist might
-  // pick (e.g. 9:20 and 9:25 landing in the same 10-minute bucket).
-  // Surfacing the real window turns that from a mystery into a visible
-  // rule, without reception needing to know Queue Rules exists.
   async function getSlotAvailability(doctorId, dateStr, timeStr) {
     if (!doctorId || !dateStr || !timeStr) return null;
     const clinic = await getClinic();
@@ -2199,23 +1609,6 @@
     };
   }
 
-  // Single-query alternative to countActiveAtSlot/getSlotAvailability: those
-  // check one proposed time against capacity right now, this shows the
-  // WHOLE day's schedule — every patient who was ever placed at a given
-  // time, regardless of what's since happened to them. No status filter:
-  // an appointment finishes and moves to 'done' hours before the day is
-  // over, and excluding it made that slot look like it had never been
-  // booked at all, which is the opposite of what "today's schedule" means.
-  // No type filter either — both formal appointments and walk-ins that
-  // were given a preferred time share the same booked_time column.
-  //
-  // Filters on token_date, not booked_date: addWalkIn only sets booked_date
-  // when a preferred time was given (clinic-data.js:~660) — a walk-in added
-  // "as soon as possible" has booked_date AND booked_time both null.
-  // token_date is set unconditionally for every patient regardless of
-  // type, and equals booked_date for anyone it isn't null for — the same
-  // field getPatientsInRange/getDailySummary/getPatientDirectory already
-  // use as "which day this patient belongs to."
   async function getDaySlotSchedule(doctorId, dateStr) {
     const clinicId = await ensureClinicContext();
     const { data, error } = await sb
@@ -2229,14 +1622,6 @@
     return data;
   }
 
-  // A read-only sibling of confirmDialog (same backdrop/card/cleanup
-  // pattern) showing a bucketed count of a doctor's day. intervalMins is
-  // the clinic's own configurable schedule_interval_mins (Settings), not
-  // the slot_interval_mins that drives the single-slot hint/override flow
-  // elsewhere — the two are intentionally independent. isToday controls
-  // two things: past-elapsed buckets are dimmed (they're no longer a slot
-  // reception could actually offer), and the dialog opens pre-scrolled to
-  // the current bucket instead of the top of a full day's grid.
   function slotScheduleDialog({ doctorName, dateLabel, openMin, closeMin, intervalMins, rows, isToday }) {
     return new Promise((resolve) => {
       const nowMin = isToday ? (new Date().getHours() * 60 + new Date().getMinutes()) : null;
@@ -2244,11 +1629,6 @@
       for (let start = openMin; start < closeMin; start += intervalMins) {
         buckets.push({ start, end: Math.min(start + intervalMins, closeMin), count: 0 });
       }
-      // A walk-in added "as soon as possible" has no booked_time at all —
-      // it was never assigned a slot to bucket. Surfaced as its own line
-      // ABOVE the (scrollable) time grid, not inside it — a clinic where
-      // most walk-ins go untimed showed an all-zero grid with the real
-      // number buried below a screen's worth of empty rows.
       let noTimeCount = 0;
       rows.forEach((r) => {
         if (!r.booked_time) { noTimeCount += 1; return; }
@@ -2313,15 +1693,6 @@
     });
   }
 
-  // A generic read-only table dialog, same backdrop/card/cleanup pattern
-  // as slotScheduleDialog/confirmDialog — used by the Dashboard's stat
-  // cards to break a clinic-wide number down per doctor. columns/rows are
-  // plain strings; escaping happens here, not at each call site.
-  // rowHrefs (optional): a URL per row (or null for that row), making it
-  // a clickable drill-through into patient-breakdown.html instead of a
-  // dead-end summary number. viewAllHref (optional): a single link
-  // above the table for "every patient behind this metric, regardless
-  // of doctor" — the row-level links stay doctor-scoped.
   function statBreakdownDialog({ title, columns, rows, rowHrefs, viewAllHref }) {
     return new Promise((resolve) => {
       const headHtml = columns.map((c) => `<th>${escapeHtml(c)}</th>`).join('');
@@ -2379,11 +1750,6 @@
     });
   }
 
-  // ---------------- daily summary / close day ----------------
-
-  // doctorId is optional and scopes every count to just that doctor's own
-  // patients — used for a doctor's own Dashboard view. Omitted, this stays
-  // the clinic-wide summary every existing caller already relies on.
   async function getDailySummary(dateStr, doctorId) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return { totalAppointments: 0, totalWalkIns: 0, totalBookedToday: 0, footfallSoFar: 0, noShowCount: 0, waitingNow: 0, doneCount: 0, inConsultCount: 0, perDoctor: [] };
@@ -2399,10 +1765,6 @@
     let todays = allToday;
     if (doctorId) todays = todays.filter((p) => p.doctorId === doctorId);
 
-    // Computed from every doctor's patients regardless of the doctorId
-    // filter above — this is what the dashboard's per-doctor breakdown
-    // popups read, which only make sense clinic-wide even when the
-    // top-line numbers themselves are scoped to one doctor.
     const perDoctor = doctors.map((d) => {
       const mine = allToday.filter((p) => p.doctorId === d.id);
       const mineAppointments = mine.filter((p) => p.type === 'appointment').length;
@@ -2412,8 +1774,6 @@
         doctorName: d.name,
         totalAppointments: mineAppointments,
         totalWalkIns: mineWalkIns,
-        // "Booked today" means everyone added today, phoned-in or
-        // walk-in — totalAppointments alone undercounts it.
         totalBookedToday: mineAppointments + mineWalkIns,
         waiting: mine.filter((p) => p.status === 'waiting').length,
         inConsult: mine.filter((p) => p.status === 'in_consult').length,
@@ -2439,10 +1799,6 @@
     };
   }
 
-  // Only closes out TODAY's unarrived bookings; a future appointment
-  // hasn't been missed yet. Also stamps last_closed_date so the End of
-  // day panel can show a closed state and grey the button out instead
-  // of letting it be clicked again as a no-op.
   async function closeDayNoShows() {
     const clinicId = await ensureClinicContext();
     const { error } = await sb
@@ -2452,11 +1808,6 @@
       .eq('status', 'booked')
       .eq('booked_date', todayDateStr());
     if (error) throw error;
-    // closed_at (a timestamp, not just last_closed_date's plain date) is
-    // what the waiting-room display board and a patient's own queue.html
-    // link now check to show "we're closed for the day" clinic-wide, even
-    // when individual doctors never separately tapped "close my day" —
-    // see isClosedUntilReset below for why this needs a real timestamp.
     const { error: clinicError } = await sb
       .from('clinics')
       .update({ last_closed_date: todayDateStr(), closed_at: new Date().toISOString() })
@@ -2465,10 +1816,6 @@
     currentClinic = null;
   }
 
-  // Only clears the closed flag so the day can keep being worked; it
-  // deliberately does not revert the no-shows closeDayNoShows() created,
-  // since there's no reliable way to tell those apart from a no-show
-  // marked manually earlier in the day.
   async function reopenDay() {
     const clinicId = await ensureClinicContext();
     const { error } = await sb
@@ -2479,10 +1826,6 @@
     currentClinic = null;
   }
 
-  // A doctor signaling "I'm done for today," separate from the
-  // on_time/on_break/emergency status the "Your status"
-  // panel owns. The display screen fades a doctor out 10 minutes after
-  // this timestamp.
   async function closeDoctorDay(doctorId) {
     const { error } = await sb
       .from('doctors')
@@ -2491,11 +1834,6 @@
     if (error) throw error;
   }
 
-  // Also resets status back to on_time with a fresh status_updated_at —
-  // without this, Dashboard's "updated" time for the doctor kept showing
-  // whenever their status was last touched before the day closed (hours
-  // or even a day earlier), giving reception no way to tell that this
-  // doctor actually just came back.
   async function reopenDoctorDay(doctorId) {
     const { error } = await sb
       .from('doctors')
@@ -2510,24 +1848,11 @@
     if (error) throw error;
   }
 
-  // Status broadcasts made before the "Reason (optional)" field existed
-  // stored an auto-generated line like "On a break for about 1 hr." in
-  // this exact same status_note column (it just wasn't shown anywhere
-  // yet). Those old values are still sitting on doctors who haven't
-  // re-broadcast since — displaying them now as if they were a
-  // genuinely-typed reason produces a redundant, garbled-looking line
-  // ("On a break for 60 minutes · since 7:13 pm — On a break for about 1
-  // hr."). A real typed reason essentially never matches this exact
-  // machine-generated phrasing, so it's filtered out rather than shown.
   const STALE_AUTO_NOTE_RE = /^(on a break for about .+\.|running about .+ behind\.)$/i;
   function isRealStatusReason(note) {
     return !!note && !STALE_AUTO_NOTE_RE.test(note.trim());
   }
 
-  // "Closed today" on purpose, not just "closed" — compares the LOCAL
-  // calendar date of day_closed_at against today's, so a doctor who closed
-  // yesterday and forgot to tap "I'm back" doesn't keep blocking bookings
-  // once a new day has started. Callers never need to reset this by hand.
   function isDoctorClosedToday(doctor) {
     if (!doctor || !doctor.dayClosedAt) return false;
     const closed = new Date(doctor.dayClosedAt);
@@ -2537,14 +1862,6 @@
     return `${y}-${m}-${d}` === todayDateStr();
   }
 
-  // Shared with display.html's own per-doctor fade/reset math (previously
-  // duplicated there as a private nextResetAfter/RESET_HOUR) — 4am, not
-  // midnight, so a clinic (or doctor) that closed at 11:58pm and one that
-  // closed at 12:03am land on the SAME side of "still closed" purely
-  // because the clock ticked over, rather than one flipping back "open"
-  // within minutes. No clinic operates through 4am, so anchoring the
-  // reset there means every closure waits for the same next checkpoint
-  // regardless of what time it actually happened.
   const CLOSED_RESET_HOUR = 4;
   function isClosedUntilReset(closedAtIso) {
     if (!closedAtIso) return false;
@@ -2555,16 +1872,9 @@
     return Date.now() < reset.getTime();
   }
 
-  // The admin's clinic-wide "End of day" closure (closed_at, migration
-  // 055) — separate from, and overriding, any individual doctor's own
-  // day_closed_at: the display board and queue.html both need to show
-  // "we're closed" the moment admin closes the day, even if not every
-  // doctor happened to tap "close my day" themselves first.
   function isClinicClosedToday(clinic) {
     return !!clinic && isClosedUntilReset(clinic.closed_at);
   }
-
-  // ---------------- auth ----------------
 
   async function signUp(email, password, clinicName, clinicAddress, clinicPhone) {
     const { data, error } = await sb.auth.signUp({
@@ -2576,7 +1886,7 @@
     if (data.session) {
       await finishClinicSetupIfNeeded(data.session);
     }
-    return data; // data.session is null if the project requires email confirmation
+    return data;
   }
 
   async function login(email, password) {
@@ -2597,19 +1907,8 @@
     return !!session;
   }
 
-  // A clinic's own subscription_status gates every authenticated page
-  // through this one choke point, not a separate check each page has
-  // to remember to add - admin, reception, and doctor logins are all
-  // staff of the same clinic, so a lapsed or suspended clinic blocks
-  // all of them alike, not just the admin who'd see a billing page.
-  // 'active' always passes; 'trialing' passes until trial_ends_at (or
-  // forever if that's somehow null); anything else ('suspended', or a
-  // future status this doesn't know about) is blocked. This is the MVP
-  // manual-gate version - subscription_status is flipped by hand today
-  // (see migration 053), a payment processor's webhook later, but this
-  // check and account-suspended.html don't change either way.
   function isSubscriptionActive(clinic) {
-    if (!clinic) return true; // no clinic row yet (mid-signup) - nothing to gate
+    if (!clinic) return true;
     if (clinic.subscription_status === 'active') return true;
     if (clinic.subscription_status === 'trialing') {
       return !clinic.trial_ends_at || new Date(clinic.trial_ends_at) > new Date();
@@ -2617,14 +1916,6 @@
     return false;
   }
 
-  // Returns true if the caller should keep going, false if it just
-  // redirected (not logged in, or a suspended subscription) - the caller
-  // is expected to check this and `return;` immediately on false, so the
-  // rest of that page's script never runs during the moment before the
-  // browser actually navigates away. Every call site across the app was
-  // updated to do this when this contract changed (2026-09-01) - a new
-  // page's script must do the same, not just `await Qlinic.requireLogin(...)`
-  // on its own.
   async function requireLogin(loginPagePath) {
     if (!(await isLoggedIn())) {
       window.location.href = loginPagePath || 'login.html';
@@ -2635,12 +1926,6 @@
       window.location.href = 'account-suspended.html';
       return false;
     }
-    // A deactivated person's own profile still has a perfectly valid
-    // Supabase Auth session (deactivation never touches auth.users), and
-    // RLS alone would just make every query on the page they land on come
-    // back empty -- confusing, not a clear "your access was removed"
-    // message. Catch it here, the same choke point as the subscription
-    // check above, instead of leaving it to look like a broken app.
     const profile = await getMyProfile();
     if (!profile || profile.isActive === false) {
       window.location.href = 'account-deactivated.html';
@@ -2654,36 +1939,25 @@
     return session ? session.user.email : null;
   }
 
-  // Changing email triggers Supabase's own confirmation flow (checks both
-  // the old and new address, per the "Secure email change" project
-  // setting); the change isn't live until that's confirmed.
   async function changeEmail(newEmail) {
     const { error } = await sb.auth.updateUser({ email: newEmail });
     if (error) throw error;
   }
 
-  // Changes the password for the CURRENTLY logged-in user.
   async function changePassword(newPassword) {
     const { error } = await sb.auth.updateUser({ password: newPassword });
     if (error) throw error;
   }
 
-  // For the "forgot password" flow (not logged in): sends a reset link to
-  // the given email; redirectTo should point at reset-password.html.
   async function requestPasswordReset(email, redirectTo) {
     const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
     if (error) throw error;
   }
 
-  // Called on reset-password.html once the user lands there from the
-  // emailed link (which establishes a temporary "recovery" session) and
-  // submits a new password.
   async function completePasswordReset(newPassword) {
     const { error } = await sb.auth.updateUser({ password: newPassword });
     if (error) throw error;
   }
-
-  // ---------------- staff & roles ----------------
 
   function normalizeProfile(row) {
     return {
@@ -2698,16 +1972,6 @@
     };
   }
 
-  // Memoized per page load: isAdmin()/canAccessBilling() (and any other
-  // caller) each used to trigger their own independent auth+profile
-  // round-trip. Two back-to-back fetches for the same profile on the
-  // same page occasionally disagreed under a transient network hiccup —
-  // one would resolve normally while the other briefly came back null —
-  // which is what made the sidebar's Trends/End of day/Billing/Revenue
-  // links flicker in and out depending only on which page happened to
-  // hit the glitch, not on the user's actual role. Sharing one in-flight
-  // promise across every caller collapses that into a single fetch, so
-  // every check on a given page sees the same answer.
   let myProfilePromise = null;
   async function getMyProfile() {
     if (!myProfilePromise) {
@@ -2727,8 +1991,6 @@
     return !!profile && profile.role === 'admin' && profile.isActive;
   }
 
-  // Billing is admin/reception only, never doctor — matches the RLS on
-  // public.invoices, which has no select policy for any other role.
   async function canAccessBilling() {
     const profile = await getMyProfile();
     return !!profile && profile.isActive && (profile.role === 'admin' || profile.role === 'reception');
@@ -2739,27 +2001,16 @@
     return !!profile && profile.role === 'doctor' && profile.isActive;
   }
 
-  // Pharmacist: the pharmacy counter + medicine catalog only — never
-  // the queue, doctors, staff management, or a consultation invoice.
-  // Matches the new "pharmacist select pharmacy invoices" RLS policy
-  // (067_pharmacist_role.sql), which is scoped the same way.
   async function isPharmacist() {
     const profile = await getMyProfile();
     return !!profile && profile.role === 'pharmacist' && profile.isActive;
   }
 
-  // Who can use the pharmacy counter/catalog — matches medicines'/
-  // medicine_batches'/stock_ledger's own RLS ('admin', 'reception',
-  // 'pharmacist'), same shape as canAccessBilling above.
   async function canAccessPharmacy() {
     const profile = await getMyProfile();
     return !!profile && profile.isActive && ['admin', 'reception', 'pharmacist'].includes(profile.role);
   }
 
-  // null for anyone but an active doctor — including a doctor whose
-  // login hasn't been linked to a doctors row yet, which callers need
-  // to distinguish from "not a doctor at all" to show the right
-  // empty-state message.
   async function getMyDoctorId() {
     const profile = await getMyProfile();
     return profile && profile.role === 'doctor' && profile.isActive ? profile.doctorId : null;
@@ -2773,11 +2024,6 @@
     return data.map(normalizeProfile);
   }
 
-  // Creates a brand-new login for a staff member. Uses a throwaway,
-  // non-persisted Supabase client for the signUp call so it never touches
-  // (or overwrites) the admin's own session in this browser's storage;
-  // otherwise auth.signUp() would sign the admin's tab in as the new
-  // staff member instead.
   async function createStaffAccount({ email, password, fullName, role, doctorId, phone }) {
     const tempClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -2795,8 +2041,6 @@
     if (linkError) throw linkError;
   }
 
-  // Cascades to a linked doctor roster entry too, same reasoning as
-  // setDoctorActive() above -- the two flags describe the same person.
   async function setStaffActive(profileId, isActive) {
     const { error } = await sb.rpc('set_staff_active_cascade', {
       target_profile_id: profileId,
@@ -2810,51 +2054,26 @@
     if (error) throw error;
   }
 
-  // Same direct-table-update pattern as updateStaffRole above (RLS
-  // already scopes profiles writes to admin + same-clinic) -- there was
-  // previously no way to rename a staff member at all after signup.
   async function updateStaffName(profileId, fullName) {
     const { error } = await sb.from('profiles').update({ full_name: fullName }).eq('id', profileId);
     if (error) throw error;
   }
 
-  // Own RPC (not a direct table update, unlike updateStaffRole/
-  // updateStaffDoctorLink above) so the admin-only + same-clinic check
-  // lives in one place server-side rather than relying on an RLS policy
-  // written to match — phone feeds the pre-login lookup, so a stray
-  // write here is a bigger deal than most other profile fields.
   async function updateStaffPhone(profileId, phone) {
     const { error } = await sb.rpc('update_staff_phone', { staff_id: profileId, new_phone: phone || null });
     if (error) throw error;
   }
 
-  // The self-service counterpart -- update_staff_phone above is
-  // deliberately admin-only, so a doctor or staff member changing their
-  // own phone needs its own RPC rather than calling that one on
-  // themselves (which the function itself rejects).
   async function updateMyPhone(phone) {
     const { error } = await sb.rpc('update_my_phone', { new_phone: phone || null });
     if (error) throw error;
   }
 
-  // A second, independently-changing control from updateStaffRole above
-  // (Team's per-row "Linked doctor" select, not the role select) — kept
-  // as its own function rather than folded into updateStaffRole since
-  // the two fire from separate UI elements at separate times. Also the
-  // backfill path for doctor-role accounts created before this existed.
   async function updateStaffDoctorLink(profileId, doctorId) {
     const { error } = await sb.from('profiles').update({ doctor_id: doctorId || null }).eq('id', profileId);
     if (error) throw error;
   }
 
-  // ---------------- platform admin (admin.html only — never a clinic
-  // role, never scoped by clinic_id; see 080_platform_admins.sql) ----
-
-  // Deliberately does NOT call requireLogin()/getClinic()/getMyProfile()
-  // — a platform admin has no clinics/profiles row at all, so those
-  // would misread "no profile" as a deactivated account and bounce them
-  // to account-deactivated.html. admin.html's own gate is just
-  // isLoggedIn() + this.
   async function isPlatformAdmin() {
     if (!(await isLoggedIn())) return false;
     const { data, error } = await sb.rpc('is_platform_admin');
@@ -2885,9 +2104,6 @@
     return data.map(normalizeAdminClinic);
   }
 
-  // fields: { status, paidFrom, paidTo, trialEndsAt, feeInr, note } — one
-  // call writes everything the manage-clinic popover's single Save
-  // changes button covers, matching that "all or nothing" behavior.
   async function updateClinicSubscription(clinicId, fields) {
     const { error } = await sb.rpc('admin_update_clinic_subscription', {
       target_clinic_id: clinicId,
@@ -2918,11 +2134,6 @@
     return data.map(normalizePlatformAdmin);
   }
 
-  // Same "throwaway, non-persisted client creates the auth account,
-  // then a security-definer RPC links it" pattern as createStaffAccount
-  // above — otherwise auth.signUp() would sign this browser tab in as
-  // the new partner admin instead of leaving the calling admin's own
-  // session alone.
   async function createPlatformAdmin({ email, password, fullName, phone }) {
     const tempClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -2954,13 +2165,6 @@
     if (error) throw error;
   }
 
-  // ---------------- per-clinic feature licensing (082_clinic_feature_
-  // flags.sql) — opt-out model, a missing row means enabled. ----------
-
-  // Memoized per key for this page load, same reasoning as
-  // getMyProfile()'s shared promise above — a page that both hides a
-  // nav link and redirect-guards its own destination would otherwise
-  // fire the same RPC twice.
   const featureCache = {};
   async function hasFeature(key) {
     if (!(key in featureCache)) {
@@ -2973,11 +2177,6 @@
     return featureCache[key];
   }
 
-  // Hides whatever gated nav links/panel cards exist on the CURRENT
-  // page — safe to call from any page regardless of which (if any) of
-  // these ids it has, since a missing id is just skipped. One shared
-  // map instead of duplicating per-page logic; add a new licensable
-  // feature here once and every page picks it up.
   const FEATURE_NAV_MAP = {
     revenueNavLink: 'insights',
     trendsNavLink: 'insights',
@@ -2998,7 +2197,7 @@
     if (error) throw error;
     const flags = {};
     data.forEach((row) => { flags[row.feature_key] = row.enabled; });
-    return flags; // { pharmacy, insights, billing_audit, patient_directory }
+    return flags;
   }
 
   async function adminSetClinicFeatures(clinicId, flags) {
@@ -3011,11 +2210,6 @@
     });
     if (error) throw error;
   }
-
-  // ---------------- platform admin: part C (084_platform_admin_
-  // insights.sql) — a clinic's own team roster, patient volume, the
-  // marketing site's contact/enquiry inbox, and ClinVision's own
-  // product feedback (never the clinic's data, by design). ----------
 
   async function adminGetClinicTeam(clinicId) {
     const { data, error } = await sb.rpc('admin_get_clinic_team', { target_clinic_id: clinicId });
@@ -3074,9 +2268,6 @@
     }));
   }
 
-  // Grouped by (page, message) server-side, not a raw row dump -- "this
-  // error happened 40 times across 3 clinics this week" is the actual
-  // useful signal, not 40 individual identical rows.
   async function adminListClientErrors() {
     const { data, error } = await sb.rpc('admin_list_client_errors');
     if (error) throw error;
@@ -3089,10 +2280,6 @@
       clinicCount: row.clinic_count,
     }));
   }
-
-  // ---------------- appearance (local device preference, not synced
-  // across devices; this is a personal UI setting, not clinic data)
-  // ----------------
 
   function getTheme() {
     return localStorage.getItem('qlinic_theme') || 'light';
@@ -3107,20 +2294,6 @@
     }
   }
 
-  // ---------------- realtime ----------------
-
-  // Fires `cb` whenever any doctor or patient row in this clinic changes;
-  // reception, doctor view, and the display board all use this to stay
-  // in sync across genuinely different devices, not just browser tabs.
-  //
-  // Debounced: every action handler already re-renders immediately after
-  // its own write (for instant feedback), and this same write then echoes
-  // back through realtime moments later — without debouncing, that's a
-  // second full re-render stacked right on top of the first, which is
-  // exactly what made buttons like "Call next patient" or "Mark arrived"
-  // look like they visibly double-render/flash. A short quiet window
-  // collapses a burst of events (the echo, plus any other rows the same
-  // write touched) into one render instead of one per event.
   async function onLiveChange(cb) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return;
@@ -3136,16 +2309,6 @@
       .subscribe();
   }
 
-  // ============================================================
-  // Pharmacy billing & inventory (BACKLOG.md, Milestone A). Medicine
-  // catalog CRUD is a plain client insert/update against medicines' own
-  // RLS (063_medicines.sql) — no RPC needed there, same as doctors.
-  // Stock-in, adjustments, and a pharmacy sale itself all go through
-  // security-definer RPCs (068_medicine_rpcs.sql) since those derive
-  // money/stock numbers server-side, the same trust model createInvoice
-  // already uses.
-  // ============================================================
-
   function normalizeMedicine(row) {
     return {
       id: row.id,
@@ -3154,11 +2317,6 @@
       manufacturer: row.manufacturer,
       form: row.form,
       strength: row.strength,
-      // packLabel: what a pack is called ("Strip", "Bottle"). packSize:
-      // how many dispenseUnit's are in one pack (10 tablets in a strip
-      // of 10; 1 for something sold whole, like a bottle or a vial).
-      // mrp/sellingPrice are PACK prices — divide by packSize for the
-      // per-dispense-unit price actually charged at sale time.
       packLabel: row.pack_label,
       packSize: row.pack_size,
       dispenseUnit: row.dispense_unit,
@@ -3203,9 +2361,6 @@
       quantityDelta: row.quantity_delta,
       closingStockAfter: row.closing_stock_after,
       referenceInvoiceId: row.reference_invoice_id,
-      // "PH-0043" for a sale, so the ledger's Invoice column reads as a
-      // real invoice reference — not the underlying UUID, which means
-      // nothing to a person reading this table.
       referenceInvoiceLabel: invoice ? 'PH-' + String(invoice.invoice_number).padStart(4, '0') : null,
       note: row.note,
       createdAt: row.created_at,
@@ -3227,7 +2382,6 @@
     };
   }
 
-  // { activeOnly = true, search = '' }
   async function getMedicines({ activeOnly = true, search = '' } = {}) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
@@ -3245,9 +2399,6 @@
     return data ? normalizeMedicine(data) : null;
   }
 
-  // opening stock (if any) is a separate, immediate recordStockPurchase()
-  // call right after this insert — the same stock-in RPC used for every
-  // later restock, not a special case baked into medicine creation.
   async function addMedicine({ name, genericName, manufacturer, form, strength, packLabel, packSize, dispenseUnit, barcode, schedule, trackBatches, referenceNumber, mrp, sellingPrice, gstRate, hsnCode }) {
     const clinicId = await ensureClinicContext();
     const { data, error } = await sb.from('medicines').insert({
@@ -3310,9 +2461,6 @@
   }
 
   async function getStockLedger(medicineId, { limit = 50 } = {}) {
-    // Embeds the referenced invoice's number and the batch's own batch
-    // number via Supabase's FK-join syntax, so the ledger can show
-    // "PH-0043" / "AMX24118" instead of the underlying UUIDs.
     const { data, error } = await sb.from('stock_ledger').select('*, invoices!reference_invoice_id(invoice_number), medicine_batches!batch_id(batch_number)')
       .eq('medicine_id', medicineId)
       .order('created_at', { ascending: false })
@@ -3321,10 +2469,6 @@
     return data.map(normalizeStockLedgerEntry);
   }
 
-  // packsReceived is "how many strips/bottles/vials arrived" — the RPC
-  // looks up the medicine's own pack_size server-side and multiplies,
-  // so the client never has to (and can't get it wrong by using a
-  // stale pack_size from before the medicine was last edited).
   async function recordStockPurchase({ medicineId, batchNumber, mfgDate, expiryDate, packsReceived, purchasePricePerPack, mrpPerPack }) {
     const { data, error } = await sb.rpc('record_stock_purchase', {
       p_medicine_id: medicineId,
@@ -3349,9 +2493,6 @@
     if (error) throw error;
   }
 
-  // items: [{ medicineId, quantity }, ...]. Stock is deducted FEFO
-  // server-side (create_pharmacy_invoice) — the client never picks a
-  // batch itself.
   async function createPharmacyInvoice({ patientId, patientName, patientPhone, paymentMode, amountReceived, items }) {
     const { data, error } = await sb.rpc('create_pharmacy_invoice', {
       p_patient_id: patientId || null,
@@ -3365,12 +2506,6 @@
     return normalizeInvoice(data);
   }
 
-  // Pharmacy's own patient search is deliberately not scoped to today's
-  // queue the way searchBookedPatients is above — someone can walk up
-  // to the counter for a refill days after their actual visit, with no
-  // booking today at all. De-duplicated by phone (same idea as
-  // getPatientDirectory), newest visit first, capped at 20 since this
-  // backs a live-typing dropdown, not a full directory.
   async function searchPatientsForPharmacy(query) {
     const clinicId = await ensureClinicContext();
     const q = (query || '').trim();

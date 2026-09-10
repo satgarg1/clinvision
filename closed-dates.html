@@ -76,13 +76,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
 
-      // Scoped to the pharmacy counter and catalog only -- this page shows
-      // patient/staff data a pharmacist has no business seeing.
       if (await Qlinic.isPharmacist()) { window.location.href = 'pharmacy.html'; return; }
 
       document.querySelector('a.brand').addEventListener('click', async (e) => {
@@ -97,19 +95,12 @@
         document.getElementById('revenueNavLink').style.display = 'none';
         document.getElementById('trendsNavLink').style.display = 'none';
       }
-      // Doctors get read access to the same list reception uses for its
-      // booking-time warning — they just can't add or remove one, that
-      // stays reception/admin's call (also enforced at the RLS layer, not
-      // just by hiding this form).
       if (amDoctor) {
         document.getElementById('receptionNavLink').style.display = 'none';
         document.getElementById('billingNavLink').style.display = 'none';
         document.getElementById('displayNavLink').style.display = 'none';
         document.getElementById('addClosurePanel').style.display = 'none';
       }
-      // Body starts hidden (see the <body> tag) so nobody sees the full
-      // nav (or the add-closure form a doctor shouldn't have) for a
-      // moment before the role-based hiding above finishes.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
@@ -233,9 +224,6 @@
           loadClosures();
         });
 
-        // Not the date field: focusing a native date input auto-selects
-        // its first segment (a blue-highlighted "14"), which reads as a
-        // stray selection rather than an intentional focus state.
         backdrop.querySelector('#editClosureNote').focus();
       }
       window.doDeleteClosure = doDeleteClosure;

@@ -83,20 +83,11 @@
           <div class="field" style="min-width:180px;">
             <label>GSTIN <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
             <input type="text" id="gstinInput" placeholder="e.g., 22AAAAA0000A1Z5" maxlength="15" style="text-transform:uppercase;" />
-            <!-- Consultation fees are GST-exempt (Notification No.
-                 12/2017-CT (Rate), Entry 74) regardless of whether a
-                 GSTIN is on file - this field is only for a clinic that
-                 separately holds a GSTIN for other reasons. -->
             <span class="field-hint">Consultation fees are GST-exempt</span>
           </div>
           <div class="field" style="min-width:180px;">
             <label>HFR ID <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
             <input type="text" id="hfrIdInput" placeholder="e.g., IN2910000123" maxlength="20" style="text-transform:uppercase;" />
-            <!-- Health Facility Registry ID - a real-world, Aadhaar-KYC'd
-                 government registration the clinic completes itself
-                 outside this app; this field is just somewhere to record
-                 the resulting ID once it exists. Needed before this
-                 clinic can be discoverable under ABDM. -->
             <span class="field-hint">From your ABDM Health Facility Registry registration</span>
           </div>
           <div class="field" style="flex:0;">
@@ -233,14 +224,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
 
-      // The sidebar logo links to the marketing site, which has no way
-      // back into the app without logging in again, worth a heads-up
-      // before someone loses their place by accident.
       document.querySelector('a.brand').addEventListener('click', async (e) => {
         e.preventDefault();
         if (await Qlinic.confirmDialog({ message: "Going to the homepage will end your session here, you'll need to log in again to get back in." })) {
@@ -252,10 +240,6 @@
         window.location.href = 'dashboard.html';
         return;
       }
-      // Body starts hidden (see the <body> tag) specifically so a non-
-      // admin hitting this URL never sees this admin-only page's content
-      // even for a moment before the redirect above fires -- reveal only
-      // once we know for certain they're allowed to be here.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
@@ -273,9 +257,6 @@
         setTimeout(() => t.classList.remove('show'), 2200);
       }
 
-      // Same custom dropdown component as Doctor View's delay/break picker,
-      // reused here for three separate fields; factored out since building
-      // it a third time inline would just be copy-pasted boilerplate.
       function setupDropdownPicker({ pickerId, triggerId, triggerTextId, hiddenId, panelId, options, fallbackLabel }) {
         function render() {
           const panel = document.getElementById(panelId);
@@ -299,8 +280,6 @@
           document.getElementById(triggerTextId).textContent = label;
           close();
         }
-        // Falls back to a generic label for a stored value that predates
-        // this picker and doesn't land on one of the preset options.
         function setValue(value) {
           document.getElementById(hiddenId).value = value;
           const known = options.find((o) => String(o.value) === String(value));
@@ -329,7 +308,6 @@
         }
       });
 
-      // 10-min steps up to an hour, then 30-min steps expressed in hours.
       const DURATION_OPTIONS = [];
       for (let m = 10; m < 60; m += 10) DURATION_OPTIONS.push({ value: m, label: `${m} min` });
       DURATION_OPTIONS.push({ value: 60, label: '1 hr' });
@@ -348,9 +326,6 @@
         { value: 60, label: '1 hr' },
       ];
 
-      // 30-min steps, 4:00 AM to 11:30 PM — every realistic opening or
-      // closing time a clinic would pick, without the unusable
-      // every-single-minute list a native <input type="time"> shows.
       function pad2(n) { return String(n).padStart(2, '0'); }
       const TIME_OF_DAY_OPTIONS = [];
       for (let m = 4 * 60; m <= 23 * 60 + 30; m += 30) {
@@ -389,9 +364,6 @@
         fallbackLabel: (v) => `${v} min`,
       });
 
-      // Multiple weekdays can be toggled on at once (some clinics close
-      // two days a week), so this reads/writes an array rather than a
-      // single value — clicking a chip just flips its own .active class.
       document.getElementById('weeklyOffDaysGroup').addEventListener('click', (e) => {
         const chip = e.target.closest('.day-chip');
         if (!chip) return;
@@ -410,10 +382,6 @@
       document.getElementById('stateInput').innerHTML = '<option value="">Select state</option>' +
         Qlinic.INDIA_STATES_AND_UTS.map((s) => `<option value="${s}">${s}</option>`).join('');
 
-      // Handles both the pincode API's occasionally-abbreviated state
-      // names and any pre-existing free-text value saved before this was
-      // a dropdown: if it doesn't exactly match an option, add it as a
-      // one-off rather than silently blanking a real saved value.
       function setStateValue(selectEl, state) {
         if (!state) return;
         const hasMatch = Array.from(selectEl.options).some((o) => o.value === state);
@@ -438,12 +406,6 @@
         }
         renderLogoPreview(clinic.logo_url);
         document.getElementById('clinicNameInput').value = clinic.name;
-        // address_line is stored as one joined string (see signup.html's
-        // submit handler) — there's no reliable way to split it back into
-        // building/area/landmark, so the saved address loads whole into
-        // Building and Area/Landmark start blank, ready to re-enter if the
-        // admin wants to restructure it. Left untouched, re-saving just
-        // round-trips the same full address through Building alone.
         document.getElementById('buildingLineInput').value = clinic.address_line || '';
         document.getElementById('areaLineInput').value = '';
         document.getElementById('landmarkInput').value = '';
@@ -455,8 +417,6 @@
         graceWindowPicker.setValue(clinic.grace_window_mins);
         slotIntervalPicker.setValue(clinic.slot_interval_mins);
         slotCapacityPicker.setValue(clinic.slot_capacity);
-        // Falls back to 30 if migration 036 hasn't run yet — before it,
-        // clinic.schedule_interval_mins is simply undefined.
         scheduleIntervalPicker.setValue(clinic.schedule_interval_mins || 30);
         document.getElementById('followUpBufferInput').value = clinic.follow_up_buffer_days || 0;
         openingTimePicker.setValue((clinic.opening_time || '09:00').slice(0, 5));
@@ -464,9 +424,6 @@
         setWeeklyOffDays(clinic.weekly_off_days);
       }
 
-      // Starts the lookup the moment the 6th digit is typed, not only once
-      // the field is blurred, so the network round-trip is already in
-      // flight (or done) by the time attention moves to City/State.
       let lastLookedUpPincode = '';
       async function runPincodeLookup(value) {
         const clean = (value || '').trim();
@@ -532,7 +489,7 @@
       });
       document.getElementById('logoFileInput').addEventListener('change', async (e) => {
         const file = e.target.files[0];
-        e.target.value = ''; // lets picking the same file again re-fire change
+        e.target.value = '';
         if (!file) return;
         if (file.size > 2 * 1024 * 1024) {
           showToast('Logo must be under 2 MB');

@@ -26,12 +26,6 @@
 </head>
 <body>
 
-  <!-- Reached only by hovering "Solutions" in the nav below -- see
-       solo-practice.html's own nav comment for how the menu works.
-       BACKLOG.md's segment-page note now covers only Diagnostic
-       centers -- this page ships Multi-doctor clinics, the 2nd of
-       3 segments (Polyclinics was removed from the menu entirely,
-       redundant with this page). -->
   <nav class="mkt-nav">
     <a href="/" class="brand">
       <span class="brand-top">
@@ -101,23 +95,13 @@
     </div>
   </nav>
 
-  <!-- HERO -->
   <div class="mkt-fullbleed" style="background:var(--mkt-paper);">
     <div class="hero-stage centered">
-      <!-- Cyan, this segment's own identity color -- not Solo practice's
-           teal, not the amber reserved for Diagnostic centers. Same
-           shape/animation as every other segment hero. -->
       <div class="hero-glow" aria-hidden="true" style="background: radial-gradient(circle, rgba(8, 145, 178, 0.13) 0%, rgba(8, 145, 178, 0) 68%);"></div>
       <div class="content">
         <div class="eyebrow hero-fx" id="heroFxEyebrow" style="color:#0e7490; opacity:1; font-weight:800;">For multi-doctor clinics</div>
         <h1 class="mkt-h1">
           <span class="hero-line hero-line-last hero-fx" id="heroFxLine1">Every doctor sees their patients clearly.</span>
-          <!-- Runs longer than Solo practice's own resolve line -- at
-               the shared 46px cap it wraps to 3 lines no matter where a
-               manual break falls, since even half the sentence exceeds
-               the 560px content column at that size. Capped lower here,
-               specific to this page's longer sentence, with a manual
-               break at the natural clause so it holds at exactly 2. -->
           <span class="hero-line-resolve hero-fx hero-fx-pop" id="heroFxResolve" style="white-space:normal; font-size:clamp(26px, 3.1vw, 38px);">It's their own day they<br />can't check without asking.</span>
         </h1>
         <p class="mkt-sub hero-sub hero-fx" id="heroFxSub">Two doctors or ten, every specialty under one roof. ClinVision gives each doctor their own queue and the front desk one shared view of all of them, so every doctor can check their own day without asking anyone.</p>
@@ -154,12 +138,8 @@
     })();
   </script>
 
-  <!-- PROBLEM -- 4 numbered facts, rose tone, staggered reveal -->
   <section class="pg-section tone-rose">
     <div class="pg-glow" aria-hidden="true"></div>
-    <!-- Widened from the shared 920px -- this headline runs longer than
-         Solo practice's own Problem headline and was wrapping to 2
-         lines at the default width. -->
     <div class="pg-head reveal" style="max-width:1150px;">
       <div class="pg-eyebrow">The problem</div>
       <h2 class="pg-h2">More doctors means more questions. All of them land on reception.</h2>
@@ -172,9 +152,6 @@
     </div>
   </section>
 
-  <!-- FIX -- 3 audience columns, each once, each with its own numbered
-       stack of points; cyan tone. New pattern (.audience-head/.point-list),
-       see styles.css's comment above these classes. -->
   <section class="pg-section tone-cyan">
     <div class="pg-glow" aria-hidden="true"></div>
     <div class="pg-head reveal">
@@ -216,13 +193,8 @@
     </div>
   </section>
 
-  <!-- WHAT'S INCLUDED -- dark cyan contrast panel, grouped under 2 shared
-       row headings instead of a per-column numeral (see styles.css). -->
   <section class="dark-panel tone-cyan">
     <div class="dark-panel-glow" aria-hidden="true"></div>
-    <!-- Widened from the shared 680px, and the h2's own font-size capped
-         a bit lower than the shared 41px -- at the default width/size
-         this heading was wrapping to 2 lines. -->
     <div class="dark-panel-head reveal" style="max-width:900px;">
       <div class="dark-panel-eyebrow">What's included for you</div>
       <h2 style="font-size:clamp(24px, 2.6vw, 34px);">Everything a multi doctor clinic needs.</h2>
@@ -252,7 +224,6 @@
     </div>
   </section>
 
-  <!-- CLOSING CTA -- paper + blue glow, matching every other segment page -->
   <section class="final-cta centered reveal">
     <div class="final-cta-glow" aria-hidden="true"></div>
     <div class="final-cta-inner">
@@ -271,8 +242,6 @@
   </footer>
 
   <script>
-    // Plain section headers: simple fade-up on scroll -- same pattern
-    // every other marketing page uses.
     const revealObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) { entry.target.classList.add('visible'); revealObserver.unobserve(entry.target); }
@@ -280,8 +249,6 @@
     }, { threshold: 0.05 });
     document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
 
-    // Problem's 4 cards stagger in -- verbatim pattern from every other
-    // segment page's own Problem/Fix rows.
     ['problemRow'].forEach((rowId) => {
       const cards = document.querySelectorAll('#' + rowId + ' .item-card');
       const obs = new IntersectionObserver((entries) => {
@@ -295,8 +262,6 @@
       cards.forEach((el) => obs.observe(el));
     });
 
-    // Fix's 3 audience columns fade in as a group, then each numbered
-    // point inside cascades in turn.
     document.querySelectorAll('#fixRow .item-card').forEach((card) => {
       const obs = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
@@ -318,7 +283,6 @@
       points.forEach((el) => obs.observe(el));
     });
 
-    // Included's cells stagger left to right within their own row.
     document.querySelectorAll('.dark-row').forEach((row) => {
       const cells = row.querySelectorAll('.dark-cell');
       const obs = new IntersectionObserver((entries) => {
@@ -332,12 +296,6 @@
       cells.forEach((el) => obs.observe(el));
     });
 
-    // Equalize point-block heights: Fix aligns each numbered point
-    // across its 3 sibling columns by index; Included aligns each
-    // dark-row's own 4 sibling cells directly. Both equalize the whole
-    // block (lead + support together), not just the lead -- stretching
-    // the lead alone leaves dead space wedged between a short lead and
-    // its own support whenever a sibling's lead wraps to more lines.
     (function () {
       function equalizeFixRow() {
         const lists = document.querySelectorAll('#fixRow .point-list');
@@ -375,8 +333,6 @@
       equalizeAll();
     })();
 
-    // Equalize Problem's own item-lead heights within its one row --
-    // verbatim pattern from every other segment page.
     (function () {
       const leads = document.querySelectorAll('#problemRow .item-lead');
       function equalize() {

@@ -72,18 +72,7 @@
             <button type="button" class="mode-btn active" data-mode="appointment" role="tab" aria-selected="true">📞 Phoned-in appointment, booking ahead</button>
             <button type="button" class="mode-btn" data-mode="walkin" role="tab" aria-selected="false">🚶 Walk-in, here right now</button>
           </div>
-          <!-- The auto-margin lives on this wrapper, not on the chip or
-               the schedule button individually, so the right-hand
-               cluster stays pinned to the right whether or not the chip
-               is currently visible -- putting the margin on the chip
-               itself would only push things right while it's shown, and
-               the button would jump back to hugging the mode toggle the
-               moment the chip hides again. -->
           <div style="display:flex;align-items:center;gap:10px;margin-left:auto;">
-            <!-- Hidden until phone-blur finds a returning patient with at
-                 least one real visit -- same lifecycle as patientLookupHint
-                 below, just a separate, additive way to see more, not a
-                 replacement for that hint's own autofill job. -->
             <div class="patient-info-wrap" id="patientInfoWrap" style="display:none;">
               <button type="button" class="patient-info-chip" id="patientInfoChipBtn" aria-expanded="false">🕘 <span id="patientInfoChipText">Patient Info</span></button>
               <div class="patient-info-popover" id="patientInfoPopover"></div>
@@ -200,18 +189,13 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
 
-      // Scoped to the pharmacy counter and catalog only -- this page shows
-      // patient/staff data a pharmacist has no business seeing.
       if (await Qlinic.isPharmacist()) { window.location.href = 'pharmacy.html'; return; }
 
-      // The sidebar logo links to the marketing site, which has no way
-      // back into the app without logging in again, worth a heads-up
-      // before someone loses their place by accident.
       document.querySelector('a.brand').addEventListener('click', async (e) => {
         e.preventDefault();
         if (await Qlinic.confirmDialog({ message: "Going to the homepage will end your session here, you'll need to log in again to get back in." })) {
@@ -231,17 +215,10 @@
       if (!canBill) {
         document.getElementById('billingNavLink').style.display = 'none';
       }
-      // Revenue/Insights/End of day are admin-only now (doctor never
-      // reaches this page at all — blocked above), unlike Billing itself,
-      // which reception keeps.
       if (!(await Qlinic.isAdmin())) {
         document.getElementById('revenueNavLink').style.display = 'none';
         document.getElementById('trendsNavLink').style.display = 'none';
       }
-      // Body starts hidden (see the <body> tag) so a doctor hitting this
-      // URL never sees it flash before the redirect above fires, and so
-      // nobody sees the full nav (Revenue/Insights/End of day) for a
-      // moment before the role-based hiding above finishes.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
@@ -252,70 +229,28 @@
       let clinicCloseMin = 1440;
       let clinicWeeklyOffDays = [];
       let clinicClosureByDate = {};
-      let doctorHolidayByKey = {}; // `${doctorId}::${date}` -> note
+      let doctorHolidayByKey = {};
       let queueDoctorId = null;
       let queueViewDate = null;
       let bookedExpanded = false;
       let bookedPage = 0;
       let waitingPage = 0;
-      // Set right before a Mark-arrived write, consumed (and cleared,
-      // match or no match) by the very next renderQueuePanel() — a
-      // patient marked arrived can land anywhere in the Waiting table
-      // once it's paginated by scheduled time rather than arrival order,
-      // and staff need to immediately find them again to adjust billing
-      // (a follow-up/emergency fee correction) without hunting across
-      // pages. Only ever consumed once, so an unrelated later render
-      // (switching doctor/date, a live update from another device)
-      // never re-jumps or re-highlights for an action that already
-      // finished being handled.
       let pendingHighlightPatientId = null;
-      // The last data renderQueues() actually fetched — expand/collapse and
-      // pagination re-render from this instead of re-fetching, since none
-      // of them change which patients exist. Re-fetching on every click of
-      // "Booked, not yet arrived" was the actual cause of that arrow
-      // feeling slow: four sequential network round-trips just to toggle
-      // a section that was already fully loaded.
       let lastQueueData = null;
-      // Generation counters for async renders that can overlap (rapid
-      // submissions, or a direct call racing Realtime's own onLiveChange
-      // firing for the same change): each call captures its own number,
-      // and bails without touching the DOM if a newer call has since
-      // started — otherwise a slower, older response can resolve last
-      // and clobber fresher data with stale data, which is exactly what
-      // produced the flickering counts and the patient that seemed to
-      // vanish and reappear.
       let queueRenderToken = 0;
       let slotHintToken = 0;
       let patientLookupToken = 0;
       let followUpHintToken = 0;
       let doctorsCache = [];
       let todayInvoices = [];
-      // Populated by BOTH renderQueues() (queue panel) and renderSearch()
-      // (its own independent invoice fetch, see the comment there) —
-      // openAdjustBilling looks an invoice up here by id regardless of
-      // which surface's fetch most recently ran, since the two are on
-      // separate fetch schedules and either one might be the only one
-      // that's actually seen a given invoice recently.
       let invoiceById = {};
 
-      // Same 5-color identity palette used app-wide; each doctor keeps the
-      // same color on reception, the doctor view, and the waiting-room board.
       const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
       function accentForDoctor(doctorId) {
         const idx = doctorsCache.findIndex((d) => d.id === doctorId);
         return ACCENT_COLORS[Math.max(idx, 0) % ACCENT_COLORS.length];
       }
 
-      // At-a-glance "who's waiting right now" chip, same hide-when-empty
-      // / shortcut-when-one pattern as Dashboard's upcoming-holidays chip
-      // - reads Qlinic.getAllQueues (the exact function already used to
-      // build the doctor-picker's "N waiting" counts below), always
-      // scoped to today regardless of whatever date the queue section
-      // further down is currently browsing. No queue logic touched -
-      // this only reads it. Cross-doctor order isn't something the real
-      // queue has (each doctor's queue is independent), so this defines
-      // its own: true emergencies first, then whoever's effective time
-      // (already computed per patient by getQueueForDoctor) is soonest.
       async function renderWaitingChip() {
         const allQueues = await Qlinic.getAllQueues(Qlinic.getTodayDate());
         const allWaiting = allQueues
@@ -380,21 +315,6 @@
         setTimeout(() => t.classList.remove('show'), 2200);
       }
 
-      // TEMPORARY: no SMS provider is wired up yet (see queueBookingNotification
-      // in clinic-data.js — every booking already composes this exact message
-      // and logs it, nothing sends it), so this is the only way to actually
-      // see and click the patient's queue link right now. Surfaced here
-      // specifically so we can test/harden queue.html against real bookings;
-      // remove once real SMS delivery exists.
-      // The form clears its own phone field the moment "Add appointment"/
-      // "Add walk-in" succeeds (same native reset() that now preserves
-      // doctor and time, on purpose, for the *next* patient) — but that
-      // also means the number reception just typed is gone from the
-      // screen entirely a moment later, with no automated WhatsApp/SMS
-      // send yet (see BACKLOG.md) to fall back on, copying it by hand
-      // into WhatsApp is the only way this message actually reaches
-      // anyone today. Surfaced here, next to the message it belongs to,
-      // instead of only ever living in a field that's about to reset.
       function renderNotificationPreview(message, phone) {
         const box = document.getElementById('patientNotificationPreview');
         if (!message) { box.style.display = 'none'; return; }
@@ -431,21 +351,9 @@
         document.getElementById('pDoctor').innerHTML = opts;
       }
 
-      // Custom time picker: a native <input type="time"> renders a
-      // different, unstylable scrolling wheel per browser/OS, and a plain
-      // <select> can't filter out past times or control where the list
-      // opens. Values stay "HH:MM" 24-hour strings in a hidden input, so
-      // nothing else that reads/sets pTime.value has to change.
       let timePickerOptions = [];
 
-      // Parsed manually (not new Date(dateStr)) so the weekday check is
-      // always against local calendar time, not thrown off by the
-      // UTC-midnight parsing a plain "YYYY-MM-DD" string gets otherwise.
       const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      // Checks both the weekly off days and any one-off closure (holidays,
-      // etc. — see Settings > Closed Dates) against a single date, and
-      // returns why it's closed so callers can show a specific message
-      // instead of a generic "clinic is closed."
       function closureReason(dateStr, doctorId) {
         if (!dateStr) return null;
         if (clinicWeeklyOffDays.length) {
@@ -484,17 +392,6 @@
         }
       }
 
-      // Names up to 2 closed doctors; from 3 up to (total - 1) it switches
-      // to a count + a Dashboard pointer, since a name list that long gets
-      // hard to scan. Once EVERY doctor is closed, that count collapses to
-      // "All doctors" instead — a clearer, stronger signal than "5 doctors"
-      // when 5 happens to be all of them, and "check Dashboard" stops
-      // making sense once there's no one left to find there. But only once
-      // total is 3+: a solo or two-doctor clinic's last closure still names
-      // them — "All doctors" reads like clinic-wide news on a roster that
-      // small, where naming the one or two people involved is clearer, not
-      // vaguer. Time-bound to today only — see isDoctorClosedToday — so
-      // this clears itself at midnight without anyone reopening a day.
       function renderClosedDayBanner() {
         const banner = document.getElementById('closedDayBanner');
         const closed = doctorsCache.filter((d) => Qlinic.isDoctorClosedToday(d));
@@ -518,11 +415,6 @@
         banner.style.display = 'flex';
       }
 
-      // The banner covers the common case, but with enough doctors on the
-      // roster it's easy to miss — this is the safety net right where
-      // booking actually happens, checked for BOTH walk-ins (always today)
-      // and phoned-in appointments (only when booked for today; booking a
-      // closed doctor for tomorrow is fine and stays allowed).
       function doctorBookingBlockReason() {
         const doctorId = document.getElementById('pDoctor').value;
         const doctor = doctorsCache.find((d) => d.id === doctorId);
@@ -603,12 +495,6 @@
         closeTimePanel();
       }
 
-      // Same picker component and interaction as the appointment time
-      // field above, kept as its own instance (not a shared function)
-      // since it's simpler in one real way: always today (walk-ins are
-      // same-day only, no date field to read). Selecting a time here does
-      // call updateSlotHint (below) — a walk-in given a preferred time
-      // competes for the same slot as a phoned-in appointment.
       let walkinTimePickerOptions = [];
       function buildWalkinTimePickerOptions() {
         const now = new Date();
@@ -682,9 +568,6 @@
         if (!opt) return;
         selectTime(opt.getAttribute('data-value'), opt.getAttribute('data-label'));
       });
-      // Delegated (not bound to one specific .time-picker) so it also
-      // covers the search-edit row's time picker, which is rebuilt fresh
-      // on every render and can't hold a persistent listener of its own.
       document.addEventListener('click', (e) => {
         if (!e.target.closest('.time-picker')) {
           document.querySelectorAll('.time-picker-panel').forEach((p) => { p.style.display = 'none'; });
@@ -696,13 +579,6 @@
         }
       });
 
-      // Walk-in and phoned-appointment share one form, but each mode keeps
-      // its own copy of the identity fields (name/age/phone/gender/address/
-      // doctor/reason) — switching tabs shouldn't carry half-typed info
-      // from one flow into the other. The two caches are captured/restored
-      // on every setPatientMode call, including the same-mode call after a
-      // successful submit (see the submit handler below), which is what
-      // clears a mode's cache back to blank once its patient is added.
       const BLANK_COMMON_FIELDS = { name: '', age: '', phone: '', gender: 'male', address: '', doctorId: '', reason: '' };
       let appointmentFieldsCache = null;
       let walkinFieldsCache = null;
@@ -728,10 +604,6 @@
       }
 
       function setPatientMode(mode) {
-        // Stash whatever's currently on screen under the OUTGOING mode
-        // before switching — this also runs for a same-mode call (the
-        // post-submit refresh), which is exactly what re-blanks a mode's
-        // cache right after its form has just been reset.
         if (patientMode === 'appointment') appointmentFieldsCache = captureCommonFields();
         else walkinFieldsCache = captureCommonFields();
 
@@ -751,13 +623,6 @@
           : 'Booking a call-in appointment ahead of time: pick when they should arrive.';
         document.getElementById('patientSubmitBtn').textContent = mode === 'walkin' ? 'Add walk-in' : 'Add appointment';
 
-        // Appointment mode only ever looked right by accident: its very
-        // first capture happened to read the browser's natural
-        // first-option default before anything had a chance to blank
-        // it. Walk-in mode never got that lucky first capture, so its
-        // fallback landed on BLANK_COMMON_FIELDS' doctorId:'' - an
-        // empty <select> with no matching option, not a real default.
-        // Both modes now explicitly fall back to the same doctor.
         const fallback = doctorsCache[0]
           ? Object.assign({}, BLANK_COMMON_FIELDS, { doctorId: doctorsCache[0].id })
           : BLANK_COMMON_FIELDS;
@@ -772,24 +637,11 @@
         btn.addEventListener('click', () => setPatientMode(btn.getAttribute('data-mode')));
       });
 
-      // Two "Ramesh Kumar"s look identical in a name-only list; the address
-      // line is what actually tells reception (or the doctor) which one is
-      // which.
       function nameCell(p) {
         const priorityBadge = p.isPriority ? ' <span class="badge badge-no-show">Priority</span>' : '';
         return `<div class="qtable-wrap">${Qlinic.escapeHtml(p.name)}${priorityBadge}</div><div class="sub-line">${p.address ? Qlinic.escapeHtml(p.address) : 'No address on file'}</div>`;
       }
 
-      // Same real token doctor.html and the waiting-room board already
-      // show (e.g. #16, W3 for a walk-in) — Waiting used to show a plain
-      // 1/2/3 count instead, which resets every render and isn't the
-      // number anything else in the app calls "their token". Walk-ins
-      // share one token_number sequence with appointments at the DB
-      // level (the public queue-status page's "how many ahead of me"
-      // math depends on that), so they get their own "W"-prefixed rank
-      // computed here for display only, ranked by their existing
-      // token_number among today's walk-ins for this doctor across every
-      // status — exact same approach as doctor.html's own copy.
       function buildWalkinRanks(q) {
         const ranks = new Map();
         const walkins = [
@@ -806,13 +658,6 @@
         return '#' + p.tokenNumber;
       }
 
-      // How long until this booked slot, in the same short "Xmin"/
-      // "Xhr Ymin" shape queue.html's own formatDuration uses for the
-      // identical kind of fact. Only ever called for today's own Booked
-      // list (bookedDate === today there), so plain minute-of-day
-      // arithmetic is enough — no need to reason about a real calendar
-      // date. Negative (slot already passed, still not arrived) reads
-      // as "overdue by Xmin" instead of a confusing negative duration.
       function formatMinutesDuration(mins) {
         const h = Math.floor(mins / 60), m = mins % 60;
         return h === 0 ? `${m}min` : m === 0 ? `${h}hr` : `${h}hr ${m}min`;
@@ -824,31 +669,11 @@
         return { text: `overdue by ${formatMinutesDuration(-diffMin)}`, soon: true };
       }
 
-      // The Waiting list is sorted by scheduled/effective time, not raw
-      // arrival time: a walk-in's "effective" slot is when they arrived, an
-      // appointment's is its booked time plus any doctor delay.
-      // Only ever called on patients already in the live queue (status
-      // 'waiting'), where arrivedAt is always set regardless of type — so
-      // the sub-line always shows when they actually walked in, not when
-      // an appointment was originally booked (which is often identical to
-      // the primary time above it and tells reception nothing new).
       function queueTimeCell(p) {
         const primary = Qlinic.formatTimestamp(p.effectiveTime);
         return `<div>${primary}</div><div class="sub-line">arrived ${Qlinic.formatTimestamp(p.arrivedAt)}</div>`;
       }
 
-      // Every arriving patient gets billed automatically the instant they
-      // hit "waiting" (see migration 016) — cash, consultation fee, paid
-      // in full. This cell just shows that, and lets reception correct
-      // the rare exception (wrong payment method, an emergency fee, a
-      // genuinely free visit) without ever requiring it. Adjust used to
-      // rewrite this cell in place; now opens Qlinic.openAdjustBillingModal
-      // (shared with revenue.html) instead — reviewed as a mockup first
-      // (https://claude.ai/code/artifact/60b97fa0-c07c-4605-b379-4ee19e3eeaed).
-      // Both renderQueues() and renderSearch() re-render on save regardless
-      // of which surface the click came from: the same invoice can be
-      // visible in both the queue panel's Waiting list and a live search
-      // at once, and neither should be left showing what's now stale data.
       const PAYMENT_MODE_SHORT_LABELS = { cash: 'Cash', upi: 'UPI', card: 'Card' };
 
       function billingCell(p, invoiceByPatientId, doctor) {
@@ -877,12 +702,6 @@
       }
       window.openAdjustBilling = openAdjustBilling;
 
-      // Runs for both modes now — a walk-in given a preferred time competes
-      // for the same slot as a phoned-in appointment (see countActiveAtSlot
-      // in clinic-data.js), so reception needs the same capacity feedback
-      // either way. Walk-in is always today, with no isPastRealDateTime
-      // check since buildWalkinTimePickerOptions already excludes past
-      // times from the picker itself.
       async function updateSlotHint() {
         const myToken = ++slotHintToken;
         const hint = document.getElementById('slotHint');
@@ -891,8 +710,6 @@
         const date = isAppt ? document.getElementById('pDate').value : Qlinic.getTodayDate();
         const time = isAppt ? document.getElementById('pTime').value : document.getElementById('pWalkinTime').value;
         if (!doctorId || !date || !time) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
-        // Checked against the REAL device clock: a phone call happens in
-        // real time. Hard block, nothing to override.
         if (isAppt && Qlinic.isPastRealDateTime(date, time)) {
           hint.className = 'slot-hint error';
           hint.innerHTML = `⛔ That date and time has already passed. Pick a later time.`;
@@ -901,11 +718,6 @@
         const avail = await Qlinic.getSlotAvailability(doctorId, date, time);
         if (myToken !== slotHintToken) return;
         if (!avail) { hint.className = 'slot-hint'; hint.innerHTML = ''; return; }
-        // Names the actual booking window (e.g. "9:20–9:30 pm") instead of
-        // a vague "around this time" — two times that look comfortably
-        // apart, like 9:20 and 9:25, can land in the same slot once Queue
-        // Rules' slot length is wider than 5 minutes, and that's genuinely
-        // baffling without seeing the window it's actually checking.
         const windowLabel = `${Qlinic.formatTime(Qlinic.parseTime(avail.windowStart))}–${Qlinic.formatTime(Qlinic.parseTime(avail.windowEnd))}`;
         if (avail.isFull) {
           hint.className = 'slot-hint warn';
@@ -921,10 +733,6 @@
         }
       }
 
-      // Set by renderSearch() itself so the delegated Edit-button listener
-      // below (attached once, not per-render) can look up the actual
-      // patient/doctor/invoice objects a click refers to — "Edit" opens
-      // a whole modal now, too much to pack into an inline onclick string.
       let lastSearchResults = [];
       let lastSearchDoctorById = {};
       let lastSearchInvoiceByPatientId = {};
@@ -940,22 +748,10 @@
         const box = document.getElementById('searchResults');
         document.getElementById('clearSearchBtn').style.display = q.trim() ? '' : 'none';
         if (!q.trim()) { box.innerHTML = ''; return; }
-        // Fetched alongside the search itself, not reused from
-        // renderQueues()'s own todayInvoices — that copy only gets
-        // refreshed while the queue panel happens to be showing TODAY
-        // (isTodayView), but a search always looks at today's patients
-        // regardless of what date the panel is currently filtered to.
-        // Reusing it would silently show "Not yet billed" for an
-        // already-billed patient whenever the panel's own date filter
-        // was pointed elsewhere.
         const [results, searchInvoices] = await Promise.all([
           Qlinic.searchBookedPatients(q),
           canBill ? Qlinic.getTodayInvoices() : Promise.resolve([]),
         ]);
-        // The box fires on every keystroke with no debounce, so a slower
-        // response for an earlier character can resolve after a later
-        // (or empty) one already rendered. Discard it if the input has
-        // since moved on, otherwise it stomps the newer/cleared state.
         if (document.getElementById('searchBox').value !== q) return;
         if (results.length === 0) {
           box.innerHTML = '<div class="empty-state">No match for "' + Qlinic.escapeHtml(q) + '" in today\'s queue. Add them as a walk-in instead.</div>';
@@ -976,15 +772,7 @@
             <tbody>
               ${results.map((p) => {
                 const doc = doctorById[p.doctorId];
-                // Checks type, not bookedTime truthiness — a walk-in can
-                // now carry a real bookedTime too (a staff-assigned
-                // preferred time), which must still read as "Walk-in"
-                // here, not silently look like a formal appointment.
                 const bookedCell = p.type === 'appointment' ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '<span class="badge badge-neutral">Walk-in</span>';
-                // billingCell already handles the un-arrived case cleanly
-                // ("Not yet billed", no button) — same component the
-                // Waiting list uses, so Adjust here is the identical
-                // fee-type/payment-mode/amount editor, not a second one.
                 const billingTd = canBill ? `<td>${billingCell(p, searchInvoiceByPatientId, doc)}</td>` : '';
                 return `
                   <tr>
@@ -1006,13 +794,6 @@
         `;
       }
 
-      // Delegated once (not re-attached per render, since #searchResults'
-      // whole innerHTML is replaced every renderSearch()) — "Edit" opens
-      // a full modal now (name/phone/doctor/consultation type/booked
-      // date+time), too much to pack into an inline onclick string the
-      // way Mark arrived's plain id-only call still can. Looks the
-      // patient/doctor/invoice up from what renderSearch() itself just
-      // stashed, rather than re-fetching.
       document.getElementById('searchResults').addEventListener('click', (e) => {
         const btn = e.target.closest('[data-edit-patient]');
         if (!btn) return;
@@ -1022,17 +803,6 @@
         openEditPatientModal(p, lastSearchDoctorById[p.doctorId], lastSearchInvoiceByPatientId[p.id]);
       });
 
-      // Mirrors buildTimePickerOptions() below the main "Add a patient"
-      // form exactly (rounding "now" up to the next 5-min step when the
-      // target date is today) -- decided 2026-09-04 that this modal's
-      // time field should never offer an already-past moment, for any
-      // status, not just new bookings. A concrete counter-example settled
-      // it: a 12:20pm appointment being edited to an earlier 10:10am at
-      // 11:59am, before the appointment itself had even happened yet --
-      // that's not "correcting a late arrival," it's fabricating a past
-      // that never occurred. (Editing an EXISTING already-past bookedTime
-      // without touching it is unaffected -- this only gates picking a
-      // NEW value.)
       function buildEditTimeOptions(dateStr) {
         const isToday = dateStr === Qlinic.getTodayDate();
         let startMin = clinicOpenMin;
@@ -1079,14 +849,6 @@
         });
       }
 
-      // Replaces the old inline "row turns into a form" edit (reviewed as
-      // a mockup first: https://claude.ai/code/artifact/60b97fa0-c07c-4605-b379-4ee19e3eeaed)
-      // with the same .modal-backdrop/.modal-card shell Edit doctor/Edit
-      // team member already use. `inv` is the patient's own invoice if
-      // they've already arrived (status 'waiting') — a 'booked'/'no_show'
-      // patient has no invoice yet, so there's nothing for Consultation
-      // type to apply to, and the field is left out entirely rather than
-      // showing a control that does nothing until they arrive.
       function openEditPatientModal(p, doc, inv) {
         const doctorOptions = doctorsCache.map((d) => `<option value="${d.id}" ${d.id === p.doctorId ? 'selected' : ''}>${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)}</option>`).join('');
         const backdrop = document.createElement('div');
@@ -1145,14 +907,9 @@
         if (dateInput) {
           dateInput.min = Qlinic.getTodayDate();
           Qlinic.attachDatePicker(dateInput);
-          // A date change can flip whether "today" restrictions even
-          // apply — re-render the panel next time it opens rather than
-          // trusting whatever list was built for the previous date.
           dateInput.addEventListener('change', () => { backdrop.querySelector('#editPatientTimePanel').style.display = 'none'; });
         }
         wireEditPatientTimePicker(backdrop, dateInput);
-        // Same 10-digit-only / no-digits-in-a-name rule the rest of the
-        // app's own name/phone fields already enforce as you type.
         backdrop.querySelector('#editPatientPhone').addEventListener('input', (e) => {
           e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
         });
@@ -1183,8 +940,6 @@
           const timeInput = backdrop.querySelector('#editPatientTime');
           const bookedTime = timeInput.value;
           if (!bookedTime) { showError('Pick a time.'); return; }
-          // Only an appointment carries its own date field — a walk-in or
-          // a revived no-show's effective day is always today.
           const bookedDate = dateInput ? dateInput.value : Qlinic.getTodayDate();
           if (dateInput && !bookedDate) { showError('Appointment date is required.'); return; }
           const bookedDateReason = dateInput ? closureReason(bookedDate, doctorId) : null;
@@ -1199,18 +954,6 @@
           const feeTypeSelect = backdrop.querySelector('#editPatientFeeType');
           try {
             await Qlinic.updatePatientContact(p.id, update);
-            // This modal edits patient/appointment details only — it used
-            // to also mark a booked/no-show patient arrived automatically
-            // any time their time field got touched (even just saving an
-            // unrelated phone number fix), which is exactly the wrong
-            // scope for this action. Marking arrived stays the dedicated
-            // "Mark arrived" button's job, not something this modal does
-            // as a side effect, explicit or otherwise.
-            // Recomputes the amount the same way syncAdjustAmount/Adjust
-            // billing does — switching Consultation type here without
-            // also updating the charged amount would leave a mismatched
-            // invoice (e.g. "Emergency" type still billed at the
-            // Consultation rate).
             if (feeTypeSelect && inv && feeTypeSelect.value !== inv.feeType) {
               const doctorForFee = doctorsCache.find((d) => d.id === doctorId);
               const feeAmount = feeTypeSelect.value === 'waived' ? 0
@@ -1223,48 +966,22 @@
             return;
           }
           cleanup();
-          // Leftover from when this modal used to mark arrival itself —
-          // it never does that anymore, so this toast always describes
-          // what actually just happened: details were saved, nothing
-          // about queue status changed, regardless of this patient's
-          // status before the edit.
           showToast('Patient details updated');
           renderSearch();
           renderQueues();
         });
       }
 
-      // Disabling the button the instant it's clicked (rather than waiting
-      // for the async round-trip to finish) is what actually fixed the
-      // shaky/bouncy feel reported here: while the button stayed enabled
-      // during the network wait, the cursor sitting over it kept the
-      // hover-lift transform active, which then snapped away the moment the
-      // table re-rendered out from under it — reads as a jolt, not a click.
       async function doMarkArrived(id, btn) {
         if (btn) btn.disabled = true;
         try {
           await Qlinic.markArrived(id);
         } catch (err) {
-          // Same bug class the Add-patient submit handler already hit once
-          // (see its own comment above) — a failed write here used to
-          // leave the button stuck disabled with no explanation at all.
           if (btn) btn.disabled = false;
           showToast(err.message || 'Could not mark arrived — please try again.');
           return;
         }
-        // Search results used to be cleared here on the assumption
-        // reception was done once one patient was marked — but working
-        // through a whole batch of arrivals means re-typing the same
-        // search after every single click. Leaving the query in place
-        // just re-renders the same results with the updated status, so
-        // the rest of the matches stay right where they were.
         renderSearch();
-        // If this patient is in the queue panel currently on screen
-        // (same doctor, today), renderQueuePanel jumps to their page and
-        // flashes their row right after this fetch lands — a no-op if
-        // they belong to a different doctor's queue or the panel isn't
-        // on today's date, since they simply won't be in that queue's
-        // waitingList to find.
         pendingHighlightPatientId = id;
         renderQueues();
         showToast('Marked arrived, added to the live queue');
@@ -1285,10 +1002,6 @@
       window.doMarkArrived = doMarkArrived;
       window.doMarkNoShow = doMarkNoShow;
 
-
-      // A dropdown per doctor (mirroring the "Viewing as" pattern on the
-      // Doctor View page) instead of stacking every doctor's full queue on
-      // the page. Counts shown reflect whichever date is currently selected.
       async function fillQueueDoctorFilter() {
         const sel = document.getElementById('queueDoctorFilter');
         const doctors = doctorsCache;
@@ -1330,13 +1043,6 @@
       });
 
       async function renderQueues() {
-        // Fired here, not just from onLiveChange - most queue-changing
-        // actions on this page (mark arrived, call next, mark done, edit
-        // a patient, switching the doctor/date filter, ...) call
-        // renderQueues() directly right after their own local write,
-        // without waiting for the realtime round-trip. Hooking the chip
-        // only into onLiveChange meant it lagged behind every one of
-        // those local actions until a realtime event happened to arrive.
         renderWaitingChip();
         const myToken = ++queueRenderToken;
         await refreshDoctorsCache();
@@ -1376,29 +1082,14 @@
         renderQueuePanel();
       }
 
-      // Pure render from the data renderQueues() last fetched — no network
-      // calls, so expand/collapse and pagination (which never change which
-      // patients exist, only how they're sliced/shown) can call this
-      // directly instead of re-running the whole fetch above.
       function renderQueuePanel() {
         if (!lastQueueData) return;
         const { doctor, queue, invoiceByPatientId, isTodayView } = lastQueueData;
         const panelEl = document.getElementById('queuePanel');
 
-        // Both lists paginate at 5/page — a busy clinic's Waiting list
-        // can run just as long as Booked once appointments pile up, and
-        // an unbounded table here was the same problem in a list
-        // reception is actively working from minute to minute, not just
-        // scanning.
         const waitingList = queue.waiting;
         const bookedList = queue.booked;
 
-        // Consumed here, once, regardless of whether it's actually found
-        // in THIS queue (see the comment on the variable itself) — a
-        // page jump only makes sense while the list is still ordered by
-        // scheduled time (unchanged for everyone else reading it), so
-        // this finds wherever that order already put them rather than
-        // reordering the list itself around them.
         const highlightId = pendingHighlightPatientId;
         pendingHighlightPatientId = null;
         const highlightIdx = highlightId ? waitingList.findIndex((p) => p.id === highlightId) : -1;
@@ -1413,28 +1104,8 @@
         const bookedPageItems = bookedList.slice(bookedPage * BOOKED_PAGE_SIZE, bookedPage * BOOKED_PAGE_SIZE + BOOKED_PAGE_SIZE);
         const dateLabel = Qlinic.formatDateLabel(queueViewDate);
         const walkinRanks = buildWalkinRanks(queue);
-        // Right-aligned note on Booked's own heading — only means anything
-        // for today's own list (bookedSoonLabel's arithmetic assumes
-        // bookedDate === today), same reason the whole "how soon" column
-        // below is isTodayView-gated too.
         const soonCount = isTodayView ? bookedList.filter((p) => bookedSoonLabel(p).soon).length : 0;
 
-        // Token/Name get the same fixed width in both tables (via
-        // <colgroup>) so the two sections' columns actually land at the
-        // same pixel, reviewed as a mockup first
-        // (https://claude.ai/code/artifact/e2ba3dc8-fa7e-4985-aa20-d65d36bc6f3f)
-        // — the rest of each table's columns get fixed widths of their
-        // own except the last, which is left unset to absorb whatever's
-        // left (Billing/Actions when either is present, otherwise
-        // Queue time/Status).
-        // Percentages, not fixed px — px widths left a huge dead gap on
-        // any real (wide) screen, since only one column was ever left
-        // flexible to soak up whatever the panel's actual width happened
-        // to be beyond a small mockup-sized guess. Percentages scale
-        // with the panel at any width instead, and Token/Name keep the
-        // exact same percentage in every variant, so they still land at
-        // the same pixel between Waiting and Booked (both render at the
-        // same panel width) without needing a fixed px guess at all.
         const waitingColgroup = `<colgroup><col style="width:8%;"><col style="width:26%;"><col style="width:${canBill ? '14%' : '22%'};"><col style="width:${canBill ? '20%' : '44%'};">${canBill ? '<col style="width:32%;">' : ''}</colgroup>`;
         const bookedColgroup = `<colgroup><col style="width:8%;"><col style="width:26%;"><col style="width:${isTodayView ? '18%' : '22%'};"><col style="width:${isTodayView ? '14%' : '44%'};">${isTodayView ? '<col style="width:34%;">' : ''}</colgroup>`;
 
@@ -1519,10 +1190,6 @@
         Qlinic.wirePager(document.getElementById('waitingPagerWrap'), waitingPage + 1, totalWaitingPages, (p) => { waitingPage = p - 1; renderQueuePanel(); });
       }
 
-      // Debounced: renderSearch hits the database (searchBookedPatients),
-      // so firing it on every keystroke meant a query per letter typed.
-      // Clearing still calls renderSearch() directly, below, for instant
-      // feedback on a deliberate single action rather than rapid typing.
       let searchInputTimer = null;
       document.getElementById('searchBox').addEventListener('input', () => {
         clearTimeout(searchInputTimer);
@@ -1536,10 +1203,6 @@
         box.focus();
       });
 
-// Same 10-digit-only rule as signup's mobile number field: strips
-      // anything non-numeric as it's typed, so a pasted or typed letter
-      // never even lands in the field, and blocks submission on anything
-      // short of exactly 10 digits.
       function isValidPhone(value) {
         return /^[0-9]{10}$/.test(value);
       }
@@ -1547,9 +1210,6 @@
         this.value = this.value.replace(/\D/g, '').slice(0, 10);
       });
 
-      // Optional field — blank is valid (age just wasn't given). Anything
-      // actually entered has to be a whole number 0-120, checked as they
-      // type rather than only discovered after Add is pressed.
       function isValidAge(value) {
         if (value === '') return true;
         return /^[0-9]+$/.test(value) && Number(value) <= 120;
@@ -1592,10 +1252,6 @@
         }
 
         let bookedForToday = true;
-        // Declared out here (not just inside the appointment branch below)
-        // so the "carry the time forward to the next booking" step after
-        // the form resets can still read it — stays null for a walk-in
-        // submission, which correctly skips that step entirely.
         let time = null;
 
         if (patientMode === 'walkin') {
@@ -1608,10 +1264,6 @@
             return;
           }
           const isPriority = document.getElementById('pWalkinType').value === 'emergency';
-          // Uncaught before — a DB-side rejection (e.g. a constraint
-          // violation) failed completely silently: no toast, no error,
-          // "Add walk-in" just did nothing no matter how many times it
-          // was clicked. Now it's at least visible when it happens.
           let addResult;
           try {
             addResult = await Qlinic.addWalkIn({
@@ -1636,11 +1288,6 @@
             return;
           }
           if (!time) {
-            // Shown right in the form (not a corner toast that fades in
-            // ~2s) since this is the single most common reason "Add
-            // appointment" silently does nothing — a receptionist glancing
-            // back at the button, not the far corner of the screen, needs
-            // to see why nothing happened.
             const hint = document.getElementById('slotHint');
             hint.className = 'slot-hint error';
             hint.innerHTML = '⛔ Pick an appointment time first.';
@@ -1671,9 +1318,6 @@
           renderNotificationPreview(addResult.message, phone);
         }
 
-        // Jump the queue view to whichever doctor this patient was just
-        // added for, so reception immediately sees where they landed, but
-        // only if they're actually on today's queue.
         if (bookedForToday) {
           queueDoctorId = doctorId;
           bookedExpanded = false;
@@ -1683,26 +1327,10 @@
 
         e.target.reset();
         fillDoctorSelects();
-        // A native form reset() sends <select id="pDoctor"> back to its
-        // first option — whichever doctor reception was actually working
-        // with a moment ago gets silently swapped out from under them on
-        // the very next patient, which is the opposite of helpful when
-        // they're adding several patients in a row for the same doctor.
         document.getElementById('pDoctor').value = doctorId;
         setPatientMode(patientMode);
         document.getElementById('pDate').value = Qlinic.getTodayDate();
         resetTimePicker();
-        // Same reasoning as the doctor field above, for time: reception
-        // often takes a run of calls for roughly the same part of the day
-        // (a lot of Indian clinics book the whole morning's appointments
-        // in one sitting), so re-scrolling the whole picker from blank for
-        // every single one is avoidable friction. Re-check that same time
-        // against the doctor+date this form now shows (not necessarily the
-        // date just booked, since the date field above always resets to
-        // today) — if it's now full, land on the next open slot instead of
-        // one that would just bounce back with the same overbooking
-        // warning. avail.suggestion already computes that "next open slot"
-        // for the warning dialog above, reused here rather than recomputed.
         if (time) {
           const recheck = await Qlinic.getSlotAvailability(doctorId, Qlinic.getTodayDate(), time);
           const nextTime = recheck && recheck.isFull ? recheck.suggestion : time;
@@ -1728,12 +1356,6 @@
         updateDoctorClosedHint();
       });
 
-      // Sits beside the mode toggle (pushed to the far right via
-      // margin-left:auto), not inside its own gradient-track pill - it's a
-      // regular action button, not one of the toggle's own options -
-      // rather than inside either mode's own field set, since this row is
-      // the one thing always visible regardless of mode - a single
-      // button, no per-mode duplication needed.
       document.getElementById('viewDaySlotsBtn').addEventListener('click', async () => {
         const doctorId = document.getElementById('pDoctor').value;
         if (!doctorId) { showToast('Pick a doctor first'); return; }
@@ -1747,18 +1369,12 @@
           dateLabel: Qlinic.formatDateLabel(dateStr),
           openMin: clinicOpenMin,
           closeMin: clinicCloseMin,
-          // Falls back to 30 if migration 036 hasn't run yet — before it,
-          // clinic.schedule_interval_mins is simply undefined.
           intervalMins: (clinic && clinic.schedule_interval_mins) || 30,
           isToday: dateStr === Qlinic.getTodayDate(),
           rows,
         });
       });
 
-      // Looking up the phone number on blur (not every keystroke) is a
-      // passive heads-up, not a gate: it never blocks or auto-fills
-      // anything on its own, reception has to click "Use these details"
-      // to apply a match, and the no-show note is informational only.
       function closePatientInfoPopover() {
         document.getElementById('patientInfoPopover').classList.remove('open');
         document.getElementById('patientInfoChipBtn').setAttribute('aria-expanded', 'false');
@@ -1774,12 +1390,6 @@
         hidePatientInfoChip();
       }
 
-      // Same trigger + dropdown mechanics as Insights' own anomaly chip
-      // (trends.html/revenue.html) -- re-themed amber and re-purposed
-      // here, not a new interaction pattern for the app to learn.
-      // Reuses the exact date format patient-directory.html already
-      // shows this same data in (Qlinic.formatDateLabel), rather than
-      // introducing a second convention for the same kind of date.
       function renderPatientInfoChip(match, phone) {
         const wrap = document.getElementById('patientInfoWrap');
         if (!match.recentVisits || match.recentVisits.length === 0) { hidePatientInfoChip(); return; }
@@ -1822,11 +1432,6 @@
           document.getElementById('pGender').value = match.gender || 'other';
           document.getElementById('pAddress').value = match.address || '';
           if (match.age) document.getElementById('pAge').value = match.age;
-          // Once clicked, this hint (the found-line, the button, and any
-          // no-show warning alongside it) has done its one job -- nothing
-          // left to say. Patient Info stays up on purpose: it's a
-          // separate, still-useful reference (visit history), not part
-          // of the autofill flow this hint was for.
           hint.style.display = 'none';
           hint.innerHTML = '';
         });
@@ -1847,11 +1452,6 @@
         if (e.key === 'Escape') closePatientInfoPopover();
       });
 
-      // Advisory only, same spirit as the no-show note above: tells
-      // reception whether to expect payment, never blocks or auto-fills
-      // anything. Needs phone + doctor + the actual visit date (today for
-      // a walk-in, the picked date for an appointment) all present before
-      // there's anything to check, so it re-runs on any of those changing.
       function clearFollowUpHint() {
         const hint = document.getElementById('followUpHint');
         hint.style.display = 'none';
@@ -1899,20 +1499,6 @@
       clinicClosureByDate = Object.fromEntries(closures.map((c) => [c.date, c.note]));
       doctorHolidayByKey = Object.fromEntries(doctorHolidays.map((h) => [`${h.doctorId}::${h.date}`, h.note]));
       document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
-      // Also re-checks the closed-day banner/hint on this same tick: they're
-      // time-bound to midnight (see isDoctorClosedToday), and without a
-      // doctor/patient row actually changing, nothing else would trigger a
-      // re-render right at the moment the calendar date rolls over.
-      // renderQueues() rides along too now — "Now with: X" (and the rest
-      // of the queue view) previously only ever updated via
-      // Qlinic.onLiveChange()'s Realtime subscription below, with no
-      // fallback if a push got missed (a dropped socket, a reconnect
-      // gap). Same "catches anything Realtime might miss" reasoning
-      // queue.html/display.html already use for their own polls, just
-      // riding this existing tick instead of a second timer. 15s, not
-      // 30s: reception is what a patient standing at the desk is looking
-      // at, so a missed push staying stuck for up to 30s reads as the
-      // system being broken, not just a little behind.
       setInterval(() => {
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
         renderClosedDayBanner();

@@ -40,12 +40,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
-      // Deliberately NOT Qlinic.requireLogin() here, same reasoning as
-      // account-suspended.html: that's the exact check that lands someone
-      // on THIS page, so calling it again would just bounce straight back.
       if (!(await Qlinic.isLoggedIn())) {
         window.location.href = 'login.html';
         return;
@@ -53,10 +50,6 @@
 
       const profile = await Qlinic.getMyProfile();
 
-      // Reached this page, but the profile is actually active (reactivated
-      // since the redirect happened, or this URL was opened directly out
-      // of curiosity) - straight through to the app instead of showing an
-      // alarming message about nothing.
       if (profile && profile.isActive !== false) {
         window.location.href = 'dashboard.html';
         return;
@@ -77,7 +70,7 @@
         e.preventDefault();
         try {
           await Qlinic.logout();
-        } catch (err) { /* best-effort - send them to login either way */ }
+        } catch (err) { }
         window.location.href = 'login.html';
       });
     })();

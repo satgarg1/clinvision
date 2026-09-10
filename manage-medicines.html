@@ -217,7 +217,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -381,7 +381,6 @@
         if (btn) openAdjustModal(btn.getAttribute('data-adjust'));
       });
 
-      // ---- Add / edit medicine modal ----
       let editingMedicineId = null;
       function updateMedicinePriceHint() {
         const price = Number(document.getElementById('mfSellingPrice').value) || 0;
@@ -484,7 +483,6 @@
         }
       });
 
-      // ---- Add batch (stock in) modal ----
       function updateBatchHint() {
         const packs = Number(document.getElementById('bfPacksReceived').value) || 0;
         const size = currentMedicine ? (currentMedicine.packSize || 1) : 1;
@@ -525,7 +523,6 @@
         }
       });
 
-      // ---- Adjust stock modal ----
       let adjustingBatchId = null;
       function openAdjustModal(batchId) {
         adjustingBatchId = batchId;
@@ -553,13 +550,6 @@
         }
       });
 
-      // Same custom calendar popover every other date field in the app
-      // uses, not the browser's own native date input — attachDatePicker
-      // hides the underlying <input> and reads/writes its .value as a
-      // plain ISO string, so nothing else in this file needs to change.
-      // quickButtons off: "Today"/"Tomorrow" make sense for booking an
-      // appointment, not for picking a manufacture or expiry date that
-      // could be anywhere from years ago to years out.
       [document.getElementById('mfOpeningMfg'), document.getElementById('bfMfgDate')].forEach((el) => {
         Qlinic.attachDatePicker(el, { quickButtons: false });
         el.max = Qlinic.getTodayDate();

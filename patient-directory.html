@@ -49,15 +49,6 @@
 
       <input type="text" id="directorySearch" placeholder="Search by name, phone, or address..." />
 
-      <!-- One shared row instead of "Period" sitting alone above a
-           separate row of From/To fields - customPeriodFilters is still
-           toggled by the exact same JS (.style.display = 'flex'/'none'),
-           just nested here as a flex child instead of a separate
-           top-level block, so it simply drops out of this row's flow
-           when hidden. Both already carry real labels, so no spacer
-           trick is needed - flex-end (matching Revenue/No-shows/
-           Insights' own filter rows) bottom-aligns Period's dropdown
-           with From/To's inputs directly off their shared label height. -->
       <div style="display:flex;align-items:flex-end;flex-wrap:wrap;gap:16px 24px;margin-bottom:10px;">
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
           <label class="pill-label">Period</label>
@@ -93,13 +84,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
 
-      // Scoped to the pharmacy counter and catalog only -- this page shows
-      // patient/staff data a pharmacist has no business seeing.
       if (await Qlinic.isPharmacist()) { window.location.href = 'pharmacy.html'; return; }
 
       document.querySelector('a.brand').addEventListener('click', async (e) => {
@@ -121,10 +110,6 @@
         document.getElementById('revenueNavLink').style.display = 'none';
         document.getElementById('trendsNavLink').style.display = 'none';
       }
-      // Body starts hidden (see the <body> tag) so a doctor hitting this
-      // URL never sees it flash before the redirect above fires, and so
-      // nobody sees the full nav for a moment before the role-based
-      // hiding above finishes.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
@@ -144,8 +129,6 @@
       function pad2(n) { return String(n).padStart(2, '0'); }
       function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
 
-      // Filters by last-visit date, so "Last month" here means "patients
-      // last seen last month," not everyone ever seen.
       function computeCurrentMonthRange() {
         const today = new Date();
         const first = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -161,8 +144,6 @@
         const firstOfLastMonth = new Date(lastOfLastMonth.getFullYear(), lastOfLastMonth.getMonth(), 1);
         return { start: toDateStr(firstOfLastMonth), end: toDateStr(lastOfLastMonth) };
       }
-      // N complete calendar months immediately before the current one —
-      // "Current month" covers the in-progress one separately.
       function computeLastNMonthsRange(n) {
         const today = new Date();
         const firstOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -170,10 +151,6 @@
         const start = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth() - n, 1);
         return { start: toDateStr(start), end: toDateStr(end) };
       }
-      // Custom is the only preset with visible fields - real From/To
-      // calendars (Qlinic.attachDatePicker) rather than Month/Year
-      // dropdowns, so an exact day can be picked, not just "somewhere in
-      // March 2026."
       const PERIOD_PRESETS = [
         { key: 'all', label: 'All time' },
         { key: 'currentmonth', label: 'Current month' },
@@ -190,7 +167,7 @@
         if (preset === 'last6months') return computeLastNMonthsRange(6);
         if (preset === 'last12months') return computeLastNMonthsRange(12);
         if (preset === 'custom') return customPeriodRange;
-        return null; // 'all'
+        return null;
       }
 
       function showToast(msg) {
@@ -228,12 +205,6 @@
         return document.getElementById('directorySearch').value.trim().toLowerCase();
       }
 
-      // Search + period only — the base set every column-filter checklist
-      // counts against, so "Doctors seen" and "Gender" show how many
-      // patients each option would match given the current search/period,
-      // not zeroed out by whatever's already selected in that same
-      // checklist (and not narrowed by the other checklist either, which
-      // would make the two column filters interact in a confusing way).
       function searchAndPeriodEntries() {
         const term = searchTerm();
         const range = periodRange(periodPreset);
@@ -257,14 +228,6 @@
         });
       }
 
-      // ---------------- Excel-style column-header filter dropdowns ----------------
-      // Checking/unchecking a box filters instantly and closes the
-      // dropdown right away, so the filtered table is immediately
-      // visible — picking a second value in the same column means
-      // reopening it (one filter decision at a time), which reads more
-      // predictably than a dropdown that lingers open. Clearing every
-      // active filter at once (across all columns) is the separate
-      // global Reset button next to Export CSV, not a per-dropdown one.
       let openFilterColumn = null;
       function closeColumnFilter() {
         openFilterColumn = null;
@@ -317,12 +280,6 @@
           count: counting.filter((e) => genderKey(e.gender) === k).length,
         })).sort((a, b) => b.count - a.count);
       }
-      // Same Excel-style checkbox dropdown as Gender/Doctors seen, just
-      // over whatever visit counts actually occur in the data (1 to N,
-      // not a fixed range someone has to guess) -- sorted low to high
-      // rather than by popularity, since a visit count is a number line
-      // an admin reads in order, not a set of categories ranked by how
-      // common each one is.
       function visitsFilterOptions() {
         const counting = searchAndPeriodEntries();
         const keys = Array.from(new Set(counting.map((e) => e.totalVisits)));
@@ -333,10 +290,6 @@
         })).sort((a, b) => Number(a.value) - Number(b.value));
       }
 
-      // One removable chip per active column filter, so a filtered
-      // directory is visibly and specifically flagged as filtered
-      // (which column, which values) rather than looking identical to
-      // the unfiltered table.
       function activeFilterChipsHtml() {
         const chips = [];
         if (doctorFilterIds.size > 0) {
@@ -375,20 +328,11 @@
       function renderTable() {
         const filtered = filteredEntries();
         const wrap = document.getElementById('directoryTableWrap');
-        // CSV export already respects the active filters (filteredEntries()
-        // below) — this count is the only place that was still quoting the
-        // unfiltered total, which read as "82 patients" even with a doctor
-        // selected and only a handful actually shown.
         const isFiltered = filtered.length !== allEntries.length;
         document.getElementById('directorySummary').textContent = isFiltered
           ? `${filtered.length} of ${allEntries.length} patients`
           : `${allEntries.length} patient${allEntries.length === 1 ? '' : 's'} on file`;
 
-        // Rendered into the panel-header row (next to Export CSV/Reset
-        // filters) rather than as its own block above the table, so
-        // filtering doesn't shift the table down or move it back up when
-        // cleared — and it stays visible even when a filter zeroes out
-        // every row, so there's still something to clear.
         document.getElementById('activeFilterChipsRow').innerHTML = activeFilterChipsHtml();
         document.querySelectorAll('#activeFilterChipsRow .clear-filter-chip').forEach((btn) => {
           btn.addEventListener('click', () => clearFilterByKey(btn.dataset.key));
@@ -478,9 +422,6 @@
         renderTable();
       });
 
-      // ISO "YYYY-MM-DD" strings compare correctly with plain <=/>=, so
-      // no Date parsing needed here - just swap if From ends up after To
-      // rather than silently returning an empty/backwards range.
       function updateCustomPeriodFromInputs() {
         const s = document.getElementById('periodStartDate').value;
         const e = document.getElementById('periodEndDate').value;
@@ -501,9 +442,6 @@
         downloadCsv(`patient-directory-${Qlinic.getTodayDate()}.csv`, csv);
       });
 
-      // Today/Tomorrow/In a week dropped - jumping just one end of a
-      // custom range to "today" independent of the other rarely makes
-      // sense as a range boundary.
       Qlinic.attachDatePicker(document.getElementById('periodStartDate'), { quickButtons: false });
       Qlinic.attachDatePicker(document.getElementById('periodEndDate'), { quickButtons: false });
       document.getElementById('periodStartDate').max = Qlinic.getTodayDate();
@@ -522,14 +460,8 @@
       const doctors = await Qlinic.getDoctors({ includeInactive: true });
       doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
       allEntries = await Qlinic.getPatientDirectory();
-      // Most recently active patients first — the ones most likely to be
-      // relevant to whatever admin is looking this page up for.
       allEntries.sort((a, b) => (b.lastVisitDate || '').localeCompare(a.lastVisitDate || ''));
 
-      // Deep link from reception.html's "View full history" -- pre-fills
-      // the same search box a person would've typed into by hand, so it
-      // stays a normal filtered view (paging, CSV export, etc. all still
-      // work), not a special single-patient mode.
       const phoneParam = new URLSearchParams(window.location.search).get('phone');
       if (phoneParam) document.getElementById('directorySearch').value = phoneParam;
 

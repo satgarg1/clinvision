@@ -49,31 +49,6 @@
 
       <input type="text" id="noShowSearch" placeholder="Search by patient name, phone, or address..." />
 
-      <!-- One shared row instead of the pill sitting alone above 2-3
-           stacked rows of date fields below it - singleDayFilters/
-           rangePresetField/customRangeFilters are still toggled by the
-           exact same JS (.style.display = 'flex'/'none' by id), just
-           nested here as flex children instead of separate top-level
-           blocks, so a hidden one simply drops out of this row's flow.
-           "Date"/"Period" labels dropped as redundant (a calendar icon
-           and a dropdown are self-explanatory on their own) - From/To
-           keep theirs since nothing else distinguishes them. Each
-           nested group (singleDayFilters/customRangeFilters) is
-           flex-wrap:nowrap on itself - only the OUTER row is allowed to
-           wrap. Without that, Date and Today (now bare siblings with no
-           wrapping div of their own since their labels were dropped)
-           could wrap independently of each other and visually
-           interleave with the pill in a scrambled order.
-
-           Alignment: the pill/Date/Today/Custom-dropdown have no label
-           of their own, but From/To do ("From"/"To" - nothing else
-           distinguishes them) - align-items:flex-end bottom-aligns
-           every group's actual control regardless of that difference,
-           since flex-end lines up each item's own bottom edge rather
-           than the whole column's midpoint. No spacer needed. Every
-           control in the row is also height/shape-matched in
-           styles.css (search "Revenue/No-shows' filter row") so
-           nothing here reads shorter or squarer than its neighbours. -->
       <div style="display:flex;align-items:flex-end;flex-wrap:wrap;gap:16px 24px;margin-bottom:10px;">
         <div class="period-pills" id="viewModeToggle" style="margin-bottom:0;">
           <button type="button" class="period-pill active" data-mode="single">Single day</button>
@@ -118,13 +93,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
 
-      // Scoped to the pharmacy counter and catalog only -- this page shows
-      // patient/staff data a pharmacist has no business seeing.
       if (await Qlinic.isPharmacist()) { window.location.href = 'pharmacy.html'; return; }
 
       document.querySelector('a.brand').addEventListener('click', async (e) => {
@@ -142,10 +115,6 @@
         document.getElementById('revenueNavLink').style.display = 'none';
         document.getElementById('trendsNavLink').style.display = 'none';
       }
-      // Body starts hidden (see the <body> tag) so a doctor hitting this
-      // URL never sees it flash before the redirect above fires, and so
-      // nobody sees the full nav for a moment before the role-based
-      // hiding above finishes.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
@@ -158,20 +127,17 @@
       let allNoShows = [];
       let currentPage = 1;
       let doctorById = {};
-      let viewMode = 'single'; // 'single' | 'range'
+      let viewMode = 'single';
       let rangePreset = 'lastweek';
-      let customRange = null; // exact {start,end} for the 'custom' preset
+      let customRange = null;
       let doctorFilterIds = new Set();
       let genderFilterValues = new Set();
       let typeFilterValues = new Set();
-      let sortDirection = 'asc'; // 'asc' = oldest appointment first, 'desc' = newest first
+      let sortDirection = 'asc';
 
       function pad2(n) { return String(n).padStart(2, '0'); }
       function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
 
-      // Same preset family and date math as Revenue (kept as a per-page
-      // copy, matching this codebase's no-build-step convention), so
-      // "Period" here answers the same question the same way everywhere.
       function computeLastWeekRange() {
         const today = new Date();
         const day = today.getDay();
@@ -278,11 +244,6 @@
         return document.getElementById('noShowSearch').value.trim().toLowerCase();
       }
 
-      // Search only — the date range is already baked into allNoShows by
-      // whichever fetch loaded it (single day or range), same as Revenue's
-      // searchAndDateInvoices. This is the base set every column-filter
-      // checklist counts against, so each option's count reflects the
-      // current search/date scope, not narrowed by the other checklists.
       function searchAndDateNoShows() {
         const term = searchTerm();
         if (!term) return allNoShows;
@@ -300,12 +261,6 @@
           if (typeFilterValues.size > 0 && !typeFilterValues.has(p.type)) return false;
           return true;
         });
-        // Appointment date first (this used to have no sort at all, so
-        // a range view showed rows in whatever order the underlying
-        // per-day queries happened to return, not chronological), ties
-        // on the same day broken alphabetically by name — same shape as
-        // Revenue's own visit-date sort, tie-break swapped for name since
-        // there's no invoice createdAt here to fall back on.
         result.sort((a, b) => (a.tokenDate || '').localeCompare(b.tokenDate || '') || a.name.localeCompare(b.name));
         if (sortDirection === 'desc') result.reverse();
         return result;
@@ -334,7 +289,6 @@
           .filter((o) => o.count > 0);
       }
 
-      // ---------------- Excel-style column-header filter dropdowns ----------------
       let openFilterColumn = null;
       function closeColumnFilter() {
         openFilterColumn = null;
@@ -371,9 +325,6 @@
       }
       document.addEventListener('click', () => closeColumnFilter());
 
-      // One removable chip per active column filter, so a filtered view is
-      // visibly and specifically flagged as filtered rather than looking
-      // identical to the unfiltered table.
       function activeFilterChipsHtml() {
         const chips = [];
         if (doctorFilterIds.size > 0) {
@@ -430,9 +381,6 @@
           ? `${filtered.length} of ${allNoShows.length} no-shows`
           : `${allNoShows.length} no-show${allNoShows.length === 1 ? '' : 's'} for this ${viewMode === 'range' ? 'period' : 'date'}`;
 
-        // Rendered into the panel-header row rather than as its own block
-        // above the table, so filtering doesn't shift the table down or
-        // move it back up when cleared.
         document.getElementById('activeFilterChipsRow').innerHTML = activeFilterChipsHtml();
         document.querySelectorAll('#activeFilterChipsRow .clear-filter-chip').forEach((btn) => {
           btn.addEventListener('click', () => clearFilterByKey(btn.dataset.key));
@@ -532,9 +480,6 @@
         document.getElementById('dateFilter').value = Qlinic.getTodayDate();
         loadNoShows();
       });
-      // ISO "YYYY-MM-DD" strings compare correctly with plain <=/>=, so
-      // no Date parsing needed here - just swap if From ends up after To
-      // rather than silently returning an empty/backwards range.
       function updateCustomRangeFromInputs() {
         const s = document.getElementById('rangeStartDate').value;
         const e = document.getElementById('rangeEndDate').value;
@@ -585,10 +530,6 @@
       Qlinic.attachDatePicker(document.getElementById('dateFilter'));
       document.getElementById('dateFilter').max = Qlinic.getTodayDate();
       document.getElementById('dateFilter').value = Qlinic.getTodayDate();
-      // Today/Tomorrow/In a week dropped - jumping just one end of a
-      // custom range to "today" independent of the other rarely makes
-      // sense as a range boundary. (dateFilter above keeps them - it's
-      // picking a single specific day, where the jump is useful.)
       Qlinic.attachDatePicker(document.getElementById('rangeStartDate'), { quickButtons: false });
       Qlinic.attachDatePicker(document.getElementById('rangeEndDate'), { quickButtons: false });
       document.getElementById('rangeStartDate').max = Qlinic.getTodayDate();

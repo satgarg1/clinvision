@@ -116,16 +116,13 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
 
       Qlinic.attachPasswordMeter(document.getElementById('newStaffPassword'));
 
-      // The sidebar logo links to the marketing site, which has no way
-      // back into the app without logging in again, worth a heads-up
-      // before someone loses their place by accident.
       document.querySelector('a.brand').addEventListener('click', async (e) => {
         e.preventDefault();
         if (await Qlinic.confirmDialog({ message: "Going to the homepage will end your session here, you'll need to log in again to get back in." })) {
@@ -137,10 +134,6 @@
         window.location.href = 'dashboard.html';
         return;
       }
-      // Body starts hidden (see the <body> tag) specifically so a non-
-      // admin hitting this URL never sees this admin-only page's content
-      // even for a moment before the redirect above fires -- reveal only
-      // once we know for certain they're allowed to be here.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
@@ -148,9 +141,6 @@
       let doctors = [];
       let doctorById = {};
 
-      // Same "read-only table, edit-modal-for-changes" pattern as
-      // manage-doctors.html -- a live inline input/select in every row
-      // was the exact "looks cheap" thing that page moved away from too.
       const PAGE_SIZE = 10;
       let allTeam = [];
       let searchTerm = '';
@@ -189,10 +179,6 @@
         const base = !term ? allTeam : allTeam.filter((p) =>
           (p.fullName || '').toLowerCase().includes(term) || p.email.toLowerCase().includes(term)
         );
-        // Active people first, deactivated ones sink to the bottom --
-        // still findable (an admin needs to see them to reactivate or
-        // check history), just out of the way of the roster people
-        // actually work with day to day.
         return [...base].sort((a, b) => (a.isActive ? 0 : 1) - (b.isActive ? 0 : 1));
       }
 
@@ -273,10 +259,6 @@
         if (person) openEditStaffModal(person);
       }
 
-      // A dialog, not a live inline input/select per row — same reasoning
-      // manage-doctors.html's own edit modal comment already gives: keeps
-      // the table itself plain text always, rather than turning into a
-      // form the moment you touch one row.
       function openEditStaffModal(person) {
         const backdrop = document.createElement('div');
         backdrop.className = 'modal-backdrop';
@@ -321,8 +303,6 @@
         backdrop.addEventListener('click', (e) => { if (e.target === backdrop) cleanup(); });
         backdrop.querySelector('#editStaffCancelBtn').addEventListener('click', cleanup);
 
-        // Strips anything non-numeric as they type, matching billing's own
-        // phone field and reception's patient forms.
         backdrop.querySelector('#editStaffPhone').addEventListener('input', function () {
           this.value = this.value.replace(/\D/g, '').slice(0, 10);
         });
@@ -342,8 +322,6 @@
             if (role !== person.role) await Qlinic.updateStaffRole(person.id, role);
             if (role === 'doctor' && doctorId !== (person.doctorId || '')) await Qlinic.updateStaffDoctorLink(person.id, doctorId);
           } catch (err) {
-            // Most likely either the one-phone-per-account uniqueness
-            // constraint or the one-login-per-doctor link constraint.
             showToast(err.message || 'Could not update this person — please try again.');
             return;
           }
@@ -386,8 +364,6 @@
         this.value = this.value.replace(/[0-9]/g, '');
       });
 
-      // Strips anything non-numeric as they type, matching billing's own
-      // phone field and reception's patient forms.
       document.getElementById('newStaffPhone').addEventListener('input', function () {
         this.value = this.value.replace(/\D/g, '').slice(0, 10);
       });

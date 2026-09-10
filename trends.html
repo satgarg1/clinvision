@@ -51,13 +51,6 @@
         </div>
       </div>
 
-      <!-- One shared row instead of "Period" sitting alone above a
-           separate row of From/To fields - trendsCustomRangeFilters is
-           still toggled by the exact same JS (.style.display =
-           'flex'/'none'), just nested here as a flex child instead of a
-           separate top-level block, so it simply drops out of this
-           row's flow when hidden. Both already carry real labels, so no
-           spacer trick is needed the way the pill-toggle pages need one. -->
       <div style="display:flex;align-items:flex-end;flex-wrap:wrap;gap:16px 24px;margin-bottom:10px;">
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;" id="trendsPeriodField">
           <label class="pill-label">Period</label>
@@ -180,7 +173,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -210,44 +203,19 @@
       if (!amAdmin) {
         document.getElementById('revenueNavLink').style.display = 'none';
       }
-      // Revenue has no point for a doctor's own view — not the amount
-      // (billing is fully admin-only, per canAccessBilling/isAdmin
-      // elsewhere) and not "Revenue by doctor" specifically, which is
-      // just a restated single total once scoped to one doctor anyway.
-      // Handled entirely by the group tabs below (no "Revenue" tab is
-      // offered to a doctor, and its two panels carry data-group="revenue"),
-      // rather than a second, separate style.display here.
-      //
-      // The doctor filter on "Appointment distribution by hour" is real
-      // scope for an admin picking one doctor out of many, but for a
-      // doctor's own view it's already scoped to just them (getPatientsInRange
-      // below is called with myDoctorId) — an "All doctors" vs. one-name
-      // dropdown that both show the same data would just be clutter.
       if (amDoctor) {
         document.getElementById('apptDistDoctorField').style.display = 'none';
       }
-      // Body starts hidden (see the <body> tag) so a plain staff member
-      // hitting this URL never sees it flash before the redirect above
-      // fires, and so nobody sees the full nav for a moment before the
-      // role-based hiding above finishes.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
       const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      // May/June/July aren't shortened — abbreviating them (Jun/Jul) saves
-      // nothing worth the ambiguity, so they're spelled out like the rest
-      // of the app's date formatting.
       const MONTH_ABBREV = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
       function pad2(n) { return String(n).padStart(2, '0'); }
       function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
       function todayStr() { return toDateStr(new Date()); }
 
-      // Same preset family and date math as Revenue (kept as a per-page
-      // copy, matching this codebase's no-build-step convention), so
-      // "Period" here answers the same question the same way in both
-      // places. Custom is additionally capped at 12 months (see
-      // updateCustomRangeFromInputs) so its bars stay readable.
       function computeLastWeekRange() {
         const today = new Date();
         const day = today.getDay();
@@ -257,16 +225,6 @@
         const lastSunday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - 1);
         return { start: toDateStr(lastMonday), end: toDateStr(lastSunday) };
       }
-      // The anomaly chip's own comparison window -- NOT a replacement
-      // for computeLastWeekRange() above, which stays the full prior
-      // week on purpose (it's also the standalone "Last week" period-
-      // picker preset, where selecting it explicitly means "show me all
-      // 7 days," regardless of what day it is today). Capping the END
-      // of last week to however many days of "this week" have actually
-      // elapsed is what makes the anomaly chip compare like-for-like --
-      // Monday (1 day) against last Monday (1 day), not against all 7
-      // of last week (raised 2026-09-01: a real Monday-morning screenshot
-      // read "Revenue down 90%" purely from this exact mismatch).
       function computeLastWeekSameSpanRange(thisWeek) {
         const full = computeLastWeekRange();
         const [ty, tm, td] = thisWeek.start.split('-').map(Number);
@@ -286,14 +244,6 @@
         const sundayStr = toDateStr(sunday);
         return { start: toDateStr(monday), end: sundayStr > tStr ? tStr : sundayStr };
       }
-      // FLAG (raised 2026-09-01, not fixed -- nothing combines this with
-      // computeLastMonthRange in a comparison today, so there's nothing
-      // live to break): built the identical month-to-date-vs-full-month
-      // shape as computeLastWeekRange had before computeLastWeekSameSpanRange
-      // was added above. A month-over-month comparison built later must
-      // NOT pair this directly against computeLastMonthRange() the way
-      // the anomaly chip briefly did with weeks -- it needs its own
-      // same-span variant, on day 1 of a month worst of all.
       function computeCurrentMonthRange() {
         const today = new Date();
         const first = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -316,8 +266,6 @@
         const start = new Date(firstOfThisMonth.getFullYear(), firstOfThisMonth.getMonth() - n, 1);
         return { start: toDateStr(start), end: toDateStr(end) };
       }
-      // Indian financial year: April 1 - March 31. If we're in Jan-Mar,
-      // the current FY started in April of the previous calendar year.
       const CURRENT_FY_START_YEAR = (() => {
         const today = new Date();
         return today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
@@ -366,13 +314,6 @@
         return `${sd} ${MONTH_ABBREV[sm - 1]} ${sy} - ${ed} ${MONTH_ABBREV[em - 1]} ${ey}`;
       }
 
-      // Bar granularity adapts to how wide the selected period actually
-      // is, not to which preset was picked — that way every preset (and
-      // any Custom range) automatically lands on a readable bar count:
-      // ~a week or less -> one bar per day, ~a month -> one bar per week
-      // (~4-5 bars), anything longer -> one bar per calendar month.
-      // Custom is separately capped at 12 months (see
-      // updateCustomRangeFromInputs), so the month case never exceeds 12 bars.
       function bucketGranularity(startStr, endStr) {
         const days = Math.round((new Date(endStr) - new Date(startStr)) / 86400000) + 1;
         if (days <= 8) return 'day';
@@ -380,9 +321,8 @@
         return 'month';
       }
 
-      // Monday-of-the-week bucket key for a given Date.
       function weekStartStr(d) {
-        const day = d.getDay(); // 0 = Sun .. 6 = Sat
+        const day = d.getDay();
         const diffToMonday = day === 0 ? 6 : day - 1;
         const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - diffToMonday);
         return toDateStr(monday);
@@ -393,17 +333,12 @@
         return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       }
 
-      // First-of-the-month bucket key for a given Date.
       function monthStartStr(d) { return toDateStr(new Date(d.getFullYear(), d.getMonth(), 1)); }
       function monthLabel(dateStr) {
         const [y, m] = dateStr.split('-').map(Number);
         return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
       }
 
-      // Turns a bucket key into the actual start/end dates a drill-down
-      // link should query — capped at today, since a bucket for the
-      // current (still in progress) week/month shouldn't claim to cover
-      // days that haven't happened yet.
       function weekRangeFromMonday(mondayStr) {
         const [y, m, d] = mondayStr.split('-').map(Number);
         const sunday = toDateStr(new Date(y, m - 1, d + 6));
@@ -411,16 +346,12 @@
       }
       function monthRangeFromFirst(firstStr) {
         const [y, m] = firstStr.split('-').map(Number);
-        const lastDay = toDateStr(new Date(y, m, 0)); // day 0 of month m (1-indexed) = last day of that month
+        const lastDay = toDateStr(new Date(y, m, 0));
         return { start: firstStr, end: lastDay > todayStr() ? todayStr() : lastDay };
       }
 
       const GRANULARITY_NOUN = { day: 'day', week: 'week', month: 'month' };
 
-      // Dispatches to the day/week/month bucket-key, drill-down-range, and
-      // label helpers above based on the granularity bucketGranularity
-      // picked for the current period, so every chart shares one set of
-      // bucketing rules instead of each re-implementing the day case.
       function bucketKeyFor(date, granularity) {
         if (granularity === 'day') return toDateStr(date);
         if (granularity === 'week') return weekStartStr(date);
@@ -451,17 +382,7 @@
       const HIST_LABELS = ['0-5 min', '5-10 min', '10-15 min', '15-20 min', '20+ min'];
       function histBucketForMinutes(min) { return min < 5 ? 0 : min < 10 ? 1 : min < 15 ? 2 : min < 20 ? 3 : 4; }
 
-      // ============================================================
-      // Chart.js setup: colors are pulled from ClinVision's own CSS custom
-      // properties at render time (not hardcoded), so every chart
-      // automatically matches whichever theme (light/dark) the clinic
-      // has picked in Settings — same source of truth as the rest of
-      // the app, not a separate palette to keep in sync by hand.
-      // ============================================================
       function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
-      // Same 5-color identity cycle used for doctor accents elsewhere in
-      // the app (dashboard.html's ACCENT_COLORS) — a per-page copy,
-      // matching this codebase's no-shared-module convention.
       const ACCENT_VARS = ['--mkt-teal', '--mkt-blue', '--mkt-purple', '--mkt-coral', '--mkt-pink'];
       function colorForDoctorIndex(idx) { return cssVar(ACCENT_VARS[idx % ACCENT_VARS.length]); }
       function hexToRgba(hex, a) {
@@ -475,13 +396,6 @@
 
       function chartFont() { return { family: "'Inter', sans-serif", size: 11, weight: '500' }; }
       function chartTooltipBase() {
-        // backgroundColor rides --black, which deliberately INVERTS between
-        // themes (dark ink on a light page, light ink on a dark page) — so
-        // the text drawn on top of it must invert the same way, via --white,
-        // or dark mode ends up drawing white text on --black's now-light
-        // background (invisible). titleColor/bodyColor aren't optional here:
-        // Chart.js's own default (white) only works for a permanently-dark
-        // tooltip, not this theme-flipping one.
         return {
           backgroundColor: cssVar('--black'), titleColor: cssVar('--white'), bodyColor: cssVar('--white'),
           borderColor: cssVar('--grey-300'), borderWidth: 1, position: 'nearest',
@@ -494,11 +408,6 @@
 
       function makeAreaChart(canvasId, labels, data, color, formatter, onClickIndex, yAxisLabel) {
         const grid = cssVar('--grey-300');
-        // A normal multi-week range stays hover-only (pointRadius 0) so the
-        // line doesn't get cluttered with dots. But the first 1-3 days of a
-        // new week/month have almost nothing to draw a line with at all --
-        // an invisible-until-hover point on a near-empty chart reads as
-        // broken, not quiet. Below that threshold, show real dots instead.
         const smallDataset = data.length <= 3;
         return new Chart(document.getElementById(canvasId), {
           type: 'line',
@@ -522,13 +431,6 @@
         });
       }
 
-      // xTicksExtra (optional): overrides merged into the x-axis's own
-      // ticks config - e.g. {maxRotation:90,minRotation:90} to force
-      // fully vertical labels instead of Chart.js's own auto-rotated
-      // diagonal, for a chart whose labels are too long to sit flat
-      // (Appointment distribution by hour's "9:30 AM–10:30 AM" range
-      // labels). Every other bar chart here leaves this unset and keeps
-      // Chart.js's default behavior.
       function makeBarChart(canvasId, labels, data, colors, formatter, onClickIndex, yAxisLabel, xTicksExtra) {
         const grid = cssVar('--grey-300');
         return new Chart(document.getElementById(canvasId), {
@@ -577,15 +479,6 @@
         } };
       }
 
-      // Chart.js's built-in tooltip follows the cursor, which for a ring
-      // this thin means a hover near the inner edge of ANY slice lands
-      // the tooltip right on top of the center total — no cursor-tracking
-      // positioner avoids that, since the collision is with the ring's
-      // own geometry, not the cursor's path. Instead this pins one fixed
-      // tooltip flush against the ring's edge, beside the hovered slice's
-      // own midpoint angle — same side as the slice, same rough height —
-      // rather than the ring's fixed center or wherever the cursor
-      // happens to sit inside a wide slice.
       function donutTooltipHandler(canvasId, formatter) {
         return (context) => {
           const { chart, tooltip } = context;
@@ -622,12 +515,6 @@
             layout: { padding: { top: 4, bottom: 4 } },
             onClick: (evt, els) => { if (!els.length || !onClickIndex) return; onClickIndex(els[0].index); },
             plugins: {
-              // Bottom, not right: a right-side legend reserves a whole
-              // side column the width of its longest label, which pushes
-              // the ring itself off-center and leaves a wide dead gap
-              // between ring and labels on anything wider than it is
-              // tall. Bottom keeps the labels hugging the ring directly
-              // below it regardless of box width.
               legend: { position: 'bottom', align: 'center', labels: { color: cssVar('--grey-700'), font: chartFont(), boxWidth: 8, boxHeight: 8, usePointStyle: true, padding: 12 } },
               tooltip: { enabled: false, external: donutTooltipHandler(canvasId, formatter) },
             },
@@ -636,7 +523,6 @@
         });
       }
 
-      // ---------------- drill-down state ----------------
       const trendCharts = {};
       const trendSelected = { revenue: null, visits: null, revByDoc: null, noshow: null, peak: null, consult: null };
       function openTrendDrill(id) { document.getElementById(id).classList.add('open'); }
@@ -646,28 +532,21 @@
         ['revenueDrill', 'visitsDrill', 'revByDocDrill', 'noShowDrill', 'peakDrill', 'consultDrill'].forEach(closeTrendDrill);
       }
 
-      // ---------------- caches built once per loadAndRender, read by click handlers ----------------
-      let revenueBucketsCache = {}; // key -> { total, byDoctor: {doctorId: sum} }
+      let revenueBucketsCache = {};
       let revenueBucketKeysCache = [];
       let revenueGranularityCache = 'week';
-      let visitsBucketsByDoctorCache = {}; // key -> {doctorId: count}
+      let visitsBucketsByDoctorCache = {};
       let noShowBucketsCache = {};
       let noShowGranularityCache = 'week';
-      let peakByHourByDoctorCache = {}; // hour -> {doctorId: count}
-      let consultDurationsByDoctorCache = {}; // doctorId -> [minutes,...]
+      let peakByHourByDoctorCache = {};
+      let consultDurationsByDoctorCache = {};
       let doctorListCache = [];
 
-      // Buckets invoices AND visited patients together (same bucket keys
-      // as the main Revenue chart) so the drill-downs for Revenue over
-      // time, Visits per doctor, and Revenue by doctor can all read from
-      // one pass over the already-fetched data instead of three.
       function renderRevenueOverTime(invoices, patients, granularity, doctorById) {
         document.getElementById('revenueOverTimeHeading').textContent = `Clinic Revenue by ${GRANULARITY_NOUN[granularity]}`;
         revenueGranularityCache = granularity;
         revenueBucketsCache = {};
         invoices.forEach((inv) => {
-          // invoiceDate (migration 024), not createdAt — a backdated bill
-          // belongs in the day it's FOR, same as Revenue's own filtering.
           const [y, m, d] = inv.invoiceDate.split('-').map(Number);
           const key = bucketKeyFor(new Date(y, m - 1, d), granularity);
           if (!revenueBucketsCache[key]) revenueBucketsCache[key] = { total: 0, byDoctor: {} };
@@ -684,11 +563,6 @@
           visitsBucketsByDoctorCache[key][p.doctorId] = (visitsBucketsByDoctorCache[key][p.doctorId] || 0) + 1;
         });
 
-        // Union of both bucket sets, not just invoice buckets — a bucket
-        // with visits but no billed revenue yet (e.g. every visit that
-        // day was a waived follow-up) still needs a slot on the shared
-        // timeline, or it silently disappears from the visits-per-doctor
-        // trend drill-down even though real visits happened.
         revenueBucketKeysCache = Array.from(new Set([...Object.keys(revenueBucketsCache), ...Object.keys(visitsBucketsByDoctorCache)])).sort();
         revenueBucketKeysCache.forEach((k) => {
           if (!revenueBucketsCache[k]) revenueBucketsCache[k] = { total: 0, byDoctor: {} };
@@ -727,12 +601,6 @@
         openTrendDrill('revenueDrill');
       }
 
-      // Only counts patients whose visit outcome is actually known (done
-      // or no_show) — someone still booked/waiting hasn't resolved yet,
-      // so including them would understate the no-show rate. Buckets by
-      // day/week/month (same rule as Revenue over time) so a bar always
-      // reads as "this specific day/week/month," never an ambiguous mix
-      // of occurrences.
       function renderNoShowOverTime(patients, granularity) {
         noShowGranularityCache = granularity;
         document.getElementById('noShowHeading').textContent = `No-show rate by ${GRANULARITY_NOUN[granularity]}`;
@@ -779,11 +647,6 @@
         const periodLabel = isDayBucket ? shortDateLabel(key) : isWeekBucket ? `week of ${shortDateLabel(key)}` : monthLabel(key);
         document.getElementById('noShowDrillLabel').textContent = `${periodLabel} · ${items.length} resolved visit${items.length === 1 ? '' : 's'}`;
 
-        // A day bucket already IS a single day, so there's no further
-        // day-level split to show. A week bucket has exactly one
-        // occurrence of each weekday, so the actual calendar date is more
-        // useful than a generic "Sat" label. A month bucket aggregates
-        // ~4-5 occurrences of each weekday into one rate.
         let dayLabels;
         const dayTotals = new Array(7).fill(0);
         const dayNoShows = new Array(7).fill(0);
@@ -815,10 +678,6 @@
           .filter((r) => r.stats)
           .map((r) => ({ ...r, rate: Math.round((r.stats.noShows / r.stats.total) * 100) }));
 
-        // With a single doctor in the clinic, "By doctor" would show
-        // exactly one bar at exactly the same rate as the bucket bar just
-        // clicked to get here — guaranteed, not computed. Dropped rather
-        // than shown as a false comparison.
         const showByDoctor = doctorListCache.length > 1;
         document.getElementById('noShowDrillNote').textContent = isDayBucket
           ? (showByDoctor ? 'By doctor (a single day has no further day-level split)' : 'A single day has no further breakdown to show')
@@ -826,10 +685,6 @@
         document.getElementById('noShowDrillCharts').classList.toggle('two-up', !isDayBucket && showByDoctor);
 
         if (trendCharts.noShowDay) { trendCharts.noShowDay.destroy(); trendCharts.noShowDay = null; }
-        // Hiding the <canvas> alone left its wrapper box (a fixed 220px
-        // tall .trend-drill-chart-box) visible and empty -- the actual
-        // gap this was reported as. Hide the box itself, not just the
-        // chart inside it.
         document.getElementById('noShowDayChartBox').style.display = isDayBucket ? 'none' : '';
         if (!isDayBucket) {
           trendCharts.noShowDay = makeMiniBarChart('noShowDayChart', dayLabels, dayRates, dayLabels.map(() => cssVar('--mkt-teal')), (v) => v + '%', 'No-show rate');
@@ -842,12 +697,6 @@
         }
       }
 
-      // Matches getDailySummary's footfall definition exactly: waiting/
-      // in_consult/done are actual visits, booked (hasn't arrived yet)
-      // and no_show (booked but never arrived) are both excluded. Built
-      // from the full doctor list, not just the counts seen — a doctor
-      // with zero visits in this period still shows as a real 0 rather
-      // than silently vanishing.
       function renderVisitsPerDoctor(patients, doctors) {
         if (doctors.length === 0) { if (trendCharts.visits) trendCharts.visits.destroy(); return; }
         const visited = patients.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status));
@@ -872,9 +721,6 @@
         openTrendDrill('visitsDrill');
       }
 
-      // Follow-up visits are always waived to ₹0 (see updateInvoicePayment's
-      // comment in clinic-data.js), so only consultation and emergency
-      // ever contribute real revenue.
       function renderRevenueByDoctor(invoices, doctors) {
         if (doctors.length === 0) { if (trendCharts.revByDoc) trendCharts.revByDoc.destroy(); return; }
         const sums = {};
@@ -901,9 +747,6 @@
         openTrendDrill('revByDocDrill');
       }
 
-      // Same footfall definition as getDailySummary. Bucketed by hour of
-      // day in local time, aggregated across every day in the selected
-      // period — only hours that actually saw an arrival get a bar.
       function renderPeakHours(patients) {
         const visited = patients.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status) && p.arrivedAt);
         peakByHourByDoctorCache = {};
@@ -928,12 +771,6 @@
         trendCharts.peak._hours = hours;
       }
 
-      // Counts visits in the period (same convention as every other chart
-      // here, e.g. Visits per doctor), not de-duplicated unique people —
-      // someone who came in three times counts three times. Gender always
-      // has a value (defaults to 'other' at intake); age is optional, so
-      // anyone without one recorded goes in its own "Unknown" slice rather
-      // than being silently dropped from the total.
       const GENDER_LABELS = { male: 'Male', female: 'Female', other: 'Other' };
       const AGE_BUCKETS = ['<18', '18-35', '35-55', '>55', 'Unknown'];
       function ageBucketFor(age) {
@@ -959,10 +796,6 @@
           const g = Object.prototype.hasOwnProperty.call(genderCounts, p.gender) ? p.gender : 'other';
           genderCounts[g] += 1;
         });
-        // Legend stays plain (color + name only) — the count lives in the
-        // hover tooltip instead ("Male: 64 Patients"), not baked into the
-        // legend text, which read as a second, redundant number sitting
-        // right next to the center total.
         const patientsFormatter = (v) => `${v} Patients`;
         const genderRows = Object.keys(GENDER_LABELS)
           .map((k, i) => ({ label: GENDER_LABELS[k], value: genderCounts[k], color: colorForDoctorIndex(i) }))
@@ -994,11 +827,6 @@
         openTrendDrill('peakDrill');
       }
 
-      // done_at (migration 030) only exists on visits marked done AFTER
-      // it shipped — a doctor never explicitly "marks done" per patient
-      // (see clinic-data.js's callNextPatient/finishCurrentPatient), so
-      // there's no way to backfill older rows. Doctors with no timed
-      // visits yet are left out rather than shown as a misleading 0.
       function renderConsultDuration(patients, doctors) {
         if (doctors.length === 0) { if (trendCharts.consult) trendCharts.consult.destroy(); return; }
         const timed = patients.filter((p) => p.status === 'done' && p.calledAt && p.doneAt && new Date(p.doneAt) >= new Date(p.calledAt));
@@ -1036,27 +864,6 @@
         openTrendDrill('consultDrill');
       }
 
-      // Every type==='appointment' booking with a bookedTime counts into
-      // its scheduled hour, regardless of what happened to it since —
-      // done, no-show, and still-waiting all count the same, because
-      // this chart answers "how was the day planned," not "who showed
-      // up" (that question is what Peak hours, just above, already
-      // answers). Walk-ins are excluded even with a preferred time,
-      // matching the identical chart already shipped on Doctor View's
-      // schedule modal. Unlike that live view there's no "hide once
-      // passed" here — every hour of the whole selected period shows,
-      // since this is historical, not "what's left today."
-      //
-      // Hours are anchored to the clinic's real opening_time, not a
-      // round clock hour — a 9:30 AM opening produces buckets like
-      // "9:30 AM–10:30 AM," not the mislabeled clock-hour buckets that
-      // had to be fixed on the Doctor View chart this same session.
-      //
-      // The doctor dropdown filters the already-fetched `patients` for
-      // the period in memory — for an admin that list already covers
-      // every doctor (getPatientsInRange is called without a doctorId
-      // filter in loadAndRender), so switching doctors here never
-      // re-queries.
       let apptDistDoctorFilter = 'all';
       let apptDistPatientsCache = [];
       function renderApptDist(patients, doctors) {
@@ -1124,21 +931,13 @@
       });
 
       let rangePreset = 'currentmonth';
-      let customRange = null; // exact {start,end} for the 'custom' preset
+      let customRange = null;
       let doctorByIdCache = {};
 
       function currentRange() {
         return rangePreset === 'custom' ? customRange : rangeForPreset(rangePreset);
       }
 
-      // "The one thing worth noticing today" - independent of whatever
-      // period the page itself is showing, always this week vs. last
-      // week, scanning the same metrics already computed elsewhere on
-      // this page (revenue, footfall, no-shows, avg. consult duration)
-      // for whichever moved the most, so nobody has to flip through all
-      // five tabs comparing periods themselves to catch it. Never hides
-      // (unlike the waiting/holiday chips) - a calm week is itself the
-      // answer, not the absence of a check having run.
       async function renderAnomalyChip() {
         const btn = document.getElementById('anomalyChipBtn');
         const icon = document.getElementById('anomalyChipIcon');
@@ -1147,11 +946,6 @@
         try {
           await renderAnomalyChipInner(btn, icon, text, popover);
         } catch (err) {
-          // A failed fetch here used to leave the chip showing whatever
-          // it last rendered — stale data with nothing to say it's stale,
-          // which is worse than admitting the check didn't run. This is
-          // a passive insight, not a user-initiated action, so a neutral
-          // fallback in the chip itself (not a toast) is what it gets.
           console.warn('Could not check for anomalies:', err);
           btn.className = 'anomaly-chip calm';
           icon.textContent = '…';
@@ -1169,13 +963,6 @@
         const lastWeek = computeLastWeekSameSpanRange(thisWeek);
         const scopeDoctorId = myDoctorId || undefined;
 
-        // Now that "last week" is capped to the same span as "this week",
-        // saying just "vs. last week" plainly would still read as if the
-        // whole prior week was the comparison -- only naming the day on
-        // Monday (a true single-day-vs-single-day comparison) and adding
-        // "through <day>" every other day makes clear this isn't the full
-        // week, without cluttering "this week" (already the obvious,
-        // expected partial half) with the same qualifier.
         const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         const DAY_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
         const todayDow = new Date().getDay();
@@ -1193,8 +980,6 @@
         const sumReceived = (invs) => invs.reduce((sum, inv) => sum + inv.amountReceived, 0);
         const seenCount = (pats) => pats.filter((p) => p.status === 'waiting' || p.status === 'in_consult' || p.status === 'done').length;
         const noShowCount = (pats) => pats.filter((p) => p.status === 'no_show').length;
-        // Same shape as renderConsultDuration's own filter, just averaged
-        // across every doctor instead of broken out per doctor.
         const avgConsultMins = (pats) => {
           const timed = pats.filter((p) => p.status === 'done' && p.calledAt && p.doneAt && new Date(p.doneAt) >= new Date(p.calledAt));
           if (!timed.length) return null;
@@ -1219,10 +1004,6 @@
             thisVal: thisAvg, lastVal: lastAvg, fmt: (v) => `${Math.round(v)} min` });
         }
 
-        // A metric with nothing to compare against last week (lastVal=0)
-        // would show a meaningless "up infinity%" - skipped rather than
-        // forced into a percentage. Below 15% is treated as normal
-        // week-to-week noise, not something worth flagging.
         const ANOMALY_THRESHOLD_PCT = 15;
         const scored = candidates
           .filter((m) => m.lastVal > 0)
@@ -1299,18 +1080,10 @@
       });
 
       async function loadAndRender() {
-        // Fired here, not just from onLiveChange - every period/doctor
-        // filter change on this page calls loadAndRender() directly right
-        // after itself, without waiting for the realtime round-trip (the
-        // same fix Reception's and Revenue's chips needed after shipping).
         renderAnomalyChip();
         const range = currentRange();
         if (!range) return;
 
-        // A doctor whose login hasn't been linked to a doctors row yet
-        // has no data to scope to — nothing else here can render
-        // meaningfully until that's fixed (same empty-state pattern as
-        // Dashboard and the Holidays page).
         if (amDoctor && !myDoctorId) {
           document.getElementById('unlinkedDoctorPanel').style.display = 'block';
           document.getElementById('trendGroupSeg').style.display = 'none';
@@ -1325,14 +1098,8 @@
         document.getElementById('visitsPerDoctorHeading').textContent = `Visits per doctor (${label})`;
         document.getElementById('revenueByDoctorHeading').textContent = `Revenue by doctor (${label})`;
 
-        // A failed fetch here used to throw unhandled mid-function,
-        // leaving whichever charts hadn't been reached yet frozen on
-        // stale data with no error shown - switching the period or
-        // doctor filter would then look like it silently did nothing.
         let invoices, patients, doctorsRaw;
         try {
-          // Revenue is skipped entirely for a doctor's own view (both
-          // panels are hidden above) — no reason to fetch invoices at all.
           [invoices, patients, doctorsRaw] = await Promise.all([
             amDoctor ? Promise.resolve([]) : Qlinic.getInvoicesForDateRange(range.start, range.end),
             Qlinic.getPatientsInRange(range.start, range.end, myDoctorId || undefined),
@@ -1364,13 +1131,6 @@
         ).join('');
       }
 
-      // Custom is restricted to at most ~12 months (366 days) so bars
-      // never exceed a readable count (bucketGranularity always lands on
-      // monthly bars past 35 days, so this caps it at 12 monthly bars).
-      // Auto-clamps and toasts rather than blocking, since there's no
-      // explicit "Apply" step here — the chart updates live as the
-      // fields change. ISO "YYYY-MM-DD" strings compare correctly with
-      // plain </>, so no Date parsing is needed for the ordering check.
       function updateCustomRangeFromInputs() {
         const startInput = document.getElementById('trendsRangeStartDate');
         const endInput = document.getElementById('trendsRangeEndDate');
@@ -1395,18 +1155,6 @@
         document.getElementById(id).addEventListener('change', updateCustomRangeFromInputs);
       });
 
-      // Grouped by the question being asked, not by chart type: Revenue
-      // answers "how much, from whom"; Patient Stats answers "who's
-      // coming" (visit counts and demographics — population, not
-      // timing); Clinic Scheduling answers "when" (Peak hours and
-      // Appointment distribution are both hour-of-day load patterns —
-      // one from arrivals, one from bookings); No-shows and Consult
-      // Duration each get their own tab rather than being folded into a
-      // bigger "Operations" bucket — each flags a different kind of
-      // process problem, and neither reads as a subset of the other. No
-      // chart-count badges on the tabs — kept plain. Internal `key`s stay
-      // 'patients'/'scheduling' (only the on-screen `label`s changed) so
-      // nothing else keyed on the old tab names needs touching.
       const TREND_GROUPS = [
         { key: 'revenue', label: 'Revenue' },
         { key: 'patients', label: 'Patient Stats' },
@@ -1414,10 +1162,6 @@
         { key: 'noshow', label: 'No-shows' },
         { key: 'consult', label: 'Consult Duration' },
       ];
-      // A doctor's own view has nothing in the Revenue group (both its
-      // panels are hidden for them) — no tab is offered for a group with
-      // nothing behind it, and the default landing tab is the first one
-      // that actually has content.
       let activeTrendGroup = amDoctor ? 'patients' : 'revenue';
       function renderTrendGroupTabs() {
         document.getElementById('trendGroupSeg').innerHTML = TREND_GROUPS
@@ -1456,9 +1200,6 @@
       } else {
         document.getElementById('clinicLogoThumb').style.display = 'none';
       }
-      // Today/Tomorrow/In a week dropped - jumping just one end of a
-      // custom range to "today" independent of the other rarely makes
-      // sense as a range boundary.
       Qlinic.attachDatePicker(document.getElementById('trendsRangeStartDate'), { quickButtons: false });
       Qlinic.attachDatePicker(document.getElementById('trendsRangeEndDate'), { quickButtons: false });
       document.getElementById('trendsRangeStartDate').max = Qlinic.getTodayDate();

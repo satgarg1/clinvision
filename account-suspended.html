@@ -41,30 +41,18 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
-      // Deliberately NOT Qlinic.requireLogin() here - that's the exact
-      // check that lands someone on THIS page in the first place, so
-      // calling it again would just bounce straight back. Checking
-      // isLoggedIn() directly still keeps this page from being useful
-      // to reach while logged out.
       if (!(await Qlinic.isLoggedIn())) {
         window.location.href = 'login.html';
         return;
       }
 
-      // TODO before this goes live to real clinics: WHATSAPP_NUMBER
-      // below is a placeholder (91XXXXXXXXXX), same as contact.html's
-      // own TODO. Replace it with the real support number.
       const WHATSAPP_NUMBER = '91XXXXXXXXXX';
 
       const clinic = await Qlinic.getClinic();
 
-      // Reached this page, but the clinic is actually fine (activated
-      // since the redirect happened, or this URL was opened directly
-      // out of curiosity) - straight through to the app instead of
-      // showing an alarming message about nothing.
       if (Qlinic.isSubscriptionActive(clinic)) {
         window.location.href = 'dashboard.html';
         return;
@@ -95,7 +83,7 @@
         e.preventDefault();
         try {
           await Qlinic.logout();
-        } catch (err) { /* best-effort - send them to login either way */ }
+        } catch (err) { }
         window.location.href = 'login.html';
       });
     })();

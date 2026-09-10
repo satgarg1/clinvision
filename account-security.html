@@ -69,11 +69,6 @@
 
         <div class="account-section-divider"></div>
 
-        <!-- Personal to whoever's signed in -- open to every role, unlike
-             the clinic-contact phone panel below. Uses a separate
-             self-service RPC (update_my_phone) since the admin-facing
-             one Team's own phone field calls is deliberately admin-only
-             and rejects a self-call outright. -->
         <div class="account-section" id="loginPhonePanel">
           <div class="account-section-header">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
@@ -152,20 +147,15 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=106"></script>
+  <script src="clinic-data.js?v=107"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
 
       Qlinic.attachPasswordMeter(document.getElementById('newPasswordInput'));
 
-      // Scoped to the pharmacy counter and catalog only -- this page shows
-      // patient/staff data a pharmacist has no business seeing.
       if (await Qlinic.isPharmacist()) { window.location.href = 'pharmacy.html'; return; }
 
-      // The sidebar logo links to the marketing site, which has no way
-      // back into the app without logging in again, worth a heads-up
-      // before someone loses their place by accident.
       document.querySelector('a.brand').addEventListener('click', async (e) => {
         e.preventDefault();
         if (await Qlinic.confirmDialog({ message: "Going to the homepage will end your session here, you'll need to log in again to get back in." })) {
@@ -173,11 +163,6 @@
         }
       });
 
-      // Email, login phone, and password all change the logged-in user's
-      // own login — personal to whoever's signed in, open to every role.
-      // Clinic phone is the one panel here that isn't personal at all: it
-      // edits the clinic's own contact number (Qlinic.updateClinic), so
-      // it stays admin-only.
       const [admin, amDoctor] = await Promise.all([Qlinic.isAdmin(), Qlinic.isDoctor()]);
       if (!admin) {
         document.getElementById('phonePanel').style.display = 'none';
@@ -194,9 +179,6 @@
       if (!admin && !amDoctor) {
         document.getElementById('trendsNavLink').style.display = 'none';
       }
-      // Body starts hidden (see the <body> tag) so nobody sees the full
-      // nav (or the admin-only phone panel) for a moment before the
-      // role-based hiding above finishes.
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
@@ -221,24 +203,10 @@
         }
       });
 
-      // Strips anything non-numeric as they type, matching registration's
-      // phone field, so a pasted or typed letter/symbol never even lands
-      // in the input rather than being rejected after the fact.
       document.getElementById('newLoginPhoneInput').addEventListener('input', function () {
         this.value = this.value.replace(/\D/g, '').slice(0, 10);
       });
 
-      // Blank is a valid submission here (unlike the clinic-phone form
-      // below, which requires one) — it removes phone login the same way
-      // an admin can blank a team member's phone field on team.html.
-      //
-      // Stored WITHOUT a +91 prefix, on purpose -- unlike the clinic-
-      // phone field below (a different column, clinics.phone, just a
-      // human-readable contact number). This one feeds the pre-login
-      // phone lookup (login.html's email_for_staff_phone RPC), which
-      // queries with the raw 10-digit value the same way team.html's
-      // own updateStaffPhone already stores it -- a +91-prefixed value
-      // here would silently never match at login.
       document.getElementById('loginPhoneForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const note = document.getElementById('loginPhoneNote');
@@ -260,9 +228,6 @@
         }
       });
 
-      // Strips anything non-numeric as they type, matching registration's
-      // phone field, so a pasted or typed letter/symbol never even lands
-      // in the input rather than being rejected after the fact.
       document.getElementById('newPhoneInput').addEventListener('input', function () {
         this.value = this.value.replace(/\D/g, '').slice(0, 10);
       });
