@@ -152,6 +152,10 @@
     inputEl.dataset.meterAttached = '1';
     const wrap = document.createElement('div');
     wrap.className = 'pw-meter-wrap';
+    // Hidden until there's something to measure, so an untouched password
+    // field reads exactly like every other field in the form instead of
+    // showing an empty grey track hanging under it.
+    wrap.hidden = true;
     wrap.innerHTML = `
       <div class="pw-meter"><div class="pw-meter-bar" id="${inputEl.id}Bar"></div></div>
       <div class="pw-meter-label" id="${inputEl.id}Label"></div>
@@ -159,13 +163,18 @@
     inputEl.insertAdjacentElement('afterend', wrap);
     const bar = wrap.querySelector('.pw-meter-bar');
     const label = wrap.querySelector('.pw-meter-label');
-    inputEl.addEventListener('input', () => {
+    function update() {
       const { level, label: text, percent } = passwordStrength(inputEl.value);
+      wrap.hidden = inputEl.value.length === 0;
       bar.style.width = percent + '%';
       bar.className = 'pw-meter-bar' + (level !== 'empty' ? ` pw-meter-${level}` : '');
       label.textContent = text;
       label.className = 'pw-meter-label' + (level !== 'empty' ? ` pw-meter-${level}` : '');
-    });
+    }
+    inputEl.addEventListener('input', update);
+    // form.reset() doesn't fire input events, so the meter would otherwise
+    // keep showing the last password's strength after a successful submit.
+    if (inputEl.form) inputEl.form.addEventListener('reset', () => setTimeout(update, 0));
   }
 
   function confirmDialog({ title, message, confirmLabel = 'Continue', cancelLabel = 'Cancel', danger = false } = {}) {

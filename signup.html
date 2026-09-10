@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=1" />
-<link rel="stylesheet" href="styles.css?v=321" />
+<link rel="stylesheet" href="styles.css?v=322" />
 </head>
 <body>
   <div class="auth-shell">
@@ -85,6 +85,10 @@
             <input type="password" id="password" minlength="8" required />
           </div>
           <div class="field">
+            <label for="confirmPassword">Confirm password</label>
+            <input type="password" id="confirmPassword" minlength="8" required />
+          </div>
+          <div class="field">
             <label>Clinic logo <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
             <div class="logo-upload-row">
               <div class="logo-preview empty" id="signupLogoPreview"></div>
@@ -107,7 +111,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=107"></script>
+  <script src="clinic-data.js?v=108"></script>
   <script>
     Qlinic.attachPasswordMeter(document.getElementById('password'));
 
@@ -197,6 +201,12 @@
       const btn = document.getElementById('signupBtn');
       const errorBox = document.getElementById('signupError');
       errorBox.style.display = 'none';
+      if (document.getElementById('password').value !== document.getElementById('confirmPassword').value) {
+        errorBox.textContent = "The two passwords do not match. Please type them again.";
+        errorBox.style.display = 'block';
+        document.getElementById('confirmPassword').focus();
+        return;
+      }
       btn.disabled = true;
       btn.textContent = 'Creating account…';
       try {

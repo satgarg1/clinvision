@@ -3351,13 +3351,23 @@ th.th-filterable { position: relative; }
    other pages rely on for their own flex-end alignment. */
 #clinicForm.inline-form { align-items: flex-start; }
 
-/* Team's "Add a staff member" form is deliberately two literal
-   .inline-form rows (identity/credentials/phone, then role/doctor/the
-   submit button) rather than one row left to .inline-form's own
-   flex-wrap to break wherever it happens to once Phone pushed it past
-   4 fields -- that would land the split at a different point depending
-   on viewport width, not the grouping actually intended. */
+/* Team's "Add a staff member" form is deliberately three literal
+   .inline-form rows (name/email/phone, then the password pair, then
+   role/doctor/the submit button) rather than one row left to
+   .inline-form's own flex-wrap to break wherever it happens to -- that
+   would land the split at a different point depending on viewport
+   width, not the grouping actually intended. */
 #addStaffForm .inline-form + .inline-form { margin-top: 14px; }
+
+/* The password field carries a strength meter underneath it (added by
+   attachPasswordMeter), which makes that one .field taller than the
+   plain fields beside it. With the .inline-form default of
+   align-items: flex-end, the taller field's bottom stays put and its
+   label+box get shoved UP out of line with its neighbours -- the "odd"
+   look. flex-start instead keeps every label and box on one straight
+   line and lets the meter hang below as a caption, same fix and same
+   reasoning as #clinicForm / #rulesForm above. */
+#addStaffForm .inline-form, #passwordForm { align-items: flex-start; }
 
 /* Queue rules and Display screen rows read as cramped/undersized next
    to the rest of the app's controls (10px gap, small buttons and

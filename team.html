@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=1" />
-<link rel="stylesheet" href="styles.css?v=321" />
+<link rel="stylesheet" href="styles.css?v=322" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -64,15 +64,21 @@
               <input type="email" id="newStaffEmail" required />
             </div>
             <div class="field">
-              <label>Password</label>
-              <input type="text" id="newStaffPassword" minlength="8" required placeholder="At least 8 characters" />
-            </div>
-            <div class="field">
               <label>Phone <span class="sub-line">(for phone login)</span></label>
               <div style="display:flex;gap:8px;">
                 <input type="text" value="+91" disabled style="flex:0 0 60px;text-align:center;" />
                 <input type="tel" id="newStaffPhone" inputmode="numeric" maxlength="10" placeholder="10-digit number" style="flex:1;min-width:0;" />
               </div>
+            </div>
+          </div>
+          <div class="inline-form">
+            <div class="field">
+              <label>Password</label>
+              <input type="text" id="newStaffPassword" minlength="8" required placeholder="At least 8 characters" />
+            </div>
+            <div class="field">
+              <label>Confirm password</label>
+              <input type="text" id="newStaffPasswordConfirm" minlength="8" required placeholder="Type the password again" />
             </div>
           </div>
           <div class="inline-form">
@@ -116,7 +122,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=107"></script>
+  <script src="clinic-data.js?v=108"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -379,9 +385,15 @@
         const fullName = document.getElementById('newStaffName').value;
         const email = document.getElementById('newStaffEmail').value;
         const password = document.getElementById('newStaffPassword').value;
+        const confirmPassword = document.getElementById('newStaffPasswordConfirm').value;
         const phone = document.getElementById('newStaffPhone').value;
         const role = document.getElementById('newStaffRole').value;
         const doctorId = document.getElementById('newStaffDoctorId').value;
+        if (password !== confirmPassword) {
+          note.style.display = 'block';
+          note.textContent = "The two passwords do not match. Please type them again.";
+          return;
+        }
         try {
           await Qlinic.createStaffAccount({ email, password, fullName, role, doctorId, phone });
           note.style.display = 'block';
