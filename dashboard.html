@@ -508,8 +508,19 @@
           document.getElementById('doctorStatusList').innerHTML = '<div class="empty-state">No doctors yet, add one from <a href="settings.html">Settings</a>.</div>';
           return;
         }
-        document.getElementById('doctorStatusList').innerHTML = doctors.map((d, i) => {
-          const q = queues[i];
+        // Paired by index before filtering, not filtered up front -- doctors
+        // and queues stay untouched for "Doctors away" and every other stat
+        // above, which still need to count/name a doctor on holiday. Only
+        // this status list, which is about who's actually working right
+        // now, drops them.
+        const workingToday = doctors
+          .map((d, i) => ({ d, q: queues[i] }))
+          .filter(({ d }) => !doctorIdsOnHolidayToday.has(d.id));
+        if (workingToday.length === 0) {
+          document.getElementById('doctorStatusList').innerHTML = '<div class="empty-state">Every doctor is on holiday today.</div>';
+          return;
+        }
+        document.getElementById('doctorStatusList').innerHTML = workingToday.map(({ d, q }) => {
           const rowClass = d.dayClosedAt
             ? 'row-status-closed'
             : (q.nowServing ? 'row-in-consult' : (d.status !== 'on_time' ? 'row-status-' + d.status : ''));
