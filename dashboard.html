@@ -277,14 +277,22 @@
         const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
         const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id, undefined, d)));
 
+        const today = Qlinic.getTodayDate();
+        // Fetched for reception too, not just admin -- the "Doctors away"
+        // stat below needs to know a doctor is out on holiday today
+        // regardless of who's viewing the dashboard. Skipped for a lone
+        // doctor's own view, where that card never renders anyway.
+        const allDoctorHolidays = doctors.length > 1 ? await Qlinic.getDoctorHolidays() : [];
+        const doctorIdsOnHolidayToday = new Set(
+          allDoctorHolidays.filter((h) => h.date === today).map((h) => h.doctorId)
+        );
+
         if (amAdmin) {
-          const [allDoctorHolidays, allStaffHolidays, team] = await Promise.all([
-            Qlinic.getDoctorHolidays(),
+          const [allStaffHolidays, team] = await Promise.all([
             Qlinic.getStaffHolidays(),
             Qlinic.getTeam(),
           ]);
           const staffById = Object.fromEntries(team.map((p) => [p.id, p]));
-          const today = Qlinic.getTodayDate();
           const upcoming = allDoctorHolidays
             .filter((h) => h.date >= today && doctorById[h.doctorId])
             .map((h) => Object.assign({}, h, { name: doctorById[h.doctorId].name, role: 'doctor' }))
@@ -431,7 +439,9 @@
           });
 
           if (doctors.length > 1) {
-            const awayDoctors = doctors.filter((d) => d.status === 'on_break' || d.status === 'emergency' || d.dayClosedAt);
+            const awayDoctors = doctors.filter((d) =>
+              d.status === 'on_break' || d.status === 'emergency' || d.dayClosedAt || doctorIdsOnHolidayToday.has(d.id)
+            );
             cards.push({
               label: 'Doctors away',
               value: `${awayDoctors.length}/${doctors.length}`,
@@ -441,7 +451,12 @@
                 columns: ['Doctor', 'Status'],
                 rows: awayDoctors.map((d) => [
                   d.name,
-                  d.dayClosedAt
+                  // Holiday is checked first: a doctor out for the day
+                  // never opened a session, so status/dayClosedAt are
+                  // just whatever they were left at, not the real reason.
+                  doctorIdsOnHolidayToday.has(d.id)
+                    ? 'On holiday'
+                    : d.dayClosedAt
                     ? 'Day closed'
                     : statusLabel(d.status) + (Qlinic.isRealStatusReason(d.statusNote) ? ' - ' + d.statusNote : ''),
                 ]),
