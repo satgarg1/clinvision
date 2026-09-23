@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=331" />
+<link rel="stylesheet" href="styles.css?v=332" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -265,6 +265,7 @@
               <tbody id="rxPrevMedsBody"><tr><td colspan="4" style="color:var(--grey-500);font-style:italic;">No medicines added yet</td></tr></tbody>
             </table>
             <div class="rx-advice" id="rxPrevAdviceWrap" style="display:none;"><b>Advice</b><span id="rxPrevAdvice"></span></div>
+            <div class="rx-advice" id="rxPrevFollowUpWrap" style="display:none;"><b>Follow Up</b><span id="rxPrevFollowUp"></span></div>
             <div class="rx-sign-row">
               <div class="rx-sign-note">This is a computer-generated prescription and does not require a signature.</div>
               <div class="rx-sign-line">Stamp &amp; signature</div>
@@ -278,7 +279,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=116"></script>
+  <script src="clinic-data.js?v=117"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -1299,8 +1300,11 @@
           list.innerHTML = matches.map((o, i) => `<div class="rx-med-suggest-item" data-i="${i}"><div class="mr-name">${Qlinic.escapeHtml(o)}</div></div>`).join('');
           list.dataset.options = JSON.stringify(matches);
           list.classList.toggle('flip-up', shouldFlipUp(input, 260));
-          list.scrollTop = 0;
+          // scrollTop has no effect while display:none — a hidden element
+          // has no layout box to have a scroll position — so it must be
+          // set only after the panel is actually visible.
           list.style.display = 'block';
+          list.scrollTop = 0;
         }
         input.addEventListener('focus', () => render(input.value));
         input.addEventListener('input', () => render(input.value));
@@ -1392,12 +1396,14 @@
         for (let day = 1; day <= daysInMonth; day++) {
           const d = new Date(y, m, day);
           const dStr = toDateInputValue(d);
-          const closed = isRxClosedDate(d);
+          const isPast = dStr < todayStr;
+          const closed = !isPast && isRxClosedDate(d);
           const classes = ['rx-cal-cell'];
           if (dStr === todayStr) classes.push('today');
           if (dStr === rxFollowUpValue) classes.push('selected');
-          if (closed) classes.push('closed');
-          cells += `<div class="${classes.join(' ')}" ${closed ? '' : `data-date="${dStr}"`}>${day}</div>`;
+          if (isPast) classes.push('past');
+          else if (closed) classes.push('closed');
+          cells += `<div class="${classes.join(' ')}" ${(isPast || closed) ? '' : `data-date="${dStr}"`}>${day}</div>`;
         }
         panel.innerHTML = `
           <div class="rx-cal-shortcuts">
@@ -1431,6 +1437,14 @@
         else openRxDatePanel();
       });
       document.getElementById('rxDatePanel').addEventListener('click', (e) => {
+        // Must stop here: the month-nav branch below replaces this panel's
+        // own innerHTML, which detaches the clicked button from the page.
+        // If this click were left to bubble afterward, the document-level
+        // "click outside closes the panel" listener would then see a
+        // target that .contains() can no longer find (it's been removed
+        // from the DOM) and treat that as an outside click, closing the
+        // panel immediately after every month change.
+        e.stopPropagation();
         const shortcutBtn = e.target.closest('[data-followup-days]');
         if (shortcutBtn) { pickFollowUpDate(Number(shortcutBtn.dataset.followupDays)); closeRxDatePanel(); return; }
         const navBtn = e.target.closest('[data-cal-nav]');
@@ -1556,8 +1570,8 @@
           list.innerHTML = '<div class="rx-med-suggest-empty">No match — this will be saved as typed</div>';
           list.removeAttribute('data-results');
           list.classList.toggle('flip-up', shouldFlipUp(input, 260));
-          list.scrollTop = 0;
           list.style.display = 'block';
+          list.scrollTop = 0;
           return;
         }
         list.innerHTML = results.map((r, i) => `
@@ -1567,8 +1581,8 @@
         `).join('');
         list.dataset.results = JSON.stringify(results);
         list.classList.toggle('flip-up', shouldFlipUp(input, 260));
-        list.scrollTop = 0;
         list.style.display = 'block';
+        list.scrollTop = 0;
       }
 
       document.getElementById('rxMedNameInput').addEventListener('input', (e) => {
@@ -1693,13 +1707,14 @@
           : '<tr><td colspan="4" style="color:var(--grey-500);font-style:italic;">No medicines added yet</td></tr>';
 
         const advice = document.getElementById('rxAdvice').value.trim();
-        let followUpLabel = '';
-        if (rxFollowUpValue) {
-          followUpLabel = `Follow up on ${rxSelectedDateObj().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}.`;
-        }
-        const adviceParts = [advice, followUpLabel].filter(Boolean);
-        document.getElementById('rxPrevAdviceWrap').style.display = adviceParts.length ? '' : 'none';
-        document.getElementById('rxPrevAdvice').textContent = adviceParts.join(' ');
+        document.getElementById('rxPrevAdviceWrap').style.display = advice ? '' : 'none';
+        document.getElementById('rxPrevAdvice').textContent = advice;
+
+        const followUpLabel = rxFollowUpValue
+          ? rxSelectedDateObj().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+          : '';
+        document.getElementById('rxPrevFollowUpWrap').style.display = followUpLabel ? '' : 'none';
+        document.getElementById('rxPrevFollowUp').textContent = followUpLabel;
       }
 
       ['rxComplaints', 'rxDiagnosis', 'rxAdvice'].forEach((id) => {
@@ -1745,6 +1760,7 @@
             advice: document.getElementById('rxAdvice').value.trim(),
             followUpDate: rxFollowUpValue || null,
             items: rxItems,
+            doctorId: currentDoctor ? currentDoctor.id : null,
           });
           showToast('Prescription saved');
           if (shouldPrint) window.print();

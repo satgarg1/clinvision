@@ -2453,7 +2453,7 @@
   initMobileNav();
 
   // items: [{ clinicMedicineId, genericMedicineId, freeTextName, name, composition, frequency, durationText, instructions }]
-  async function createPrescription({ patientId, complaints, diagnosis, advice, followUpDate, items }) {
+  async function createPrescription({ patientId, complaints, diagnosis, advice, followUpDate, items, doctorId }) {
     const payload = (items || []).map((it) => ({
       clinic_medicine_id: it.clinicMedicineId || null,
       generic_medicine_id: it.genericMedicineId || null,
@@ -2469,6 +2469,11 @@
       p_advice: advice || '',
       p_follow_up_date: followUpDate || null,
       p_items: payload,
+      // Only meaningful for an admin caller — the server always writes a
+      // doctor's own prescriptions under their own linked doctor_id and
+      // ignores this for a 'doctor' role, so a doctor can never be sent
+      // in as someone else.
+      p_doctor_id: doctorId || null,
     });
     if (error) throw error;
     return data;

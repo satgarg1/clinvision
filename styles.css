@@ -5717,6 +5717,11 @@ table.rx-table .rt-instr { color: var(--grey-700); font-size: 11.5px; margin-top
 .rx-cal-cell.selected { background: var(--accent); color: #fff; font-weight: 700; }
 .rx-cal-cell.closed { color: var(--grey-300); cursor: not-allowed; text-decoration: line-through; }
 .rx-cal-cell.closed:hover { background: none; }
+/* A follow-up date can't be in the past — greyed out, no strikethrough
+   (that's reserved for a future date the clinic/doctor is actually
+   closed on, a different reason to be unselectable). */
+.rx-cal-cell.past { color: var(--grey-300); cursor: not-allowed; }
+.rx-cal-cell.past:hover { background: none; }
 
 @media print {
   body * { visibility: hidden; }
