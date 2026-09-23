@@ -2424,6 +2424,27 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeNav();
     });
+
+    // Fallback for a browser too old for the CSS :has() selector styles.css
+    // relies on to give a qtable's .panel horizontal scroll on mobile --
+    // an unsupported :has() rule is just silently dropped by that
+    // browser's CSS parser, with no error, so this can't detect and warn,
+    // only compensate. Most tables render well after this script runs
+    // (an async data fetch), so this has to keep re-checking, not just
+    // run once at load.
+    function markQtablePanels() {
+      if (!window.matchMedia('(max-width: 720px)').matches) return;
+      document.querySelectorAll('.panel').forEach((p) => {
+        const has = !!p.querySelector('table.qtable');
+        if (has !== p.classList.contains('has-qtable-scroll')) p.classList.toggle('has-qtable-scroll', has);
+      });
+    }
+    markQtablePanels();
+    let qtableScanTimer = null;
+    new MutationObserver(() => {
+      clearTimeout(qtableScanTimer);
+      qtableScanTimer = setTimeout(markQtablePanels, 150);
+    }).observe(document.body, { childList: true, subtree: true });
   }
   initMobileNav();
 

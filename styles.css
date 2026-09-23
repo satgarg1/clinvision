@@ -2876,6 +2876,13 @@ input[type="number"] { -moz-appearance: textfield; }
   border-radius: var(--radius-pill);
   padding: 8px 8px 8px 16px;
   font-size: 14px;
+  /* Without this, a squeezed topbar (mobile, sharing a row with another
+     chip) wraps "Clinic time: 2:38 PM" onto 3 lines inside a pill radius
+     built for one line -- the box goes from a clean pill to a deformed
+     near-circle blob. flex-shrink:0 pairs with it so the pill keeps its
+     natural width instead of being crushed first. */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .clock-pill .time { font-weight: 700; }
 .clock-pill button {
@@ -4938,9 +4945,35 @@ body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
      wider than the phone either overflowed the page itself or wrapped
      cell text mid-word (e.g. a phone number split across two lines).
      qtable-fixed's percentage colgroup widths need an explicit min-width
-     to actually become scrollable instead of just shrinking to fit. */
-  .panel:has(table.qtable) { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+     to actually become scrollable instead of just shrinking to fit.
+     .has-qtable-scroll is a JS-added fallback (Qlinic.initMobileNav's
+     markQtablePanels, clinic-data.js) for a browser too old for :has() --
+     without it, the :has() rule is simply dropped by that browser's CSS
+     parser and this whole fix silently never applies. */
+  .panel:has(table.qtable), .panel.has-qtable-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   table.qtable.qtable-fixed { min-width: 560px; }
+
+  /* Post-launch bug reports, not part of the original 5 findings above:
+     Analytics' group tabs are a separate #trendGroupSeg component, not
+     .period-pills, so Finding 4's fix never touched it -- same missing
+     flex-wrap, same off-screen-tab symptom. */
+  #trendGroupSeg { flex-wrap: wrap; justify-content: center; border-radius: var(--radius-lg); }
+
+  /* Doctor View's "Viewing as" select and Reception's "Viewing queue for"
+     select both size to their longest OPTION's text (a doctor's full
+     name + "(N waiting, N booked)"), not their own box -- with no
+     max-width, that text runs past the screen edge instead of the
+     browser's native truncation kicking in. */
+  #doctorSelect { max-width: 100%; }
+  .queue-doctor-field { flex: 1 1 auto !important; min-width: 0 !important; }
+  .queue-doctor-field select { max-width: 100%; }
+
+  /* A topbar's right-side control cluster (e.g. dashboard's holiday chip
+     + clock pill) is its own nested flex row with no wrap of its own --
+     .app-topbar wrapping the OUTER row doesn't help once two pills still
+     don't fit on the second line together; this lets that inner row
+     split too instead of squeezing .clock-pill into a deformed shape. */
+  .app-topbar > div { flex-wrap: wrap; justify-content: flex-end; }
 }
 
 @media (max-width: 900px) {
