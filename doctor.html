@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=328" />
+<link rel="stylesheet" href="styles.css?v=329" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -124,10 +124,12 @@
 
         <div class="panel" id="nowServingPanel">
           <div class="panel-header"><h2>Now serving</h2></div>
-          <div id="nowServingBox"></div>
+          <div class="now-serving-row">
+            <div id="nowServingBox"></div>
+            <button type="button" class="btn-sm accent-outline" id="writeRxBtn" disabled>Write prescription</button>
+          </div>
           <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;">Call next patient</button>
           <button class="btn-sm primary" id="finishCurrentBtn" style="margin-top:14px;margin-left:8px;">Done</button>
-          <button type="button" class="btn-sm accent-outline" id="writeRxBtn" style="margin-top:14px;margin-left:8px;" disabled>Write prescription</button>
           <div class="call-confirm-overlay" id="callConfirmOverlay"><span class="call-confirm-check">✓</span>Next patient called</div>
         </div>
 
@@ -184,7 +186,6 @@
           <div class="panel">
             <div class="panel-header">
               <h2>Medicines</h2>
-              <span class="field-hint" style="margin:0;">Searches this clinic's own stock first, then the national medicine database</span>
             </div>
 
             <div id="rxRowsContainer"></div>
@@ -203,40 +204,29 @@
                 </button>
               </div>
               <div class="rx-field-grid">
-                <div class="rx-field"><label>Frequency (this is the dosage — 1-0-1 already says "1 tablet")</label><input type="text" id="rxFrequencyInput" list="rxFrequencyList" placeholder="e.g. 1-0-1 (BD)" autocomplete="off"></div>
-                <div class="rx-field"><label>Duration</label><input type="text" id="rxDurationInput" list="rxDurationList" placeholder="e.g. 5 days" autocomplete="off"></div>
-                <div class="rx-field"><label>Instructions</label><input type="text" id="rxInstructionsInput" list="rxInstructionsList" placeholder="e.g. After food" autocomplete="off"></div>
+                <div class="rx-field rx-combo"><label>Frequency</label><input type="text" id="rxFrequencyInput" placeholder="e.g. 1-0-1 (BD)" autocomplete="off"><div class="rx-med-suggest-list" id="rxFrequencySuggestList" style="display:none;"></div></div>
+                <div class="rx-field rx-combo"><label>Duration</label><input type="text" id="rxDurationInput" placeholder="e.g. 5 days" autocomplete="off"><div class="rx-med-suggest-list" id="rxDurationSuggestList" style="display:none;"></div></div>
+                <div class="rx-field rx-combo"><label>Instructions</label><input type="text" id="rxInstructionsInput" placeholder="e.g. After food" autocomplete="off"><div class="rx-med-suggest-list" id="rxInstructionsSuggestList" style="display:none;"></div></div>
               </div>
             </div>
-
-            <datalist id="rxFrequencyList">
-              <option value="1-0-0 (Once daily / OD)"><option value="0-0-1 (Once at night / HS)">
-              <option value="1-0-1 (Twice daily / BD)"><option value="1-1-1 (Thrice daily / TDS)">
-              <option value="1-1-1-1 (Four times daily / QID)">
-              <option value="SOS (As needed)"><option value="Stat (Single dose)">
-              <option value="Every 4 hours"><option value="Every 6 hours"><option value="Every 8 hours"><option value="Every 12 hours">
-              <option value="Once weekly"><option value="Alternate day">
-            </datalist>
-            <datalist id="rxDurationList">
-              <option value="1 day"><option value="2 days"><option value="3 days"><option value="5 days">
-              <option value="7 days"><option value="10 days"><option value="14 days"><option value="15 days">
-              <option value="1 month"><option value="2 months"><option value="3 months">
-              <option value="Continue"><option value="SOS">
-            </datalist>
-            <datalist id="rxInstructionsList">
-              <option value="Before food"><option value="After food"><option value="With food"><option value="Empty stomach">
-              <option value="With warm water"><option value="With milk"><option value="At bedtime"><option value="Morning only">
-              <option value="Do not skip doses"><option value="Complete the course"><option value="Avoid alcohol">
-              <option value="Chew and swallow"><option value="Dissolve in water"><option value="Shake well before use">
-            </datalist>
 
             <button type="button" class="btn-sm accent-outline" id="rxAddMedBtn" style="margin-top:4px;">+ Add this medicine</button>
           </div>
 
           <div class="panel">
-            <div class="field-row">
-              <div class="field"><label>General advice</label><textarea id="rxAdvice" rows="2" placeholder="e.g. Warm salt-water gargles, plenty of fluids"></textarea></div>
-              <div class="field"><label>Follow up date (optional)</label><input type="date" id="rxFollowUpDate" /></div>
+            <div class="field">
+              <label>General advice</label>
+              <textarea id="rxAdvice" rows="2" placeholder="e.g. Warm salt-water gargles, plenty of fluids"></textarea>
+            </div>
+            <div class="field">
+              <label>Follow up (optional)</label>
+              <div class="inline-form" style="margin-bottom:10px;">
+                <button type="button" class="btn-sm accent-outline" data-followup-days="7">In 7 days</button>
+                <button type="button" class="btn-sm accent-outline" data-followup-days="15">In 15 days</button>
+                <button type="button" class="btn-sm accent-outline" data-followup-days="28">In 4 weeks</button>
+              </div>
+              <input type="date" id="rxFollowUpDate" style="max-width:220px;" />
+              <span class="field-hint" id="rxFollowUpHint" style="display:none;"></span>
             </div>
             <div class="inline-form" style="margin-top:4px;">
               <button type="button" class="btn-sm primary" id="rxSavePrintBtn">Save &amp; print</button>
@@ -261,11 +251,12 @@
               </div>
             </div>
             <div class="rx-info-grid">
-              <div><span class="k">Patient</span> <span id="rxPrevPatientName"></span></div>
-              <div><span class="k">Date</span> <span id="rxPrevDate"></span></div>
-              <div><span class="k">Age / Gender</span> <span id="rxPrevAgeGender"></span></div>
-              <div><span class="k">Phone</span> <span id="rxPrevPhone"></span></div>
+              <div><span class="k">Patient:</span> <span id="rxPrevPatientName"></span></div>
+              <div><span class="k">Date:</span> <span id="rxPrevDate"></span></div>
+              <div><span class="k">Age &amp; Gender:</span> <span id="rxPrevAgeGender"></span></div>
+              <div><span class="k">Phone:</span> <span id="rxPrevPhone"></span></div>
             </div>
+            <div class="rx-dx" id="rxPrevComplaintsWrap" style="display:none;"><b>Chief complaint</b><span id="rxPrevComplaints"></span></div>
             <div class="rx-dx" id="rxPrevDxWrap" style="display:none;"><b>Diagnosis</b><span id="rxPrevDx"></span></div>
             <table class="rx-table">
               <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
@@ -1261,6 +1252,99 @@
       let rxDraftMed = null;
       let rxMedSearchSeq = 0;
       let rxSaving = false;
+      let rxSearchErrorShown = false;
+
+      const RX_FREQUENCY_PRESETS = [
+        '1-0-0 (Once daily / OD)', '0-0-1 (Once at night / HS)', '1-0-1 (Twice daily / BD)',
+        '1-1-1 (Thrice daily / TDS)', '1-1-1-1 (Four times daily / QID)', 'SOS (As needed)',
+        'Stat (Single dose)', 'Every 4 hours', 'Every 6 hours', 'Every 8 hours', 'Every 12 hours',
+        'Once weekly', 'Alternate day',
+      ];
+      const RX_DURATION_PRESETS = [
+        '1 day', '2 days', '3 days', '5 days', '7 days', '10 days', '14 days', '15 days',
+        '1 month', '2 months', '3 months', 'Continue', 'SOS',
+      ];
+      const RX_INSTRUCTIONS_PRESETS = [
+        'Before food', 'After food', 'With food', 'Empty stomach', 'With warm water', 'With milk',
+        'At bedtime', 'Morning only', 'Do not skip doses', 'Complete the course', 'Avoid alcohol',
+        'Chew and swallow', 'Dissolve in water', 'Shake well before use',
+      ];
+
+      // A small, self-contained combobox: an ordinary text field paired
+      // with a styled options panel (reusing the same look as the
+      // medicine search below), so Frequency/Duration/Instructions read
+      // as ClinVision's own UI instead of the browser's unstyled native
+      // <input list>/<datalist> popup.
+      function setupComboField(inputId, listId, options) {
+        const input = document.getElementById(inputId);
+        const list = document.getElementById(listId);
+        function render(filterText) {
+          const q = (filterText || '').trim().toLowerCase();
+          const matches = q ? options.filter((o) => o.toLowerCase().includes(q)) : options;
+          if (!matches.length) { list.style.display = 'none'; list.innerHTML = ''; return; }
+          list.innerHTML = matches.map((o, i) => `<div class="rx-med-suggest-item" data-i="${i}"><div class="mr-name">${Qlinic.escapeHtml(o)}</div></div>`).join('');
+          list.dataset.options = JSON.stringify(matches);
+          list.style.display = 'block';
+        }
+        input.addEventListener('focus', () => render(input.value));
+        input.addEventListener('input', () => render(input.value));
+        input.addEventListener('blur', () => setTimeout(() => { list.style.display = 'none'; }, 150));
+        list.addEventListener('mousedown', (e) => {
+          const item = e.target.closest('.rx-med-suggest-item');
+          if (!item) return;
+          const opts = JSON.parse(list.dataset.options || '[]');
+          input.value = opts[Number(item.dataset.i)];
+          list.style.display = 'none';
+        });
+      }
+      setupComboField('rxFrequencyInput', 'rxFrequencySuggestList', RX_FREQUENCY_PRESETS);
+      setupComboField('rxDurationInput', 'rxDurationSuggestList', RX_DURATION_PRESETS);
+      setupComboField('rxInstructionsInput', 'rxInstructionsSuggestList', RX_INSTRUCTIONS_PRESETS);
+
+      // ---------- Follow-up date shortcuts (skip clinic/doctor closures) ----------
+      const RX_DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      let rxClosedDateSet = new Set();
+      let rxWeeklyOffDays = [];
+
+      async function loadRxClosureData(doctorId) {
+        rxClosedDateSet = new Set();
+        rxWeeklyOffDays = (clinic && clinic.weekly_off_days) || [];
+        try {
+          const [closures, holidays] = await Promise.all([Qlinic.getClinicClosures(), Qlinic.getDoctorHolidays(doctorId)]);
+          closures.forEach((c) => rxClosedDateSet.add(c.date));
+          holidays.forEach((h) => rxClosedDateSet.add(h.date));
+        } catch (err) {
+          // Shortcuts still work without closure data — they just won't skip a holiday this once.
+        }
+      }
+      function toDateInputValue(d) {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      }
+      function isRxClosedDate(d) {
+        if (rxWeeklyOffDays.includes(RX_DAY_NAMES[d.getDay()])) return true;
+        return rxClosedDateSet.has(toDateInputValue(d));
+      }
+      function pickFollowUpDate(daysFromNow) {
+        const d = new Date();
+        d.setDate(d.getDate() + daysFromNow);
+        let shifted = false;
+        while (isRxClosedDate(d)) { d.setDate(d.getDate() + 1); shifted = true; }
+        document.getElementById('rxFollowUpDate').value = toDateInputValue(d);
+        const hint = document.getElementById('rxFollowUpHint');
+        if (shifted) {
+          hint.textContent = 'Adjusted forward to skip a clinic holiday or weekly off day.';
+          hint.style.display = 'block';
+        } else {
+          hint.style.display = 'none';
+        }
+        updateRxPreview();
+      }
+      document.querySelectorAll('[data-followup-days]').forEach((btn) => {
+        btn.addEventListener('click', () => pickFollowUpDate(Number(btn.dataset.followupDays)));
+      });
+      document.getElementById('rxFollowUpDate').addEventListener('change', () => {
+        document.getElementById('rxFollowUpHint').style.display = 'none';
+      });
 
       function rxFormatAgeGender(patient) {
         if (!patient) return '';
@@ -1274,19 +1358,23 @@
         document.getElementById('rxFrequencyInput').value = '';
         document.getElementById('rxDurationInput').value = '';
         document.getElementById('rxInstructionsInput').value = '';
-        const list = document.getElementById('rxMedSuggestList');
-        list.style.display = 'none';
-        list.innerHTML = '';
+        ['rxMedSuggestList', 'rxFrequencySuggestList', 'rxDurationSuggestList', 'rxInstructionsSuggestList'].forEach((id) => {
+          const list = document.getElementById(id);
+          list.style.display = 'none';
+          list.innerHTML = '';
+        });
         rxDraftMed = null;
       }
 
       function resetRxModalState() {
         rxItems = [];
+        rxSearchErrorShown = false;
         resetRxDraftFields();
         document.getElementById('rxComplaints').value = '';
         document.getElementById('rxDiagnosis').value = '';
         document.getElementById('rxAdvice').value = '';
         document.getElementById('rxFollowUpDate').value = '';
+        document.getElementById('rxFollowUpHint').style.display = 'none';
         renderRxRows();
         updateRxPreview();
       }
@@ -1344,6 +1432,8 @@
         try {
           results = await Qlinic.searchMedicinesForRx(q);
         } catch (err) {
+          console.error('Medicine search failed:', err);
+          if (!rxSearchErrorShown) { rxSearchErrorShown = true; showToast(err.message || 'Medicine search failed'); }
           return;
         }
         if (mySeq !== rxMedSearchSeq) return;
@@ -1422,9 +1512,13 @@
           ? [doctor.qualification, doctor.registrationNumber ? `Reg. No. ${doctor.registrationNumber}` : ''].filter(Boolean).join(' · ')
           : '';
         document.getElementById('rxPrevPatientName').textContent = patient ? patient.name : '';
-        document.getElementById('rxPrevDate').textContent = Qlinic.formatDateLabel(Qlinic.getTodayDate());
+        document.getElementById('rxPrevDate').textContent = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
         document.getElementById('rxPrevAgeGender').textContent = rxFormatAgeGender(patient);
         document.getElementById('rxPrevPhone').textContent = (patient && patient.phone) || '—';
+
+        const complaints = document.getElementById('rxComplaints').value.trim();
+        document.getElementById('rxPrevComplaintsWrap').style.display = complaints ? '' : 'none';
+        document.getElementById('rxPrevComplaints').textContent = complaints;
 
         const dx = document.getElementById('rxDiagnosis').value.trim();
         document.getElementById('rxPrevDxWrap').style.display = dx ? '' : 'none';
@@ -1444,12 +1538,17 @@
 
         const advice = document.getElementById('rxAdvice').value.trim();
         const followUp = document.getElementById('rxFollowUpDate').value;
-        const adviceParts = [advice, followUp ? `Follow up on ${Qlinic.formatDateLabel(followUp)}.` : ''].filter(Boolean);
+        let followUpLabel = '';
+        if (followUp) {
+          const [fy, fm, fd] = followUp.split('-').map(Number);
+          followUpLabel = `Follow up on ${new Date(fy, fm - 1, fd).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}.`;
+        }
+        const adviceParts = [advice, followUpLabel].filter(Boolean);
         document.getElementById('rxPrevAdviceWrap').style.display = adviceParts.length ? '' : 'none';
         document.getElementById('rxPrevAdvice').textContent = adviceParts.join(' ');
       }
 
-      ['rxDiagnosis', 'rxAdvice', 'rxFollowUpDate'].forEach((id) => {
+      ['rxComplaints', 'rxDiagnosis', 'rxAdvice', 'rxFollowUpDate'].forEach((id) => {
         document.getElementById(id).addEventListener('input', updateRxPreview);
       });
 
@@ -1464,6 +1563,7 @@
         document.getElementById('rxModalPatientSub').textContent = [patient.name, rxFormatAgeGender(patient)].filter(Boolean).join(' · ');
         document.getElementById('rxModalBackdrop').style.display = 'flex';
         updateRxPreview();
+        if (currentDoctor) loadRxClosureData(currentDoctor.id);
       }
       function closeRxModal() {
         document.getElementById('rxModalBackdrop').style.display = 'none';
