@@ -2577,35 +2577,40 @@
   // national reference list -- so a clinic with no pharmacy set up still
   // gets real results on day one, and a clinic that DOES stock the item
   // sees its own catalog entry ranked ahead of it.
-  async function searchMedicinesForRx(query, signal) {
+  // A clinic's own catalog is small (tens to low hundreds of rows) — worth
+  // loading once and filtering in the browser so it's instant, the way
+  // pharmacy.html's own medicine search already is. The 250k-row national
+  // generic_medicines list is the part a network round trip can't avoid;
+  // that stays a server search, called separately as a slower enrichment
+  // layer rather than something the whole dropdown waits on.
+  async function getClinicMedicinesForRx() {
     const clinicId = await ensureClinicContext();
+    if (!clinicId) return [];
+    const { data, error } = await sb.from('medicines').select('id, name, generic_name, manufacturer')
+      .eq('clinic_id', clinicId).eq('is_active', true).order('name');
+    if (error) throw error;
+    return data.map((r) => ({
+      clinicMedicineId: r.id, genericMedicineId: null,
+      name: r.name, composition: r.generic_name || '', manufacturer: r.manufacturer || '',
+    }));
+  }
+
+  async function searchMedicinesForRx(query, signal) {
     const q = (query || '').trim();
     if (q.length < 3) return [];
     // Prefix match ("dolo%"), not substring ("%dolo%") — this is how a
     // doctor actually types a medicine name, and it lets the generic_
     // medicines trigram index (250k+ rows) narrow the scan far more than
-    // a leading wildcard would, which is what made this feel slow.
-    const pattern = `${q}%`;
-    const withSignal = (qb) => (signal ? qb.abortSignal(signal) : qb);
-    const [clinicRes, genericRes] = await Promise.all([
-      clinicId
-        ? withSignal(sb.from('medicines').select('id, name, generic_name, manufacturer')
-            .eq('clinic_id', clinicId).eq('is_active', true).ilike('name', pattern).order('name').limit(8))
-        : Promise.resolve({ data: [], error: null }),
-      withSignal(sb.from('generic_medicines').select('id, name, manufacturer, composition_1, composition_2')
-        .ilike('name', pattern).order('name').limit(12)),
-    ]);
-    if (clinicRes.error) throw clinicRes.error;
-    if (genericRes.error) throw genericRes.error;
-    const clinicResults = (clinicRes.data || []).map((r) => ({
-      clinicMedicineId: r.id, genericMedicineId: null,
-      name: r.name, composition: r.generic_name || '', manufacturer: r.manufacturer || '',
-    }));
-    const genericResults = (genericRes.data || []).map((r) => ({
+    // a leading wildcard would.
+    let qb = sb.from('generic_medicines').select('id, name, manufacturer, composition_1, composition_2')
+      .ilike('name', `${q}%`).order('name').limit(12);
+    if (signal) qb = qb.abortSignal(signal);
+    const { data, error } = await qb;
+    if (error) throw error;
+    return data.map((r) => ({
       clinicMedicineId: null, genericMedicineId: r.id,
       name: r.name, composition: [r.composition_1, r.composition_2].filter(Boolean).join(' + '), manufacturer: r.manufacturer || '',
     }));
-    return clinicResults.concat(genericResults);
   }
 
   async function getMedicine(id) {
@@ -2904,6 +2909,7 @@
     getInvoiceItems,
     searchPatientsForPharmacy,
 
+    getClinicMedicinesForRx,
     searchMedicinesForRx,
     createPrescription,
 

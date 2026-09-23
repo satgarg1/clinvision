@@ -278,7 +278,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=115"></script>
+  <script src="clinic-data.js?v=116"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -1515,15 +1515,48 @@
         }
       });
 
+      // Two tiers: the clinic's own catalog is loaded once (openRxModal)
+      // and filtered right here in the browser, so it renders the instant
+      // a doctor starts typing — no network round trip in the loop at all.
+      // The 250k-row national database can't be shipped to the browser, so
+      // it's a separate, debounced network call that ENRICHES the same
+      // list a beat later rather than something the whole dropdown waits on.
+      let rxClinicMedicinesCache = [];
       let rxMedSearchDebounce = null;
       let rxMedSearchAbort = null;
+
+      function renderRxMedSuggestions(results) {
+        const list = document.getElementById('rxMedSuggestList');
+        if (!results.length) {
+          list.innerHTML = '<div class="rx-med-suggest-empty">No match — this will be saved as typed</div>';
+          list.removeAttribute('data-results');
+          list.style.display = 'block';
+          return;
+        }
+        list.innerHTML = results.map((r, i) => `
+          <div class="rx-med-suggest-item" data-i="${i}">
+            <div><div class="mr-name">${Qlinic.escapeHtml(r.name)}</div>${r.composition ? `<div class="mr-comp">${Qlinic.escapeHtml(r.composition)}</div>` : ''}</div>
+          </div>
+        `).join('');
+        list.dataset.results = JSON.stringify(results);
+        list.style.display = 'block';
+      }
+
       document.getElementById('rxMedNameInput').addEventListener('input', (e) => {
         rxDraftMed = null;
-        const q = e.target.value;
-        const list = document.getElementById('rxMedSuggestList');
+        const q = e.target.value.trim();
         clearTimeout(rxMedSearchDebounce);
         if (rxMedSearchAbort) rxMedSearchAbort.abort();
-        if (q.trim().length < 3) { list.style.display = 'none'; list.innerHTML = ''; return; }
+        const list = document.getElementById('rxMedSuggestList');
+        if (q.length < 3) { list.style.display = 'none'; list.innerHTML = ''; return; }
+
+        const qLower = q.toLowerCase();
+        const localMatches = rxClinicMedicinesCache.filter((m) => m.name.toLowerCase().startsWith(qLower)).slice(0, 8);
+        // Show instant matches right away; if there are none yet, wait for
+        // the network result rather than flashing "No match" prematurely.
+        if (localMatches.length) renderRxMedSuggestions(localMatches);
+        else { list.style.display = 'none'; list.innerHTML = ''; }
+
         const mySeq = ++rxMedSearchSeq;
         rxMedSearchDebounce = setTimeout(async () => {
           const controller = new AbortController();
@@ -1538,20 +1571,10 @@
             return;
           }
           if (mySeq !== rxMedSearchSeq) return;
-          if (!results.length) {
-            list.innerHTML = '<div class="rx-med-suggest-empty">No match — this will be saved as typed</div>';
-            list.removeAttribute('data-results');
-            list.style.display = 'block';
-            return;
-          }
-          list.innerHTML = results.map((r, i) => `
-            <div class="rx-med-suggest-item" data-i="${i}">
-              <div><div class="mr-name">${Qlinic.escapeHtml(r.name)}</div>${r.composition ? `<div class="mr-comp">${Qlinic.escapeHtml(r.composition)}</div>` : ''}</div>
-            </div>
-          `).join('');
-          list.dataset.results = JSON.stringify(results);
-          list.style.display = 'block';
-        }, 250);
+          const seen = new Set(localMatches.map((m) => m.name.toLowerCase()));
+          const merged = localMatches.concat(results.filter((r) => !seen.has(r.name.toLowerCase())));
+          renderRxMedSuggestions(merged);
+        }, 180);
       });
 
       document.getElementById('rxMedNameInput').addEventListener('blur', () => {
@@ -1664,6 +1687,7 @@
         document.getElementById('rxModalBackdrop').style.display = 'flex';
         updateRxPreview();
         if (currentDoctor) loadRxClosureData(currentDoctor.id);
+        Qlinic.getClinicMedicinesForRx().then((meds) => { rxClinicMedicinesCache = meds; }).catch(() => { rxClinicMedicinesCache = []; });
       }
       function closeRxModal() {
         document.getElementById('rxModalBackdrop').style.display = 'none';
