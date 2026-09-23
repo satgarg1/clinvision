@@ -453,6 +453,7 @@
 
     let closeAll = () => {};
     let triggerEl;
+    let pop;
 
     {
       wrap.innerHTML = `
@@ -491,20 +492,28 @@
         </div>
       `;
       triggerEl = wrap.querySelector('.qdp-trigger');
-      const pop = wrap.querySelector('.qdp-pop');
-      const dayView = wrap.querySelector('.qdp-dayview');
-      const grid = wrap.querySelector('.qdp-grid');
-      const monthLabel = wrap.querySelector('.qdp-month-label');
-      const yearView = wrap.querySelector('.qdp-yearview');
-      const yearGrid = wrap.querySelector('.qdp-yeargrid');
-      const monthView = wrap.querySelector('.qdp-monthview');
-      const monthGrid = wrap.querySelector('.qdp-monthgrid');
-      const backYearLabel = wrap.querySelector('.qdp-back-year');
+      pop = wrap.querySelector('.qdp-pop');
+      const dayView = pop.querySelector('.qdp-dayview');
+      const grid = pop.querySelector('.qdp-grid');
+      const monthLabel = pop.querySelector('.qdp-month-label');
+      const yearView = pop.querySelector('.qdp-yearview');
+      const yearGrid = pop.querySelector('.qdp-yeargrid');
+      const monthView = pop.querySelector('.qdp-monthview');
+      const monthGrid = pop.querySelector('.qdp-monthgrid');
+      const backYearLabel = pop.querySelector('.qdp-back-year');
+      // Moved out to <body> (fixed position, see positionPop) so a qtable
+      // panel's mobile overflow-x:auto scroll wrapper can't clip a calendar
+      // taller than the panel's own content -- same reasoning as the
+      // column-filter dropdowns. A modal that later does backdrop.remove()
+      // won't reach this now-detached pop, so it's tagged with its wrap
+      // and swept on the next open() anywhere on the page.
+      document.body.appendChild(pop);
+      pop._qdpWrap = wrap;
 
       function positionPop() {
-        pop.style.left = '0'; pop.style.right = 'auto';
-        const rect = pop.getBoundingClientRect();
-        if (rect.right > window.innerWidth - 8) { pop.style.left = 'auto'; pop.style.right = '0'; }
+        const rect = wrap.getBoundingClientRect();
+        pop.style.top = (rect.bottom + 6) + 'px';
+        pop.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - 264 - 8)) + 'px';
       }
       showDayView = function () {
         yearView.style.display = 'none';
@@ -528,6 +537,7 @@
       };
       function open() {
         document.querySelectorAll('.qdp-pop.open').forEach((p) => { if (p !== pop) p.classList.remove('open'); });
+        document.querySelectorAll('.qdp-pop').forEach((p) => { if (p !== pop && p._qdpWrap && !p._qdpWrap.isConnected) p.remove(); });
         pop.classList.add('open');
         triggerEl.classList.add('open');
         showDayView();
@@ -547,7 +557,7 @@
       }));
       monthLabel.addEventListener('click', (e) => { e.stopPropagation(); showYearView(); });
       pop.querySelectorAll('[data-yearpage]').forEach((btn) => btn.addEventListener('click', (e) => { e.stopPropagation(); yearPage += Number(btn.dataset.yearpage); buildYearGrid(yearGrid); }));
-      wrap.querySelector('.qdp-back').addEventListener('click', (e) => { e.stopPropagation(); showYearView(); });
+      pop.querySelector('.qdp-back').addEventListener('click', (e) => { e.stopPropagation(); showYearView(); });
       pop.addEventListener('click', (e) => e.stopPropagation());
       document.addEventListener('click', close);
 
@@ -588,6 +598,7 @@
       setValue(d) { commit(d); },
       refresh: syncFromInput,
       destroy() {
+        pop.remove();
         wrap.remove();
         input.style.display = '';
         delete input._qlinicDatePicker;
@@ -2369,6 +2380,52 @@
       document.documentElement.removeAttribute('data-theme');
     }
   }
+
+  // Mobile nav drawer: runs on every .app-shell page (this script tag
+  // always sits right after that markup, so the DOM is already there).
+  // No-ops instantly on pages without a sidebar (marketing, auth). Only
+  // one shared <nav>, not a second copy for mobile, so the existing
+  // role-based show/hide of individual nav links (each page's own inline
+  // script) keeps working unchanged.
+  function initMobileNav() {
+    const shell = document.querySelector('.app-shell');
+    const sidebar = document.querySelector('.app-sidebar');
+    if (!shell || !sidebar) return;
+
+    const topbar = document.createElement('div');
+    topbar.className = 'mobile-topbar';
+    topbar.innerHTML =
+      '<button type="button" class="mobile-nav-toggle" aria-label="Open menu" aria-expanded="false">' +
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>' +
+      '</button>' +
+      '<span class="mobile-topbar-brand">ClinVision</span>';
+    shell.insertBefore(topbar, shell.firstChild);
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'mobile-nav-backdrop';
+    shell.appendChild(backdrop);
+
+    const toggleBtn = topbar.querySelector('.mobile-nav-toggle');
+    function openNav() {
+      sidebar.classList.add('mobile-nav-open');
+      backdrop.classList.add('show');
+      toggleBtn.setAttribute('aria-expanded', 'true');
+    }
+    function closeNav() {
+      sidebar.classList.remove('mobile-nav-open');
+      backdrop.classList.remove('show');
+      toggleBtn.setAttribute('aria-expanded', 'false');
+    }
+    toggleBtn.addEventListener('click', () => {
+      if (sidebar.classList.contains('mobile-nav-open')) closeNav(); else openNav();
+    });
+    backdrop.addEventListener('click', closeNav);
+    sidebar.querySelectorAll('a').forEach((a) => a.addEventListener('click', closeNav));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeNav();
+    });
+  }
+  initMobileNav();
 
   async function onLiveChange(cb) {
     const clinicId = await ensureClinicContext();

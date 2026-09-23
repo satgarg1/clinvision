@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=324" />
+<link rel="stylesheet" href="styles.css?v=325" />
 <style>
   .tab-switch { display:inline-flex; gap:4px; background:var(--grey-100); border-radius:var(--radius-pill); padding:3px; margin-bottom:18px; }
   .tab-switch button { font-family:var(--font); font-size:13px; font-weight:600; border:none; background:transparent; color:var(--grey-700); padding:7px 16px; border-radius:var(--radius-pill); cursor:pointer; }
@@ -136,7 +136,7 @@
   <div class="modal-backdrop" id="medicineModal" style="display:none;">
     <div class="modal-card" style="max-width:520px; max-height:85vh; overflow-y:auto;">
       <h3 class="modal-title" id="medicineModalTitle">Add medicine</h3>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">
+      <div class="mobile-stack-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">
         <div class="doctor-form-field" style="margin-bottom:16px;"><label>Name</label><input type="text" id="mfName" /></div>
         <div class="doctor-form-field" style="margin-bottom:16px;"><label>Generic name</label><input type="text" id="mfGenericName" /></div>
         <div class="doctor-form-field" style="margin-bottom:16px;"><label>Manufacturer</label><input type="text" id="mfManufacturer" /></div>
@@ -158,7 +158,7 @@
       <p id="mfPriceHint" style="font-size:12px; color:var(--grey-500); margin:-8px 0 16px;"></p>
       <div id="openingStockFields">
         <p style="font-size:12px; font-weight:600; color:var(--grey-500); margin:4px 0 10px;">Opening stock (optional)</p>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">
+        <div class="mobile-stack-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">
           <div class="doctor-form-field" style="margin-bottom:16px;"><label>Batch number</label><input type="text" id="mfOpeningBatch" /></div>
           <div class="doctor-form-field" style="margin-bottom:16px;"><label>Packs received</label><input type="text" id="mfOpeningPacks" inputmode="numeric" /></div>
         </div>
@@ -177,14 +177,14 @@
   <div class="modal-backdrop" id="batchModal" style="display:none;">
     <div class="modal-card" style="max-width:420px; max-height:85vh; overflow-y:auto;">
       <h3 class="modal-title">Add batch (stock in)</h3>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">
+      <div class="mobile-stack-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">
         <div class="doctor-form-field" style="margin-bottom:16px;"><label>Batch number</label><input type="text" id="bfBatchNumber" /></div>
         <div class="doctor-form-field" style="margin-bottom:16px;"><label>Packs received</label><input type="text" id="bfPacksReceived" inputmode="numeric" /></div>
       </div>
       <p id="bfHint" style="font-size:12px; color:var(--grey-500); margin:-8px 0 16px;"></p>
       <div class="doctor-form-field" style="margin-bottom:16px;"><label>Mfg date</label><input type="date" id="bfMfgDate" /></div>
       <div class="doctor-form-field" style="margin-bottom:16px;"><label>Expiry date</label><input type="date" id="bfExpiryDate" /></div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">
+      <div class="mobile-stack-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">
         <div class="doctor-form-field" style="margin-bottom:16px;"><label>Purchase price (₹/pack)</label><input type="text" id="bfPurchasePrice" inputmode="decimal" /></div>
         <div class="doctor-form-field" style="margin-bottom:16px;"><label>MRP (₹/pack)</label><input type="text" id="bfMrp" inputmode="decimal" /></div>
       </div>
@@ -217,7 +217,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=111"></script>
+  <script src="clinic-data.js?v=112"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;

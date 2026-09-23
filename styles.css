@@ -3113,8 +3113,15 @@ th.th-filterable { position: relative; }
 .th-filter-trigger { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; white-space: nowrap; }
 .th-filter-icon { width: 12px; height: 12px; flex-shrink: 0; opacity: 0.55; }
 .th-filter-icon.active { opacity: 1; color: var(--accent); }
+/* position:fixed (top/left set inline by openColumnFilter at open time,
+   from the trigger's own getBoundingClientRect) rather than absolute off
+   the <th> -- a mobile qtable panel now scrolls (see the qtable overflow-x
+   rule below), and any non-visible overflow on an ancestor forces the
+   panel's other axis to clip too, which would trap an absolutely-
+   positioned dropdown that runs past the panel's bottom edge with no way
+   to scroll to it. Fixed positioning escapes that entirely. */
 .filter-dropdown {
-  position: absolute; top: 100%; left: 0; margin-top: 6px; z-index: 20;
+  position: fixed; z-index: 20;
   background: var(--white); border: 1px solid var(--grey-300); border-radius: var(--radius-sm);
   box-shadow: var(--shadow-hover); padding: 10px; min-width: 200px; max-height: 260px; overflow-y: auto;
   text-transform: none; letter-spacing: normal; font-weight: 400;
@@ -3861,8 +3868,12 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 #trendsCustomRangeFilters .qdp-trigger,
 #customPeriodFilters .qdp-trigger { padding: 8px 16px; }
 
+/* position:fixed (top/left set inline by positionPop, in Qlinic.attachDatePicker)
+   rather than absolute off .qdp -- same reasoning as .filter-dropdown above:
+   escapes a qtable panel's mobile overflow-x:auto scroll clipping instead of
+   being trapped by it. */
 .qdp-pop {
-  position: absolute; top: calc(100% + 6px); z-index: 30;
+  position: fixed; z-index: 30;
   background: var(--white); border-radius: var(--radius-md); box-shadow: var(--shadow-resting);
   border: 1px solid var(--grey-300); padding: 14px; width: 264px; display: none;
 }
@@ -4834,13 +4845,102 @@ body[data-board-mode="light"] .board-page-indicator .dot { background: rgba(0, 0
 body[data-board-mode="light"] .board-cols { border-top-color: #e3e3e6; border-bottom-color: #e3e3e6; }
 body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
 
+/* Mobile nav: .mobile-topbar/.mobile-nav-toggle/.mobile-nav-backdrop are
+   injected by Qlinic.initMobileNav() (clinic-data.js) on every .app-shell
+   page -- hidden here by default so desktop never sees them, then switched
+   on inside the 720px breakpoint below where the sidebar itself becomes a
+   slide-in drawer instead of the old unlabeled horizontally-scrolling nav
+   strip. */
+.mobile-topbar, .mobile-nav-backdrop { display: none; }
+
 @media (max-width: 720px) {
-  .app-shell { flex-direction: column; }
-  .app-sidebar { width: 100%; flex-direction: row; overflow-x: auto; align-items: center; }
-  .app-sidebar nav { flex-direction: row; }
-  .app-sidebar .clinic-name-row { display: none; }
-  .app-main { padding: 24px 20px; }
-  .closed-day-banner { padding: 6px 20px; margin: -24px -20px 6px; }
+  .app-shell { flex-direction: column; height: 100vh; }
+
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--grey-300);
+    background: var(--white);
+    flex-shrink: 0;
+  }
+  .mobile-nav-toggle {
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; flex-shrink: 0; padding: 0;
+    border: 1px solid var(--grey-300); border-radius: var(--radius-sm);
+    background: var(--white); color: var(--black); cursor: pointer;
+  }
+  .mobile-topbar-brand { font-size: 15px; font-weight: 700; color: var(--black); }
+
+  /* Was a horizontally-scrolling nav strip with no visual affordance that
+     it scrolled -- links past the fold were just invisible. A real
+     off-canvas drawer gives every link room to be tapped at full size. */
+  .app-sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 82%;
+    max-width: 280px;
+    z-index: 101;
+    overflow-x: hidden;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: var(--shadow-hover);
+  }
+  .app-sidebar.mobile-nav-open { transform: translateX(0); }
+
+  .mobile-nav-backdrop {
+    display: block;
+    position: fixed; inset: 0;
+    background: rgba(20, 20, 20, 0.45);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+  }
+  .mobile-nav-backdrop.show { opacity: 1; pointer-events: auto; }
+
+  .app-main { padding: 20px 20px 24px; }
+  .closed-day-banner { padding: 6px 20px; margin: -20px -20px 6px; }
+
+  /* Finding 2: fixed-ratio inline column widths (reception's phoned-in/
+     walk-in row, manage-medicines' modal fields, pharmacy's two-pane
+     layout) have no minimum width floor and crush to unreadable slivers
+     below ~500px -- force everything back to a single column instead. */
+  .form-grid, .mobile-stack-grid, .pharmacy-columns {
+    grid-template-columns: 1fr !important;
+  }
+  .pharmacy-summary-panel { position: static !important; }
+
+  /* Finding 3: doctor.html's core per-patient actions are the one thing
+     a doctor working off their phone (no desk, no mouse) must be able to
+     hit without a mis-tap -- .btn-sm's normal 8px/16px padding falls
+     short of a real touch target. */
+  #callNextBtn, #finishCurrentBtn {
+    display: block;
+    width: 100%;
+    margin-left: 0 !important;
+    padding: 14px 20px;
+    font-size: 16px;
+    min-height: 52px;
+  }
+  #finishCurrentBtn { margin-top: 10px; }
+
+  /* Finding 4: the pill track never wrapped, so a 4th tab (Settings'
+     Clinic Setup/Records/Team & Access/Preferences) just ran off the
+     edge of the screen with no indication anything was cut off. Radius
+     drops to the ordinary card radius once it's 2 rows tall -- the full
+     pill radius only reads as a "track" shape on a single row. */
+  .period-pills { flex-wrap: wrap; border-radius: var(--radius-lg); }
+
+  /* Finding 5: table.qtable never had a scroll container, so a table
+     wider than the phone either overflowed the page itself or wrapped
+     cell text mid-word (e.g. a phone number split across two lines).
+     qtable-fixed's percentage colgroup widths need an explicit min-width
+     to actually become scrollable instead of just shrinking to fit. */
+  .panel:has(table.qtable) { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table.qtable.qtable-fixed { min-width: 560px; }
 }
 
 @media (max-width: 900px) {
