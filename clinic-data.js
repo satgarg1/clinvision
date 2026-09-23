@@ -237,14 +237,21 @@
     if (inputEl.form) inputEl.form.addEventListener('reset', () => { shown = false; setTimeout(render, 0); });
   }
 
-  function confirmDialog({ title, message, confirmLabel = 'Continue', cancelLabel = 'Cancel', danger = false } = {}) {
+  function confirmDialog({ title, message, messageHtml, confirmLabel = 'Continue', cancelLabel = 'Cancel', danger = false } = {}) {
     return new Promise((resolve) => {
       const backdrop = document.createElement('div');
       backdrop.className = 'modal-backdrop';
+      // messageHtml is the escape hatch for a caller that needs inline
+      // formatting (e.g. bolding a name inside the sentence) - it's used
+      // verbatim, so the CALLER is responsible for escaping any dynamic
+      // value it interpolates (with escapeHtml) before building it. Plain
+      // message stays auto-escaped as before for every other call site.
+      const bodyHtml = messageHtml
+        || message.split('\n').map((line) => `<p class="modal-message">${escapeHtml(line)}</p>`).join('');
       backdrop.innerHTML = `
         <div class="modal-card" role="alertdialog" aria-modal="true">
           ${title ? `<h2 class="modal-title">${escapeHtml(title)}</h2>` : ''}
-          ${message.split('\n').map((line) => `<p class="modal-message">${escapeHtml(line)}</p>`).join('')}
+          ${bodyHtml}
           <div class="modal-actions">
             <button type="button" class="btn-sm ${danger ? 'danger-solid' : 'primary'}" id="modalConfirmBtn">${escapeHtml(confirmLabel)}</button>
             <button type="button" class="btn-sm" id="modalCancelBtn">${escapeHtml(cancelLabel)}</button>

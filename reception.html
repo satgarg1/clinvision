@@ -189,7 +189,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=110"></script>
+  <script src="clinic-data.js?v=111"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -1251,9 +1251,17 @@
           const foundName = lastPhoneMatch.name.trim().toLowerCase();
           if (typedName && typedName !== foundName) {
             const visitWord = lastPhoneMatch.totalVisits === 1 ? 'visit' : 'visits';
+            // Both names bolded and colored so the two identities in this
+            // sentence are easy to tell apart at a glance - the name
+            // already on file versus the name about to be added as a new,
+            // separate patient. Values are escaped before going into the
+            // styled spans since messageHtml skips confirmDialog's own
+            // auto-escaping.
+            const foundNameHtml = `<b style="color:var(--accent);">${Qlinic.escapeHtml(lastPhoneMatch.name)}</b>`;
+            const typedNameHtml = `<b style="color:var(--warning);">${Qlinic.escapeHtml(name.trim())}</b>`;
             const proceed = await Qlinic.confirmDialog({
               title: 'Quick check before adding',
-              message: `This number already belongs to ${lastPhoneMatch.name}, ${lastPhoneMatch.totalVisits} ${visitWord} on file. Confirm you want to add ${name.trim()} as a separate patient using the same phone number.`,
+              messageHtml: `<p class="modal-message">This number already belongs to ${foundNameHtml}, ${lastPhoneMatch.totalVisits} ${visitWord} on file. Confirm you want to add ${typedNameHtml} as a separate patient using the same phone number.</p>`,
               confirmLabel: 'Add anyway',
               cancelLabel: 'Cancel',
             });
