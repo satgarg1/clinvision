@@ -1,0 +1,46 @@
+name: Ping IndexNow
+
+# Tells Bing (and every other IndexNow-consuming search engine - Yandex,
+# Seznam, Naver) the instant a marketing page changes, instead of waiting
+# for their next scheduled crawl. Runs standalone alongside GitHub Pages'
+# own deploy - it only pings a URL list, it doesn't build or touch the
+# site itself, so it can't break a deploy.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "about-us.html"
+      - "contact.html"
+      - "solo-practice.html"
+      - "multi-doctor-clinics.html"
+      - "resources/**"
+      - "sitemap.xml"
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Submit sitemap URLs to IndexNow
+        run: |
+          curl -s -X POST "https://api.indexnow.org/indexnow" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            -d '{
+              "host": "clinvision.in",
+              "key": "25d2654713bf95ebb0349171bd808c3d",
+              "keyLocation": "https://clinvision.in/25d2654713bf95ebb0349171bd808c3d.txt",
+              "urlList": [
+                "https://clinvision.in/",
+                "https://clinvision.in/solo-practice",
+                "https://clinvision.in/multi-doctor-clinics",
+                "https://clinvision.in/contact",
+                "https://clinvision.in/about-us",
+                "https://clinvision.in/resources/how-to-reduce-patient-waiting-time",
+                "https://clinvision.in/resources/clinic-management-best-practices",
+                "https://clinvision.in/resources/how-to-manage-opd-queues",
+                "https://clinvision.in/resources/digital-vs-paper-patient-records",
+                "https://clinvision.in/resources/clinic-software-guide"
+              ]
+            }' \
+            -w "\nIndexNow responded: %{http_code}\n" \
+            -o -

@@ -12,7 +12,9 @@ Allow: /multi-doctor-clinics.html
 Allow: /multi-doctor-clinics.png
 Allow: /styles.css
 Allow: /sitemap.xml
+Allow: /25d2654713bf95ebb0349171bd808c3d.txt
 Allow: /og-image.png
+Allow: /clinvision-favicon.png
 Allow: /hero.png
 Allow: /suite-analytics.png
 Allow: /suite-billing.png
