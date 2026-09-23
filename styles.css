@@ -5684,6 +5684,13 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
 .rx-info-grid .k { color: var(--grey-500); }
 .rx-dx { font-size: 12px; margin-bottom: 14px; }
 .rx-dx b, .rx-advice b { display: block; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--rx-theme); font-weight: 700; margin-bottom: 2px; }
+/* Chief complaint/Diagnosis and Advice/Follow Up print as a left+right
+   pair on one line — the right side (the shorter of the two, always)
+   wraps down to its own line only once the left side's own text has
+   grown too long for both to fit side by side, rather than being
+   forced into two separate stacked lines regardless of length. */
+.rx-pair-row { display: flex; flex-wrap: wrap; gap: 4px 24px; margin-bottom: 14px; }
+.rx-pair-row .rx-dx, .rx-pair-row .rx-advice { flex: 1 1 45%; min-width: 160px; margin-bottom: 0; }
 table.rx-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
 table.rx-table th { text-align: left; font-size: 9.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--rx-theme); padding: 0 8px 7px 0; border-bottom: 1px solid var(--rx-theme); }
 table.rx-table td { padding: 9px 8px 9px 0; border-bottom: 1px solid var(--grey-100); vertical-align: top; }
