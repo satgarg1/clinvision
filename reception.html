@@ -241,6 +241,11 @@
       let slotHintToken = 0;
       let patientLookupToken = 0;
       let followUpHintToken = 0;
+      // Set whenever checkPatientLookup() finds a match, so the submit
+      // handler can tell a name that doesn't match this number apart from
+      // one that does (via "Use these details") - cleared alongside the
+      // rest of the lookup hint in clearPatientLookupHint().
+      let lastPhoneMatch = null;
       let doctorsCache = [];
       let todayInvoices = [];
       let invoiceById = {};
@@ -1233,6 +1238,29 @@
           document.getElementById('pPhone').focus();
           return;
         }
+
+        // The number matched an existing patient (see checkPatientLookup),
+        // but the name typed here doesn't match theirs - could be a real
+        // second patient (families commonly share one phone), or it could
+        // be reception typing straight past a match they didn't notice.
+        // Either way, confirm before creating a second patient under the
+        // same number. Skipped entirely once "Use these details" made the
+        // two names agree.
+        if (lastPhoneMatch && lastPhoneMatch.phone === phone.trim()) {
+          const typedName = name.trim().toLowerCase();
+          const foundName = lastPhoneMatch.name.trim().toLowerCase();
+          if (typedName && typedName !== foundName) {
+            const visitWord = lastPhoneMatch.totalVisits === 1 ? 'visit' : 'visits';
+            const proceed = await Qlinic.confirmDialog({
+              title: 'Quick check before adding',
+              message: `This number already belongs to ${lastPhoneMatch.name}, ${lastPhoneMatch.totalVisits} ${visitWord} on file. Confirm you want to add ${name.trim()} as a separate patient using the same phone number.`,
+              confirmLabel: 'Add anyway',
+              cancelLabel: 'Cancel',
+            });
+            if (!proceed) return;
+          }
+        }
+
         const ageInput = document.getElementById('pAge');
         if (!isValidAge(ageInput.value)) {
           document.getElementById('ageError').style.display = '';
@@ -1388,6 +1416,7 @@
         hint.style.display = 'none';
         hint.innerHTML = '';
         hidePatientInfoChip();
+        lastPhoneMatch = null;
       }
 
       function renderPatientInfoChip(match, phone) {
@@ -1417,6 +1446,7 @@
         const match = await Qlinic.getPatientLookupByPhone(phone);
         if (myToken !== patientLookupToken) return;
         if (!match) { clearPatientLookupHint(); return; }
+        lastPhoneMatch = { phone, name: match.name, totalVisits: match.totalVisits };
         const visitWord = match.totalVisits === 1 ? 'visit' : 'visits';
         let html = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <span style="color:var(--accent);font-weight:600;">Found: ${Qlinic.escapeHtml(match.name)}, ${match.address ? Qlinic.escapeHtml(match.address) : 'no address on file'} &middot; ${match.totalVisits} ${visitWord} on file</span>
