@@ -215,7 +215,7 @@
 
           <div class="panel">
             <div class="panel-header"><h2>Advice &amp; Follow Up</h2></div>
-            <div class="field">
+            <div class="field" style="margin-bottom:8px;">
               <label>General Advice</label>
               <textarea id="rxAdvice" rows="2" placeholder="e.g. Warm salt-water gargles, plenty of fluids"></textarea>
             </div>
@@ -1472,6 +1472,14 @@
           list.innerHTML = '';
         });
         rxDraftMed = null;
+        // A national-database search kicked off for the medicine just added
+        // can still be in flight (debounced, then a real network call) —
+        // without cancelling it here, it resolves after the field has
+        // already been cleared for the next medicine and reopens the
+        // dropdown on its own, seemingly at random.
+        clearTimeout(rxMedSearchDebounce);
+        if (rxMedSearchAbort) rxMedSearchAbort.abort();
+        rxMedSearchSeq++;
       }
 
       function resetRxModalState() {
@@ -1612,7 +1620,9 @@
         rxDraftMed = { clinicMedicineId: r.clinicMedicineId, genericMedicineId: r.genericMedicineId, name: r.name, composition: r.composition };
         document.getElementById('rxMedNameInput').value = r.name;
         list.style.display = 'none';
-        document.getElementById('rxFrequencyInput').focus();
+        // Not auto-focusing Frequency here — that triggered its own combo
+        // dropdown to pop open immediately after picking a medicine, which
+        // read as an unwanted flash rather than a helpful shortcut.
       });
 
       document.getElementById('rxDiscardDraftBtn').addEventListener('click', () => {
