@@ -173,15 +173,22 @@ a { color: inherit; }
 
 .mkt-nav-links { display: flex; align-items: center; gap: 24px; }
 
-/* Below ~700px the nav's five items (four links + Log in) don't fit next to
-   the brand on one line -- previously an inline style with no wrap, so
-   "Log in" ran off the right edge of the screen entirely. Wrapping the
-   whole link group onto its own centered row fixes that without needing a
-   hamburger menu for five items. */
-@media (max-width: 700px) {
-  .mkt-nav { flex-wrap: wrap; row-gap: 12px; }
-  .mkt-nav-links { flex-wrap: wrap; justify-content: center; width: 100%; gap: 12px 20px; }
+/* Menu button for the mobile nav below -- hidden here so desktop never
+   sees it; .mkt-nav-links itself is what the 700px breakpoint below
+   turns into the dropdown panel it opens. */
+.mkt-menu-btn {
+  display: none;
+  width: 40px; height: 40px; flex-shrink: 0; padding: 0;
+  align-items: center; justify-content: center;
+  border: 1px solid var(--grey-300); border-radius: var(--radius-sm);
+  background: var(--white); color: var(--black); cursor: pointer;
 }
+.mkt-menu-btn span, .mkt-menu-btn span::before, .mkt-menu-btn span::after {
+  content: ''; display: block; width: 18px; height: 2px;
+  background: var(--black); border-radius: 2px; position: relative;
+}
+.mkt-menu-btn span::before { position: absolute; top: -6px; }
+.mkt-menu-btn span::after { position: absolute; top: 6px; }
 
 /* Nav links grow slightly on hover, and the current page's link gets a
    permanent underline, so the nav gives feedback instead of sitting flat. */
@@ -1258,6 +1265,57 @@ a { color: inherit; }
 .segment-icon svg { width: 20px; height: 20px; display: block; }
 .segment-item-title { font-size: 15px; font-weight: 700; color: var(--black); margin: 0 0 2px; }
 .segment-item-desc { font-size: 13px; color: var(--grey-500); margin: 0; line-height: 1.4; }
+
+/* Mobile marketing nav: a menu button replaces the old wrapped-onto-its-
+   own-row link group, and .mkt-nav-links itself becomes the dropdown
+   panel it opens (real content, not a duplicate) -- Solutions/Resources'
+   hover-only .segment-menu turns into a tap-to-expand accordion, since
+   :hover never fires on a touchscreen. Placed after the base .segment-menu
+   rules above (same selectors, later in the file) so this genuinely wins
+   the cascade for every property it touches, not just by specificity. */
+@media (max-width: 700px) {
+  .mkt-menu-btn { display: flex; }
+
+  .mkt-nav-links {
+    display: none;
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 40;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--white); border-bottom: 1px solid var(--grey-300);
+    padding: 4px 6vw 18px; box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12);
+    max-height: calc(100vh - 76px); overflow-y: auto;
+  }
+  .mkt-nav-links.open { display: flex; }
+  .mkt-nav-links > a:not(.btn) {
+    padding: 14px 4px; border-top: 1px solid var(--grey-100);
+    font-size: 15px; font-weight: 600;
+  }
+  .mkt-nav-links > .btn.btn-accent { margin-top: 14px; text-align: center; }
+
+  .nav-segment-wrap { width: 100%; }
+  .nav-hover-trigger {
+    width: 100%; justify-content: space-between; padding: 14px 4px;
+    border-top: 1px solid var(--grey-100); font-size: 15px;
+  }
+  .nav-segment-wrap:hover .nav-hover-trigger .chevron,
+  .nav-segment-wrap:focus-within .nav-hover-trigger .chevron { transform: none; }
+  .nav-hover-trigger[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+
+  /* Repeats the exact .nav-segment-wrap:hover/:focus-within compound
+     selectors from the base rule above (not just .segment-menu alone) --
+     those have higher specificity than a bare class, so without matching
+     them here, a tap that leaves the trigger focused (:focus-within)
+     re-applies the desktop transform:translateX(-50%) centering and the
+     accordion card shifts half its own width off the left edge. */
+  .segment-menu,
+  .nav-segment-wrap:hover .segment-menu,
+  .nav-segment-wrap:focus-within .segment-menu {
+    position: static; transform: none; padding-top: 0; margin: 0 0 8px; width: 100%;
+    opacity: 1; visibility: visible; pointer-events: auto;
+    display: none;
+  }
+  .nav-segment-wrap.open .segment-menu { display: block; }
+  .segment-menu-inner { width: 100%; box-shadow: none; border: 1px solid var(--grey-300); }
+}
 
 /* A centered variant of index.html's own .hero-stage (which is
    left-aligned by design there) -- for a segment page's hero, which
