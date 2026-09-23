@@ -5694,8 +5694,22 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
    wraps down to its own line only once the left side's own text has
    grown too long for both to fit side by side, rather than being
    forced into two separate stacked lines regardless of length. */
-.rx-pair-row { display: flex; flex-wrap: wrap; gap: 4px 24px; margin-bottom: 14px; }
-.rx-pair-row .rx-dx, .rx-pair-row .rx-advice { flex: 1 1 45%; min-width: 160px; margin-bottom: 0; }
+.rx-pair-row { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-bottom: 14px; align-items: flex-start; }
+/* min-width:0 (not a fixed floor) plus an explicit word-break is what
+   actually makes text wrap inside its own column instead of overflowing
+   past the page edge or bleeding into the sibling column — a flex
+   item's default min-width is "auto" (roughly its longest unbreakable
+   run of text), which silently defeats flex-wrap/flex-shrink for any
+   text with a long run and no spaces to break on. */
+.rx-pair-row > .rx-dx, .rx-pair-row > .rx-advice { min-width: 0; overflow-wrap: break-word; word-break: break-word; margin-bottom: 0; }
+.rx-pair-row > .rx-dx:first-child { flex: 1 1 55%; }
+.rx-pair-row > .rx-dx:last-child { flex: 1 1 40%; }
+/* Advice is normally the longer of the two, Follow Up is always just a
+   short date — so Follow Up gets a small, right-pinned column instead
+   of an even split, leaving Advice the room to wrap onto a second line
+   well before it could ever reach, let alone overlap, Follow Up. */
+.rx-pair-row > .rx-advice:first-child { flex: 1 1 auto; }
+.rx-pair-row > .rx-advice:last-child { flex: 0 0 auto; max-width: 150px; text-align: right; margin-left: auto; }
 table.rx-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
 table.rx-table th { text-align: left; font-size: 9.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--rx-theme); padding: 0 8px 7px 0; border-bottom: 1px solid var(--rx-theme); }
 table.rx-table td { padding: 9px 8px 9px 0; border-bottom: 1px solid var(--grey-100); vertical-align: top; }
@@ -5704,9 +5718,6 @@ table.rx-table .rt-comp { color: var(--grey-500); font-size: 10px; }
 table.rx-table .rt-instr { color: var(--grey-700); font-size: 11.5px; margin-top: 2px; }
 .rx-next-visit { display: inline-block; background: var(--rx-theme-bg); color: var(--rx-theme); font-weight: 700; font-size: 10.5px; padding: 5px 12px; border-radius: 999px; margin-top: 6px; }
 .rx-advice { font-size: 12px; margin-bottom: 12px; }
-.rx-sign-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; }
-.rx-sign-note { font-size: 9.5px; color: var(--grey-500); max-width: 58%; }
-.rx-sign-line { font-size: 10.5px; color: var(--grey-500); border-top: 1px solid var(--grey-300); padding-top: 5px; width: 140px; text-align: center; }
 
 /* Follow-up date picker — built on the same .time-picker/.time-picker-
    trigger/.time-picker-panel shell the delay-minutes picker above
