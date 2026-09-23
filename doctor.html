@@ -249,6 +249,7 @@
               </div>
               <div class="rx-doc-block">
                 <div class="rx-doc-name" id="rxPrevDoctorName"></div>
+                <div class="rx-doc-qual" id="rxPrevDoctorSpecialty"></div>
                 <div class="rx-doc-qual" id="rxPrevDoctorQual"></div>
               </div>
             </div>
@@ -1614,6 +1615,16 @@
             return;
           }
           if (mySeq !== rxMedSearchSeq) return;
+          // The network half of this search can resolve well after the
+          // doctor has moved on — picked a medicine (rxDraftMed is set) or
+          // tabbed away to Frequency/Duration/Instructions entirely. Once
+          // either has happened this field is considered resolved, so a
+          // late result must never reopen its dropdown; it only reopens
+          // again once the doctor actually edits the name (which is what
+          // clears rxDraftMed and restarts a fresh search in the first
+          // place).
+          if (rxDraftMed) return;
+          if (document.activeElement !== document.getElementById('rxMedNameInput')) return;
           const seen = new Set(localMatches.map((m) => m.name.toLowerCase()));
           const merged = localMatches.concat(results.filter((r) => !seen.has(r.name.toLowerCase())));
           renderRxMedSuggestions(merged);
@@ -1678,6 +1689,7 @@
         const addressParts = clinic ? [clinic.address_line, clinic.city, clinic.state && clinic.pincode ? `${clinic.state} ${clinic.pincode}` : clinic.state].filter(Boolean) : [];
         document.getElementById('rxPrevClinicAddr').textContent = addressParts.join(', ');
         document.getElementById('rxPrevDoctorName').textContent = doctor ? `Dr. ${doctor.name}` : '';
+        document.getElementById('rxPrevDoctorSpecialty').textContent = (doctor && doctor.specialty) || '';
         document.getElementById('rxPrevDoctorQual').textContent = doctor
           ? [doctor.qualification, doctor.registrationNumber ? `Reg. No. ${doctor.registrationNumber}` : ''].filter(Boolean).join(' · ')
           : '';
