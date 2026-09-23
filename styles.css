@@ -3848,6 +3848,9 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   z-index: 50;
   padding: 6px;
 }
+/* Set by JS when there isn't room below the trigger — e.g. the Follow Up
+   picker sitting near the bottom of the scrolling Rx modal body. */
+.time-picker-panel.flip-up { top: auto; bottom: calc(100% + 6px); }
 .time-picker-option {
   padding: 9px 12px;
   font-size: 14px;
@@ -4585,7 +4588,11 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   transform: translateY(10px);
   transition: opacity 0.2s ease, transform 0.2s ease;
   pointer-events: none;
-  z-index: 200;
+  /* Was 200 — invisible behind the Rx modal's own z-index:1500 backdrop,
+     so every toast fired while that modal is open (including save
+     confirmation and error messages) rendered but was never seen. A
+     toast is app-wide feedback and must outrank any single modal. */
+  z-index: 2000;
 }
 .toast.show { opacity: 1; transform: translateY(0); }
 
@@ -5624,6 +5631,10 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
    reads as a different, unstyled control glued onto the same form. */
 .rx-med-search, .rx-combo { position: relative; margin-bottom: 0; }
 .rx-med-suggest-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--white); border: 1px solid var(--grey-300); border-radius: var(--radius-sm); box-shadow: var(--shadow-hover, 0 12px 32px rgba(0,0,0,.14)); z-index: 5; max-height: 260px; overflow-y: auto; }
+/* Set by JS (shouldFlipUp) when there isn't room below the field but
+   there is above it — e.g. a combo field near the bottom of the
+   scrolling Rx modal body. */
+.rx-med-suggest-list.flip-up { top: auto; bottom: calc(100% + 4px); }
 .rx-med-suggest-item { display: flex; align-items: center; gap: 10px; padding: 9px 14px; cursor: pointer; border-bottom: 1px solid var(--grey-100); }
 .rx-med-suggest-item:last-child { border-bottom: none; }
 .rx-med-suggest-item:hover { background: var(--grey-100); }

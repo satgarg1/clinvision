@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=330" />
+<link rel="stylesheet" href="styles.css?v=331" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -1272,6 +1272,18 @@
         'Chew and swallow', 'Dissolve in water', 'Shake well before use',
       ];
 
+      // Flips a dropdown panel above its trigger when there isn't enough
+      // room below (e.g. a field near the bottom of the scrolling modal
+      // body) and there's clearly more room above — the plain top:100%
+      // position every panel started with had no such check, so a panel
+      // opened near the bottom just ran off the visible area.
+      function shouldFlipUp(triggerEl, estimatedPanelHeight) {
+        const rect = triggerEl.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        return spaceBelow < estimatedPanelHeight && spaceAbove > spaceBelow;
+      }
+
       // A small, self-contained combobox: an ordinary text field paired
       // with a styled options panel (reusing the same look as the
       // medicine search below), so Frequency/Duration/Instructions read
@@ -1286,6 +1298,8 @@
           if (!matches.length) { list.style.display = 'none'; list.innerHTML = ''; return; }
           list.innerHTML = matches.map((o, i) => `<div class="rx-med-suggest-item" data-i="${i}"><div class="mr-name">${Qlinic.escapeHtml(o)}</div></div>`).join('');
           list.dataset.options = JSON.stringify(matches);
+          list.classList.toggle('flip-up', shouldFlipUp(input, 260));
+          list.scrollTop = 0;
           list.style.display = 'block';
         }
         input.addEventListener('focus', () => render(input.value));
@@ -1403,7 +1417,9 @@
       function openRxDatePanel() {
         rxCalendarViewDate = rxSelectedDateObj() || new Date();
         renderRxDatePanel();
-        document.getElementById('rxDatePanel').style.display = 'block';
+        const panel = document.getElementById('rxDatePanel');
+        panel.classList.toggle('flip-up', shouldFlipUp(document.getElementById('rxDateTrigger'), 360));
+        panel.style.display = 'block';
       }
       function closeRxDatePanel() {
         document.getElementById('rxDatePanel').style.display = 'none';
@@ -1527,9 +1543,12 @@
 
       function renderRxMedSuggestions(results) {
         const list = document.getElementById('rxMedSuggestList');
+        const input = document.getElementById('rxMedNameInput');
         if (!results.length) {
           list.innerHTML = '<div class="rx-med-suggest-empty">No match — this will be saved as typed</div>';
           list.removeAttribute('data-results');
+          list.classList.toggle('flip-up', shouldFlipUp(input, 260));
+          list.scrollTop = 0;
           list.style.display = 'block';
           return;
         }
@@ -1539,6 +1558,8 @@
           </div>
         `).join('');
         list.dataset.results = JSON.stringify(results);
+        list.classList.toggle('flip-up', shouldFlipUp(input, 260));
+        list.scrollTop = 0;
         list.style.display = 'block';
       }
 
