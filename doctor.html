@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=327" />
+<link rel="stylesheet" href="styles.css?v=328" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -127,6 +127,7 @@
           <div id="nowServingBox"></div>
           <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;">Call next patient</button>
           <button class="btn-sm primary" id="finishCurrentBtn" style="margin-top:14px;margin-left:8px;">Done</button>
+          <button type="button" class="btn-sm accent-outline" id="writeRxBtn" style="margin-top:14px;margin-left:8px;" disabled>Write prescription</button>
           <div class="call-confirm-overlay" id="callConfirmOverlay"><span class="call-confirm-check">✓</span>Next patient called</div>
         </div>
 
@@ -149,10 +150,142 @@
 
   <div class="toast" id="toast"></div>
 
+  <div class="rx-modal-backdrop" id="rxModalBackdrop" style="display:none;">
+    <div class="rx-modal">
+      <div class="rx-modal-bar">
+        <h2>Write prescription</h2>
+        <span class="rmb-sub" id="rxModalPatientSub"></span>
+        <button type="button" class="rx-modal-close" id="rxModalCloseBtn" title="Close and return to Doctor View">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="rx-modal-body">
+        <div>
+          <div class="panel">
+            <div class="patient-strip">
+              <div class="patient-avatar" id="rxPatientAvatar"></div>
+              <div>
+                <div class="pname" id="rxPatientName"></div>
+                <div class="pmeta" id="rxPatientMeta"></div>
+              </div>
+              <div class="pnote">In consultation</div>
+            </div>
+
+            <div class="field">
+              <label>Chief complaint</label>
+              <textarea id="rxComplaints" rows="2" placeholder="e.g. Sore throat, mild fever for 2 days"></textarea>
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label>Diagnosis</label>
+              <textarea id="rxDiagnosis" rows="2" placeholder="e.g. Acute upper respiratory tract infection"></textarea>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Medicines</h2>
+              <span class="field-hint" style="margin:0;">Searches this clinic's own stock first, then the national medicine database</span>
+            </div>
+
+            <div id="rxRowsContainer"></div>
+
+            <div class="rx-row" id="rxActiveRow">
+              <div class="rx-row-head">
+                <div style="flex:1;">
+                  <div class="field rx-med-search" style="margin-bottom:0;">
+                    <label>Medicine name</label>
+                    <input type="text" id="rxMedNameInput" placeholder="Type a brand, generic, or manufacturer…" autocomplete="off" />
+                    <div class="rx-med-suggest-list" id="rxMedSuggestList" style="display:none;"></div>
+                  </div>
+                </div>
+                <button type="button" class="rx-remove" id="rxDiscardDraftBtn" title="Clear this medicine">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <div class="rx-field-grid">
+                <div class="rx-field"><label>Frequency (this is the dosage — 1-0-1 already says "1 tablet")</label><input type="text" id="rxFrequencyInput" list="rxFrequencyList" placeholder="e.g. 1-0-1 (BD)" autocomplete="off"></div>
+                <div class="rx-field"><label>Duration</label><input type="text" id="rxDurationInput" list="rxDurationList" placeholder="e.g. 5 days" autocomplete="off"></div>
+                <div class="rx-field"><label>Instructions</label><input type="text" id="rxInstructionsInput" list="rxInstructionsList" placeholder="e.g. After food" autocomplete="off"></div>
+              </div>
+            </div>
+
+            <datalist id="rxFrequencyList">
+              <option value="1-0-0 (Once daily / OD)"><option value="0-0-1 (Once at night / HS)">
+              <option value="1-0-1 (Twice daily / BD)"><option value="1-1-1 (Thrice daily / TDS)">
+              <option value="1-1-1-1 (Four times daily / QID)">
+              <option value="SOS (As needed)"><option value="Stat (Single dose)">
+              <option value="Every 4 hours"><option value="Every 6 hours"><option value="Every 8 hours"><option value="Every 12 hours">
+              <option value="Once weekly"><option value="Alternate day">
+            </datalist>
+            <datalist id="rxDurationList">
+              <option value="1 day"><option value="2 days"><option value="3 days"><option value="5 days">
+              <option value="7 days"><option value="10 days"><option value="14 days"><option value="15 days">
+              <option value="1 month"><option value="2 months"><option value="3 months">
+              <option value="Continue"><option value="SOS">
+            </datalist>
+            <datalist id="rxInstructionsList">
+              <option value="Before food"><option value="After food"><option value="With food"><option value="Empty stomach">
+              <option value="With warm water"><option value="With milk"><option value="At bedtime"><option value="Morning only">
+              <option value="Do not skip doses"><option value="Complete the course"><option value="Avoid alcohol">
+              <option value="Chew and swallow"><option value="Dissolve in water"><option value="Shake well before use">
+            </datalist>
+
+            <button type="button" class="btn-sm accent-outline" id="rxAddMedBtn" style="margin-top:4px;">+ Add this medicine</button>
+          </div>
+
+          <div class="panel">
+            <div class="field-row">
+              <div class="field"><label>General advice</label><textarea id="rxAdvice" rows="2" placeholder="e.g. Warm salt-water gargles, plenty of fluids"></textarea></div>
+              <div class="field"><label>Follow up date (optional)</label><input type="date" id="rxFollowUpDate" /></div>
+            </div>
+            <div class="inline-form" style="margin-top:4px;">
+              <button type="button" class="btn-sm primary" id="rxSavePrintBtn">Save &amp; print</button>
+              <button type="button" class="btn-sm accent-outline" id="rxSaveOnlyBtn">Save only</button>
+              <button type="button" class="btn-sm accent-outline" disabled title="Coming in a future update">Save &amp; WhatsApp (soon)</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="rx-preview-wrap">
+          <div class="rx-preview-label"><span class="pl-title">Live print preview</span><span class="pl-note">A4 · updates as you type</span></div>
+          <div class="a4" id="printRx">
+            <div class="rx-head">
+              <img class="rx-logo-img" id="rxPrevLogo" style="display:none;" alt="" />
+              <div>
+                <div class="rx-clinic-name" id="rxPrevClinicName"></div>
+                <div class="rx-clinic-addr" id="rxPrevClinicAddr"></div>
+              </div>
+              <div class="rx-doc-block">
+                <div class="rx-doc-name" id="rxPrevDoctorName"></div>
+                <div class="rx-doc-qual" id="rxPrevDoctorQual"></div>
+              </div>
+            </div>
+            <div class="rx-info-grid">
+              <div><span class="k">Patient</span> <span id="rxPrevPatientName"></span></div>
+              <div><span class="k">Date</span> <span id="rxPrevDate"></span></div>
+              <div><span class="k">Age / Gender</span> <span id="rxPrevAgeGender"></span></div>
+              <div><span class="k">Phone</span> <span id="rxPrevPhone"></span></div>
+            </div>
+            <div class="rx-dx" id="rxPrevDxWrap" style="display:none;"><b>Diagnosis</b><span id="rxPrevDx"></span></div>
+            <table class="rx-table">
+              <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
+              <tbody id="rxPrevMedsBody"><tr><td colspan="4" style="color:var(--grey-500);font-style:italic;">No medicines added yet</td></tr></tbody>
+            </table>
+            <div class="rx-advice" id="rxPrevAdviceWrap" style="display:none;"><b>Advice</b><span id="rxPrevAdvice"></span></div>
+            <div class="rx-sign-row">
+              <div class="rx-sign-note">This is a computer-generated prescription and does not require a signature.</div>
+              <div class="rx-sign-line">Stamp &amp; signature</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=113"></script>
+  <script src="clinic-data.js?v=114"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -813,6 +946,10 @@
           : (!q.nowServing ? 'No one is currently in consultation.'
           : (q.waiting.length > 0 ? 'Patients are waiting — use "Call next patient" instead.' : ''));
 
+        const writeRxBtn = document.getElementById('writeRxBtn');
+        writeRxBtn.disabled = !q.nowServing;
+        writeRxBtn.title = q.nowServing ? '' : 'No one is currently in consultation.';
+
         const lockedNote = document.getElementById('statusLockedNote');
         if (dayIsClosed) {
           lockedNote.textContent = '🔒 Status is locked while your day is closed — press "I\'m back" below to make changes.';
@@ -1118,6 +1255,253 @@
       } else {
         document.getElementById('clinicLogoThumb').style.display = 'none';
       }
+
+      // ---------- Write prescription modal ----------
+      let rxItems = [];
+      let rxDraftMed = null;
+      let rxMedSearchSeq = 0;
+      let rxSaving = false;
+
+      function rxFormatAgeGender(patient) {
+        if (!patient) return '';
+        const age = patient.age != null ? `${patient.age} yrs` : '';
+        const gender = patient.gender ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) : '';
+        return [age, gender].filter(Boolean).join(', ');
+      }
+
+      function resetRxDraftFields() {
+        document.getElementById('rxMedNameInput').value = '';
+        document.getElementById('rxFrequencyInput').value = '';
+        document.getElementById('rxDurationInput').value = '';
+        document.getElementById('rxInstructionsInput').value = '';
+        const list = document.getElementById('rxMedSuggestList');
+        list.style.display = 'none';
+        list.innerHTML = '';
+        rxDraftMed = null;
+      }
+
+      function resetRxModalState() {
+        rxItems = [];
+        resetRxDraftFields();
+        document.getElementById('rxComplaints').value = '';
+        document.getElementById('rxDiagnosis').value = '';
+        document.getElementById('rxAdvice').value = '';
+        document.getElementById('rxFollowUpDate').value = '';
+        renderRxRows();
+        updateRxPreview();
+      }
+
+      function renderRxRows() {
+        const container = document.getElementById('rxRowsContainer');
+        container.innerHTML = rxItems.map((item, idx) => `
+          <div class="rx-row collapsed" data-idx="${idx}">
+            <span class="rc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <div class="rc-summary">
+              <div class="rc-name">${Qlinic.escapeHtml(item.name)}</div>
+              <div class="rc-detail">${Qlinic.escapeHtml([item.frequency, item.durationText, item.instructions].filter(Boolean).join(' · '))}</div>
+            </div>
+            <div class="rc-actions">
+              <button type="button" class="rx-edit-btn" data-idx="${idx}" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button type="button" class="rx-delete-btn" data-idx="${idx}" title="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      document.getElementById('rxRowsContainer').addEventListener('click', (e) => {
+        const delBtn = e.target.closest('.rx-delete-btn');
+        if (delBtn) {
+          rxItems.splice(Number(delBtn.dataset.idx), 1);
+          renderRxRows();
+          updateRxPreview();
+          return;
+        }
+        const row = e.target.closest('.rx-row.collapsed');
+        if (row) {
+          const idx = Number(row.dataset.idx);
+          const item = rxItems[idx];
+          rxItems.splice(idx, 1);
+          document.getElementById('rxMedNameInput').value = item.name;
+          document.getElementById('rxFrequencyInput').value = item.frequency;
+          document.getElementById('rxDurationInput').value = item.durationText;
+          document.getElementById('rxInstructionsInput').value = item.instructions;
+          rxDraftMed = (item.clinicMedicineId || item.genericMedicineId)
+            ? { clinicMedicineId: item.clinicMedicineId, genericMedicineId: item.genericMedicineId, name: item.name, composition: item.composition }
+            : null;
+          renderRxRows();
+          updateRxPreview();
+          document.getElementById('rxMedNameInput').focus();
+        }
+      });
+
+      document.getElementById('rxMedNameInput').addEventListener('input', async (e) => {
+        rxDraftMed = null;
+        const q = e.target.value;
+        const mySeq = ++rxMedSearchSeq;
+        const list = document.getElementById('rxMedSuggestList');
+        if (q.trim().length < 2) { list.style.display = 'none'; list.innerHTML = ''; return; }
+        let results = [];
+        try {
+          results = await Qlinic.searchMedicinesForRx(q);
+        } catch (err) {
+          return;
+        }
+        if (mySeq !== rxMedSearchSeq) return;
+        if (!results.length) {
+          list.innerHTML = '<div class="rx-med-suggest-empty">No match — this will be saved as typed</div>';
+          list.removeAttribute('data-results');
+          list.style.display = 'block';
+          return;
+        }
+        list.innerHTML = results.map((r, i) => `
+          <div class="rx-med-suggest-item" data-i="${i}">
+            <div><div class="mr-name">${Qlinic.escapeHtml(r.name)}</div>${r.composition ? `<div class="mr-comp">${Qlinic.escapeHtml(r.composition)}</div>` : ''}</div>
+          </div>
+        `).join('');
+        list.dataset.results = JSON.stringify(results);
+        list.style.display = 'block';
+      });
+
+      document.getElementById('rxMedNameInput').addEventListener('blur', () => {
+        setTimeout(() => { document.getElementById('rxMedSuggestList').style.display = 'none'; }, 150);
+      });
+
+      document.getElementById('rxMedSuggestList').addEventListener('mousedown', (e) => {
+        const item = e.target.closest('.rx-med-suggest-item');
+        if (!item) return;
+        const list = document.getElementById('rxMedSuggestList');
+        const results = JSON.parse(list.dataset.results || '[]');
+        const r = results[Number(item.dataset.i)];
+        if (!r) return;
+        rxDraftMed = { clinicMedicineId: r.clinicMedicineId, genericMedicineId: r.genericMedicineId, name: r.name, composition: r.composition };
+        document.getElementById('rxMedNameInput').value = r.name;
+        list.style.display = 'none';
+        document.getElementById('rxFrequencyInput').focus();
+      });
+
+      document.getElementById('rxDiscardDraftBtn').addEventListener('click', () => {
+        resetRxDraftFields();
+      });
+
+      document.getElementById('rxAddMedBtn').addEventListener('click', () => {
+        const nameInput = document.getElementById('rxMedNameInput');
+        const name = nameInput.value.trim();
+        if (!name) { nameInput.focus(); return; }
+        rxItems.push({
+          clinicMedicineId: rxDraftMed ? rxDraftMed.clinicMedicineId : null,
+          genericMedicineId: rxDraftMed ? rxDraftMed.genericMedicineId : null,
+          freeTextName: rxDraftMed ? null : name,
+          name,
+          composition: rxDraftMed ? rxDraftMed.composition : '',
+          frequency: document.getElementById('rxFrequencyInput').value.trim(),
+          durationText: document.getElementById('rxDurationInput').value.trim(),
+          instructions: document.getElementById('rxInstructionsInput').value.trim(),
+        });
+        resetRxDraftFields();
+        renderRxRows();
+        updateRxPreview();
+        nameInput.focus();
+      });
+
+      function updateRxPreview() {
+        const patient = currentQueue && currentQueue.nowServing;
+        const doctor = currentDoctor;
+
+        const logo = document.getElementById('rxPrevLogo');
+        if (clinic && clinic.logo_url) {
+          logo.src = clinic.logo_url;
+          logo.style.display = 'block';
+        } else {
+          logo.style.display = 'none';
+        }
+        document.getElementById('rxPrevClinicName').textContent = clinic ? clinic.name : '';
+        const addressParts = clinic ? [clinic.address_line, clinic.city, clinic.state && clinic.pincode ? `${clinic.state} ${clinic.pincode}` : clinic.state].filter(Boolean) : [];
+        document.getElementById('rxPrevClinicAddr').textContent = addressParts.join(', ');
+        document.getElementById('rxPrevDoctorName').textContent = doctor ? `Dr. ${doctor.name}` : '';
+        document.getElementById('rxPrevDoctorQual').textContent = doctor
+          ? [doctor.qualification, doctor.registrationNumber ? `Reg. No. ${doctor.registrationNumber}` : ''].filter(Boolean).join(' · ')
+          : '';
+        document.getElementById('rxPrevPatientName').textContent = patient ? patient.name : '';
+        document.getElementById('rxPrevDate').textContent = Qlinic.formatDateLabel(Qlinic.getTodayDate());
+        document.getElementById('rxPrevAgeGender').textContent = rxFormatAgeGender(patient);
+        document.getElementById('rxPrevPhone').textContent = (patient && patient.phone) || '—';
+
+        const dx = document.getElementById('rxDiagnosis').value.trim();
+        document.getElementById('rxPrevDxWrap').style.display = dx ? '' : 'none';
+        document.getElementById('rxPrevDx').textContent = dx;
+
+        const tbody = document.getElementById('rxPrevMedsBody');
+        tbody.innerHTML = rxItems.length
+          ? rxItems.map((item, i) => `
+              <tr>
+                <td style="color:var(--grey-500);">${i + 1}</td>
+                <td><div class="rt-name">${Qlinic.escapeHtml(item.name)}${item.composition ? ` <span class="rt-comp" style="font-weight:400;">(${Qlinic.escapeHtml(item.composition)})</span>` : ''}</div>${item.instructions ? `<div class="rt-comp" style="font-style:italic;">Note: ${Qlinic.escapeHtml(item.instructions)}</div>` : ''}</td>
+                <td style="white-space:nowrap;">${Qlinic.escapeHtml(item.frequency)}</td>
+                <td>${Qlinic.escapeHtml(item.durationText)}</td>
+              </tr>
+            `).join('')
+          : '<tr><td colspan="4" style="color:var(--grey-500);font-style:italic;">No medicines added yet</td></tr>';
+
+        const advice = document.getElementById('rxAdvice').value.trim();
+        const followUp = document.getElementById('rxFollowUpDate').value;
+        const adviceParts = [advice, followUp ? `Follow up on ${Qlinic.formatDateLabel(followUp)}.` : ''].filter(Boolean);
+        document.getElementById('rxPrevAdviceWrap').style.display = adviceParts.length ? '' : 'none';
+        document.getElementById('rxPrevAdvice').textContent = adviceParts.join(' ');
+      }
+
+      ['rxDiagnosis', 'rxAdvice', 'rxFollowUpDate'].forEach((id) => {
+        document.getElementById(id).addEventListener('input', updateRxPreview);
+      });
+
+      function openRxModal() {
+        const patient = currentQueue && currentQueue.nowServing;
+        if (!patient) return;
+        resetRxModalState();
+        const initials = (patient.name || '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
+        document.getElementById('rxPatientAvatar').textContent = initials;
+        document.getElementById('rxPatientName').textContent = patient.name;
+        document.getElementById('rxPatientMeta').textContent = [rxFormatAgeGender(patient), patient.phone || ''].filter(Boolean).join(' · ');
+        document.getElementById('rxModalPatientSub').textContent = [patient.name, rxFormatAgeGender(patient)].filter(Boolean).join(' · ');
+        document.getElementById('rxModalBackdrop').style.display = 'flex';
+        updateRxPreview();
+      }
+      function closeRxModal() {
+        document.getElementById('rxModalBackdrop').style.display = 'none';
+      }
+      document.getElementById('writeRxBtn').addEventListener('click', openRxModal);
+      document.getElementById('rxModalCloseBtn').addEventListener('click', closeRxModal);
+      document.getElementById('rxModalBackdrop').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('rxModalBackdrop')) closeRxModal();
+      });
+
+      async function saveRxPrescription(shouldPrint) {
+        const patient = currentQueue && currentQueue.nowServing;
+        if (!patient || rxSaving) return;
+        if (!rxItems.length) { showToast('Add at least one medicine first'); return; }
+        rxSaving = true;
+        document.getElementById('rxSavePrintBtn').disabled = true;
+        document.getElementById('rxSaveOnlyBtn').disabled = true;
+        try {
+          await Qlinic.createPrescription({
+            patientId: patient.id,
+            complaints: document.getElementById('rxComplaints').value.trim(),
+            diagnosis: document.getElementById('rxDiagnosis').value.trim(),
+            advice: document.getElementById('rxAdvice').value.trim(),
+            followUpDate: document.getElementById('rxFollowUpDate').value || null,
+            items: rxItems,
+          });
+          showToast('Prescription saved');
+          if (shouldPrint) window.print();
+        } catch (err) {
+          showToast(err.message || 'Could not save the prescription');
+        } finally {
+          rxSaving = false;
+          document.getElementById('rxSavePrintBtn').disabled = false;
+          document.getElementById('rxSaveOnlyBtn').disabled = false;
+        }
+      }
+      document.getElementById('rxSavePrintBtn').addEventListener('click', () => saveRxPrescription(true));
+      document.getElementById('rxSaveOnlyBtn').addEventListener('click', () => saveRxPrescription(false));
       document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
       setInterval(() => {
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());

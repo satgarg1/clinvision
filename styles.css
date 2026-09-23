@@ -5544,6 +5544,150 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
 }
 
 /* ============================================================
+   doctor.html — Write prescription modal.
+   Opens over the app shell (not a separate page — see the approved
+   mockup) once a patient is being served. Reuses the site's own
+   .panel/.field/.btn-sm/.field-row wherever those already fit; only
+   genuinely new shapes (the modal shell, the patient strip, the
+   collapse-on-add medicine rows, the medicine search dropdown, and
+   the A4 print preview) get new classes here, all prefixed rx- so
+   they can't collide with an existing sitewide class of the same
+   short name (.field, .panel, .row, etc.).
+   ============================================================ */
+
+.rx-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1500;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+}
+.rx-modal {
+  background: var(--page-bg, var(--grey-100));
+  border-radius: var(--radius-lg);
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.45);
+  width: 100%;
+  max-width: 1440px;
+  overflow: hidden;
+}
+.rx-modal-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--white);
+  padding: 16px 26px;
+  border-bottom: 1px solid var(--grey-300);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.rx-modal-bar h2 { font-size: 18px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+.rx-modal-bar .rmb-sub { font-size: 12.5px; color: var(--grey-500); }
+.rx-modal-close {
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--grey-300);
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--grey-700);
+  flex-shrink: 0;
+}
+.rx-modal-close:hover { background: var(--grey-100); }
+.rx-modal-body { padding: 22px 26px 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: start; }
+@media (max-width: 980px) { .rx-modal-body { grid-template-columns: 1fr; } }
+
+.patient-strip { display: flex; align-items: center; gap: 14px; background: var(--grey-100); border-radius: var(--radius-md); padding: 14px 18px; margin-bottom: 20px; }
+.patient-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+.patient-strip .pname { font-weight: 700; font-size: 15px; }
+.patient-strip .pmeta { font-size: 12.5px; color: var(--grey-500); margin-top: 1px; }
+.patient-strip .pnote { margin-left: auto; font-size: 11.5px; font-weight: 700; color: var(--success); background: var(--success-bg); padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+
+/* Medicine search — same shape as pharmacy.html's .patient-suggest*,
+   promoted here since two pages now want an id-backed search dropdown. */
+.rx-med-search { position: relative; margin-bottom: 0; }
+.rx-med-suggest-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--white); border: 1px solid var(--grey-300); border-radius: var(--radius-sm); box-shadow: var(--shadow-hover, 0 12px 32px rgba(0,0,0,.14)); z-index: 5; max-height: 260px; overflow-y: auto; }
+.rx-med-suggest-item { display: flex; align-items: center; gap: 10px; padding: 9px 14px; cursor: pointer; border-bottom: 1px solid var(--grey-100); }
+.rx-med-suggest-item:last-child { border-bottom: none; }
+.rx-med-suggest-item:hover { background: var(--grey-100); }
+.rx-med-suggest-item .mr-name { font-weight: 600; font-size: 13.5px; }
+.rx-med-suggest-item .mr-comp { font-size: 11.5px; color: var(--grey-500); }
+.rx-med-suggest-empty { padding: 10px 14px; font-size: 12.5px; color: var(--grey-500); }
+
+.rx-row { border: 1px solid var(--grey-300); border-radius: var(--radius-md); padding: 16px 18px; margin-bottom: 10px; background: var(--white); }
+.rx-row-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.rx-remove { background: none; border: none; color: var(--grey-500); cursor: pointer; padding: 4px; line-height: 0; margin-top: 22px; }
+.rx-remove:hover { color: var(--danger); }
+.rx-field-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .rx-field-grid { grid-template-columns: 1fr 1fr; } }
+.rx-field label { display: block; font-size: 11px; font-weight: 600; color: var(--grey-700); margin-bottom: 5px; }
+.rx-field input { width: 100%; padding: 9px 10px; font-size: 13px; border: 1px solid var(--grey-300); border-radius: 8px; font-family: inherit; background: var(--white); color: var(--black); box-sizing: border-box; }
+.rx-field input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12); }
+
+/* Collapsed: a finished medicine, one line, tap to reopen */
+.rx-row.collapsed { display: flex; align-items: center; gap: 12px; padding: 12px 18px; cursor: pointer; }
+.rx-row.collapsed .rc-check { width: 20px; height: 20px; border-radius: 50%; background: var(--success-bg); color: var(--success); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rx-row.collapsed .rc-check svg { width: 12px; height: 12px; }
+.rx-row.collapsed .rc-summary { flex: 1; min-width: 0; }
+.rx-row.collapsed .rc-name { font-weight: 700; font-size: 13.5px; }
+.rx-row.collapsed .rc-detail { font-size: 11.5px; color: var(--grey-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rx-row.collapsed .rc-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.rx-row.collapsed .rc-actions button { background: none; border: none; color: var(--grey-500); cursor: pointer; padding: 5px; line-height: 0; border-radius: 6px; }
+.rx-row.collapsed .rc-actions button:hover { background: var(--grey-100); color: var(--black); }
+.rx-row.collapsed .rc-actions svg { width: 15px; height: 15px; }
+
+/* --- Live print preview, right column --- */
+.rx-preview-wrap { position: sticky; top: 90px; }
+.rx-preview-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.rx-preview-label .pl-title { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--grey-500); }
+.rx-preview-label .pl-note { font-size: 11px; color: var(--grey-500); }
+/* Doctor-chosen theme color drives the accent throughout the preview and
+   the printed page — set inline as --rx-theme from the doctor's saved
+   Settings preference (falls back to the site accent when unset). */
+.a4 { --rx-theme: var(--accent); --rx-theme-bg: rgba(0, 113, 227, 0.1); background: var(--white); border-radius: 10px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12); padding: 28px 30px; font-size: 13px; color: var(--black); }
+.rx-head { display: flex; align-items: flex-start; gap: 12px; border-bottom: 3px solid var(--rx-theme); padding-bottom: 12px; margin-bottom: 12px; }
+.rx-logo-img { max-height: 44px; max-width: 140px; width: auto; height: auto; object-fit: contain; flex-shrink: 0; }
+.rx-clinic-name { font-weight: 700; font-size: 16px; color: var(--rx-theme); }
+.rx-clinic-addr { font-size: 11px; color: var(--grey-500); margin-top: 2px; }
+.rx-doc-block { margin-left: auto; text-align: right; }
+.rx-doc-name { font-weight: 700; font-size: 13px; }
+.rx-doc-qual { font-size: 10.5px; color: var(--grey-500); }
+.rx-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 14px; font-size: 12px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed var(--grey-300); }
+.rx-info-grid .k { color: var(--grey-500); }
+.rx-dx { font-size: 12px; margin-bottom: 14px; }
+.rx-dx b, .rx-advice b { display: block; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--rx-theme); font-weight: 700; margin-bottom: 2px; }
+table.rx-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
+table.rx-table th { text-align: left; font-size: 9.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--rx-theme); padding: 0 8px 7px 0; border-bottom: 1px solid var(--rx-theme); }
+table.rx-table td { padding: 9px 8px 9px 0; border-bottom: 1px solid var(--grey-100); vertical-align: top; }
+table.rx-table .rt-name { font-weight: 700; }
+table.rx-table .rt-comp { color: var(--grey-500); font-size: 10px; }
+.rx-next-visit { display: inline-block; background: var(--rx-theme-bg); color: var(--rx-theme); font-weight: 700; font-size: 10.5px; padding: 5px 12px; border-radius: 999px; margin-top: 6px; }
+.rx-advice { font-size: 12px; margin-bottom: 12px; }
+.rx-sign-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; }
+.rx-sign-note { font-size: 9.5px; color: var(--grey-500); max-width: 58%; }
+.rx-sign-line { font-size: 10.5px; color: var(--grey-500); border-top: 1px solid var(--grey-300); padding-top: 5px; width: 140px; text-align: center; }
+
+@media print {
+  body * { visibility: hidden; }
+  #printRx, #printRx * { visibility: visible; }
+  #printRx {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
+
+/* ============================================================
    admin.html — platform admin panel (Phase 1: clinic subscriptions).
    New component styles only; everything else on the page (.panel,
    .card-grid, .filter-seg, table.qtable, .modal-backdrop/.modal-card,

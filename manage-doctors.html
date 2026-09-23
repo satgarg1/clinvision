@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=327" />
+<link rel="stylesheet" href="styles.css?v=328" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -74,6 +74,14 @@
             <label>HPR ID <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
             <input type="text" id="newDoctorHprId" placeholder="e.g., 12-3456-7890-1234" style="text-transform:uppercase;" />
           </div>
+          <div class="doctor-form-field" style="width:150px;">
+            <label>Qualification <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
+            <input type="text" id="newDoctorQualification" placeholder="e.g. MBBS, MD" />
+          </div>
+          <div class="doctor-form-field" style="width:150px;">
+            <label>Registration no. <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
+            <input type="text" id="newDoctorRegistrationNumber" placeholder="e.g. 41893" />
+          </div>
           <button type="submit" class="btn-sm primary">Add doctor</button>
         </form>
         <div id="newDoctorFeeHint" class="slot-hint" style="display:none;"></div>
@@ -95,7 +103,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=113"></script>
+  <script src="clinic-data.js?v=114"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -283,6 +291,17 @@
               <label>HPR ID <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
               <input type="text" id="editDoctorHprId" value="${(doctor.hprId || '').replace(/"/g, '&quot;')}" placeholder="e.g., 12-3456-7890-1234" style="text-transform:uppercase;" />
             </div>
+            <div style="display:flex;gap:12px;margin-bottom:14px;">
+              <div class="doctor-form-field" style="flex:1;">
+                <label>Qualification <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
+                <input type="text" id="editDoctorQualification" value="${(doctor.qualification || '').replace(/"/g, '&quot;')}" placeholder="e.g. MBBS, MD" />
+              </div>
+              <div class="doctor-form-field" style="flex:1;">
+                <label>Registration no. <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
+                <input type="text" id="editDoctorRegistrationNumber" value="${(doctor.registrationNumber || '').replace(/"/g, '&quot;')}" placeholder="e.g. 41893" />
+              </div>
+            </div>
+            <p class="panel-note" style="margin:-6px 0 14px;">Qualification and registration number print on this doctor's prescriptions.</p>
             <div class="modal-actions">
               <button type="button" class="btn-sm primary" id="editDoctorSaveBtn">Save</button>
               <button type="button" class="btn-sm" id="editDoctorCancelBtn">Cancel</button>
@@ -332,8 +351,10 @@
           const feeNormal = Number(backdrop.querySelector('#editDoctorFeeNormal').value) || 0;
           const feeEmergency = Number(backdrop.querySelector('#editDoctorFeeEmergency').value) || 0;
           const hprId = backdrop.querySelector('#editDoctorHprId').value.trim().toUpperCase();
+          const qualification = backdrop.querySelector('#editDoctorQualification').value.trim();
+          const registrationNumber = backdrop.querySelector('#editDoctorRegistrationNumber').value.trim();
           try {
-            await Qlinic.updateDoctor(doctor.id, { name, specialty, feeNormal, feeEmergency, hprId });
+            await Qlinic.updateDoctor(doctor.id, { name, specialty, feeNormal, feeEmergency, hprId, qualification, registrationNumber });
           } catch (err) {
             showToast(err.message || 'Could not update doctor — please try again.');
             return;
@@ -409,8 +430,10 @@
         const feeNormal = Number(document.getElementById('newDoctorFeeNormal').value) || 0;
         const feeEmergency = Number(document.getElementById('newDoctorFeeEmergency').value) || 0;
         const hprId = document.getElementById('newDoctorHprId').value.trim().toUpperCase();
+        const qualification = document.getElementById('newDoctorQualification').value.trim();
+        const registrationNumber = document.getElementById('newDoctorRegistrationNumber').value.trim();
         try {
-          await Qlinic.addDoctor({ name, specialty, feeNormal, feeEmergency, hprId });
+          await Qlinic.addDoctor({ name, specialty, feeNormal, feeEmergency, hprId, qualification, registrationNumber });
         } catch (err) {
           showToast(err.message || 'Could not add doctor — please try again.');
           return;

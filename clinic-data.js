@@ -713,6 +713,8 @@
       feeEmergency: row.fee_emergency,
       dayClosedAt: row.day_closed_at,
       hprId: row.hpr_id,
+      qualification: row.qualification || '',
+      registrationNumber: row.registration_number || '',
     };
   }
 
@@ -984,22 +986,24 @@
     return data ? normalizeDoctor(data) : null;
   }
 
-  async function addDoctor({ name, specialty, feeNormal, feeEmergency, hprId }) {
+  async function addDoctor({ name, specialty, feeNormal, feeEmergency, hprId, qualification, registrationNumber }) {
     const clinicId = await ensureClinicContext();
     const { data, error } = await sb.from('doctors').insert({
       clinic_id: clinicId, name, specialty: specialty || '',
       fee_normal: feeNormal || 0, fee_emergency: feeEmergency || 0,
       hpr_id: hprId || null,
+      qualification: qualification || '', registration_number: registrationNumber || '',
     }).select().single();
     if (error) throw error;
     return normalizeDoctor(data);
   }
 
-  async function updateDoctor(doctorId, { name, specialty, feeNormal, feeEmergency, hprId }) {
+  async function updateDoctor(doctorId, { name, specialty, feeNormal, feeEmergency, hprId, qualification, registrationNumber }) {
     const { error } = await sb.from('doctors').update({
       name, specialty: specialty || '',
       fee_normal: feeNormal || 0, fee_emergency: feeEmergency || 0,
       hpr_id: hprId || null,
+      qualification: qualification || '', registration_number: registrationNumber || '',
     }).eq('id', doctorId);
     if (error) throw error;
   }
@@ -2448,6 +2452,28 @@
   }
   initMobileNav();
 
+  // items: [{ clinicMedicineId, genericMedicineId, freeTextName, name, composition, frequency, durationText, instructions }]
+  async function createPrescription({ patientId, complaints, diagnosis, advice, followUpDate, items }) {
+    const payload = (items || []).map((it) => ({
+      clinic_medicine_id: it.clinicMedicineId || null,
+      generic_medicine_id: it.genericMedicineId || null,
+      free_text_name: it.clinicMedicineId || it.genericMedicineId ? null : (it.freeTextName || it.name || null),
+      frequency: it.frequency || '',
+      duration_text: it.durationText || '',
+      instructions: it.instructions || '',
+    }));
+    const { data, error } = await sb.rpc('create_prescription', {
+      p_patient_id: patientId,
+      p_complaints: complaints || '',
+      p_diagnosis: diagnosis || '',
+      p_advice: advice || '',
+      p_follow_up_date: followUpDate || null,
+      p_items: payload,
+    });
+    if (error) throw error;
+    return data;
+  }
+
   async function onLiveChange(cb) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return;
@@ -2545,6 +2571,35 @@
     const { data, error } = await query.order('name');
     if (error) throw error;
     return data.map(normalizeMedicine);
+  }
+
+  // Clinic's own stocked medicines first (a real dispense match), then the
+  // national reference list -- so a clinic with no pharmacy set up still
+  // gets real results on day one, and a clinic that DOES stock the item
+  // sees its own catalog entry ranked ahead of it.
+  async function searchMedicinesForRx(query) {
+    const clinicId = await ensureClinicContext();
+    const q = (query || '').trim();
+    if (q.length < 2) return [];
+    const [clinicRes, genericRes] = await Promise.all([
+      clinicId
+        ? sb.from('medicines').select('id, name, generic_name, manufacturer')
+            .eq('clinic_id', clinicId).eq('is_active', true).ilike('name', `%${q}%`).order('name').limit(8)
+        : Promise.resolve({ data: [], error: null }),
+      sb.from('generic_medicines').select('id, name, manufacturer, composition_1, composition_2')
+        .ilike('name', `%${q}%`).order('name').limit(12),
+    ]);
+    if (clinicRes.error) throw clinicRes.error;
+    if (genericRes.error) throw genericRes.error;
+    const clinicResults = (clinicRes.data || []).map((r) => ({
+      clinicMedicineId: r.id, genericMedicineId: null,
+      name: r.name, composition: r.generic_name || '', manufacturer: r.manufacturer || '',
+    }));
+    const genericResults = (genericRes.data || []).map((r) => ({
+      clinicMedicineId: null, genericMedicineId: r.id,
+      name: r.name, composition: [r.composition_1, r.composition_2].filter(Boolean).join(' + '), manufacturer: r.manufacturer || '',
+    }));
+    return clinicResults.concat(genericResults);
   }
 
   async function getMedicine(id) {
@@ -2842,6 +2897,9 @@
     createPharmacyInvoice,
     getInvoiceItems,
     searchPatientsForPharmacy,
+
+    searchMedicinesForRx,
+    createPrescription,
 
     onLiveChange,
   };
