@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=333" />
+<link rel="stylesheet" href="styles.css?v=334" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -239,7 +239,6 @@
         </div>
 
         <div class="rx-preview-wrap">
-          <div class="rx-preview-label"><span class="pl-title">Live print preview</span><span class="pl-note">A4 · updates as you type</span></div>
           <div class="a4" id="rxLivePreview">
             <div class="rx-head">
               <img class="rx-logo-img" id="rxPrevLogo" style="display:none;" alt="" />
@@ -1545,6 +1544,14 @@
         `).join('');
       }
 
+      // Every medicine added pushes the active entry row further down the
+      // page — a doctor moving fast shouldn't have to manually scroll to
+      // find it again each time, so bring it (and the Add button below
+      // it) into view automatically instead.
+      function scrollActiveMedRowIntoView() {
+        document.getElementById('rxAddMedBtn').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+
       document.getElementById('rxRowsContainer').addEventListener('click', (e) => {
         const delBtn = e.target.closest('.rx-delete-btn');
         if (delBtn) {
@@ -1568,6 +1575,7 @@
           renderRxRows();
           updateRxPreview();
           document.getElementById('rxMedNameInput').focus();
+          scrollActiveMedRowIntoView();
         }
       });
 
@@ -1689,6 +1697,7 @@
         renderRxRows();
         updateRxPreview();
         nameInput.focus();
+        scrollActiveMedRowIntoView();
       });
 
       function updateRxPreview() {

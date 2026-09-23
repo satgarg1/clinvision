@@ -5666,13 +5666,18 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
 
 /* --- Live print preview, right column --- */
 .rx-preview-wrap { position: sticky; top: 0; }
-.rx-preview-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.rx-preview-label .pl-title { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--grey-500); }
-.rx-preview-label .pl-note { font-size: 11px; color: var(--grey-500); }
 /* Doctor-chosen theme color drives the accent throughout the preview and
    the printed page — set inline as --rx-theme from the doctor's saved
    Settings preference (falls back to the site accent when unset). */
 .a4 { --rx-theme: var(--accent); --rx-theme-bg: rgba(0, 113, 227, 0.1); background: var(--white); border-radius: 10px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12); padding: 28px 30px; font-size: 13px; color: var(--black); }
+/* The on-screen live preview keeps a fixed, real A4 shape (210:297)
+   regardless of how much is typed — growing or shrinking it with every
+   keystroke was disorienting, and a real prescription pad doesn't
+   resize either. Content that outgrows one page scrolls inside this
+   fixed frame instead of stretching it; only the print copy (#printRx,
+   a separate un-nested element, not this one) is unconstrained, since
+   real pagination is what handles overflow once it's actually printed. */
+#rxLivePreview { aspect-ratio: 210 / 297; overflow-y: auto; box-sizing: border-box; }
 .rx-head { display: flex; align-items: center; gap: 12px; border-bottom: 3px solid var(--rx-theme); padding-bottom: 12px; margin-bottom: 12px; }
 .rx-logo-img { max-height: 44px; max-width: 140px; width: auto; height: auto; object-fit: contain; flex-shrink: 0; }
 .rx-clinic-name { font-weight: 700; font-size: 16px; color: var(--rx-theme); }
