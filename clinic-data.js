@@ -2577,17 +2577,23 @@
   // national reference list -- so a clinic with no pharmacy set up still
   // gets real results on day one, and a clinic that DOES stock the item
   // sees its own catalog entry ranked ahead of it.
-  async function searchMedicinesForRx(query) {
+  async function searchMedicinesForRx(query, signal) {
     const clinicId = await ensureClinicContext();
     const q = (query || '').trim();
-    if (q.length < 2) return [];
+    if (q.length < 3) return [];
+    // Prefix match ("dolo%"), not substring ("%dolo%") — this is how a
+    // doctor actually types a medicine name, and it lets the generic_
+    // medicines trigram index (250k+ rows) narrow the scan far more than
+    // a leading wildcard would, which is what made this feel slow.
+    const pattern = `${q}%`;
+    const withSignal = (qb) => (signal ? qb.abortSignal(signal) : qb);
     const [clinicRes, genericRes] = await Promise.all([
       clinicId
-        ? sb.from('medicines').select('id, name, generic_name, manufacturer')
-            .eq('clinic_id', clinicId).eq('is_active', true).ilike('name', `%${q}%`).order('name').limit(8)
+        ? withSignal(sb.from('medicines').select('id, name, generic_name, manufacturer')
+            .eq('clinic_id', clinicId).eq('is_active', true).ilike('name', pattern).order('name').limit(8))
         : Promise.resolve({ data: [], error: null }),
-      sb.from('generic_medicines').select('id, name, manufacturer, composition_1, composition_2')
-        .ilike('name', `%${q}%`).order('name').limit(12),
+      withSignal(sb.from('generic_medicines').select('id, name, manufacturer, composition_1, composition_2')
+        .ilike('name', pattern).order('name').limit(12)),
     ]);
     if (clinicRes.error) throw clinicRes.error;
     if (genericRes.error) throw genericRes.error;

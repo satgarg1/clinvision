@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=329" />
+<link rel="stylesheet" href="styles.css?v=330" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -214,18 +214,20 @@
           </div>
 
           <div class="panel">
+            <div class="panel-header"><h2>Advice &amp; Follow Up</h2></div>
             <div class="field">
-              <label>General advice</label>
+              <label>General Advice</label>
               <textarea id="rxAdvice" rows="2" placeholder="e.g. Warm salt-water gargles, plenty of fluids"></textarea>
             </div>
-            <div class="field">
-              <label>Follow up (optional)</label>
-              <div class="inline-form" style="margin-bottom:10px;">
-                <button type="button" class="btn-sm accent-outline" data-followup-days="7">In 7 days</button>
-                <button type="button" class="btn-sm accent-outline" data-followup-days="15">In 15 days</button>
-                <button type="button" class="btn-sm accent-outline" data-followup-days="28">In 4 weeks</button>
+            <div class="field" style="max-width:280px;">
+              <label>Follow Up (optional)</label>
+              <div class="time-picker" id="rxDatePickerWrap">
+                <button type="button" class="time-picker-trigger placeholder" id="rxDateTrigger">
+                  <span id="rxDateTriggerText">Choose a date</span>
+                  <span class="time-picker-caret">▾</span>
+                </button>
+                <div class="time-picker-panel rx-date-panel" id="rxDatePanel" style="display:none;"></div>
               </div>
-              <input type="date" id="rxFollowUpDate" style="max-width:220px;" />
               <span class="field-hint" id="rxFollowUpHint" style="display:none;"></span>
             </div>
             <div class="inline-form" style="margin-top:4px;">
@@ -276,7 +278,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=114"></script>
+  <script src="clinic-data.js?v=115"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -1301,10 +1303,13 @@
       setupComboField('rxDurationInput', 'rxDurationSuggestList', RX_DURATION_PRESETS);
       setupComboField('rxInstructionsInput', 'rxInstructionsSuggestList', RX_INSTRUCTIONS_PRESETS);
 
-      // ---------- Follow-up date shortcuts (skip clinic/doctor closures) ----------
+      // ---------- Follow-up date picker: shortcuts + calendar, on the same
+      // .time-picker shell the delay-minutes picker above already uses ----------
       const RX_DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       let rxClosedDateSet = new Set();
       let rxWeeklyOffDays = [];
+      let rxFollowUpValue = null;
+      let rxCalendarViewDate = new Date();
 
       async function loadRxClosureData(doctorId) {
         rxClosedDateSet = new Set();
@@ -1324,12 +1329,34 @@
         if (rxWeeklyOffDays.includes(RX_DAY_NAMES[d.getDay()])) return true;
         return rxClosedDateSet.has(toDateInputValue(d));
       }
+      function rxSelectedDateObj() {
+        if (!rxFollowUpValue) return null;
+        const [y, m, d] = rxFollowUpValue.split('-').map(Number);
+        return new Date(y, m - 1, d);
+      }
+      function updateRxDateTriggerText() {
+        const trigger = document.getElementById('rxDateTrigger');
+        const text = document.getElementById('rxDateTriggerText');
+        if (!rxFollowUpValue) {
+          text.textContent = 'Choose a date';
+          trigger.classList.add('placeholder');
+          return;
+        }
+        trigger.classList.remove('placeholder');
+        const d = rxSelectedDateObj();
+        const todayStr = toDateInputValue(new Date());
+        const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+        if (rxFollowUpValue === todayStr) text.textContent = `Today, ${d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`;
+        else if (rxFollowUpValue === toDateInputValue(tomorrow)) text.textContent = `Tomorrow, ${d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`;
+        else text.textContent = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+      }
       function pickFollowUpDate(daysFromNow) {
         const d = new Date();
         d.setDate(d.getDate() + daysFromNow);
         let shifted = false;
         while (isRxClosedDate(d)) { d.setDate(d.getDate() + 1); shifted = true; }
-        document.getElementById('rxFollowUpDate').value = toDateInputValue(d);
+        rxFollowUpValue = toDateInputValue(d);
+        updateRxDateTriggerText();
         const hint = document.getElementById('rxFollowUpHint');
         if (shifted) {
           hint.textContent = 'Adjusted forward to skip a clinic holiday or weekly off day.';
@@ -1339,11 +1366,76 @@
         }
         updateRxPreview();
       }
-      document.querySelectorAll('[data-followup-days]').forEach((btn) => {
-        btn.addEventListener('click', () => pickFollowUpDate(Number(btn.dataset.followupDays)));
+      function renderRxDatePanel() {
+        const panel = document.getElementById('rxDatePanel');
+        const y = rxCalendarViewDate.getFullYear();
+        const m = rxCalendarViewDate.getMonth();
+        const first = new Date(y, m, 1);
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        const todayStr = toDateInputValue(new Date());
+        let cells = '';
+        for (let i = 0; i < first.getDay(); i++) cells += '<div class="rx-cal-cell empty"></div>';
+        for (let day = 1; day <= daysInMonth; day++) {
+          const d = new Date(y, m, day);
+          const dStr = toDateInputValue(d);
+          const closed = isRxClosedDate(d);
+          const classes = ['rx-cal-cell'];
+          if (dStr === todayStr) classes.push('today');
+          if (dStr === rxFollowUpValue) classes.push('selected');
+          if (closed) classes.push('closed');
+          cells += `<div class="${classes.join(' ')}" ${closed ? '' : `data-date="${dStr}"`}>${day}</div>`;
+        }
+        panel.innerHTML = `
+          <div class="rx-cal-shortcuts">
+            <button type="button" class="btn-sm accent-outline" data-followup-days="7">In 7 days</button>
+            <button type="button" class="btn-sm accent-outline" data-followup-days="15">In 15 days</button>
+            <button type="button" class="btn-sm accent-outline" data-followup-days="28">In 4 weeks</button>
+          </div>
+          <div class="rx-cal-nav">
+            <button type="button" class="rx-cal-nav-btn" data-cal-nav="prev">&lsaquo;</button>
+            <div class="rx-cal-month-label">${first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</div>
+            <button type="button" class="rx-cal-nav-btn" data-cal-nav="next">&rsaquo;</button>
+          </div>
+          <div class="rx-cal-weekdays">${['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((w) => `<div>${w}</div>`).join('')}</div>
+          <div class="rx-cal-grid">${cells}</div>
+        `;
+      }
+      function openRxDatePanel() {
+        rxCalendarViewDate = rxSelectedDateObj() || new Date();
+        renderRxDatePanel();
+        document.getElementById('rxDatePanel').style.display = 'block';
+      }
+      function closeRxDatePanel() {
+        document.getElementById('rxDatePanel').style.display = 'none';
+      }
+      document.getElementById('rxDateTrigger').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const panel = document.getElementById('rxDatePanel');
+        if (panel.style.display === 'block') closeRxDatePanel();
+        else openRxDatePanel();
       });
-      document.getElementById('rxFollowUpDate').addEventListener('change', () => {
-        document.getElementById('rxFollowUpHint').style.display = 'none';
+      document.getElementById('rxDatePanel').addEventListener('click', (e) => {
+        const shortcutBtn = e.target.closest('[data-followup-days]');
+        if (shortcutBtn) { pickFollowUpDate(Number(shortcutBtn.dataset.followupDays)); closeRxDatePanel(); return; }
+        const navBtn = e.target.closest('[data-cal-nav]');
+        if (navBtn) {
+          const y = rxCalendarViewDate.getFullYear();
+          const m = rxCalendarViewDate.getMonth();
+          rxCalendarViewDate = new Date(y, navBtn.dataset.calNav === 'prev' ? m - 1 : m + 1, 1);
+          renderRxDatePanel();
+          return;
+        }
+        const cell = e.target.closest('.rx-cal-cell[data-date]');
+        if (cell) {
+          rxFollowUpValue = cell.dataset.date;
+          updateRxDateTriggerText();
+          document.getElementById('rxFollowUpHint').style.display = 'none';
+          closeRxDatePanel();
+          updateRxPreview();
+        }
+      });
+      document.addEventListener('click', (e) => {
+        if (!document.getElementById('rxDatePickerWrap').contains(e.target)) closeRxDatePanel();
       });
 
       function rxFormatAgeGender(patient) {
@@ -1373,7 +1465,8 @@
         document.getElementById('rxComplaints').value = '';
         document.getElementById('rxDiagnosis').value = '';
         document.getElementById('rxAdvice').value = '';
-        document.getElementById('rxFollowUpDate').value = '';
+        rxFollowUpValue = null;
+        updateRxDateTriggerText();
         document.getElementById('rxFollowUpHint').style.display = 'none';
         renderRxRows();
         updateRxPreview();
@@ -1422,34 +1515,43 @@
         }
       });
 
-      document.getElementById('rxMedNameInput').addEventListener('input', async (e) => {
+      let rxMedSearchDebounce = null;
+      let rxMedSearchAbort = null;
+      document.getElementById('rxMedNameInput').addEventListener('input', (e) => {
         rxDraftMed = null;
         const q = e.target.value;
-        const mySeq = ++rxMedSearchSeq;
         const list = document.getElementById('rxMedSuggestList');
-        if (q.trim().length < 2) { list.style.display = 'none'; list.innerHTML = ''; return; }
-        let results = [];
-        try {
-          results = await Qlinic.searchMedicinesForRx(q);
-        } catch (err) {
-          console.error('Medicine search failed:', err);
-          if (!rxSearchErrorShown) { rxSearchErrorShown = true; showToast(err.message || 'Medicine search failed'); }
-          return;
-        }
-        if (mySeq !== rxMedSearchSeq) return;
-        if (!results.length) {
-          list.innerHTML = '<div class="rx-med-suggest-empty">No match — this will be saved as typed</div>';
-          list.removeAttribute('data-results');
+        clearTimeout(rxMedSearchDebounce);
+        if (rxMedSearchAbort) rxMedSearchAbort.abort();
+        if (q.trim().length < 3) { list.style.display = 'none'; list.innerHTML = ''; return; }
+        const mySeq = ++rxMedSearchSeq;
+        rxMedSearchDebounce = setTimeout(async () => {
+          const controller = new AbortController();
+          rxMedSearchAbort = controller;
+          let results = [];
+          try {
+            results = await Qlinic.searchMedicinesForRx(q, controller.signal);
+          } catch (err) {
+            if (err.name === 'AbortError') return;
+            console.error('Medicine search failed:', err);
+            if (!rxSearchErrorShown) { rxSearchErrorShown = true; showToast(err.message || 'Medicine search failed'); }
+            return;
+          }
+          if (mySeq !== rxMedSearchSeq) return;
+          if (!results.length) {
+            list.innerHTML = '<div class="rx-med-suggest-empty">No match — this will be saved as typed</div>';
+            list.removeAttribute('data-results');
+            list.style.display = 'block';
+            return;
+          }
+          list.innerHTML = results.map((r, i) => `
+            <div class="rx-med-suggest-item" data-i="${i}">
+              <div><div class="mr-name">${Qlinic.escapeHtml(r.name)}</div>${r.composition ? `<div class="mr-comp">${Qlinic.escapeHtml(r.composition)}</div>` : ''}</div>
+            </div>
+          `).join('');
+          list.dataset.results = JSON.stringify(results);
           list.style.display = 'block';
-          return;
-        }
-        list.innerHTML = results.map((r, i) => `
-          <div class="rx-med-suggest-item" data-i="${i}">
-            <div><div class="mr-name">${Qlinic.escapeHtml(r.name)}</div>${r.composition ? `<div class="mr-comp">${Qlinic.escapeHtml(r.composition)}</div>` : ''}</div>
-          </div>
-        `).join('');
-        list.dataset.results = JSON.stringify(results);
-        list.style.display = 'block';
+        }, 250);
       });
 
       document.getElementById('rxMedNameInput').addEventListener('blur', () => {
@@ -1529,7 +1631,7 @@
           ? rxItems.map((item, i) => `
               <tr>
                 <td style="color:var(--grey-500);">${i + 1}</td>
-                <td><div class="rt-name">${Qlinic.escapeHtml(item.name)}${item.composition ? ` <span class="rt-comp" style="font-weight:400;">(${Qlinic.escapeHtml(item.composition)})</span>` : ''}</div>${item.instructions ? `<div class="rt-comp" style="font-style:italic;">Note: ${Qlinic.escapeHtml(item.instructions)}</div>` : ''}</td>
+                <td><div class="rt-name">${Qlinic.escapeHtml(item.name)}${item.composition ? ` <span class="rt-comp" style="font-weight:400;">(${Qlinic.escapeHtml(item.composition)})</span>` : ''}</div>${item.instructions ? `<div class="rt-instr">${Qlinic.escapeHtml(item.instructions)}</div>` : ''}</td>
                 <td style="white-space:nowrap;">${Qlinic.escapeHtml(item.frequency)}</td>
                 <td>${Qlinic.escapeHtml(item.durationText)}</td>
               </tr>
@@ -1537,18 +1639,16 @@
           : '<tr><td colspan="4" style="color:var(--grey-500);font-style:italic;">No medicines added yet</td></tr>';
 
         const advice = document.getElementById('rxAdvice').value.trim();
-        const followUp = document.getElementById('rxFollowUpDate').value;
         let followUpLabel = '';
-        if (followUp) {
-          const [fy, fm, fd] = followUp.split('-').map(Number);
-          followUpLabel = `Follow up on ${new Date(fy, fm - 1, fd).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}.`;
+        if (rxFollowUpValue) {
+          followUpLabel = `Follow up on ${rxSelectedDateObj().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}.`;
         }
         const adviceParts = [advice, followUpLabel].filter(Boolean);
         document.getElementById('rxPrevAdviceWrap').style.display = adviceParts.length ? '' : 'none';
         document.getElementById('rxPrevAdvice').textContent = adviceParts.join(' ');
       }
 
-      ['rxComplaints', 'rxDiagnosis', 'rxAdvice', 'rxFollowUpDate'].forEach((id) => {
+      ['rxComplaints', 'rxDiagnosis', 'rxAdvice'].forEach((id) => {
         document.getElementById(id).addEventListener('input', updateRxPreview);
       });
 
@@ -1575,8 +1675,9 @@
       });
 
       async function saveRxPrescription(shouldPrint) {
+        if (rxSaving) return;
         const patient = currentQueue && currentQueue.nowServing;
-        if (!patient || rxSaving) return;
+        if (!patient) { showToast('No patient is currently in consultation'); return; }
         if (!rxItems.length) { showToast('Add at least one medicine first'); return; }
         rxSaving = true;
         document.getElementById('rxSavePrintBtn').disabled = true;
@@ -1587,12 +1688,13 @@
             complaints: document.getElementById('rxComplaints').value.trim(),
             diagnosis: document.getElementById('rxDiagnosis').value.trim(),
             advice: document.getElementById('rxAdvice').value.trim(),
-            followUpDate: document.getElementById('rxFollowUpDate').value || null,
+            followUpDate: rxFollowUpValue || null,
             items: rxItems,
           });
           showToast('Prescription saved');
           if (shouldPrint) window.print();
         } catch (err) {
+          console.error('Save prescription failed:', err);
           showToast(err.message || 'Could not save the prescription');
         } finally {
           rxSaving = false;
