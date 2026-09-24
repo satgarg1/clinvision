@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=351" />
+<link rel="stylesheet" href="styles.css?v=352" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -80,7 +80,6 @@
     <div class="rx-modal">
       <div class="rx-modal-bar">
         <h2>Quick Walk-In Prescription</h2>
-        <span class="wrx-not-linked-badge">⚡ Not linked to a patient record</span>
         <button type="button" class="rx-modal-close" id="wrxModalCloseBtn" title="Close">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
@@ -89,7 +88,6 @@
         <div>
           <div class="panel">
             <div class="panel-header"><h2>Patient details</h2></div>
-            <p class="panel-note" style="margin-top:0;">Only what's needed for a prescription — this never creates a patient record, and never appears in Reception's queue or the Display Screen.</p>
             <div class="field" id="wrxDoctorFieldWrap" style="display:none;">
               <label>Doctor</label>
               <select id="wrxDoctorSelect"></select>
@@ -1148,6 +1146,16 @@
         document.getElementById('wrxLivePreview').innerHTML = html;
         document.getElementById('printRx').innerHTML = html;
       }
+      // Vitals are numbers (plus / for BP's "120/80" and - for a negative
+      // reading), never free text — strips anything else as it's typed.
+      // Registered before the preview-update listeners below (same input
+      // event, same elements) so the preview reflects the already-
+      // stripped value rather than lagging one keystroke behind it.
+      ['wrxVitalBp', 'wrxVitalPulse', 'wrxVitalTemp', 'wrxVitalWeight'].forEach((id) => {
+        document.getElementById(id).addEventListener('input', function () {
+          this.value = this.value.replace(/[^0-9/.-]/g, '');
+        });
+      });
       [
         'wrxName', 'wrxPhone', 'wrxAge', 'wrxGender', 'wrxComplaints', 'wrxDiagnosis', 'wrxAdvice',
         'wrxVitalBp', 'wrxVitalPulse', 'wrxVitalTemp', 'wrxVitalWeight',
