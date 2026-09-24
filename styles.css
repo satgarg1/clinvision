@@ -5731,8 +5731,16 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
 .rx-pair-row > .rx-dx, .rx-pair-row > .rx-advice { min-width: 0; overflow-wrap: break-word; word-break: break-word; margin-bottom: 0; }
 /* Even 50/50, matching .rx-info-grid's own 1fr 1fr, so Diagnosis's left
    edge lines up with Date/Phone's above it — Chief complaint and
-   Diagnosis are typically comparable lengths, unlike Advice/Follow Up. */
-.rx-pair-row > .rx-dx:first-child, .rx-pair-row > .rx-dx:last-child { flex: 1 1 50%; }
+   Diagnosis are typically comparable lengths, unlike Advice/Follow Up.
+   The actual, confirmed-by-testing root cause of this pair rendering as
+   two stacked full-width blocks instead of side by side: flex-basis:50%
+   on two items ignores this row's own 14px column gap, so the combined
+   required width is 100% + 14px — over budget — and flex-wrap:wrap
+   wraps the second item to its own line rather than shrinking both to
+   fit. calc() below bakes half the gap into each item's basis up front
+   so the total is exactly 100%, which is what actually keeps them on
+   one line. */
+.rx-pair-row > .rx-dx:first-child, .rx-pair-row > .rx-dx:last-child { flex: 1 1 calc(50% - 7px); }
 /* Advice is normally the longer of the two, Follow Up is always just a
    short date — so Follow Up gets a small, right-pinned column instead
    of an even split, leaving Advice the room to wrap onto a second line
@@ -5746,8 +5754,16 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
    fill whatever room Follow Up's fixed width leaves. This is exactly
    why Chief complaint/Diagnosis (already percentage-based) wrapped
    correctly while this pair didn't. */
-.rx-pair-row > .rx-advice:first-child { flex: 1 1 0%; }
-.rx-pair-row > .rx-advice:last-child { flex: 0 0 auto; max-width: 150px; text-align: right; margin-left: auto; }
+/* :not(:only-child) matters here: Advice and Follow Up are each
+   rendered conditionally, so when only one of them exists it is BOTH
+   :first-child and :last-child at once, and used to pick up Follow
+   Up's small-right-pinned rule (max-width, text-align:right,
+   margin-left:auto) regardless of which one it actually was — Advice
+   alone rendered squeezed into the right corner, and adding Follow Up
+   back "moved" it left simply because it stopped being :last-child. */
+.rx-pair-row > .rx-advice:first-child:not(:only-child) { flex: 1 1 0%; }
+.rx-pair-row > .rx-advice:last-child:not(:only-child) { flex: 0 0 auto; max-width: 150px; text-align: right; margin-left: auto; }
+.rx-pair-row > .rx-advice:only-child { flex: 1 1 auto; }
 /* Same footer content as billing's own receipt (logo + "Thank you for
    visiting X") — no GST line here, a prescription isn't a billable
    line item. Doubles as the page's visual bottom anchor, since without
@@ -5806,6 +5822,17 @@ table.rx-table .rt-instr { color: var(--grey-700); font-size: 11.5px; margin-top
 .rx-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .rx-action-btn:disabled:hover { border-color: var(--grey-300); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06); }
 .rx-action-icon { font-size: 16px; line-height: 1; }
+
+/* The actual cause of print coming out blank, through every previous
+   attempt: this used to be an INLINE style="display:none" on the
+   element, and an inline style beats any stylesheet rule regardless of
+   selector specificity — the @media print rule below setting
+   display:block could never win against it without !important. As a
+   plain stylesheet rule (same #printRx selector, same specificity),
+   the later @media print declaration legitimately overrides this one
+   during print — the same mechanism .receipt/#printReceipt already
+   relies on for billing's own receipt. */
+#printRx { display: none; }
 
 @media print {
   body * { visibility: hidden; }

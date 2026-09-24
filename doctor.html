@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=338" />
+<link rel="stylesheet" href="styles.css?v=339" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -129,6 +129,11 @@
             <div id="nowServingBox"></div>
             <button type="button" class="btn-sm accent-outline" id="writeRxBtn" disabled>Write prescription</button>
           </div>
+          <button type="button" class="history-chip" id="rxHistoryChip" style="display:none;margin-top:10px;">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            <span id="rxHistoryChipText">View past prescriptions</span>
+          </button>
+          <div class="rx-history-panel" id="rxHistoryPanel" style="display:none;"></div>
           <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;">Call next patient</button>
           <button class="btn-sm primary" id="finishCurrentBtn" style="margin-top:14px;margin-left:8px;">Done</button>
           <div class="call-confirm-overlay" id="callConfirmOverlay"><span class="call-confirm-check">✓</span>Next patient called</div>
@@ -173,12 +178,6 @@
               </div>
               <div class="pnote">In consultation</div>
             </div>
-
-            <button type="button" class="history-chip" id="rxHistoryChip" style="display:none;">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-              <span id="rxHistoryChipText">View past prescriptions</span>
-            </button>
-            <div class="rx-history-panel" id="rxHistoryPanel" style="display:none;"></div>
 
             <div class="field">
               <label>Chief complaint</label>
@@ -276,7 +275,7 @@
        printing, which is what billing's own #printReceipt does too, and
        is what actually fixed print coming out blank (a clone-then-print
        approach was racing the browser's own print snapshot). -->
-  <div class="a4" id="printRx" style="display:none;"></div>
+  <div class="a4" id="printRx"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
@@ -946,6 +945,7 @@
         const writeRxBtn = document.getElementById('writeRxBtn');
         writeRxBtn.disabled = !q.nowServing;
         writeRxBtn.title = q.nowServing ? '' : 'No one is currently in consultation.';
+        updateRxHistoryChip(q.nowServing || null);
 
         const lockedNote = document.getElementById('statusLockedNote');
         if (dayIsClosed) {
@@ -1775,9 +1775,44 @@
         document.getElementById(id).addEventListener('input', updateRxPreview);
       });
 
+      // ---------- Past-prescriptions chip: lives on doctor.html itself,
+      // below Write Prescription, tied to whoever is currently being
+      // served — not something opened only from inside the modal. ----------
+      let rxHistoryPatientId = null;
       let rxPastPrescriptions = [];
+      let rxHistoryExpandedId = null;
 
-      function renderRxHistoryEntry(rx) {
+      function collapseRxHistoryPanel() {
+        document.getElementById('rxHistoryPanel').style.display = 'none';
+      }
+
+      async function updateRxHistoryChip(patient) {
+        if (!patient) {
+          rxHistoryPatientId = null;
+          rxPastPrescriptions = [];
+          document.getElementById('rxHistoryChip').style.display = 'none';
+          collapseRxHistoryPanel();
+          return;
+        }
+        if (patient.id === rxHistoryPatientId) return;
+        rxHistoryPatientId = patient.id;
+        document.getElementById('rxHistoryChip').style.display = 'none';
+        collapseRxHistoryPanel();
+        let list = [];
+        try {
+          list = await Qlinic.getPatientPrescriptions(patient.id);
+        } catch (err) {
+          return;
+        }
+        if (rxHistoryPatientId !== patient.id) return; // patient changed while this was in flight
+        rxPastPrescriptions = list;
+        if (list.length) {
+          document.getElementById('rxHistoryChipText').textContent = `View past prescriptions (${list.length})`;
+          document.getElementById('rxHistoryChip').style.display = 'inline-flex';
+        }
+      }
+
+      function renderRxHistoryDetail(rx) {
         const medsHtml = rx.items.length
           ? rx.items.map((item, i) => `
               <tr>
@@ -1788,41 +1823,64 @@
               </tr>
             `).join('')
           : '<tr><td colspan="4" style="color:var(--grey-500);font-style:italic;">No medicines recorded</td></tr>';
-        const dateLabel = new Date(rx.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
         return `
-          <div class="rx-history-card expanded" style="cursor:default;">
-            <div class="rx-history-top" style="cursor:default;">
-              <div class="rx-history-who">
-                <div>
-                  <div class="rx-history-name">${dateLabel}</div>
-                  <div class="rx-history-meta">Dr. ${Qlinic.escapeHtml(rx.doctorName)}${rx.doctorSpecialty ? ' · ' + Qlinic.escapeHtml(rx.doctorSpecialty) : ''}</div>
-                </div>
-              </div>
+          <div class="rx-history-detail">
+            <div class="rx-pair-row">
+              ${rx.complaints ? `<div class="rx-dx"><b>Chief complaint</b><span>${Qlinic.escapeHtml(rx.complaints)}</span></div>` : ''}
+              ${rx.diagnosis ? `<div class="rx-dx"><b>Diagnosis</b><span>${Qlinic.escapeHtml(rx.diagnosis)}</span></div>` : ''}
             </div>
-            <div class="rx-history-detail" style="margin-top:10px;">
-              <div class="rx-pair-row">
-                ${rx.complaints ? `<div class="rx-dx"><b>Chief complaint</b><span>${Qlinic.escapeHtml(rx.complaints)}</span></div>` : ''}
-                ${rx.diagnosis ? `<div class="rx-dx"><b>Diagnosis</b><span>${Qlinic.escapeHtml(rx.diagnosis)}</span></div>` : ''}
-              </div>
-              <table class="rx-table">
-                <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
-                <tbody>${medsHtml}</tbody>
-              </table>
-              <div class="rx-pair-row">
-                ${rx.advice ? `<div class="rx-advice"><b>Advice</b><span>${Qlinic.escapeHtml(rx.advice)}</span></div>` : ''}
-                ${rx.followUpDate ? `<div class="rx-advice"><b>Follow Up</b><span>${Qlinic.escapeHtml(new Date(rx.followUpDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</span></div>` : ''}
-              </div>
+            <table class="rx-table">
+              <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
+              <tbody>${medsHtml}</tbody>
+            </table>
+            <div class="rx-pair-row">
+              ${rx.advice ? `<div class="rx-advice"><b>Advice</b><span>${Qlinic.escapeHtml(rx.advice)}</span></div>` : ''}
+              ${rx.followUpDate ? `<div class="rx-advice"><b>Follow Up</b><span>${Qlinic.escapeHtml(new Date(rx.followUpDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</span></div>` : ''}
             </div>
           </div>
         `;
       }
 
+      function renderRxHistoryList() {
+        const panel = document.getElementById('rxHistoryPanel');
+        panel.innerHTML = rxPastPrescriptions.map((rx) => {
+          const isOpen = rx.id === rxHistoryExpandedId;
+          const dateLabel = new Date(rx.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+          return `
+            <div class="rx-history-card${isOpen ? ' expanded' : ''}" data-id="${rx.id}">
+              <div class="rx-history-top">
+                <div class="rx-history-who">
+                  <div>
+                    <div class="rx-history-name">${dateLabel}</div>
+                    <div class="rx-history-meta">Dr. ${Qlinic.escapeHtml(rx.doctorName)}${rx.doctorSpecialty ? ' · ' + Qlinic.escapeHtml(rx.doctorSpecialty) : ''}</div>
+                  </div>
+                </div>
+                <svg class="rx-history-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+              ${rx.diagnosis ? `<div class="rx-history-dx"><b>Diagnosis:</b> ${Qlinic.escapeHtml(rx.diagnosis)}</div>` : ''}
+              <div class="rx-history-tags">
+                <span class="rx-tag">${rx.items.length} medicine${rx.items.length === 1 ? '' : 's'}</span>
+                ${rx.followUpDate ? `<span class="rx-tag">Follow up: ${Qlinic.escapeHtml(new Date(rx.followUpDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</span>` : ''}
+              </div>
+              ${isOpen ? renderRxHistoryDetail(rx) : ''}
+            </div>
+          `;
+        }).join('');
+      }
+
       document.getElementById('rxHistoryChip').addEventListener('click', () => {
         const panel = document.getElementById('rxHistoryPanel');
         const isOpen = panel.style.display !== 'none';
-        if (isOpen) { panel.style.display = 'none'; return; }
-        panel.innerHTML = rxPastPrescriptions.map(renderRxHistoryEntry).join('');
+        if (isOpen) { collapseRxHistoryPanel(); return; }
+        rxHistoryExpandedId = null;
+        renderRxHistoryList();
         panel.style.display = 'block';
+      });
+      document.getElementById('rxHistoryPanel').addEventListener('click', (e) => {
+        const card = e.target.closest('.rx-history-card');
+        if (!card) return;
+        rxHistoryExpandedId = rxHistoryExpandedId === card.dataset.id ? null : card.dataset.id;
+        renderRxHistoryList();
       });
 
       function openRxModal() {
@@ -1838,17 +1896,6 @@
         updateRxPreview();
         if (currentDoctor) loadRxClosureData(currentDoctor.id);
         Qlinic.getClinicMedicinesForRx().then((meds) => { rxClinicMedicinesCache = meds; }).catch(() => { rxClinicMedicinesCache = []; });
-
-        rxPastPrescriptions = [];
-        document.getElementById('rxHistoryChip').style.display = 'none';
-        document.getElementById('rxHistoryPanel').style.display = 'none';
-        Qlinic.getPatientPrescriptions(patient.id).then((list) => {
-          rxPastPrescriptions = list;
-          if (list.length) {
-            document.getElementById('rxHistoryChipText').textContent = `View past prescriptions (${list.length})`;
-            document.getElementById('rxHistoryChip').style.display = 'inline-flex';
-          }
-        }).catch(() => {});
       }
       function closeRxModal() {
         document.getElementById('rxModalBackdrop').style.display = 'none';

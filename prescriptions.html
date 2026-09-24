@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=338" />
+<link rel="stylesheet" href="styles.css?v=339" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -54,10 +54,16 @@
             <button type="button" class="active" data-tab="today">Today</button>
             <button type="button" data-tab="search">Search a patient</button>
           </div>
-          <select id="rxDoctorFilter" class="doctor-form-field" style="display:none;height:38px;border:1px solid var(--grey-300);background:var(--grey-100);border-radius:8px;padding:0 12px;font-size:13.5px;font-family:var(--font);min-width:200px;"></select>
         </div>
-        <div class="field" id="rxSearchWrap" style="display:none;max-width:400px;">
-          <input type="text" id="rxSearchInput" placeholder="Search by patient name or phone…" autocomplete="off" />
+        <div class="inline-form" style="margin-bottom:16px;align-items:flex-end;">
+          <div class="field" id="rxSearchWrap" style="display:none;max-width:340px;flex:1;margin-bottom:0;">
+            <label>Patient</label>
+            <input type="text" id="rxSearchInput" placeholder="Search by name or phone…" autocomplete="off" />
+          </div>
+          <div class="field" id="rxDoctorFilterWrap" style="display:none;max-width:260px;margin-bottom:0;">
+            <label>Doctor</label>
+            <select id="rxDoctorFilter"></select>
+          </div>
         </div>
         <div id="rxListContainer"></div>
       </div>
@@ -69,7 +75,7 @@
   <!-- Same reusable print target/CSS every other prescription surface uses
        (see doctor.html) — one #printRx per page, filled right before
        window.print(). -->
-  <div class="a4" id="printRx" style="display:none;"></div>
+  <div class="a4" id="printRx"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
@@ -134,7 +140,7 @@
         const sel = document.getElementById('rxDoctorFilter');
         sel.innerHTML = '<option value="">All doctors</option>' +
           doctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)}</option>`).join('');
-        sel.style.display = '';
+        document.getElementById('rxDoctorFilterWrap').style.display = '';
         sel.addEventListener('change', () => loadCurrentTab());
       }
 
