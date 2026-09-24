@@ -1471,7 +1471,7 @@
           document.getElementById('pName').value = match.name;
           document.getElementById('pGender').value = match.gender || 'other';
           document.getElementById('pAddress').value = match.address || '';
-          if (match.age) document.getElementById('pAge').value = match.age;
+          if (match.age != null) document.getElementById('pAge').value = match.age;
           hint.style.display = 'none';
           hint.innerHTML = '';
         });

@@ -311,7 +311,7 @@
         currentPatientId = match.todayPatientId || null;
         if (match.name) document.getElementById('bName').value = match.name;
         if (match.address) document.getElementById('bAddress').value = match.address;
-        if (match.age) document.getElementById('bAge').value = match.age;
+        if (match.age != null) document.getElementById('bAge').value = match.age;
         if (match.gender) document.getElementById('bGender').value = match.gender;
 
         let usedRecentFallback = false;

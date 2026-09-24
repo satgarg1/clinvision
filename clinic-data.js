@@ -1064,6 +1064,10 @@
     return doctors.map((d, i) => ({ doctor: d, queue: queues[i] }));
   }
 
+  function escapeOrFilterValue(v) {
+    return `"${String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+  }
+
   async function searchBookedPatients(query) {
     const clinicId = await ensureClinicContext();
     const q = query.trim();
@@ -1071,13 +1075,14 @@
     const today = todayDateStr();
     const doctors = await getDoctors();
     const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
+    const nameFilter = escapeOrFilterValue(`%${q}%`);
     const { data, error } = await sb
       .from('patients')
       .select('*')
       .eq('clinic_id', clinicId)
       .in('status', ['booked', 'waiting', 'no_show'])
       .eq('token_date', today)
-      .or(`name.ilike.%${q}%,phone.ilike.%${q}%`);
+      .or(`name.ilike.${nameFilter},phone.ilike.${nameFilter}`);
     if (error) throw error;
     return data.map(normalizePatient).map((p) => Object.assign({}, p, {
       effectiveTime: effectiveMoment(p, doctorById[p.doctorId]),
@@ -2817,11 +2822,12 @@
     const clinicId = await ensureClinicContext();
     const q = (query || '').trim();
     if (!q || !clinicId) return [];
+    const pharmacyFilter = escapeOrFilterValue(`%${q}%`);
     const { data, error } = await sb
       .from('patients')
       .select('id, name, phone')
       .eq('clinic_id', clinicId)
-      .or(`name.ilike.%${q}%,phone.ilike.%${q}%`)
+      .or(`name.ilike.${pharmacyFilter},phone.ilike.${pharmacyFilter}`)
       .order('created_at', { ascending: false })
       .limit(50);
     if (error) throw error;
