@@ -127,7 +127,7 @@
           <div class="panel-header"><h2>Now serving</h2></div>
           <div class="ns-top">
             <div id="nowServingBox"></div>
-            <div class="ns-actions">
+            <div class="ns-actions" id="nowServingActions" style="display:none;">
               <button type="button" class="ns-btn outline" id="rxHistoryChip" disabled>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
                 <span id="rxHistoryChipText">View history</span>
@@ -975,6 +975,11 @@
         const writeRxBtn = document.getElementById('writeRxBtn');
         writeRxBtn.disabled = !q.nowServing;
         writeRxBtn.title = q.nowServing ? '' : 'No one is currently in consultation.';
+        // View history/Write prescription only make sense once someone is
+        // actually being served — with no one in consultation there's no
+        // patient for either to act on, so the whole action column is
+        // hidden rather than shown disabled with nothing to point at.
+        document.getElementById('nowServingActions').style.display = q.nowServing ? 'flex' : 'none';
         updateRxHistoryChip(q.nowServing || null);
 
         const lockedNote = document.getElementById('statusLockedNote');
