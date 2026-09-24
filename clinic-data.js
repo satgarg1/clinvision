@@ -2453,7 +2453,10 @@
   initMobileNav();
 
   // items: [{ clinicMedicineId, genericMedicineId, freeTextName, name, composition, frequency, durationText, instructions }]
-  async function createPrescription({ patientId, complaints, diagnosis, advice, followUpDate, items, doctorId, vitalsBp, vitalsPulse, vitalsTemp, vitalsWeight, testsOrdered }) {
+  // patientId is optional (Quick Walk-In Rx) — omit it and pass
+  // walkinName/walkinAge/walkinGender/walkinPhone instead for a
+  // prescription that isn't linked to any patients row at all.
+  async function createPrescription({ patientId, complaints, diagnosis, advice, followUpDate, items, doctorId, vitalsBp, vitalsPulse, vitalsTemp, vitalsWeight, testsOrdered, walkinName, walkinAge, walkinGender, walkinPhone }) {
     const payload = (items || []).map((it) => ({
       clinic_medicine_id: it.clinicMedicineId || null,
       generic_medicine_id: it.genericMedicineId || null,
@@ -2463,7 +2466,7 @@
       instructions: it.instructions || '',
     }));
     const { data, error } = await sb.rpc('create_prescription', {
-      p_patient_id: patientId,
+      p_patient_id: patientId || null,
       p_complaints: complaints || '',
       p_diagnosis: diagnosis || '',
       p_advice: advice || '',
@@ -2479,6 +2482,10 @@
       p_vitals_temp: vitalsTemp || '',
       p_vitals_weight: vitalsWeight || '',
       p_tests_ordered: testsOrdered || [],
+      p_walkin_name: walkinName || null,
+      p_walkin_age: walkinAge || null,
+      p_walkin_gender: walkinGender || null,
+      p_walkin_phone: walkinPhone || null,
     });
     if (error) throw error;
     return data;
@@ -2497,6 +2504,7 @@
       vitalsTemp: row.vitals_temp || '',
       vitalsWeight: row.vitals_weight || '',
       testsOrdered: row.tests_ordered || [],
+      isWalkin: !!row.is_walkin,
       patientName: row.patient_name,
       patientAge: row.patient_age,
       patientGender: row.patient_gender,
@@ -2523,6 +2531,14 @@
 
   async function getPatientPrescriptions(patientId) {
     const { data, error } = await sb.rpc('get_patient_prescriptions', { p_patient_id: patientId });
+    if (error) throw error;
+    return (data || []).map(normalizePrescriptionRow);
+  }
+
+  // Prescriptions' own default (empty search) view — every prescription
+  // the caller can see, most recent first, not scoped to any date.
+  async function getClinicPrescriptions({ doctorId } = {}) {
+    const { data, error } = await sb.rpc('get_clinic_prescriptions', { p_doctor_id: doctorId || null });
     if (error) throw error;
     return (data || []).map(normalizePrescriptionRow);
   }
@@ -2985,6 +3001,7 @@
     createPrescription,
     canAccessPrescriptions,
     getPatientPrescriptions,
+    getClinicPrescriptions,
     getClinicPrescriptionsByDate,
     searchClinicPrescriptions,
 

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=349" />
+<link rel="stylesheet" href="styles.css?v=350" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -43,8 +43,14 @@
     <main class="app-main">
       <div class="app-topbar">
         <h1>Prescriptions</h1>
-        <div class="clock-pill">
-          <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Time: <span class="time" id="clockTime">--</span></span>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button type="button" class="quick-walkin-btn" id="quickWalkinBtn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            Quick Walk-In Rx
+          </button>
+          <div class="clock-pill">
+            <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Time: <span class="time" id="clockTime">--</span></span>
+          </div>
         </div>
       </div>
 
@@ -61,6 +67,120 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- Quick Walk-In Rx — for a doctor who doesn't manage appointments
+       through the app at all. Patient details are entered here directly
+       (Option A from the reviewed scope: no linked patients row at all —
+       see migration 094 and Qlinic.createPrescription's walkin* params);
+       everything below Patient Details is the exact same Chief complaint/
+       Vitals & Tests/Medicines/Advice flow doctor.html's own Write
+       Prescription modal already has, duplicated here since this page
+       has no shared module to import it from (same convention as
+       buildRxSidebarHtml/buildPrintHtml above). -->
+  <div class="rx-modal-backdrop" id="wrxModalBackdrop" style="display:none;">
+    <div class="rx-modal">
+      <div class="rx-modal-bar">
+        <h2>Quick Walk-In Prescription</h2>
+        <span class="wrx-not-linked-badge">⚡ Not linked to a patient record</span>
+        <button type="button" class="rx-modal-close" id="wrxModalCloseBtn" title="Close">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="rx-modal-body">
+        <div>
+          <div class="panel">
+            <div class="panel-header"><h2>Patient details</h2></div>
+            <p class="panel-note" style="margin-top:0;">Only what's needed for a prescription — this never creates a patient record, and never appears in Reception's queue or the Display Screen.</p>
+            <div class="field" id="wrxDoctorFieldWrap" style="display:none;">
+              <label>Doctor</label>
+              <select id="wrxDoctorSelect"></select>
+            </div>
+            <div class="rx-vitals-grid">
+              <div class="field"><label>Full name <span style="color:var(--accent);">*</span></label><input type="text" id="wrxName" placeholder="Patient's full name" autocomplete="off"></div>
+              <div class="field"><label>Phone number <span style="color:var(--accent);">*</span></label><input type="text" id="wrxPhone" placeholder="10-digit mobile number" autocomplete="off"></div>
+              <div class="field"><label>Age <span style="color:var(--accent);">*</span></label><input type="text" id="wrxAge" placeholder="e.g. 41" autocomplete="off"></div>
+              <div class="field">
+                <label>Gender <span style="color:var(--accent);">*</span></label>
+                <select id="wrxGender"><option value="">Select…</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="field">
+              <label>Chief complaint</label>
+              <textarea id="wrxComplaints" rows="2" placeholder="e.g. Sore throat, mild fever for 2 days"></textarea>
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label>Diagnosis</label>
+              <textarea id="wrxDiagnosis" rows="2" placeholder="e.g. Acute upper respiratory tract infection"></textarea>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><h2>Vitals &amp; Tests</h2></div>
+            <div class="rx-vitals-grid">
+              <div class="field"><label>BP (mmHg)</label><input type="text" id="wrxVitalBp" placeholder="e.g. 120/80" autocomplete="off"></div>
+              <div class="field"><label>Pulse (bpm)</label><input type="text" id="wrxVitalPulse" placeholder="e.g. 78" autocomplete="off"></div>
+              <div class="field"><label>Temp (°F)</label><input type="text" id="wrxVitalTemp" placeholder="e.g. 98.6" autocomplete="off"></div>
+              <div class="field"><label>Weight (kg)</label><input type="text" id="wrxVitalWeight" placeholder="e.g. 68" autocomplete="off"></div>
+            </div>
+            <div class="field rx-med-search" style="margin-top:12px;margin-bottom:0;">
+              <label>Tests advised</label>
+              <input type="text" id="wrxTestInput" placeholder="Search X-Ray, MRI, CBC, Blood Sugar…" autocomplete="off">
+              <div class="rx-med-suggest-list" id="wrxTestSuggestList" style="display:none;"></div>
+            </div>
+            <div class="rx-test-chips" id="wrxTestChips"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><h2>Medicines</h2></div>
+            <div id="wrxRowsContainer"></div>
+            <div class="rx-row" id="wrxActiveRow">
+              <div class="rx-row-head">
+                <div style="flex:1;">
+                  <div class="field rx-med-search" style="margin-bottom:0;">
+                    <label>Medicine name</label>
+                    <input type="text" id="wrxMedNameInput" placeholder="Type a brand, generic, or manufacturer…" autocomplete="off" />
+                    <div class="rx-med-suggest-list" id="wrxMedSuggestList" style="display:none;"></div>
+                  </div>
+                </div>
+                <button type="button" class="rx-remove" id="wrxDiscardDraftBtn" title="Clear this medicine">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <div class="rx-field-grid">
+                <div class="rx-field rx-combo"><label>Frequency</label><input type="text" id="wrxFrequencyInput" placeholder="e.g. 1-0-1 (BD)" autocomplete="off"><div class="rx-med-suggest-list" id="wrxFrequencySuggestList" style="display:none;"></div></div>
+                <div class="rx-field rx-combo"><label>Duration</label><input type="text" id="wrxDurationInput" placeholder="e.g. 5 days" autocomplete="off"><div class="rx-med-suggest-list" id="wrxDurationSuggestList" style="display:none;"></div></div>
+                <div class="rx-field rx-combo"><label>Instructions</label><input type="text" id="wrxInstructionsInput" placeholder="e.g. After food" autocomplete="off"><div class="rx-med-suggest-list" id="wrxInstructionsSuggestList" style="display:none;"></div></div>
+              </div>
+            </div>
+            <button type="button" class="btn-sm accent-outline" id="wrxAddMedBtn" style="margin-top:4px;">+ Add this medicine</button>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><h2>Advice &amp; Follow Up</h2></div>
+            <div class="field" style="margin-bottom:8px;">
+              <label>General Advice</label>
+              <textarea id="wrxAdvice" rows="2" placeholder="e.g. Warm salt-water gargles, plenty of fluids"></textarea>
+            </div>
+            <div class="field" style="max-width:220px;">
+              <label>Follow Up (optional)</label>
+              <input type="date" lang="en-GB" id="wrxFollowUpDate" class="pill-input" style="width:100%;" />
+            </div>
+            <div class="rx-action-row">
+              <button type="button" class="rx-action-btn" id="wrxSavePrintBtn"><span class="rx-action-icon">🖨️</span>Save &amp; print</button>
+              <button type="button" class="rx-action-btn" id="wrxSaveOnlyBtn"><span class="rx-action-icon">💾</span>Save only</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="rx-preview-wrap">
+          <div class="a4" id="wrxLivePreview"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Same reusable print target/CSS every other prescription surface uses
        (see doctor.html) — one #printRx per page, filled right before
        window.print(). -->
@@ -68,7 +188,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=122"></script>
+  <script src="clinic-data.js?v=123"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -124,13 +244,24 @@
       document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
       setInterval(() => { document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date()); }, 30000);
 
+      // Also doubles as Quick Walk-In Rx's own doctor list — an admin
+      // picks who it's for there the same way they narrow this page's own
+      // list; a doctor writes it under themselves, same as every other
+      // prescription.
+      let walkinDoctors = [];
       if (amAdmin) {
-        const doctors = await Qlinic.getDoctors();
+        walkinDoctors = await Qlinic.getDoctors();
         const sel = document.getElementById('rxDoctorFilter');
         sel.innerHTML = '<option value="">All doctors</option>' +
-          doctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)}</option>`).join('');
+          walkinDoctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)}</option>`).join('');
         sel.style.display = '';
         sel.addEventListener('change', () => { rxListPage = 0; loadCurrentTab(); });
+      } else {
+        const myProfile = await Qlinic.getMyProfile();
+        if (myProfile && myProfile.doctorId) {
+          const myDoctor = await Qlinic.getDoctor(myProfile.doctorId);
+          if (myDoctor) walkinDoctors = [myDoctor];
+        }
       }
 
       let expandedId = null;
@@ -168,7 +299,7 @@
         const container = document.getElementById('rxListContainer');
         const isSearching = document.getElementById('rxSearchInput').value.trim().length >= 2;
         if (!items.length) {
-          container.innerHTML = `<div class="empty-state">${isSearching ? 'No prescriptions found for that search.' : 'No prescriptions written today yet.'}</div>`;
+          container.innerHTML = `<div class="empty-state">${isSearching ? 'No prescriptions found for that search.' : 'No prescriptions yet.'}</div>`;
           return;
         }
         const totalPages = Math.max(1, Math.ceil(items.length / RX_LIST_PAGE_SIZE));
@@ -184,7 +315,7 @@
                 <div class="rx-history-who">
                   <div class="rx-history-avatar">${Qlinic.escapeHtml(initialsOf(rx.patientName))}</div>
                   <div style="min-width:0;">
-                    <div class="rx-history-name">${Qlinic.escapeHtml(rx.patientName)}${formatAgeGender(rx) ? ' · ' + Qlinic.escapeHtml(formatAgeGender(rx)) : ''}</div>
+                    <div class="rx-history-name">${Qlinic.escapeHtml(rx.patientName)}${formatAgeGender(rx) ? ' · ' + Qlinic.escapeHtml(formatAgeGender(rx)) : ''}${rx.isWalkin ? ' <span class="rx-walkin-flag">Walk-in</span>' : ''}</div>
                     <div class="rx-history-meta">${Qlinic.escapeHtml(rx.patientPhone || '')}</div>
                     ${doctorPill}
                   </div>
@@ -441,8 +572,11 @@
           if (q.length >= 2) {
             currentItems = await Qlinic.searchClinicPrescriptions(q);
           } else {
+            // This is a history feature — the default view is every
+            // prescription the caller can see, most recent first, not
+            // just today's.
             const doctorId = amAdmin ? (document.getElementById('rxDoctorFilter').value || null) : null;
-            currentItems = await Qlinic.getClinicPrescriptionsByDate({ date: Qlinic.getTodayDate(), doctorId });
+            currentItems = await Qlinic.getClinicPrescriptions({ doctorId });
           }
         } catch (err) {
           showToast(err.message || 'Could not load prescriptions');
@@ -471,6 +605,496 @@
         loadCurrentTab();
         input.focus();
       });
+
+      // ============================================================
+      // Quick Walk-In Rx — scoped and mocked up first (Option A: no
+      // patients row ever created; identity lives directly on the
+      // prescription via walkin_name/age/gender/phone). Everything below
+      // Patient details mirrors doctor.html's own Write Prescription
+      // modal as closely as possible (medicine search, combo fields,
+      // vitals/tests) — duplicated here since this page has no shared
+      // module to import that logic from, same convention already used
+      // for buildRxSidebarHtml/buildPrintHtml above. The one deliberate
+      // simplification: Follow Up uses a plain native date input instead
+      // of doctor.html's closure-aware calendar — a walk-in Rx patient
+      // isn't tied to a specific doctor's clinic-closure calendar the way
+      // a queued follow-up visit is, so that complexity doesn't carry
+      // over cleanly here.
+      // ============================================================
+      const WRX_FREQUENCY_PRESETS = [
+        '1-0-0 (Once daily / OD)', '0-0-1 (Once at night / HS)', '1-0-1 (Twice daily / BD)',
+        '1-1-1 (Thrice daily / TDS)', '1-1-1-1 (Four times daily / QID)', 'SOS (As needed)',
+        'Stat (Single dose)', 'Every 4 hours', 'Every 6 hours', 'Every 8 hours', 'Every 12 hours',
+        'Once weekly', 'Alternate day',
+      ];
+      const WRX_DURATION_PRESETS = [
+        '1 day', '2 days', '3 days', '5 days', '7 days', '10 days', '14 days', '15 days',
+        '1 month', '2 months', '3 months', 'Continue', 'SOS',
+      ];
+      const WRX_INSTRUCTIONS_PRESETS = [
+        'Before food', 'After food', 'With food', 'Empty stomach', 'With warm water', 'With milk',
+        'At bedtime', 'Morning only', 'Do not skip doses', 'Complete the course', 'Avoid alcohol',
+        'Chew and swallow', 'Dissolve in water', 'Shake well before use',
+      ];
+      const WRX_TEST_CATALOG = [
+        'X-Ray Chest', 'X-Ray Abdomen', 'X-Ray Spine', 'X-Ray Limb/Joint',
+        'Ultrasound (USG) Abdomen', 'Ultrasound (USG) Pelvis', 'Ultrasound (USG) Obstetric',
+        'CT Scan', 'MRI', 'Mammography', 'ECG (Electrocardiogram)', '2D Echo (Echocardiogram)', 'Doppler Study',
+        'CBC (Complete Blood Count)', 'Blood Sugar - Fasting', 'Blood Sugar - Post Prandial', 'Blood Sugar - Random',
+        'HbA1c (Diabetes)', 'Lipid Profile', 'Liver Function Test (LFT)', 'Kidney Function Test (KFT/RFT)',
+        'Thyroid Profile (T3 T4 TSH)', 'Urine Routine & Microscopy', 'Stool Routine', 'Blood Group & Rh Typing',
+        'ESR', 'CRP', 'Widal Test (Typhoid)', 'Dengue NS1/IgG/IgM', 'Malaria Antigen', 'HIV Test',
+        'HBsAg (Hepatitis B)', 'VDRL (Syphilis)', 'Vitamin D', 'Vitamin B12', 'Serum Creatinine', 'Blood Urea',
+        'Uric Acid', 'PSA (Prostate Specific Antigen)', 'Pregnancy Test (Beta hCG)', 'Sputum Culture/AFB',
+        'COVID-19 RT-PCR/Antigen',
+      ];
+
+      let wrxItems = [];
+      let wrxDraftMed = null;
+      let wrxTestsOrdered = [];
+      let wrxClinicMedicinesCache = [];
+      let wrxMedSearchDebounce = null;
+      let wrxMedSearchAbort = null;
+      let wrxMedSearchSeq = 0;
+      let wrxSearchErrorShown = false;
+      let wrxSaving = false;
+      let wrxSelectedDoctor = null;
+
+      function wrxShouldFlipUp(triggerEl, estimatedPanelHeight) {
+        const rect = triggerEl.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        return spaceBelow < estimatedPanelHeight && spaceAbove > spaceBelow;
+      }
+
+      function wrxSetupComboField(inputId, listId, options) {
+        const input = document.getElementById(inputId);
+        const list = document.getElementById(listId);
+        function render(filterText) {
+          const q = (filterText || '').trim().toLowerCase();
+          const matches = q ? options.filter((o) => o.toLowerCase().includes(q)) : options;
+          if (!matches.length) { list.style.display = 'none'; list.innerHTML = ''; return; }
+          list.innerHTML = matches.map((o, i) => `<div class="rx-med-suggest-item" data-i="${i}"><div class="mr-name">${Qlinic.escapeHtml(o)}</div></div>`).join('');
+          list.dataset.options = JSON.stringify(matches);
+          list.classList.toggle('flip-up', wrxShouldFlipUp(input, 260));
+          list.style.display = 'block';
+          list.scrollTop = 0;
+        }
+        input.addEventListener('focus', () => render(input.value));
+        input.addEventListener('input', () => render(input.value));
+        input.addEventListener('blur', () => setTimeout(() => { list.style.display = 'none'; }, 150));
+        list.addEventListener('mousedown', (e) => {
+          const item = e.target.closest('.rx-med-suggest-item');
+          if (!item) return;
+          const opts = JSON.parse(list.dataset.options || '[]');
+          input.value = opts[Number(item.dataset.i)];
+          list.style.display = 'none';
+        });
+      }
+      wrxSetupComboField('wrxFrequencyInput', 'wrxFrequencySuggestList', WRX_FREQUENCY_PRESETS);
+      wrxSetupComboField('wrxDurationInput', 'wrxDurationSuggestList', WRX_DURATION_PRESETS);
+      wrxSetupComboField('wrxInstructionsInput', 'wrxInstructionsSuggestList', WRX_INSTRUCTIONS_PRESETS);
+
+      function wrxRenderTestChips() {
+        document.getElementById('wrxTestChips').innerHTML = wrxTestsOrdered.map((t, i) => `
+          <span class="rx-test-chip">${Qlinic.escapeHtml(t)}<button type="button" data-idx="${i}" title="Remove">
+            <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button></span>
+        `).join('');
+      }
+      document.getElementById('wrxTestChips').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-idx]');
+        if (!btn) return;
+        wrxTestsOrdered.splice(Number(btn.dataset.idx), 1);
+        wrxRenderTestChips();
+        wrxUpdatePreview();
+      });
+      document.getElementById('wrxTestInput').addEventListener('input', (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        const list = document.getElementById('wrxTestSuggestList');
+        if (!q) { list.style.display = 'none'; list.innerHTML = ''; return; }
+        const matches = WRX_TEST_CATALOG.filter((t) => !wrxTestsOrdered.includes(t) && t.toLowerCase().includes(q)).slice(0, 8);
+        if (!matches.length) { list.style.display = 'none'; list.innerHTML = ''; return; }
+        list.innerHTML = matches.map((t, i) => `<div class="rx-med-suggest-item" data-i="${i}"><div class="mr-name">${Qlinic.escapeHtml(t)}</div></div>`).join('');
+        list.dataset.results = JSON.stringify(matches);
+        list.style.display = 'block';
+      });
+      document.getElementById('wrxTestInput').addEventListener('blur', () => {
+        setTimeout(() => { document.getElementById('wrxTestSuggestList').style.display = 'none'; }, 150);
+      });
+      document.getElementById('wrxTestSuggestList').addEventListener('mousedown', (e) => {
+        const item = e.target.closest('.rx-med-suggest-item');
+        if (!item) return;
+        const list = document.getElementById('wrxTestSuggestList');
+        const results = JSON.parse(list.dataset.results || '[]');
+        const t = results[Number(item.dataset.i)];
+        if (!t) return;
+        wrxTestsOrdered.push(t);
+        document.getElementById('wrxTestInput').value = '';
+        list.style.display = 'none';
+        wrxRenderTestChips();
+        wrxUpdatePreview();
+      });
+
+      function wrxResetDraftFields() {
+        document.getElementById('wrxMedNameInput').value = '';
+        document.getElementById('wrxFrequencyInput').value = '';
+        document.getElementById('wrxDurationInput').value = '';
+        document.getElementById('wrxInstructionsInput').value = '';
+        ['wrxMedSuggestList', 'wrxFrequencySuggestList', 'wrxDurationSuggestList', 'wrxInstructionsSuggestList'].forEach((id) => {
+          const list = document.getElementById(id);
+          list.style.display = 'none';
+          list.innerHTML = '';
+        });
+        wrxDraftMed = null;
+        clearTimeout(wrxMedSearchDebounce);
+        if (wrxMedSearchAbort) wrxMedSearchAbort.abort();
+        wrxMedSearchSeq++;
+      }
+
+      function wrxRenderRows() {
+        const container = document.getElementById('wrxRowsContainer');
+        container.innerHTML = wrxItems.map((item, idx) => `
+          <div class="rx-row collapsed" data-idx="${idx}">
+            <span class="rc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <div class="rc-summary">
+              <div class="rc-name">${Qlinic.escapeHtml(item.name)}</div>
+              <div class="rc-detail">${Qlinic.escapeHtml([item.frequency, item.durationText, item.instructions].filter(Boolean).join(' · '))}</div>
+            </div>
+            <div class="rc-actions">
+              <button type="button" class="rx-edit-btn" data-idx="${idx}" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button type="button" class="rx-delete-btn" data-idx="${idx}" title="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+            </div>
+          </div>
+        `).join('');
+      }
+      function wrxScrollActiveMedRowIntoView() {
+        document.getElementById('wrxAddMedBtn').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+      document.getElementById('wrxRowsContainer').addEventListener('click', (e) => {
+        const delBtn = e.target.closest('.rx-delete-btn');
+        if (delBtn) {
+          wrxItems.splice(Number(delBtn.dataset.idx), 1);
+          wrxRenderRows();
+          wrxUpdatePreview();
+          return;
+        }
+        const row = e.target.closest('.rx-row.collapsed');
+        if (row) {
+          const idx = Number(row.dataset.idx);
+          const item = wrxItems[idx];
+          wrxItems.splice(idx, 1);
+          document.getElementById('wrxMedNameInput').value = item.name;
+          document.getElementById('wrxFrequencyInput').value = item.frequency;
+          document.getElementById('wrxDurationInput').value = item.durationText;
+          document.getElementById('wrxInstructionsInput').value = item.instructions;
+          wrxDraftMed = (item.clinicMedicineId || item.genericMedicineId)
+            ? { clinicMedicineId: item.clinicMedicineId, genericMedicineId: item.genericMedicineId, name: item.name, composition: item.composition }
+            : null;
+          wrxRenderRows();
+          wrxUpdatePreview();
+          document.getElementById('wrxMedNameInput').focus();
+          wrxScrollActiveMedRowIntoView();
+        }
+      });
+
+      function wrxRenderMedSuggestions(results) {
+        const list = document.getElementById('wrxMedSuggestList');
+        const input = document.getElementById('wrxMedNameInput');
+        if (!results.length) {
+          list.innerHTML = '<div class="rx-med-suggest-empty">No match — this will be saved as typed</div>';
+          list.removeAttribute('data-results');
+          list.classList.toggle('flip-up', wrxShouldFlipUp(input, 260));
+          list.style.display = 'block';
+          list.scrollTop = 0;
+          return;
+        }
+        list.innerHTML = results.map((r, i) => `
+          <div class="rx-med-suggest-item" data-i="${i}">
+            <div><div class="mr-name">${Qlinic.escapeHtml(r.name)}</div>${r.composition ? `<div class="mr-comp">${Qlinic.escapeHtml(r.composition)}</div>` : ''}</div>
+          </div>
+        `).join('');
+        list.dataset.results = JSON.stringify(results);
+        list.classList.toggle('flip-up', wrxShouldFlipUp(input, 260));
+        list.style.display = 'block';
+        list.scrollTop = 0;
+      }
+      document.getElementById('wrxMedNameInput').addEventListener('input', (e) => {
+        wrxDraftMed = null;
+        const q = e.target.value.trim();
+        clearTimeout(wrxMedSearchDebounce);
+        if (wrxMedSearchAbort) wrxMedSearchAbort.abort();
+        const list = document.getElementById('wrxMedSuggestList');
+        if (q.length < 2) { list.style.display = 'none'; list.innerHTML = ''; return; }
+
+        const qLower = q.toLowerCase();
+        const localMatches = wrxClinicMedicinesCache.filter((m) => m.name.toLowerCase().startsWith(qLower)).slice(0, 8);
+        if (localMatches.length) wrxRenderMedSuggestions(localMatches);
+        else { list.style.display = 'none'; list.innerHTML = ''; }
+
+        const mySeq = ++wrxMedSearchSeq;
+        wrxMedSearchDebounce = setTimeout(async () => {
+          const controller = new AbortController();
+          wrxMedSearchAbort = controller;
+          let results = [];
+          try {
+            results = await Qlinic.searchMedicinesForRx(q, controller.signal);
+          } catch (err) {
+            if (err.name === 'AbortError') return;
+            console.error('Medicine search failed:', err);
+            if (!wrxSearchErrorShown) { wrxSearchErrorShown = true; showToast(err.message || 'Medicine search failed'); }
+            return;
+          }
+          if (mySeq !== wrxMedSearchSeq) return;
+          if (wrxDraftMed) return;
+          if (document.activeElement !== document.getElementById('wrxMedNameInput')) return;
+          const seen = new Set(localMatches.map((m) => m.name.toLowerCase()));
+          const merged = localMatches.concat(results.filter((r) => !seen.has(r.name.toLowerCase())));
+          wrxRenderMedSuggestions(merged);
+        }, 180);
+      });
+      document.getElementById('wrxMedNameInput').addEventListener('blur', () => {
+        setTimeout(() => { document.getElementById('wrxMedSuggestList').style.display = 'none'; }, 150);
+      });
+      document.getElementById('wrxMedSuggestList').addEventListener('mousedown', (e) => {
+        const item = e.target.closest('.rx-med-suggest-item');
+        if (!item) return;
+        const list = document.getElementById('wrxMedSuggestList');
+        const results = JSON.parse(list.dataset.results || '[]');
+        const r = results[Number(item.dataset.i)];
+        if (!r) return;
+        wrxDraftMed = { clinicMedicineId: r.clinicMedicineId, genericMedicineId: r.genericMedicineId, name: r.name, composition: r.composition };
+        document.getElementById('wrxMedNameInput').value = r.name;
+        list.style.display = 'none';
+      });
+      document.getElementById('wrxDiscardDraftBtn').addEventListener('click', () => wrxResetDraftFields());
+      document.getElementById('wrxAddMedBtn').addEventListener('click', () => {
+        const nameInput = document.getElementById('wrxMedNameInput');
+        const name = nameInput.value.trim();
+        if (!name) { nameInput.focus(); return; }
+        wrxItems.push({
+          clinicMedicineId: wrxDraftMed ? wrxDraftMed.clinicMedicineId : null,
+          genericMedicineId: wrxDraftMed ? wrxDraftMed.genericMedicineId : null,
+          freeTextName: wrxDraftMed ? null : name,
+          name,
+          composition: wrxDraftMed ? wrxDraftMed.composition : '',
+          frequency: document.getElementById('wrxFrequencyInput').value.trim(),
+          durationText: document.getElementById('wrxDurationInput').value.trim(),
+          instructions: document.getElementById('wrxInstructionsInput').value.trim(),
+        });
+        wrxResetDraftFields();
+        wrxRenderRows();
+        wrxUpdatePreview();
+        nameInput.focus();
+        wrxScrollActiveMedRowIntoView();
+      });
+
+      function wrxFormatAgeGender() {
+        const age = document.getElementById('wrxAge').value.trim();
+        const genderRaw = document.getElementById('wrxGender').value;
+        const gender = genderRaw ? genderRaw.charAt(0).toUpperCase() + genderRaw.slice(1) : '';
+        return [age ? `${age} yrs` : '', gender].filter(Boolean).join(', ');
+      }
+
+      function wrxBuildHtml() {
+        const doctor = wrxSelectedDoctor;
+        const logoHtml = (clinic && clinic.logo_url) ? `<img class="rx-logo-img" src="${Qlinic.escapeHtml(clinic.logo_url)}" alt="" />` : '';
+        const addressParts = clinic ? [clinic.address_line, clinic.city, clinic.state && clinic.pincode ? `${clinic.state} ${clinic.pincode}` : clinic.state].filter(Boolean) : [];
+        const doctorQualLine = doctor ? [doctor.qualification, doctor.registrationNumber ? `Reg. No. ${doctor.registrationNumber}` : ''].filter(Boolean).join(' · ') : '';
+
+        const name = document.getElementById('wrxName').value.trim();
+        const phone = document.getElementById('wrxPhone').value.trim();
+        const complaints = document.getElementById('wrxComplaints').value.trim();
+        const dx = document.getElementById('wrxDiagnosis').value.trim();
+        const advice = document.getElementById('wrxAdvice').value.trim();
+        const followUpRaw = document.getElementById('wrxFollowUpDate').value;
+        const followUpLabel = followUpRaw ? new Date(followUpRaw + 'T00:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+        const vitalsBp = document.getElementById('wrxVitalBp').value.trim();
+        const vitalsPulse = document.getElementById('wrxVitalPulse').value.trim();
+        const vitalsTemp = document.getElementById('wrxVitalTemp').value.trim();
+        const vitalsWeight = document.getElementById('wrxVitalWeight').value.trim();
+        const sidebarHtml = buildRxSidebarHtml({ vitalsBp, vitalsPulse, vitalsTemp, vitalsWeight, testsOrdered: wrxTestsOrdered });
+
+        const medsHtml = wrxItems.length
+          ? wrxItems.map((item, i) => `
+              <tr>
+                <td style="color:var(--grey-500);">${i + 1}</td>
+                <td><div class="rt-name">${Qlinic.escapeHtml(item.name)}${item.composition ? ` <span class="rt-comp" style="font-weight:400;">(${Qlinic.escapeHtml(item.composition)})</span>` : ''}</div>${item.instructions ? `<div class="rt-instr">${Qlinic.escapeHtml(item.instructions)}</div>` : ''}</td>
+                <td style="white-space:nowrap;">${Qlinic.escapeHtml(item.frequency)}</td>
+                <td>${Qlinic.escapeHtml(item.durationText)}</td>
+              </tr>
+            `).join('')
+          : '<tr><td colspan="4" style="color:var(--grey-500);font-style:italic;">No medicines added yet</td></tr>';
+        const footerLogoHtml = (clinic && clinic.logo_url) ? `<img class="rx-footer-logo" src="${Qlinic.escapeHtml(clinic.logo_url)}" alt="" />` : '';
+
+        return `
+          <div class="rx-head">
+            ${logoHtml}
+            <div>
+              <div class="rx-clinic-name">${clinic ? Qlinic.escapeHtml(clinic.name) : ''}</div>
+              <div class="rx-clinic-addr">${Qlinic.escapeHtml(addressParts.join(', '))}</div>
+            </div>
+            <div class="rx-doc-block">
+              <div class="rx-doc-name">${doctor ? `Dr. ${Qlinic.escapeHtml(doctor.name)}` : ''}</div>
+              <div class="rx-doc-qual">${Qlinic.escapeHtml((doctor && doctor.specialty) || '')}</div>
+              <div class="rx-doc-qual">${Qlinic.escapeHtml(doctorQualLine)}</div>
+            </div>
+          </div>
+          <div class="rx-body-row">
+            ${sidebarHtml}
+            <div class="rx-main">
+              <div class="rx-info-grid">
+                <div><span class="k">Patient:</span> ${Qlinic.escapeHtml(name)}</div>
+                <div><span class="k">Date:</span> ${Qlinic.escapeHtml(new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</div>
+                <div><span class="k">Age &amp; Gender:</span> ${Qlinic.escapeHtml(wrxFormatAgeGender())}</div>
+                <div><span class="k">Phone:</span> ${Qlinic.escapeHtml(phone || '—')}</div>
+              </div>
+              <div class="rx-pair-row">
+                ${complaints ? `<div class="rx-dx"><b>Chief complaint</b><span>${Qlinic.escapeHtml(complaints)}</span></div>` : ''}
+                ${dx ? `<div class="rx-dx"><b>Diagnosis</b><span>${Qlinic.escapeHtml(dx)}</span></div>` : ''}
+              </div>
+              <table class="rx-table">
+                <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
+                <tbody>${medsHtml}</tbody>
+              </table>
+              <div class="rx-pair-row">
+                ${advice ? `<div class="rx-advice"><b>Advice</b><span>${Qlinic.escapeHtml(advice)}</span></div>` : ''}
+                ${followUpLabel ? `<div class="rx-advice"><b>Follow Up</b><span>${Qlinic.escapeHtml(followUpLabel)}</span></div>` : ''}
+              </div>
+            </div>
+          </div>
+          <div class="rx-footer">
+            ${footerLogoHtml}
+            <div>Thank you for visiting ${clinic ? Qlinic.escapeHtml(clinic.name) : ''}</div>
+          </div>
+        `;
+      }
+      function wrxUpdatePreview() {
+        const html = wrxBuildHtml();
+        document.getElementById('wrxLivePreview').innerHTML = html;
+        document.getElementById('printRx').innerHTML = html;
+      }
+      [
+        'wrxName', 'wrxPhone', 'wrxAge', 'wrxGender', 'wrxComplaints', 'wrxDiagnosis', 'wrxAdvice',
+        'wrxVitalBp', 'wrxVitalPulse', 'wrxVitalTemp', 'wrxVitalWeight', 'wrxFollowUpDate',
+      ].forEach((id) => {
+        document.getElementById(id).addEventListener('input', wrxUpdatePreview);
+        document.getElementById(id).addEventListener('change', wrxUpdatePreview);
+      });
+      document.getElementById('wrxDoctorSelect').addEventListener('change', () => {
+        wrxSelectedDoctor = walkinDoctors.find((d) => d.id === document.getElementById('wrxDoctorSelect').value) || null;
+        wrxUpdatePreview();
+      });
+
+      function wrxResetModalState() {
+        wrxItems = [];
+        wrxTestsOrdered = [];
+        wrxSearchErrorShown = false;
+        wrxResetDraftFields();
+        document.getElementById('wrxName').value = '';
+        document.getElementById('wrxPhone').value = '';
+        document.getElementById('wrxAge').value = '';
+        document.getElementById('wrxGender').value = '';
+        document.getElementById('wrxComplaints').value = '';
+        document.getElementById('wrxDiagnosis').value = '';
+        document.getElementById('wrxAdvice').value = '';
+        document.getElementById('wrxVitalBp').value = '';
+        document.getElementById('wrxVitalPulse').value = '';
+        document.getElementById('wrxVitalTemp').value = '';
+        document.getElementById('wrxVitalWeight').value = '';
+        document.getElementById('wrxFollowUpDate').value = '';
+        wrxRenderTestChips();
+        wrxRenderRows();
+        wrxUpdatePreview();
+      }
+
+      function openWrxModal() {
+        wrxResetModalState();
+        const doctorFieldWrap = document.getElementById('wrxDoctorFieldWrap');
+        const doctorSelect = document.getElementById('wrxDoctorSelect');
+        if (amAdmin) {
+          doctorSelect.innerHTML = walkinDoctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)}</option>`).join('');
+          doctorFieldWrap.style.display = walkinDoctors.length ? '' : 'none';
+          wrxSelectedDoctor = walkinDoctors[0] || null;
+          if (wrxSelectedDoctor) doctorSelect.value = wrxSelectedDoctor.id;
+        } else {
+          doctorFieldWrap.style.display = 'none';
+          wrxSelectedDoctor = walkinDoctors[0] || null;
+        }
+        Qlinic.getClinicMedicinesForRx().then((meds) => { wrxClinicMedicinesCache = meds; }).catch(() => { wrxClinicMedicinesCache = []; });
+        document.getElementById('wrxModalBackdrop').style.display = 'flex';
+        wrxUpdatePreview();
+      }
+      function closeWrxModal() {
+        document.getElementById('wrxModalBackdrop').style.display = 'none';
+      }
+      document.getElementById('quickWalkinBtn').addEventListener('click', () => {
+        if (!walkinDoctors.length) { showToast(amAdmin ? 'Add a doctor first, from Team settings.' : 'Your account isn\'t linked to a doctor profile yet.'); return; }
+        openWrxModal();
+      });
+      document.getElementById('wrxModalCloseBtn').addEventListener('click', closeWrxModal);
+      document.getElementById('wrxModalBackdrop').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('wrxModalBackdrop')) closeWrxModal();
+      });
+
+      async function saveWrxPrescription(shouldPrint) {
+        if (wrxSaving) return;
+        const name = document.getElementById('wrxName').value.trim();
+        const phone = document.getElementById('wrxPhone').value.trim();
+        const age = document.getElementById('wrxAge').value.trim();
+        const gender = document.getElementById('wrxGender').value;
+        if (!name) { showToast('Full name is required'); document.getElementById('wrxName').focus(); return; }
+        if (!phone) { showToast('Phone number is required'); document.getElementById('wrxPhone').focus(); return; }
+        if (!age) { showToast('Age is required'); document.getElementById('wrxAge').focus(); return; }
+        if (!gender) { showToast('Gender is required'); document.getElementById('wrxGender').focus(); return; }
+        if (!wrxSelectedDoctor) { showToast('Choose which doctor this is for'); return; }
+        if (!wrxItems.length) { showToast('Add at least one medicine first'); return; }
+        wrxSaving = true;
+        document.getElementById('wrxSavePrintBtn').disabled = true;
+        document.getElementById('wrxSaveOnlyBtn').disabled = true;
+        try {
+          const followUpRaw = document.getElementById('wrxFollowUpDate').value;
+          await Qlinic.createPrescription({
+            complaints: document.getElementById('wrxComplaints').value.trim(),
+            diagnosis: document.getElementById('wrxDiagnosis').value.trim(),
+            advice: document.getElementById('wrxAdvice').value.trim(),
+            followUpDate: followUpRaw || null,
+            items: wrxItems,
+            doctorId: wrxSelectedDoctor.id,
+            vitalsBp: document.getElementById('wrxVitalBp').value.trim(),
+            vitalsPulse: document.getElementById('wrxVitalPulse').value.trim(),
+            vitalsTemp: document.getElementById('wrxVitalTemp').value.trim(),
+            vitalsWeight: document.getElementById('wrxVitalWeight').value.trim(),
+            testsOrdered: wrxTestsOrdered,
+            walkinName: name,
+            walkinAge: Number(age) || null,
+            walkinGender: gender,
+            walkinPhone: phone,
+          });
+          showToast('Prescription saved');
+          rxListPage = 0;
+          loadCurrentTab();
+          if (shouldPrint) {
+            window.addEventListener('afterprint', function onAfterPrint() {
+              window.removeEventListener('afterprint', onAfterPrint);
+              closeWrxModal();
+            });
+            window.print();
+          } else {
+            closeWrxModal();
+          }
+        } catch (err) {
+          console.error('Save walk-in prescription failed:', err);
+          showToast(err.message || 'Could not save the prescription');
+        } finally {
+          wrxSaving = false;
+          document.getElementById('wrxSavePrintBtn').disabled = false;
+          document.getElementById('wrxSaveOnlyBtn').disabled = false;
+        }
+      }
+      document.getElementById('wrxSavePrintBtn').addEventListener('click', () => saveWrxPrescription(true));
+      document.getElementById('wrxSaveOnlyBtn').addEventListener('click', () => saveWrxPrescription(false));
 
       loadCurrentTab();
     })();

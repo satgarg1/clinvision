@@ -3829,6 +3829,18 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 }
 .rx-search-clear-btn:hover { background: var(--grey-100); border-color: var(--grey-500); }
 
+/* Quick Walk-In Rx — reviewed as a scope + mockup first (Option A:
+   nullable patient_id, no patients row ever created — see migration
+   094). */
+.quick-walkin-btn {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 8px;
+  height: 40px; padding: 0 18px; border-radius: 999px; border: none;
+  background: var(--accent); color: #fff; font-family: var(--font); font-size: 14px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 113, 227, 0.3);
+}
+.quick-walkin-btn:hover { background: var(--accent-dark); }
+.wrx-not-linked-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(0, 113, 227, 0.1); color: var(--accent-dark); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+
 
 /* Add-patient form: a grid (not flex-wrap) so a field that grows taller than
    its neighbors — e.g. the slot-availability hint — can never shove the other
@@ -6076,6 +6088,10 @@ table.rx-table .rt-instr { color: var(--grey-700); font-size: 11.5px; margin-top
 .rx-history-name { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rx-history-meta { font-size: 12px; color: var(--grey-500); margin-top: 1px; }
 .rx-history-doctor-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; background: var(--rx-card-bg-tint, var(--grey-100)); color: var(--rx-card-color, var(--accent)); border-radius: 999px; padding: 3px 10px 3px 8px; margin-top: 5px; }
+/* Quick Walk-In Rx — a prescription with no linked patient record at
+   all, so it's flagged inline next to the name (see the reviewed
+   Quick Walk-In Rx scope: Option A, nullable patient_id). */
+.rx-walkin-flag { display: inline-block; font-size: 10px; font-weight: 700; background: var(--rx-card-bg-tint, var(--grey-100)); color: var(--rx-card-color, var(--accent)); padding: 2px 8px; border-radius: 999px; vertical-align: middle; margin-left: 2px; }
 .rx-history-doctor-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 .rx-history-middle { min-width: 0; }
 .rx-history-dx-label { display: flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--rx-card-color, var(--accent)); margin-bottom: 3px; }
