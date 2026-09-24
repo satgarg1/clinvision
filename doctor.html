@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=344" />
+<link rel="stylesheet" href="styles.css?v=345" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -1959,27 +1959,57 @@
         `;
       }
 
+      // Colored per doctor (this popup shows one PATIENT's full history
+      // across every doctor who's seen them, by design — see
+      // get_patient_prescriptions), hashed from name+specialty so it's
+      // stable without needing a doctor id on every row. Reviewed as a
+      // mockup first: the actual card-to-card separation is elevation/
+      // spacing/alternating shade in styles.css's .rx-history-card, none
+      // of which depend on this color, since a single-doctor patient
+      // history is exactly the case where every card would share it.
+      const RX_ACCENT_COLORS = [
+        { color: '#0d9488', bg: '#ccfbf1' },
+        { color: '#2563eb', bg: '#dbeafe' },
+        { color: '#7c3aed', bg: '#ede9fe' },
+        { color: '#f97316', bg: '#ffedd5' },
+        { color: '#db2777', bg: '#fce7f3' },
+      ];
+      function rxAccentFor(key) {
+        let hash = 0;
+        const s = key || '';
+        for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+        return RX_ACCENT_COLORS[hash % RX_ACCENT_COLORS.length];
+      }
+
       function renderRxHistoryList() {
         const body = document.getElementById('rxHistoryModalBody');
         if (!body) return;
         body.innerHTML = rxPastPrescriptions.map((rx) => {
           const isOpen = rx.id === rxHistoryExpandedId;
           const dateLabel = new Date(rx.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+          const timeLabel = new Date(rx.createdAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+          const accent = rxAccentFor((rx.doctorName || '') + '|' + (rx.doctorSpecialty || ''));
+          const initials = (rx.doctorName || '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
           return `
-            <div class="rx-history-card${isOpen ? ' expanded' : ''}" data-id="${rx.id}">
+            <div class="rx-history-card${isOpen ? ' expanded' : ''}" data-id="${rx.id}" style="--rx-card-color:${accent.color};--rx-card-bg-tint:${accent.bg};">
               <div class="rx-history-top">
                 <div class="rx-history-who">
+                  <div class="rx-history-avatar">${Qlinic.escapeHtml(initials)}</div>
                   <div>
-                    <div class="rx-history-name">${dateLabel}</div>
-                    <div class="rx-history-meta">Dr. ${Qlinic.escapeHtml(rx.doctorName)}${rx.doctorSpecialty ? ' · ' + Qlinic.escapeHtml(rx.doctorSpecialty) : ''}</div>
+                    <div class="rx-history-name">Dr. ${Qlinic.escapeHtml(rx.doctorName)}</div>
+                    <div class="rx-history-meta">${Qlinic.escapeHtml(rx.doctorSpecialty || '')}</div>
                   </div>
+                </div>
+                <div class="rx-history-right">
+                  <div class="rx-history-time">${timeLabel}</div>
+                  <div class="rx-history-date">${dateLabel}</div>
                 </div>
                 <svg class="rx-history-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
               </div>
               ${rx.diagnosis ? `<div class="rx-history-dx"><b>Diagnosis:</b> ${Qlinic.escapeHtml(rx.diagnosis)}</div>` : ''}
               <div class="rx-history-tags">
                 <span class="rx-tag">${rx.items.length} medicine${rx.items.length === 1 ? '' : 's'}</span>
-                ${rx.followUpDate ? `<span class="rx-tag">Follow up: ${Qlinic.escapeHtml(new Date(rx.followUpDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</span>` : ''}
+                ${rx.followUpDate ? `<span class="rx-tag follow">Follow up: ${Qlinic.escapeHtml(new Date(rx.followUpDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</span>` : ''}
               </div>
               ${isOpen ? renderRxHistoryDetail(rx) : ''}
             </div>
