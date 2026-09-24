@@ -3806,6 +3806,28 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 :root[data-theme="dark"] #rxDoctorFilter {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
+/* Clear button for #rxSearchInput — same exact box (height, border,
+   pill radius) as the search bar itself, not the small .btn-sm used for
+   Reception's own Clear button, since this one sits flush against a
+   52px-tall pill and needs to read as its companion, not a mismatched
+   accessory. flex-shrink:0 so it never gives up its own width to the
+   search input before the search input has given up all of its 75%. */
+.rx-search-clear-btn {
+  flex-shrink: 0;
+  height: 52px;
+  box-sizing: border-box;
+  padding: 0 22px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  border: 1px solid var(--grey-300);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: var(--white);
+  color: var(--accent-dark);
+  cursor: pointer;
+}
+.rx-search-clear-btn:hover { background: var(--grey-100); border-color: var(--grey-500); }
 
 
 /* Add-patient form: a grid (not flex-wrap) so a field that grows taller than
