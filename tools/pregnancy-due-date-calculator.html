@@ -3,28 +3,23 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Digital vs Paper Patient Records | ClinVision</title>
-<meta name="description" content="An honest comparison of digital versus paper patient records, and what digital patient records actually mean for a small clinic." />
-<link rel="canonical" href="https://clinvision.in/resources/digital-vs-paper-patient-records" />
-<meta property="og:type" content="article" />
+<title>Free Pregnancy Due-Date Calculator | ClinVision</title>
+<meta name="description" content="Estimate your pregnancy due date free from your last period and cycle length. See your current week, trimester and key milestones." />
+<link rel="canonical" href="https://clinvision.in/tools/pregnancy-due-date-calculator" />
+<meta property="og:type" content="website" />
 <meta property="og:site_name" content="ClinVision" />
-<meta property="og:title" content="Digital vs Paper Patient Records: An Honest Comparison" />
-<meta property="og:description" content="An honest comparison of digital versus paper patient records, and what digital patient records actually mean for a small clinic." />
-<meta property="og:url" content="https://clinvision.in/resources/digital-vs-paper-patient-records" />
+<meta property="og:title" content="Free Pregnancy Due-Date Calculator" />
+<meta property="og:description" content="Estimate your pregnancy due date free from your last period and cycle length." />
+<meta property="og:url" content="https://clinvision.in/tools/pregnancy-due-date-calculator" />
 <meta property="og:image" content="https://clinvision.in/og-image.png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Digital vs Paper Patient Records: An Honest Comparison" />
-<meta name="twitter:description" content="An honest comparison of digital versus paper patient records, and what digital patient records actually mean for a small clinic." />
-<meta name="twitter:image" content="https://clinvision.in/og-image.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
 <link rel="stylesheet" href="/styles.css?v=353" />
 </head>
-<body>
+<body class="tool-purple">
 
   <nav class="mkt-nav">
     <a href="/" class="brand">
@@ -122,43 +117,77 @@
     </div>
   </nav>
 
-  <div class="article-hero"><div class="article-hero-glow" aria-hidden="true"></div>
-    <div class="article-eyebrow">Resources</div>
-    <h1 class="article-h1">Digital vs Paper Patient Records:<br />An Honest Comparison</h1>
-    <p class="article-sub">Not every "digital upgrade" claim survives contact with what you actually need.</p>
-    <span class="read-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 5 min read</span>
-  </div>
-  <div class="hero-illo"><img src="digital-vs-paper-hero.png" alt="A stack of paper documents illustration" /></div>
+  <div class="tool-band">
+    <div class="tool-wrap">
+      <div class="tool-crumb"><span class="n">3</span> <a href="/">Free Health Tools</a> <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> <span class="cur">Pregnancy Due-Date Calculator</span></div>
 
-  <div class="article-body">
-    <p>There's a lot of software marketing that treats "going digital" as an obvious, total upgrade over paper records. Clinic owners who've tried both know it's more complicated than that. Paper has real advantages. Digital has real advantages. <span class="kw">The honest comparison depends on what you're actually trying to do</span>.</p>
+      <div class="tool-hero">
+        <div>
+          <h1 class="tool-h1">Pregnancy Due-Date Calculator</h1>
+          <p class="tool-sub">Find your estimated due date and know your pregnancy week.</p>
+        </div>
+        <div class="tool-hero-img"><img src="/tools/pregnancy-due-date-calculator-hero.jpg" alt="Pregnant woman illustration"></div>
+      </div>
 
-    <div class="quick-take">
-      <div class="quick-take-label">Quick take</div>
-      <p>Digital wins at search, duplication, and multi-person access. Paper needs zero setup. And "digital patient records" here means demographic + visit history, not a clinical record system. Say that plainly, because a lot of software doesn't.</p>
-    </div>
+      <div class="tool-grid" style="padding-top:32px;">
+        <div class="tool-card">
+          <p class="tool-card-title">Enter Your Details</p>
+          <label class="tool-field-label">First day of last period (LMP)</label>
+          <input class="tool-field" type="date" id="lmpDate" style="margin-bottom:14px;">
+          <label class="tool-field-label">Average cycle length (days)</label>
+          <div class="tool-row-3" id="cycleOpts">
+            <button type="button" class="tool-pill-opt" data-v="21">21</button>
+            <button type="button" class="tool-pill-opt on" data-v="28">28</button>
+            <button type="button" class="tool-pill-opt" data-v="32">32</button>
+          </div>
+          <button type="button" class="tool-btn" id="calcDueBtn" style="margin-top:18px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+            Calculate Due Date
+          </button>
+          <p class="tool-field-err show" id="lmpErr" style="display:none;">Pick a date in the past, within the last 9 months.</p>
+        </div>
 
-    <h2>What paper genuinely does well</h2>
-    <p>A paper register needs no setup, no login, no internet connection. If your clinic sees a handful of patients a day and one person manages it, a well-kept register can work fine for years.</p>
+        <div class="tool-card-tint" id="dueCard">
+          <div style="width:44px;height:44px;border-radius:13px;background:#fff;display:flex;align-items:center;justify-content:center;">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--tool-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+          </div>
+          <p style="margin:0;font-size:11.5px;font-weight:700;color:var(--grey-500);text-transform:uppercase;letter-spacing:.05em;">Your Estimated Due Date</p>
+          <p style="margin:0;font-size:28px;font-weight:800;color:var(--black);" id="dueDateOut">&mdash;</p>
+          <div style="width:100%;height:8px;background:#fff;border-radius:99px;overflow:hidden;margin-top:2px;">
+            <div id="dueProgress" style="width:0%;height:100%;background:var(--tool-accent);"></div>
+          </div>
+          <p style="margin:0;font-size:12.5px;color:#3f3f46;" id="weekOut">Enter your last period date to see your week.</p>
+          <div id="trimesterRow" style="width:100%;display:none;align-items:center;justify-content:center;gap:6px;background:#fff;border-radius:10px;padding:8px 12px;margin-top:2px;">
+            <span style="font-size:12px;font-weight:700;color:var(--tool-accent);" id="trimesterOut"></span>
+          </div>
+        </div>
 
-    <h2>Where paper genuinely breaks</h2>
-    <p class="pull-quote">A register is searchable only by flipping through it page by page.</p>
-    <p>There's no way to instantly find "when did this patient last visit" without knowing roughly which page to look on. And only one person can physically use it at a time.</p>
+        <div class="tool-card">
+          <p class="tool-card-title">Quick Facts</p>
+          <div class="tool-fact-row"><span class="k">Due date</span><span class="v" id="factDue">&mdash;</span></div>
+          <div class="tool-fact-row"><span class="k">Pregnancy week</span><span class="v" id="factWeek">&mdash;</span></div>
+          <div class="tool-fact-row"><span class="k">Trimester</span><span class="v" id="factTri">&mdash;</span></div>
 
-    <div class="mid-illo"><img src="digital-vs-paper-mid.png" alt="A business plan and data illustration" /></div>
+          <p style="margin:14px 0 8px;font-size:13px;font-weight:800;color:var(--black);">What's Next?</p>
+          <div class="tool-check-list">
+            <div class="tool-check-item"><svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Book your first prenatal checkup (6&ndash;8 weeks)</span></div>
+            <div class="tool-check-item"><svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Start taking folic acid (if not already)</span></div>
+            <div class="tool-check-item"><svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Eat a balanced diet and stay active</span></div>
+          </div>
+          <div class="tool-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg>
+            <p>This calculator provides an estimate and may vary based on individual factors.</p>
+          </div>
+        </div>
+      </div>
 
-    <h2>What "digital patient records" actually means here</h2>
-    <div class="num-list">
-      <div class="num-item"><div class="n">&#10003;</div><div class="t"><p>Searchable by name or phone number.</p><p>Instant, not page-by-page.</p></div></div>
-      <div class="num-item"><div class="n">&#10003;</div><div class="t"><p>Automatic recognition of a returning patient.</p><p>No re-entering details every visit.</p></div></div>
-      <div class="num-item"><div class="n">&#10007;</div><div class="t"><p>Not a diagnosis field, prescription history, or clinical notes.</p><p>That's a heavier category of software, usually built for hospitals with dedicated IT.</p></div></div>
-    </div>
-
-    <div class="closing-card">
-      <div class="eyebrow">Where ClinVision fits</div>
-      <h3>Fixes what paper handles badly, honestly</h3>
-      <p><span class="kw" style="color:#e8c983;">Search, duplication, and single-person access</span>: not a claim to replace clinical documentation ClinVision was never built to hold.</p>
-      <a href="/contact" class="btn btn-accent">Book a demo</a>
+      <div class="tool-cta-band" style="margin-top:36px;">
+        <div>
+          <p class="h">Run an OB-GYN or maternity practice?</p>
+          <p class="p">ClinVision tracks every antenatal visit, vitals and follow-up in one timeline.</p>
+        </div>
+        <a href="/contact" class="btn btn-accent">Book a Demo</a>
+      </div>
     </div>
   </div>
 
@@ -169,5 +198,59 @@
   </footer>
 
 <script src="/mkt-nav.js?v=1"></script>
+<script>
+(function () {
+  var cycleLen = 28;
+  document.querySelectorAll('#cycleOpts .tool-pill-opt').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('#cycleOpts .tool-pill-opt').forEach(function (b) { b.classList.remove('on'); });
+      btn.classList.add('on');
+      cycleLen = parseInt(btn.dataset.v, 10);
+    });
+  });
+
+  function fmtDate(d) {
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+  function addDays(d, n) {
+    var r = new Date(d);
+    r.setDate(r.getDate() + n);
+    return r;
+  }
+  function trimesterFor(weeks) {
+    if (weeks < 14) return '1st Trimester';
+    if (weeks < 28) return '2nd Trimester';
+    return '3rd Trimester';
+  }
+
+  document.getElementById('calcDueBtn').addEventListener('click', function () {
+    var val = document.getElementById('lmpDate').value;
+    var errEl = document.getElementById('lmpErr');
+    if (!val) { errEl.style.display = 'block'; return; }
+    var lmp = new Date(val + 'T00:00:00');
+    var now = new Date();
+    var daysSince = Math.floor((now - lmp) / 86400000);
+    if (daysSince < 0 || daysSince > 300) { errEl.style.display = 'block'; return; }
+    errEl.style.display = 'none';
+
+    var dueDate = addDays(lmp, 280 + (cycleLen - 28));
+    var weeks = Math.floor(daysSince / 7);
+    var days = daysSince % 7;
+    var tri = trimesterFor(weeks);
+    var pct = Math.min(100, Math.round((daysSince / 280) * 100));
+
+    document.getElementById('dueDateOut').textContent = fmtDate(dueDate);
+    document.getElementById('weekOut').innerHTML = 'You are currently <strong style="color:var(--black);">' + weeks + ' weeks, ' + days + ' day' + (days === 1 ? '' : 's') + '</strong> pregnant';
+    document.getElementById('dueProgress').style.width = pct + '%';
+    var triRow = document.getElementById('trimesterRow');
+    triRow.style.display = 'flex';
+    document.getElementById('trimesterOut').textContent = tri + ' · ' + weeks + ' weeks, ' + days + ' day' + (days === 1 ? '' : 's');
+
+    document.getElementById('factDue').textContent = fmtDate(dueDate);
+    document.getElementById('factWeek').textContent = weeks + ' weeks, ' + days + ' day' + (days === 1 ? '' : 's');
+    document.getElementById('factTri').textContent = tri;
+  });
+})();
+</script>
 </body>
 </html>

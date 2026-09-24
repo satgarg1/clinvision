@@ -151,3 +151,34 @@ Scoped 2026-08-30, not started — this is Qlinic charging **clinics** for using
 - An Autopay toggle — enable/disable recurring auto-charge without removing the saved method entirely.
 
 **Explicitly not scoped/started yet**: any actual Razorpay account setup (business KYC, live API keys), the Edge Functions themselves, the `clinic_payment_methods` migration, or the Settings UI build. This is a scope to build from, not a partial build.
+
+## Free health tools (SEO)
+
+Scoped 2026-09-24 from a 14-item candidate list of the most-searched consumer health topics in India. Goal is Google/Bing SEO surface area: free, no-login tools that live on the marketing site (not behind auth) under a new "Tools" nav dropdown, the same hover/click pattern as the existing "Solutions"/"Resources" dropdowns, positioned between Resources and About us.
+
+**Phase 1 — building now, no Gemini dependency (all deterministic calculators):**
+- Blood Pressure Checker & 7-Day Tracker
+- Medicine Timing Planner
+- Pregnancy Due-Date Calculator
+- Sleep Calculator
+
+These four were picked first specifically because they need no backend AI call — pure client-side math/logic — so they ship fastest and de-risk the "Tools" nav/page pattern before any tool depends on a live API.
+
+**Phase 2 — deferred, likely still deterministic:**
+- **Blood Sugar / HbA1c Guide** — reference lookup (mg/dL ↔ HbA1c%, category bands), no AI needed.
+- **Complete Health Numbers Check** — a combined BP + sugar + BMI + waist-ratio "scorecard" input form; deterministic, but scope carefully so it doesn't drift into differential-diagnosis territory (see liability note below).
+- **Calorie + Protein Calculator** — standard Mifflin-St Jeor/Harris-Benedict formulas, no AI needed.
+- **Kidney Stone Hydration Tracker** — simple daily water-intake target + logging tool, no AI needed.
+
+**Phase 3 — deferred, needs the Gemini-backed explanation layer:**
+- **Diabetes Risk Check (IDRS)** — the Indian Diabetes Risk Score is a deterministic point-scale itself, but a natural-language explanation of the result reads much better through a Gemini call, same pattern as the CA Books project's explanation layer (confirm with the user which CA Books piece actually calls Gemini before reusing that architecture — `invoice-to-excel` itself does not appear to).
+- **Prescription → Medicine Schedule (upload/OCR)** — user uploads a prescription photo, tool extracts medicines + timing into a daily schedule. Needs OCR + Gemini for extraction; highest build complexity of the Phase 2/3 set.
+- **Lab Report Explainer** — user enters/uploads lab values, Gemini explains what they mean in plain language. Needs careful scoping of medical-advice liability (see below) before building.
+- **PCOS Symptom Check** — a symptom checklist scored against common PCOS criteria, with a Gemini-written plain-language summary of the result.
+
+**Explicitly flagged, not recommended without heavy legal review first:**
+- **Symptom Urgency Guide** ("should I see a doctor now or can it wait") — of all 14 candidates this carries the highest medical/legal liability: it's structurally a triage tool, and a wrong "this can wait" for a genuine emergency is a real harm scenario, not a hypothetical. Recommend either dropping it entirely or building it only after explicit legal sign-off on the exact wording/disclaimers, and even then keeping it maximally conservative (biased toward "seek care" over reassurance).
+
+**Liability guardrail that applies across all of Phase 2/3, not just the Symptom Urgency Guide:** any tool that outputs something a user could read as a diagnosis or a "you're fine" reassurance needs an explicit, visible medical-disclaimer pattern (informational only, not a substitute for a doctor) baked into the page template from the start, not bolted on later.
+
+**Status:** Phase 1 mockup (Tools nav dropdown + the 4 tool pages) in progress, per the Scope → Mockup → Review → Build convention. Nothing built into live files yet.

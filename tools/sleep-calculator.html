@@ -3,28 +3,23 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Digital vs Paper Patient Records | ClinVision</title>
-<meta name="description" content="An honest comparison of digital versus paper patient records, and what digital patient records actually mean for a small clinic." />
-<link rel="canonical" href="https://clinvision.in/resources/digital-vs-paper-patient-records" />
-<meta property="og:type" content="article" />
+<title>Free Sleep Calculator | ClinVision</title>
+<meta name="description" content="Find out how much sleep you're getting and whether it's enough for your age, free. Get personalised sleep tips for better rest." />
+<link rel="canonical" href="https://clinvision.in/tools/sleep-calculator" />
+<meta property="og:type" content="website" />
 <meta property="og:site_name" content="ClinVision" />
-<meta property="og:title" content="Digital vs Paper Patient Records: An Honest Comparison" />
-<meta property="og:description" content="An honest comparison of digital versus paper patient records, and what digital patient records actually mean for a small clinic." />
-<meta property="og:url" content="https://clinvision.in/resources/digital-vs-paper-patient-records" />
+<meta property="og:title" content="Free Sleep Calculator" />
+<meta property="og:description" content="Find out how much sleep you're getting and whether it's enough for your age." />
+<meta property="og:url" content="https://clinvision.in/tools/sleep-calculator" />
 <meta property="og:image" content="https://clinvision.in/og-image.png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Digital vs Paper Patient Records: An Honest Comparison" />
-<meta name="twitter:description" content="An honest comparison of digital versus paper patient records, and what digital patient records actually mean for a small clinic." />
-<meta name="twitter:image" content="https://clinvision.in/og-image.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
 <link rel="stylesheet" href="/styles.css?v=353" />
 </head>
-<body>
+<body class="tool-blue">
 
   <nav class="mkt-nav">
     <a href="/" class="brand">
@@ -122,43 +117,74 @@
     </div>
   </nav>
 
-  <div class="article-hero"><div class="article-hero-glow" aria-hidden="true"></div>
-    <div class="article-eyebrow">Resources</div>
-    <h1 class="article-h1">Digital vs Paper Patient Records:<br />An Honest Comparison</h1>
-    <p class="article-sub">Not every "digital upgrade" claim survives contact with what you actually need.</p>
-    <span class="read-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 5 min read</span>
-  </div>
-  <div class="hero-illo"><img src="digital-vs-paper-hero.png" alt="A stack of paper documents illustration" /></div>
+  <div class="tool-band">
+    <div class="tool-wrap">
+      <div class="tool-crumb"><span class="n">4</span> <a href="/">Free Health Tools</a> <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> <span class="cur">Sleep Calculator</span></div>
 
-  <div class="article-body">
-    <p>There's a lot of software marketing that treats "going digital" as an obvious, total upgrade over paper records. Clinic owners who've tried both know it's more complicated than that. Paper has real advantages. Digital has real advantages. <span class="kw">The honest comparison depends on what you're actually trying to do</span>.</p>
+      <div class="tool-hero">
+        <div>
+          <h1 class="tool-h1">Sleep Calculator</h1>
+          <p class="tool-sub">Find out how much sleep you're getting and whether it's enough for your age.</p>
+        </div>
+        <div class="tool-hero-img"><img src="/tools/sleep-calculator-hero.jpg" alt="Person sleeping peacefully"></div>
+      </div>
 
-    <div class="quick-take">
-      <div class="quick-take-label">Quick take</div>
-      <p>Digital wins at search, duplication, and multi-person access. Paper needs zero setup. And "digital patient records" here means demographic + visit history, not a clinical record system. Say that plainly, because a lot of software doesn't.</p>
-    </div>
+      <div class="tool-grid" style="padding-top:32px;">
+        <div class="tool-card">
+          <p class="tool-card-title">Your Sleep Details</p>
+          <label class="tool-field-label">When do you usually sleep?</label>
+          <input class="tool-field" type="time" id="sleepTime" value="23:00" style="margin-bottom:14px;">
+          <label class="tool-field-label">When do you wake up?</label>
+          <input class="tool-field" type="time" id="wakeTime" value="07:00" style="margin-bottom:14px;">
+          <label class="tool-field-label">Your age group</label>
+          <select class="tool-select" id="ageGroup">
+            <option value="13-17">13&ndash;17 years</option>
+            <option value="18-25">18&ndash;25 years</option>
+            <option value="26-64" selected>26&ndash;64 years</option>
+            <option value="65+">65+ years</option>
+          </select>
+          <button type="button" class="tool-btn" id="calcSleepBtn" style="margin-top:18px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            Calculate
+          </button>
+        </div>
 
-    <h2>What paper genuinely does well</h2>
-    <p>A paper register needs no setup, no login, no internet connection. If your clinic sees a handful of patients a day and one person manages it, a well-kept register can work fine for years.</p>
+        <div class="tool-card-tint" id="durationCard">
+          <div style="width:44px;height:44px;border-radius:13px;background:#fff;display:flex;align-items:center;justify-content:center;">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--tool-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg>
+          </div>
+          <p style="margin:0;font-size:11.5px;font-weight:700;color:var(--grey-500);text-transform:uppercase;letter-spacing:.05em;">Your Sleep Duration</p>
+          <p style="margin:0;font-size:34px;font-weight:800;color:var(--black);" id="durationOut">8 hours</p>
+          <span class="tool-badge" id="durationBadge" style="background:#16a34a;">Recommended</span>
+          <p style="margin:6px 0 0;font-size:13px;font-weight:700;color:var(--black);" id="durationMsg">You're getting the right amount of sleep!</p>
+          <p style="margin:0;font-size:11.5px;color:#3f3f46;line-height:1.5;" id="durationRange">Adults (26&ndash;64 years) need 7&ndash;9 hours of quality sleep each night.</p>
+        </div>
 
-    <h2>Where paper genuinely breaks</h2>
-    <p class="pull-quote">A register is searchable only by flipping through it page by page.</p>
-    <p>There's no way to instantly find "when did this patient last visit" without knowing roughly which page to look on. And only one person can physically use it at a time.</p>
+        <div class="tool-card">
+          <p class="tool-card-title">Sleep Tips for You</p>
+          <div class="tool-check-list">
+            <div class="tool-check-item"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Stick to a consistent sleep schedule</span></div>
+            <div class="tool-check-item"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Avoid screens 1 hour before bed</span></div>
+            <div class="tool-check-item"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Keep your room cool, dark and quiet</span></div>
+          </div>
+          <p style="margin:14px 0 10px;font-size:13px;font-weight:800;color:var(--black);">Why Sleep Matters</p>
+          <div class="tool-why-grid">
+            <div class="tool-why-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg><span>Improves focus &amp; memory</span></div>
+            <div class="tool-why-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/></svg><span>Boosts immunity</span></div>
+            <div class="tool-why-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 12.6a1 1 0 0 0-1-1H17l-1.6-4.3a1 1 0 0 0-1.9.1L11.9 15 10 9a1 1 0 0 0-1.9 0L6.6 11.6H4.2a1 1 0 0 0-1 1"/></svg><span>Maintains healthy weight</span></div>
+            <div class="tool-why-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg><span>Supports heart health</span></div>
+          </div>
+          <p style="margin:12px 0 0;font-size:11.5px;font-style:italic;color:var(--grey-500);text-align:right;">Better sleep. A healthier you.</p>
+        </div>
+      </div>
 
-    <div class="mid-illo"><img src="digital-vs-paper-mid.png" alt="A business plan and data illustration" /></div>
-
-    <h2>What "digital patient records" actually means here</h2>
-    <div class="num-list">
-      <div class="num-item"><div class="n">&#10003;</div><div class="t"><p>Searchable by name or phone number.</p><p>Instant, not page-by-page.</p></div></div>
-      <div class="num-item"><div class="n">&#10003;</div><div class="t"><p>Automatic recognition of a returning patient.</p><p>No re-entering details every visit.</p></div></div>
-      <div class="num-item"><div class="n">&#10007;</div><div class="t"><p>Not a diagnosis field, prescription history, or clinical notes.</p><p>That's a heavier category of software, usually built for hospitals with dedicated IT.</p></div></div>
-    </div>
-
-    <div class="closing-card">
-      <div class="eyebrow">Where ClinVision fits</div>
-      <h3>Fixes what paper handles badly, honestly</h3>
-      <p><span class="kw" style="color:#e8c983;">Search, duplication, and single-person access</span>: not a claim to replace clinical documentation ClinVision was never built to hold.</p>
-      <a href="/contact" class="btn btn-accent">Book a demo</a>
+      <div class="tool-cta-band" style="margin-top:36px;">
+        <div>
+          <p class="h">Patients asking about sleep issues?</p>
+          <p class="p">ClinVision keeps every symptom, vital and follow-up note in one prescription history.</p>
+        </div>
+        <a href="/contact" class="btn btn-accent">Book a Demo</a>
+      </div>
     </div>
   </div>
 
@@ -169,5 +195,57 @@
   </footer>
 
 <script src="/mkt-nav.js?v=1"></script>
+<script>
+(function () {
+  var RANGES = {
+    '13-17': { min: 8, max: 10, label: 'Teens (13–17 years)' },
+    '18-25': { min: 7, max: 9, label: 'Young adults (18–25 years)' },
+    '26-64': { min: 7, max: 9, label: 'Adults (26–64 years)' },
+    '65+': { min: 7, max: 8, label: '65+ years' }
+  };
+
+  function fmtHours(h) {
+    var whole = Math.floor(h);
+    var mins = Math.round((h - whole) * 60);
+    if (mins === 0) return whole + (whole === 1 ? ' hour' : ' hours');
+    return whole + 'h ' + mins + 'm';
+  }
+
+  document.getElementById('calcSleepBtn').addEventListener('click', function () {
+    var sleepVal = document.getElementById('sleepTime').value || '23:00';
+    var wakeVal = document.getElementById('wakeTime').value || '07:00';
+    var age = document.getElementById('ageGroup').value;
+    var range = RANGES[age];
+
+    var sParts = sleepVal.split(':').map(Number);
+    var wParts = wakeVal.split(':').map(Number);
+    var sleepMin = sParts[0] * 60 + sParts[1];
+    var wakeMin = wParts[0] * 60 + wParts[1];
+    var diff = wakeMin - sleepMin;
+    if (diff <= 0) diff += 24 * 60;
+    var hours = diff / 60;
+
+    document.getElementById('durationOut').textContent = fmtHours(hours);
+    var badge = document.getElementById('durationBadge');
+    var msg = document.getElementById('durationMsg');
+    if (hours < range.min) {
+      badge.textContent = 'Below Recommended';
+      badge.style.background = '#d97706';
+      msg.textContent = 'This is a bit short for your age group — try shifting your bedtime earlier.';
+    } else if (hours > range.max) {
+      badge.textContent = 'Above Recommended';
+      badge.style.background = '#3b82f6';
+      msg.textContent = 'You are sleeping more than the typical range for your age group.';
+    } else {
+      badge.textContent = 'Recommended';
+      badge.style.background = '#16a34a';
+      msg.textContent = "You're getting the right amount of sleep!";
+    }
+    document.getElementById('durationRange').textContent = range.label + ' need ' + range.min + '–' + range.max + ' hours of quality sleep each night.';
+  });
+
+  document.getElementById('calcSleepBtn').click();
+})();
+</script>
 </body>
 </html>
