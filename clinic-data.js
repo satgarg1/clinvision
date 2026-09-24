@@ -2602,7 +2602,7 @@
 
   async function searchMedicinesForRx(query, signal) {
     const q = (query || '').trim();
-    if (q.length < 3) return [];
+    if (q.length < 2) return [];
     // Prefix match ("dolo%"), not substring ("%dolo%") — this is how a
     // doctor actually types a medicine name, and it lets the generic_
     // medicines trigram index (250k+ rows) narrow the scan far more than

@@ -5677,7 +5677,15 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
    fixed frame instead of stretching it; only the print copy (#printRx,
    a separate un-nested element, not this one) is unconstrained, since
    real pagination is what handles overflow once it's actually printed. */
-#rxLivePreview { aspect-ratio: 210 / 297; overflow-y: auto; box-sizing: border-box; }
+/* display:flex + margin-top:auto on .rx-footer (below) is what pins the
+   footer to the bottom of this fixed box when there's leftover room,
+   without it overlapping content, and lets it fall back to sitting
+   right after the content (its normal flow position) once there's
+   enough content to fill the box — the standard "sticky footer" flex
+   pattern. This is scoped to the id, not the shared .a4 class, since
+   #printRx (the separate print copy) is deliberately plain block flow
+   with no fixed height at all — real pagination handles it there. */
+#rxLivePreview { aspect-ratio: 210 / 297; overflow-y: auto; box-sizing: border-box; display: flex; flex-direction: column; }
 .rx-head { display: flex; align-items: center; gap: 12px; border-bottom: 3px solid var(--rx-theme); padding-bottom: 12px; margin-bottom: 12px; }
 .rx-logo-img { max-height: 44px; max-width: 140px; width: auto; height: auto; object-fit: contain; flex-shrink: 0; }
 .rx-clinic-name { font-weight: 700; font-size: 16px; color: var(--rx-theme); }
@@ -5687,6 +5695,11 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
 .rx-doc-qual { font-size: 10.5px; color: var(--grey-500); }
 .rx-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 14px; font-size: 12px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed var(--grey-300); }
 .rx-info-grid .k { color: var(--grey-500); }
+/* A textarea already turns Shift+Enter into a real line break — the gap
+   was only that plain text rendering collapses it back to a space.
+   pre-wrap keeps a doctor's own line breaks (e.g. a numbered list typed
+   by hand) while still wrapping normally at the column width. */
+.rx-dx span, .rx-advice span { white-space: pre-wrap; }
 .rx-dx { font-size: 12px; margin-bottom: 14px; }
 .rx-dx b, .rx-advice b { display: block; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--rx-theme); font-weight: 700; margin-bottom: 2px; }
 /* Chief complaint/Diagnosis and Advice/Follow Up print as a left+right
@@ -5694,7 +5707,12 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
    wraps down to its own line only once the left side's own text has
    grown too long for both to fit side by side, rather than being
    forced into two separate stacked lines regardless of length. */
-.rx-pair-row { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-bottom: 14px; align-items: flex-start; }
+/* Same 14px column gap as .rx-info-grid right above it, on purpose —
+   Chief complaint/Diagnosis needs to line up under Patient/Date and
+   Age & Gender/Phone, and a different gap value between the two rows
+   was exactly what threw that alignment off even with equal column
+   widths. */
+.rx-pair-row { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 14px; align-items: flex-start; }
 /* min-width:0 (not a fixed floor) plus an explicit word-break is what
    actually makes text wrap inside its own column instead of overflowing
    past the page edge or bleeding into the sibling column — a flex
@@ -5702,8 +5720,10 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
    run of text), which silently defeats flex-wrap/flex-shrink for any
    text with a long run and no spaces to break on. */
 .rx-pair-row > .rx-dx, .rx-pair-row > .rx-advice { min-width: 0; overflow-wrap: break-word; word-break: break-word; margin-bottom: 0; }
-.rx-pair-row > .rx-dx:first-child { flex: 1 1 55%; }
-.rx-pair-row > .rx-dx:last-child { flex: 1 1 40%; }
+/* Even 50/50, matching .rx-info-grid's own 1fr 1fr, so Diagnosis's left
+   edge lines up with Date/Phone's above it — Chief complaint and
+   Diagnosis are typically comparable lengths, unlike Advice/Follow Up. */
+.rx-pair-row > .rx-dx:first-child, .rx-pair-row > .rx-dx:last-child { flex: 1 1 50%; }
 /* Advice is normally the longer of the two, Follow Up is always just a
    short date — so Follow Up gets a small, right-pinned column instead
    of an even split, leaving Advice the room to wrap onto a second line
@@ -5724,7 +5744,7 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
    line item. Doubles as the page's visual bottom anchor, since without
    one the last table row or advice line just stopped at the padding
    edge with nothing marking the page as finished. */
-.rx-footer { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--grey-500); margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--grey-100); font-size: 12px; }
+.rx-footer { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--grey-500); margin-top: auto; padding-top: 12px; border-top: 1px solid var(--grey-100); font-size: 12px; flex-shrink: 0; }
 .rx-footer-logo { max-height: 40px; max-width: 120px; width: auto; height: auto; object-fit: contain; }
 table.rx-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
 table.rx-table th { text-align: left; font-size: 9.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--rx-theme); padding: 0 8px 7px 0; border-bottom: 1px solid var(--rx-theme); }
