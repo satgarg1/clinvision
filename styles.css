@@ -5768,7 +5768,12 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
    pattern. This is scoped to the id, not the shared .a4 class, since
    #printRx (the separate print copy) is deliberately plain block flow
    with no fixed height at all — real pagination handles it there. */
-#rxLivePreview { aspect-ratio: 210 / 297; overflow-y: auto; box-sizing: border-box; display: flex; flex-direction: column; }
+/* #wrxLivePreview (Quick Walk-In Rx's own live preview) shares this rule
+   deliberately — it's the same "fixed real-A4-shape box" this comment
+   describes, just missed the first time Quick Walk-In Rx was built,
+   which is exactly why its header/footer were drifting instead of
+   staying anchored like the normal Write Prescription preview. */
+#rxLivePreview, #wrxLivePreview { aspect-ratio: 210 / 297; overflow-y: auto; box-sizing: border-box; display: flex; flex-direction: column; }
 .rx-head { display: flex; align-items: center; gap: 12px; border-bottom: 3px solid var(--rx-theme); padding-bottom: 12px; margin-bottom: 12px; }
 .rx-logo-img { max-height: 44px; max-width: 140px; width: auto; height: auto; object-fit: contain; flex-shrink: 0; }
 .rx-clinic-name { font-weight: 700; font-size: 16px; color: var(--rx-theme); }

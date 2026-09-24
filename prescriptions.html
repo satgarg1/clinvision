@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=350" />
+<link rel="stylesheet" href="styles.css?v=351" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -96,8 +96,8 @@
             </div>
             <div class="rx-vitals-grid">
               <div class="field"><label>Full name <span style="color:var(--accent);">*</span></label><input type="text" id="wrxName" placeholder="Patient's full name" autocomplete="off"></div>
-              <div class="field"><label>Phone number <span style="color:var(--accent);">*</span></label><input type="text" id="wrxPhone" placeholder="10-digit mobile number" autocomplete="off"></div>
-              <div class="field"><label>Age <span style="color:var(--accent);">*</span></label><input type="text" id="wrxAge" placeholder="e.g. 41" autocomplete="off"></div>
+              <div class="field"><label>Phone number <span style="color:var(--accent);">*</span></label><input type="tel" id="wrxPhone" placeholder="10-digit mobile number" autocomplete="off" maxlength="10"></div>
+              <div class="field"><label>Age <span style="color:var(--accent);">*</span></label><input type="number" id="wrxAge" min="0" max="120" placeholder="e.g. 41" autocomplete="off"><span class="field-hint" id="wrxAgeError" style="display:none;color:var(--danger);">Enter an age between 0 and 120.</span></div>
               <div class="field">
                 <label>Gender <span style="color:var(--accent);">*</span></label>
                 <select id="wrxGender"><option value="">Select…</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select>
@@ -163,9 +163,16 @@
               <label>General Advice</label>
               <textarea id="wrxAdvice" rows="2" placeholder="e.g. Warm salt-water gargles, plenty of fluids"></textarea>
             </div>
-            <div class="field" style="max-width:220px;">
+            <div class="field" style="max-width:280px;">
               <label>Follow Up (optional)</label>
-              <input type="date" lang="en-GB" id="wrxFollowUpDate" class="pill-input" style="width:100%;" />
+              <div class="time-picker" id="wrxDatePickerWrap">
+                <button type="button" class="time-picker-trigger placeholder" id="wrxDateTrigger">
+                  <span id="wrxDateTriggerText">Choose a date</span>
+                  <span class="time-picker-caret">▾</span>
+                </button>
+                <div class="time-picker-panel rx-date-panel" id="wrxDatePanel" style="display:none;"></div>
+              </div>
+              <span class="field-hint" id="wrxFollowUpHint" style="display:none;"></span>
             </div>
             <div class="rx-action-row">
               <button type="button" class="rx-action-btn" id="wrxSavePrintBtn"><span class="rx-action-icon">🖨️</span>Save &amp; print</button>
@@ -660,6 +667,171 @@
       let wrxSaving = false;
       let wrxSelectedDoctor = null;
 
+      // Name/age/phone validation — same rules and behavior as Reception's
+      // own Add Patient form (isValidPhone/isValidAge/digit-stripping in
+      // reception.html): no digits in the name, phone strips to digits
+      // and caps at 10, age is a plain 0-120 number input.
+      document.getElementById('wrxName').addEventListener('input', function () {
+        this.value = this.value.replace(/[0-9]/g, '');
+      });
+      document.getElementById('wrxPhone').addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').slice(0, 10);
+      });
+      function wrxIsValidAge(value) {
+        if (value === '') return true;
+        return /^[0-9]+$/.test(value) && Number(value) <= 120;
+      }
+      document.getElementById('wrxAge').addEventListener('input', function () {
+        document.getElementById('wrxAgeError').style.display = wrxIsValidAge(this.value) ? 'none' : '';
+      });
+
+      // Follow-up date — the exact same shortcuts+calendar widget
+      // doctor.html's Write Prescription modal uses (a plain date input
+      // was tried first and rejected — it read as a step down from the
+      // rest of the app). Closure/holiday awareness is scoped to
+      // whichever doctor is selected for this prescription, reloaded on
+      // open and whenever that selection changes.
+      const WRX_DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      let wrxClosedDateSet = new Set();
+      let wrxWeeklyOffDays = [];
+      let wrxFollowUpValue = null;
+      let wrxCalendarViewDate = new Date();
+
+      async function wrxLoadClosureData(doctorId) {
+        wrxClosedDateSet = new Set();
+        wrxWeeklyOffDays = (clinic && clinic.weekly_off_days) || [];
+        if (!doctorId) return;
+        try {
+          const [closures, holidays] = await Promise.all([Qlinic.getClinicClosures(), Qlinic.getDoctorHolidays(doctorId)]);
+          closures.forEach((c) => wrxClosedDateSet.add(c.date));
+          holidays.forEach((h) => wrxClosedDateSet.add(h.date));
+        } catch (err) {
+          // Shortcuts still work without closure data — they just won't skip a holiday this once.
+        }
+      }
+      function wrxToDateInputValue(d) {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      }
+      function wrxIsClosedDate(d) {
+        if (wrxWeeklyOffDays.includes(WRX_DAY_NAMES[d.getDay()])) return true;
+        return wrxClosedDateSet.has(wrxToDateInputValue(d));
+      }
+      function wrxSelectedDateObj() {
+        if (!wrxFollowUpValue) return null;
+        const [y, m, d] = wrxFollowUpValue.split('-').map(Number);
+        return new Date(y, m - 1, d);
+      }
+      function wrxUpdateDateTriggerText() {
+        const trigger = document.getElementById('wrxDateTrigger');
+        const text = document.getElementById('wrxDateTriggerText');
+        if (!wrxFollowUpValue) {
+          text.textContent = 'Choose a date';
+          trigger.classList.add('placeholder');
+          return;
+        }
+        trigger.classList.remove('placeholder');
+        const d = wrxSelectedDateObj();
+        const todayStr = wrxToDateInputValue(new Date());
+        const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+        if (wrxFollowUpValue === todayStr) text.textContent = `Today, ${d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`;
+        else if (wrxFollowUpValue === wrxToDateInputValue(tomorrow)) text.textContent = `Tomorrow, ${d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`;
+        else text.textContent = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+      function wrxPickFollowUpDate(daysFromNow) {
+        const d = new Date();
+        d.setDate(d.getDate() + daysFromNow);
+        let shifted = false;
+        while (wrxIsClosedDate(d)) { d.setDate(d.getDate() + 1); shifted = true; }
+        wrxFollowUpValue = wrxToDateInputValue(d);
+        wrxUpdateDateTriggerText();
+        const hint = document.getElementById('wrxFollowUpHint');
+        if (shifted) {
+          hint.textContent = 'Adjusted forward to skip a clinic holiday or weekly off day.';
+          hint.style.display = 'block';
+        } else {
+          hint.style.display = 'none';
+        }
+        wrxUpdatePreview();
+      }
+      function wrxRenderDatePanel() {
+        const panel = document.getElementById('wrxDatePanel');
+        const y = wrxCalendarViewDate.getFullYear();
+        const m = wrxCalendarViewDate.getMonth();
+        const first = new Date(y, m, 1);
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        const todayStr = wrxToDateInputValue(new Date());
+        let cells = '';
+        for (let i = 0; i < first.getDay(); i++) cells += '<div class="rx-cal-cell empty"></div>';
+        for (let day = 1; day <= daysInMonth; day++) {
+          const d = new Date(y, m, day);
+          const dStr = wrxToDateInputValue(d);
+          const isPast = dStr < todayStr;
+          const closed = !isPast && wrxIsClosedDate(d);
+          const classes = ['rx-cal-cell'];
+          if (dStr === todayStr) classes.push('today');
+          if (dStr === wrxFollowUpValue) classes.push('selected');
+          if (isPast) classes.push('past');
+          else if (closed) classes.push('closed');
+          cells += `<div class="${classes.join(' ')}" ${(isPast || closed) ? '' : `data-date="${dStr}"`}>${day}</div>`;
+        }
+        panel.innerHTML = `
+          <div class="rx-cal-shortcuts">
+            <button type="button" class="btn-sm accent-outline" data-followup-days="7">In 7 days</button>
+            <button type="button" class="btn-sm accent-outline" data-followup-days="15">In 15 days</button>
+            <button type="button" class="btn-sm accent-outline" data-followup-days="28">In 4 weeks</button>
+          </div>
+          <div class="rx-cal-nav">
+            <button type="button" class="rx-cal-nav-btn" data-cal-nav="prev">&lsaquo;</button>
+            <div class="rx-cal-month-label">${first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</div>
+            <button type="button" class="rx-cal-nav-btn" data-cal-nav="next">&rsaquo;</button>
+          </div>
+          <div class="rx-cal-weekdays">${['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((w) => `<div>${w}</div>`).join('')}</div>
+          <div class="rx-cal-grid">${cells}</div>
+        `;
+      }
+      function wrxOpenDatePanel() {
+        wrxCalendarViewDate = wrxSelectedDateObj() || new Date();
+        wrxRenderDatePanel();
+        const panel = document.getElementById('wrxDatePanel');
+        const trigger = document.getElementById('wrxDateTrigger');
+        const rect = trigger.getBoundingClientRect();
+        panel.classList.toggle('flip-up', (window.innerHeight - rect.bottom) < 360 && rect.top > (window.innerHeight - rect.bottom));
+        panel.style.display = 'block';
+      }
+      function wrxCloseDatePanel() {
+        document.getElementById('wrxDatePanel').style.display = 'none';
+      }
+      document.getElementById('wrxDateTrigger').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const panel = document.getElementById('wrxDatePanel');
+        if (panel.style.display === 'block') wrxCloseDatePanel();
+        else wrxOpenDatePanel();
+      });
+      document.getElementById('wrxDatePanel').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const shortcutBtn = e.target.closest('[data-followup-days]');
+        if (shortcutBtn) { wrxPickFollowUpDate(Number(shortcutBtn.dataset.followupDays)); wrxCloseDatePanel(); return; }
+        const navBtn = e.target.closest('[data-cal-nav]');
+        if (navBtn) {
+          const y = wrxCalendarViewDate.getFullYear();
+          const m = wrxCalendarViewDate.getMonth();
+          wrxCalendarViewDate = new Date(y, navBtn.dataset.calNav === 'prev' ? m - 1 : m + 1, 1);
+          wrxRenderDatePanel();
+          return;
+        }
+        const cell = e.target.closest('.rx-cal-cell[data-date]');
+        if (cell) {
+          wrxFollowUpValue = cell.dataset.date;
+          wrxUpdateDateTriggerText();
+          document.getElementById('wrxFollowUpHint').style.display = 'none';
+          wrxCloseDatePanel();
+          wrxUpdatePreview();
+        }
+      });
+      document.addEventListener('click', (e) => {
+        if (!document.getElementById('wrxDatePickerWrap').contains(e.target)) wrxCloseDatePanel();
+      });
+
       function wrxShouldFlipUp(triggerEl, estimatedPanelHeight) {
         const rect = triggerEl.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
@@ -907,8 +1079,9 @@
         const complaints = document.getElementById('wrxComplaints').value.trim();
         const dx = document.getElementById('wrxDiagnosis').value.trim();
         const advice = document.getElementById('wrxAdvice').value.trim();
-        const followUpRaw = document.getElementById('wrxFollowUpDate').value;
-        const followUpLabel = followUpRaw ? new Date(followUpRaw + 'T00:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+        const followUpLabel = wrxFollowUpValue
+          ? wrxSelectedDateObj().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+          : '';
 
         const vitalsBp = document.getElementById('wrxVitalBp').value.trim();
         const vitalsPulse = document.getElementById('wrxVitalPulse').value.trim();
@@ -977,13 +1150,14 @@
       }
       [
         'wrxName', 'wrxPhone', 'wrxAge', 'wrxGender', 'wrxComplaints', 'wrxDiagnosis', 'wrxAdvice',
-        'wrxVitalBp', 'wrxVitalPulse', 'wrxVitalTemp', 'wrxVitalWeight', 'wrxFollowUpDate',
+        'wrxVitalBp', 'wrxVitalPulse', 'wrxVitalTemp', 'wrxVitalWeight',
       ].forEach((id) => {
         document.getElementById(id).addEventListener('input', wrxUpdatePreview);
         document.getElementById(id).addEventListener('change', wrxUpdatePreview);
       });
       document.getElementById('wrxDoctorSelect').addEventListener('change', () => {
         wrxSelectedDoctor = walkinDoctors.find((d) => d.id === document.getElementById('wrxDoctorSelect').value) || null;
+        wrxLoadClosureData(wrxSelectedDoctor ? wrxSelectedDoctor.id : null);
         wrxUpdatePreview();
       });
 
@@ -1003,7 +1177,10 @@
         document.getElementById('wrxVitalPulse').value = '';
         document.getElementById('wrxVitalTemp').value = '';
         document.getElementById('wrxVitalWeight').value = '';
-        document.getElementById('wrxFollowUpDate').value = '';
+        document.getElementById('wrxAgeError').style.display = 'none';
+        wrxFollowUpValue = null;
+        wrxUpdateDateTriggerText();
+        document.getElementById('wrxFollowUpHint').style.display = 'none';
         wrxRenderTestChips();
         wrxRenderRows();
         wrxUpdatePreview();
@@ -1023,6 +1200,7 @@
           wrxSelectedDoctor = walkinDoctors[0] || null;
         }
         Qlinic.getClinicMedicinesForRx().then((meds) => { wrxClinicMedicinesCache = meds; }).catch(() => { wrxClinicMedicinesCache = []; });
+        if (wrxSelectedDoctor) wrxLoadClosureData(wrxSelectedDoctor.id);
         document.getElementById('wrxModalBackdrop').style.display = 'flex';
         wrxUpdatePreview();
       }
@@ -1045,8 +1223,8 @@
         const age = document.getElementById('wrxAge').value.trim();
         const gender = document.getElementById('wrxGender').value;
         if (!name) { showToast('Full name is required'); document.getElementById('wrxName').focus(); return; }
-        if (!phone) { showToast('Phone number is required'); document.getElementById('wrxPhone').focus(); return; }
-        if (!age) { showToast('Age is required'); document.getElementById('wrxAge').focus(); return; }
+        if (!/^[0-9]{10}$/.test(phone)) { showToast('Enter a valid 10-digit phone number'); document.getElementById('wrxPhone').focus(); return; }
+        if (!age || !wrxIsValidAge(age)) { showToast('Enter a valid age (0-120)'); document.getElementById('wrxAge').focus(); return; }
         if (!gender) { showToast('Gender is required'); document.getElementById('wrxGender').focus(); return; }
         if (!wrxSelectedDoctor) { showToast('Choose which doctor this is for'); return; }
         if (!wrxItems.length) { showToast('Add at least one medicine first'); return; }
@@ -1054,12 +1232,11 @@
         document.getElementById('wrxSavePrintBtn').disabled = true;
         document.getElementById('wrxSaveOnlyBtn').disabled = true;
         try {
-          const followUpRaw = document.getElementById('wrxFollowUpDate').value;
           await Qlinic.createPrescription({
             complaints: document.getElementById('wrxComplaints').value.trim(),
             diagnosis: document.getElementById('wrxDiagnosis').value.trim(),
             advice: document.getElementById('wrxAdvice').value.trim(),
-            followUpDate: followUpRaw || null,
+            followUpDate: wrxFollowUpValue || null,
             items: wrxItems,
             doctorId: wrxSelectedDoctor.id,
             vitalsBp: document.getElementById('wrxVitalBp').value.trim(),
