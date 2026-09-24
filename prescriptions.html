@@ -231,10 +231,10 @@
         const vitalsHtml = hasVitals ? `
           <div class="rx-vital-block">
             <span class="lbl">Vitals</span>
-            ${vitalsBp ? `<div class="rx-vital-line"><span class="vk">BP:</span> ${Qlinic.escapeHtml(vitalsBp)}</div>` : ''}
-            ${vitalsPulse ? `<div class="rx-vital-line"><span class="vk">Pulse:</span> ${Qlinic.escapeHtml(vitalsPulse)}</div>` : ''}
-            ${vitalsTemp ? `<div class="rx-vital-line"><span class="vk">Temp:</span> ${Qlinic.escapeHtml(vitalsTemp)}</div>` : ''}
-            ${vitalsWeight ? `<div class="rx-vital-line"><span class="vk">Weight:</span> ${Qlinic.escapeHtml(vitalsWeight)}</div>` : ''}
+            ${vitalsBp ? `<div class="rx-vital-line"><span class="vk">BP:</span> ${Qlinic.escapeHtml(vitalsBp)} mmHg</div>` : ''}
+            ${vitalsPulse ? `<div class="rx-vital-line"><span class="vk">Pulse:</span> ${Qlinic.escapeHtml(vitalsPulse)} bpm</div>` : ''}
+            ${vitalsTemp ? `<div class="rx-vital-line"><span class="vk">Temp:</span> ${Qlinic.escapeHtml(vitalsTemp)}°F</div>` : ''}
+            ${vitalsWeight ? `<div class="rx-vital-line"><span class="vk">Weight:</span> ${Qlinic.escapeHtml(vitalsWeight)} kg</div>` : ''}
           </div>
         ` : '';
         const testsHtml = (testsOrdered && testsOrdered.length) ? `
@@ -259,7 +259,7 @@
           { label: 'Pulse', value: rx.vitalsPulse ? `${rx.vitalsPulse} bpm` : '', cls: 'pulse', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>' },
           { label: 'Temp', value: rx.vitalsTemp ? `${rx.vitalsTemp}°F` : '', cls: 'temp', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>' },
           { label: 'Weight', value: rx.vitalsWeight ? `${rx.vitalsWeight} kg` : '', cls: 'weight', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5h5"/></svg>' },
-          { label: 'BP', value: rx.vitalsBp || '', cls: 'bp', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.33-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.33 6c-2.33 4.5-9.33 9-9.33 9Z"/></svg>' },
+          { label: 'BP', value: rx.vitalsBp ? `${rx.vitalsBp} mmHg` : '', cls: 'bp', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.33-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.33 6c-2.33 4.5-9.33 9-9.33 9Z"/></svg>' },
         ].filter((v) => v.value);
         const testsOrdered = rx.testsOrdered || [];
         const hasLeft = vitalDefs.length > 0 || testsOrdered.length > 0;
