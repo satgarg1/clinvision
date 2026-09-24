@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=346" />
+<link rel="stylesheet" href="styles.css?v=347" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -125,16 +125,31 @@
 
         <div class="panel" id="nowServingPanel">
           <div class="panel-header"><h2>Now serving</h2></div>
-          <div class="now-serving-row">
+          <div class="ns-top">
             <div id="nowServingBox"></div>
-            <button type="button" class="btn-sm accent-outline" id="writeRxBtn" disabled>Write prescription</button>
-            <button type="button" class="history-chip" id="rxHistoryChip" style="display:none;">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-              <span id="rxHistoryChipText">View past prescriptions</span>
+            <div class="ns-actions">
+              <button type="button" class="ns-btn outline" id="rxHistoryChip" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                <span id="rxHistoryChipText">View history</span>
+                <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+              </button>
+              <button type="button" class="ns-btn solid" id="writeRxBtn" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Write prescription
+              </button>
+            </div>
+          </div>
+          <hr class="ns-divider">
+          <div class="ns-queue-row">
+            <button class="ns-btn-lg tint" id="callNextBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              Call next patient
+            </button>
+            <button class="ns-btn-lg solid" id="finishCurrentBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              Done
             </button>
           </div>
-          <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;">Call next patient</button>
-          <button class="btn-sm primary" id="finishCurrentBtn" style="margin-top:14px;margin-left:8px;">Done</button>
           <div class="call-confirm-overlay" id="callConfirmOverlay"><span class="call-confirm-check">✓</span>Next patient called</div>
         </div>
 
@@ -972,7 +987,26 @@
         }
 
         document.getElementById('nowServingBox').innerHTML = q.nowServing
-          ? `<div style="font-size:20px;font-weight:700;">${Qlinic.escapeHtml(q.nowServing.name)}</div><div style="font-size:13px;color:var(--grey-500);">${q.nowServing.address ? Qlinic.escapeHtml(q.nowServing.address) + ' · ' : ''}${q.nowServing.type === 'appointment' ? 'Appointment' : 'Walk-in'}${q.nowServing.calledAt ? ' · called in at ' + Qlinic.formatTimestamp(q.nowServing.calledAt) : ''}</div>`
+          ? `
+            <div class="ns-label"><span class="ns-dot"></span>Now serving</div>
+            <div class="ns-name">${Qlinic.escapeHtml(q.nowServing.name)}</div>
+            <div class="ns-meta">
+              <span class="ns-meta-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                ${q.nowServing.address ? Qlinic.escapeHtml(q.nowServing.address) : 'No address on file'}
+              </span>
+              <span class="ns-meta-sep">·</span>
+              ${nsMetaTypeHtml(q.nowServing)}
+              ${q.nowServing.calledAt ? `
+                <span class="ns-meta-sep">·</span>
+                <span class="ns-meta-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                  Called in at ${Qlinic.formatTimestamp(q.nowServing.calledAt)}
+                </span>
+              ` : ''}
+            </div>
+            ${nsAgeSexLabel(q.nowServing) ? `<div class="ns-sub">Age/Sex: ${nsAgeSexLabel(q.nowServing)}</div>` : ''}
+          `
           : isAway
             ? `<div class="empty-state">No one in consultation — ${awayPhrase}.</div>`
             : `<div class="empty-state">No one in consultation. Tap "Call next patient" to begin.</div>`;
@@ -1493,6 +1527,29 @@
         return [age, gender].filter(Boolean).join(', ');
       }
 
+      // Now Serving's own compact "32 / M" form, distinct from
+      // rxFormatAgeGender's "32 yrs, Male" (used in the Write Prescription
+      // modal, where there's room to spell it out).
+      function nsAgeSexLabel(patient) {
+        if (!patient || (patient.age == null && !patient.gender)) return '';
+        const age = patient.age != null ? patient.age : '—';
+        const sex = patient.gender ? patient.gender.charAt(0).toUpperCase() : '—';
+        return `${age} / ${sex}`;
+      }
+      // A walk-in is either standard or emergency (isPriority) — never a
+      // separate generic "Priority" flag shown alongside the type, and an
+      // emergency one is called out in red since it's the one thing here
+      // a doctor actually needs to notice at a glance.
+      function nsMetaTypeHtml(p) {
+        if (p.type === 'appointment') {
+          return `<span class="ns-meta-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Appointment</span>`;
+        }
+        if (p.isPriority) {
+          return `<span class="ns-meta-item emergency"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>Emergency walk-in</span>`;
+        }
+        return `<span class="ns-meta-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.87M3 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/><circle cx="10" cy="8" r="4"/></svg>Walk-in</span>`;
+      }
+
       function resetRxDraftFields() {
         document.getElementById('rxMedNameInput').value = '';
         document.getElementById('rxFrequencyInput').value = '';
@@ -1897,16 +1954,25 @@
       let rxHistoryExpandedId = null;
       let rxHistoryPatientForModal = null;
 
+      // View history stays in its slot regardless of outcome (never
+      // hidden) so the button stack next to it never shifts depending on
+      // which patient walked in — a first-time patient just gets it
+      // disabled with a plain-language reason instead of disappearing.
       async function updateRxHistoryChip(patient) {
+        const btn = document.getElementById('rxHistoryChip');
+        const textEl = document.getElementById('rxHistoryChipText');
         if (!patient) {
           rxHistoryPatientId = null;
           rxPastPrescriptions = [];
-          document.getElementById('rxHistoryChip').style.display = 'none';
+          btn.disabled = true;
+          btn.title = '';
+          textEl.textContent = 'View history';
           return;
         }
         if (patient.id === rxHistoryPatientId) return;
         rxHistoryPatientId = patient.id;
-        document.getElementById('rxHistoryChip').style.display = 'none';
+        btn.disabled = true;
+        btn.title = '';
         let list = [];
         try {
           list = await Qlinic.getPatientPrescriptions(patient.id);
@@ -1916,8 +1982,11 @@
         if (rxHistoryPatientId !== patient.id) return; // patient changed while this was in flight
         rxPastPrescriptions = list;
         if (list.length) {
-          document.getElementById('rxHistoryChipText').textContent = `View past prescriptions (${list.length})`;
-          document.getElementById('rxHistoryChip').style.display = 'inline-flex';
+          textEl.textContent = 'View history';
+          btn.disabled = false;
+        } else {
+          textEl.textContent = 'No history yet';
+          btn.title = 'No previous prescriptions for this patient';
         }
       }
 

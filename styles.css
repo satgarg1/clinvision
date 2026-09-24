@@ -5683,8 +5683,6 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
    doctor is looking at them mid-consultation — the actual fix for
    "doesn't have to ask the patient to bring their old prescription",
    not a reason to leave doctor.html for a separate page. */
-.history-chip { display: inline-flex; align-items: center; gap: 7px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--accent-dark); background: #e8f0fe; border: none; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
-.history-chip:hover { background: #d9e9fd; }
 
 /* Past prescriptions popup — built on the generic .modal-backdrop/
    .modal-card shell (same one the full-schedule modal and confirmDialog
@@ -5976,11 +5974,63 @@ table.rx-table .rt-instr { color: var(--grey-700); font-size: 11.5px; margin-top
   }
 }
 
-/* Now Serving panel — the patient's name and the Write prescription
-   button sit on one row (deliberately away from Call next patient/Done,
-   a misclick there ends or skips the visit); the queue-action buttons
-   stay in their own row underneath. */
-.now-serving-row { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+/* Now Serving panel — reviewed as a mockup first (four cases: an
+   appointment, a standard walk-in, an emergency walk-in, and a first-
+   time patient with no history yet). Patient identity/meta sits on the
+   left; View history stacked above Write prescription on the right,
+   deliberately its own column away from Call next patient/Done below a
+   divider, since a misclick on either of those ends or skips the visit. */
+.ns-top { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.ns-label { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+.ns-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.ns-name { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 6px; }
+.ns-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 13.5px; color: var(--grey-700); margin-bottom: 4px; }
+.ns-meta-item { display: inline-flex; align-items: center; gap: 5px; }
+.ns-meta-item svg { flex-shrink: 0; color: var(--grey-500); }
+.ns-meta-sep { color: var(--grey-300); }
+/* A walk-in is either standard or emergency (isPriority) — called out in
+   red since it's the one thing here worth noticing at a glance, not a
+   separate generic "Priority" flag next to the type. */
+.ns-meta-item.emergency { color: var(--danger); font-weight: 700; }
+.ns-meta-item.emergency svg { color: var(--danger); }
+.ns-sub { font-size: 12.5px; color: var(--grey-500); }
+
+.ns-actions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.ns-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--font); font-size: 13px; font-weight: 600;
+  padding: 8px 16px; border-radius: var(--radius-sm); border: 1px solid transparent;
+  cursor: pointer; white-space: nowrap;
+}
+.ns-btn svg { flex-shrink: 0; }
+.ns-btn .chev { margin-left: 2px; }
+.ns-btn.outline { background: var(--white); color: var(--accent); border-color: var(--accent); }
+.ns-btn.outline:hover:not(:disabled) { background: var(--accent); color: #fff; }
+/* First visit — no prior prescriptions to show. Disabled in place
+   (never hidden) so the button stack never shifts Write prescription up
+   or down depending on which patient walked in; the reason is in the
+   label itself plus a title attribute, not just a greyed-out chevron
+   implying there's somewhere to go. */
+.ns-btn.outline:disabled { background: var(--grey-100); color: var(--grey-500); border-color: var(--grey-300); cursor: not-allowed; }
+.ns-btn.solid { background: var(--accent); color: #fff; }
+.ns-btn.solid:hover:not(:disabled) { background: var(--accent-dark); }
+.ns-btn.solid:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.ns-divider { border: none; border-top: 1px solid var(--grey-100); margin: 20px 0 16px; }
+.ns-queue-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.ns-btn-lg {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: var(--font); font-size: 13.5px; font-weight: 700;
+  padding: 11px 20px; border-radius: 10px; border: none; cursor: pointer;
+}
+/* Soft tint vs. solid — same primary/secondary relationship Call next
+   patient and Done already had, restyled rather than re-decided. */
+.ns-btn-lg.tint { background: rgba(0, 113, 227, 0.1); color: var(--accent-dark); }
+.ns-btn-lg.tint:hover:not(:disabled) { background: rgba(0, 113, 227, 0.18); }
+.ns-btn-lg.tint:disabled { opacity: 0.5; cursor: not-allowed; }
+.ns-btn-lg.solid { background: var(--accent); color: #fff; }
+.ns-btn-lg.solid:hover:not(:disabled) { background: var(--accent-dark); }
+.ns-btn-lg.solid:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ============================================================
    prescriptions.html — prescription history (Today / search a patient).
