@@ -3773,6 +3773,40 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 }
 #searchBox:focus, #patientSearch:focus, #directorySearch:focus, #noShowSearch:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 
+/* Prescriptions header: doctor dropdown + search box, side by side —
+   same reception-style search-bar pill (shape and height) as the rule
+   above, so a boxy 8px-radius <select> doesn't sit next to a fully
+   rounded search bar as two visibly different control families. Explicit
+   height (not just matching padding) is what actually keeps them equal —
+   a native <select>'s own UA chrome can otherwise drift a pixel or two
+   off an <input>'s padding-derived height even with identical CSS. */
+#rxDoctorFilter, #rxSearchInput {
+  height: 52px;
+  box-sizing: border-box;
+  padding: 0 24px;
+  font-size: 17px;
+  font-weight: 500;
+  font-family: var(--font);
+  border: 1px solid var(--grey-300);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background-color: var(--white);
+  color: var(--black);
+}
+#rxDoctorFilter:focus, #rxSearchInput:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+#rxDoctorFilter {
+  appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  cursor: pointer;
+  padding-right: 46px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234a4a4c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 20px center;
+  background-size: 13px;
+}
+:root[data-theme="dark"] #rxDoctorFilter {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
 
 /* Add-patient form: a grid (not flex-wrap) so a field that grows taller than
    its neighbors — e.g. the slot-availability hint — can never shove the other
@@ -5872,40 +5906,27 @@ table.rx-table .rt-instr { color: var(--grey-700); font-size: 11.5px; margin-top
    below legitimately overrides this one during print. */
 #printRx { display: none; }
 
-/* The visibility:hidden + position:absolute approach this used to use
-   (still what billing's own #printReceipt relies on) has a real cost:
-   visibility:hidden keeps every hidden element's normal box in the
-   layout — the whole invisible .app-shell/.rx-modal-backdrop was still
-   taking up real, measured space during print, and that leftover
-   invisible layout, not the @page margin below (already correct), is
-   what was pushing #printRx's header down from the top and its footer
-   up short of the bottom. display:none instead removes every sibling
-   from layout entirely, so #printRx is the only thing left in the
-   document and just starts at the page's own top margin in normal
-   block flow — no absolute positioning, nothing else contributing
-   height, nothing to get pushed around by. */
+/* Reverted the display:none-on-every-sibling + flex/min-height rewrite
+   this block briefly held — it printed a fully blank page (the exact
+   failure this whole mechanism exists to avoid), so whichever part of
+   that rewrite broke it, it's not worth the risk over the confirmed-
+   working visibility:hidden + position:absolute base. Keeping that base
+   exactly as-is (the same mechanism billing's own #printReceipt still
+   uses) and layering ONLY inert, non-layout property overrides on top —
+   box-shadow/border-radius/padding, nothing touching display, position,
+   or visibility — for the "shadow around the printed page" complaint,
+   without re-risking a blank print over the header/footer whitespace,
+   which needs a real, verified diagnosis rather than another guess. */
 @media print {
   @page { size: A4; margin: 15mm; }
-  body { margin: 0; }
-  body > *:not(#printRx) { display: none !important; }
+  body * { visibility: hidden; }
+  #printRx, #printRx * { visibility: visible; }
   #printRx {
-    display: flex;
-    flex-direction: column;
-    /* Same fixed-frame + margin-top:auto footer trick #rxLivePreview
-       uses on screen (see its own comment above), scaled to a real A4
-       page instead of the aspect-ratio box: pins the footer to the
-       physical bottom of the sheet for a short prescription, while a
-       long one (many medicines) simply grows past this floor and
-       paginates onto a second page normally — table.rx-table's own
-       page-break-inside:avoid still protects individual rows from
-       being split across that break. */
-    min-height: calc(297mm - 30mm);
-    /* The on-screen "card" look (rounded corners, drop shadow) makes
-       sense floating over the app's grey background; on actual paper
-       it's just a border cut into the printable area, and the shadow
-       specifically was showing up as a stray grey haze around the
-       printed page. Stripped only here — the live preview and history
-       views keep the on-screen card via .a4 itself, untouched. */
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
     border-radius: 0;
     box-shadow: none;
     padding: 0;

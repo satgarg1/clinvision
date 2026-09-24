@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=341" />
+<link rel="stylesheet" href="styles.css?v=342" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -295,7 +295,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=121"></script>
+  <script src="clinic-data.js?v=122"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -2092,7 +2092,19 @@
           // #printReceipt is always kept populated rather than filled in
           // specially right before printing. Nothing left to do here but
           // print, exactly like billing's own submit handler.
-          if (shouldPrint) window.print();
+          if (shouldPrint) {
+            // The prescription is already saved at this point — printing
+            // is a bonus action, not a gate — so once the print dialog is
+            // dismissed (printed or cancelled, either way), close the
+            // modal and drop the doctor straight back onto Doctor View
+            // for the next patient instead of leaving them staring at a
+            // now-stale modal they'd otherwise have to close by hand.
+            window.addEventListener('afterprint', function onAfterPrint() {
+              window.removeEventListener('afterprint', onAfterPrint);
+              closeRxModal();
+            });
+            window.print();
+          }
         } catch (err) {
           console.error('Save prescription failed:', err);
           showToast(err.message || 'Could not save the prescription');
