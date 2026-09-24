@@ -239,42 +239,16 @@
         </div>
 
         <div class="rx-preview-wrap">
-          <div class="a4" id="rxLivePreview">
-            <div class="rx-head">
-              <img class="rx-logo-img" id="rxPrevLogo" style="display:none;" alt="" />
-              <div>
-                <div class="rx-clinic-name" id="rxPrevClinicName"></div>
-                <div class="rx-clinic-addr" id="rxPrevClinicAddr"></div>
-              </div>
-              <div class="rx-doc-block">
-                <div class="rx-doc-name" id="rxPrevDoctorName"></div>
-                <div class="rx-doc-qual" id="rxPrevDoctorSpecialty"></div>
-                <div class="rx-doc-qual" id="rxPrevDoctorQual"></div>
-              </div>
-            </div>
-            <div class="rx-info-grid">
-              <div><span class="k">Patient:</span> <span id="rxPrevPatientName"></span></div>
-              <div><span class="k">Date:</span> <span id="rxPrevDate"></span></div>
-              <div><span class="k">Age &amp; Gender:</span> <span id="rxPrevAgeGender"></span></div>
-              <div><span class="k">Phone:</span> <span id="rxPrevPhone"></span></div>
-            </div>
-            <div class="rx-pair-row">
-              <div class="rx-dx" id="rxPrevComplaintsWrap" style="display:none;"><b>Chief complaint</b><span id="rxPrevComplaints"></span></div>
-              <div class="rx-dx" id="rxPrevDxWrap" style="display:none;"><b>Diagnosis</b><span id="rxPrevDx"></span></div>
-            </div>
-            <table class="rx-table">
-              <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
-              <tbody id="rxPrevMedsBody"><tr><td colspan="4" style="color:var(--grey-500);font-style:italic;">No medicines added yet</td></tr></tbody>
-            </table>
-            <div class="rx-pair-row">
-              <div class="rx-advice" id="rxPrevAdviceWrap" style="display:none;"><b>Advice</b><span id="rxPrevAdvice"></span></div>
-              <div class="rx-advice" id="rxPrevFollowUpWrap" style="display:none;"><b>Follow Up</b><span id="rxPrevFollowUp"></span></div>
-            </div>
-            <div class="rx-footer">
-              <img class="rx-footer-logo" id="rxPrevFooterLogo" style="display:none;" alt="" />
-              <div>Thank you for visiting <span id="rxPrevFooterClinicName"></span></div>
-            </div>
-          </div>
+          <!-- Filled entirely by buildRxHtml() in updateRxPreview() below —
+               the exact same markup this function writes is also written
+               into #printRx (a permanent, separate, un-nested element; see
+               its own comment further down) on every update, not just
+               right before printing. That's the fix for print previously
+               coming out blank: populating a fixed target continuously,
+               the way billing-consultation.html's #printReceipt already
+               does, instead of cloning content into it at print time and
+               racing the browser's own print snapshot. -->
+          <div class="a4" id="rxLivePreview"></div>
         </div>
       </div>
     </div>
@@ -288,9 +262,13 @@
        position:absolute, so printing straight from inside the modal
        showed only whatever sliver of it happened to be inside that
        clipped box. This is a separate, un-nested copy — exactly how
-       #printReceipt sits outside the app shell in billing-consultation.html
-       — filled from #rxLivePreview's own innerHTML right before
-       window.print() is called. -->
+       #printReceipt sits outside the app shell in billing-consultation.html.
+       updateRxPreview() (see buildRxHtml()) writes the same markup into
+       this element on every change, same as it does for #rxLivePreview —
+       always kept populated rather than filled in specially right before
+       printing, which is what billing's own #printReceipt does too, and
+       is what actually fixed print coming out blank (a clone-then-print
+       approach was racing the browser's own print snapshot). -->
   <div class="a4" id="printRx" style="display:none;"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -1700,48 +1678,33 @@
         scrollActiveMedRowIntoView();
       });
 
-      function updateRxPreview() {
+      // Builds the whole prescription as a plain HTML string and writes it
+      // into BOTH #rxLivePreview and #printRx on every update — the same
+      // way billing-consultation.html's #printReceipt is always kept
+      // populated rather than filled in specially right before printing.
+      // No ids inside this markup: nothing here is ever selectively
+      // patched, the whole thing is just regenerated fresh each time, so
+      // writing it to two places at once creates no duplicate-id problem.
+      function buildRxHtml() {
         const patient = currentQueue && currentQueue.nowServing;
         const doctor = currentDoctor;
 
-        const logo = document.getElementById('rxPrevLogo');
-        if (clinic && clinic.logo_url) {
-          logo.src = clinic.logo_url;
-          logo.style.display = 'block';
-        } else {
-          logo.style.display = 'none';
-        }
-        document.getElementById('rxPrevClinicName').textContent = clinic ? clinic.name : '';
+        const logoHtml = (clinic && clinic.logo_url)
+          ? `<img class="rx-logo-img" src="${Qlinic.escapeHtml(clinic.logo_url)}" alt="" />`
+          : '';
         const addressParts = clinic ? [clinic.address_line, clinic.city, clinic.state && clinic.pincode ? `${clinic.state} ${clinic.pincode}` : clinic.state].filter(Boolean) : [];
-        document.getElementById('rxPrevClinicAddr').textContent = addressParts.join(', ');
-        const footerLogo = document.getElementById('rxPrevFooterLogo');
-        if (clinic && clinic.logo_url) {
-          footerLogo.src = clinic.logo_url;
-          footerLogo.style.display = 'block';
-        } else {
-          footerLogo.style.display = 'none';
-        }
-        document.getElementById('rxPrevFooterClinicName').textContent = clinic ? clinic.name : '';
-        document.getElementById('rxPrevDoctorName').textContent = doctor ? `Dr. ${doctor.name}` : '';
-        document.getElementById('rxPrevDoctorSpecialty').textContent = (doctor && doctor.specialty) || '';
-        document.getElementById('rxPrevDoctorQual').textContent = doctor
+        const doctorQualLine = doctor
           ? [doctor.qualification, doctor.registrationNumber ? `Reg. No. ${doctor.registrationNumber}` : ''].filter(Boolean).join(' · ')
           : '';
-        document.getElementById('rxPrevPatientName').textContent = patient ? patient.name : '';
-        document.getElementById('rxPrevDate').textContent = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-        document.getElementById('rxPrevAgeGender').textContent = rxFormatAgeGender(patient);
-        document.getElementById('rxPrevPhone').textContent = (patient && patient.phone) || '—';
 
         const complaints = document.getElementById('rxComplaints').value.trim();
-        document.getElementById('rxPrevComplaintsWrap').style.display = complaints ? '' : 'none';
-        document.getElementById('rxPrevComplaints').textContent = complaints;
-
         const dx = document.getElementById('rxDiagnosis').value.trim();
-        document.getElementById('rxPrevDxWrap').style.display = dx ? '' : 'none';
-        document.getElementById('rxPrevDx').textContent = dx;
+        const advice = document.getElementById('rxAdvice').value.trim();
+        const followUpLabel = rxFollowUpValue
+          ? rxSelectedDateObj().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+          : '';
 
-        const tbody = document.getElementById('rxPrevMedsBody');
-        tbody.innerHTML = rxItems.length
+        const medsHtml = rxItems.length
           ? rxItems.map((item, i) => `
               <tr>
                 <td style="color:var(--grey-500);">${i + 1}</td>
@@ -1752,15 +1715,52 @@
             `).join('')
           : '<tr><td colspan="4" style="color:var(--grey-500);font-style:italic;">No medicines added yet</td></tr>';
 
-        const advice = document.getElementById('rxAdvice').value.trim();
-        document.getElementById('rxPrevAdviceWrap').style.display = advice ? '' : 'none';
-        document.getElementById('rxPrevAdvice').textContent = advice;
-
-        const followUpLabel = rxFollowUpValue
-          ? rxSelectedDateObj().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+        const footerLogoHtml = (clinic && clinic.logo_url)
+          ? `<img class="rx-footer-logo" src="${Qlinic.escapeHtml(clinic.logo_url)}" alt="" />`
           : '';
-        document.getElementById('rxPrevFollowUpWrap').style.display = followUpLabel ? '' : 'none';
-        document.getElementById('rxPrevFollowUp').textContent = followUpLabel;
+
+        return `
+          <div class="rx-head">
+            ${logoHtml}
+            <div>
+              <div class="rx-clinic-name">${clinic ? Qlinic.escapeHtml(clinic.name) : ''}</div>
+              <div class="rx-clinic-addr">${Qlinic.escapeHtml(addressParts.join(', '))}</div>
+            </div>
+            <div class="rx-doc-block">
+              <div class="rx-doc-name">${doctor ? `Dr. ${Qlinic.escapeHtml(doctor.name)}` : ''}</div>
+              <div class="rx-doc-qual">${Qlinic.escapeHtml((doctor && doctor.specialty) || '')}</div>
+              <div class="rx-doc-qual">${Qlinic.escapeHtml(doctorQualLine)}</div>
+            </div>
+          </div>
+          <div class="rx-info-grid">
+            <div><span class="k">Patient:</span> ${Qlinic.escapeHtml(patient ? patient.name : '')}</div>
+            <div><span class="k">Date:</span> ${Qlinic.escapeHtml(new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</div>
+            <div><span class="k">Age &amp; Gender:</span> ${Qlinic.escapeHtml(rxFormatAgeGender(patient))}</div>
+            <div><span class="k">Phone:</span> ${Qlinic.escapeHtml((patient && patient.phone) || '—')}</div>
+          </div>
+          <div class="rx-pair-row">
+            ${complaints ? `<div class="rx-dx"><b>Chief complaint</b><span>${Qlinic.escapeHtml(complaints)}</span></div>` : ''}
+            ${dx ? `<div class="rx-dx"><b>Diagnosis</b><span>${Qlinic.escapeHtml(dx)}</span></div>` : ''}
+          </div>
+          <table class="rx-table">
+            <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
+            <tbody>${medsHtml}</tbody>
+          </table>
+          <div class="rx-pair-row">
+            ${advice ? `<div class="rx-advice"><b>Advice</b><span>${Qlinic.escapeHtml(advice)}</span></div>` : ''}
+            ${followUpLabel ? `<div class="rx-advice"><b>Follow Up</b><span>${Qlinic.escapeHtml(followUpLabel)}</span></div>` : ''}
+          </div>
+          <div class="rx-footer">
+            ${footerLogoHtml}
+            <div>Thank you for visiting ${clinic ? Qlinic.escapeHtml(clinic.name) : ''}</div>
+          </div>
+        `;
+      }
+
+      function updateRxPreview() {
+        const html = buildRxHtml();
+        document.getElementById('rxLivePreview').innerHTML = html;
+        document.getElementById('printRx').innerHTML = html;
       }
 
       ['rxComplaints', 'rxDiagnosis', 'rxAdvice'].forEach((id) => {
@@ -1809,20 +1809,12 @@
             doctorId: currentDoctor ? currentDoctor.id : null,
           });
           showToast('Prescription saved');
-          if (shouldPrint) {
-            const clone = document.getElementById('rxLivePreview').cloneNode(true);
-            clone.removeAttribute('id');
-            clone.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
-            const printEl = document.getElementById('printRx');
-            printEl.innerHTML = '';
-            printEl.appendChild(clone);
-            // Calling print() in the same tick as the DOM insertion above
-            // is what produced a blank print — the browser can generate
-            // the print snapshot before this new content has actually been
-            // laid out and painted. Two animation frames guarantee at
-            // least one full paint cycle has happened first.
-            requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
-          }
+          // #printRx is already populated — updateRxPreview() writes to it
+          // on every change, the same way billing-consultation.html's
+          // #printReceipt is always kept populated rather than filled in
+          // specially right before printing. Nothing left to do here but
+          // print, exactly like billing's own submit handler.
+          if (shouldPrint) window.print();
         } catch (err) {
           console.error('Save prescription failed:', err);
           showToast(err.message || 'Could not save the prescription');
