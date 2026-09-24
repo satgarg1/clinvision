@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="/clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="/styles.css?v=357" />
+<link rel="stylesheet" href="/styles.css?v=358" />
 </head>
 <body class="tool-green">
 
@@ -125,7 +125,7 @@
           <p class="tool-sub">Know your numbers. Track your progress. Take control of your heart health.</p>
           <div class="tool-tabs">
             <button type="button" class="tool-tab active" id="tabCheck">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-6.7-4.35-9.3-8.1C1 10.2 1.6 6.6 4.6 5.2 6.9 4.1 9.4 5 12 7.6c2.6-2.6 5.1-3.5 7.4-2.4 3 1.4 3.6 5 1.9 7.7C18.7 16.65 12 21 12 21z"/></svg>
               Check Now
             </button>
             <button type="button" class="tool-tab" id="tabTrack">
@@ -142,35 +142,37 @@
         <div class="tool-card">
           <p class="tool-card-title">Enter Your Reading</p>
           <label class="tool-field-label">Systolic (top number)</label>
-          <input class="tool-field" type="number" id="bpSys" placeholder="e.g. 120" min="40" max="300" style="margin-bottom:12px;">
+          <div style="position:relative;margin-bottom:12px;">
+            <input class="tool-field" type="number" id="bpSys" placeholder="e.g. 120" min="40" max="300" style="padding-right:52px;">
+            <span style="position:absolute;top:50%;right:14px;transform:translateY(-50%);font-size:12px;font-weight:600;color:var(--grey-500);pointer-events:none;">mmHg</span>
+          </div>
           <p class="tool-field-err" id="bpSysErr">Enter a number between 40 and 300.</p>
           <label class="tool-field-label">Diastolic (bottom number)</label>
-          <input class="tool-field" type="number" id="bpDia" placeholder="e.g. 80" min="20" max="200" style="margin-bottom:12px;">
+          <div style="position:relative;margin-bottom:12px;">
+            <input class="tool-field" type="number" id="bpDia" placeholder="e.g. 80" min="20" max="200" style="padding-right:52px;">
+            <span style="position:absolute;top:50%;right:14px;transform:translateY(-50%);font-size:12px;font-weight:600;color:var(--grey-500);pointer-events:none;">mmHg</span>
+          </div>
           <p class="tool-field-err" id="bpDiaErr">Enter a number between 20 and 200.</p>
+          <label class="tool-field-label">Date &amp; Time</label>
           <div class="tool-row-2">
-            <div>
-              <label class="tool-field-label">Date</label>
-              <div class="time-picker" id="bpDateWrap">
-                <button type="button" class="time-picker-trigger placeholder" id="bpDateTrigger">
-                  <span id="bpDateTriggerText">Choose a date</span>
-                  <span class="time-picker-caret">&#9662;</span>
-                </button>
-                <div class="time-picker-panel rx-date-panel" id="bpDatePanel" style="display:none;"></div>
-              </div>
+            <div class="time-picker" id="bpDateWrap">
+              <button type="button" class="time-picker-trigger placeholder" id="bpDateTrigger" style="gap:8px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+                <span id="bpDateTriggerText" style="flex-grow:1;">Choose a date</span>
+                <span class="time-picker-caret">&#9662;</span>
+              </button>
+              <div class="time-picker-panel rx-date-panel" id="bpDatePanel" style="display:none;"></div>
             </div>
-            <div>
-              <label class="tool-field-label">Time</label>
-              <div class="time-picker" id="bpTimeWrap">
-                <button type="button" class="time-picker-trigger placeholder" id="bpTimeTrigger">
-                  <span id="bpTimeTriggerText">Select a time</span>
-                  <span class="time-picker-caret">&#9662;</span>
-                </button>
-                <div class="time-picker-panel" id="bpTimePanel" style="display:none;"></div>
-              </div>
+            <div class="time-picker" id="bpTimeWrap">
+              <button type="button" class="time-picker-trigger placeholder" id="bpTimeTrigger" style="gap:8px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                <span id="bpTimeTriggerText" style="flex-grow:1;">Select a time</span>
+                <span class="time-picker-caret">&#9662;</span>
+              </button>
+              <div class="time-picker-panel" id="bpTimePanel" style="display:none;"></div>
             </div>
           </div>
           <button type="button" class="tool-btn" id="bpCheckBtn" style="margin-top:16px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
             Check Result
           </button>
         </div>
@@ -178,8 +180,8 @@
         <div class="tool-card" id="bpResultWrap" style="display:flex;align-items:stretch;padding:0;overflow:hidden;">
           <div class="tool-card-tint" id="bpResultCard" style="align-items:stretch;text-align:left;display:none;width:100%;border-radius:0;box-sizing:border-box;">
             <div style="display:flex;align-items:center;gap:10px;">
-              <div style="width:38px;height:38px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;">
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--tool-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 12.6a1 1 0 0 0-1-1H17l-1.6-4.3a1 1 0 0 0-1.9.1L11.9 15 10 9a1 1 0 0 0-1.9 0L6.6 11.6H4.2a1 1 0 0 0-1 1"/></svg>
+              <div class="tool-icon-badge lg on-tint">
+                <svg viewBox="0 0 24 24" fill="var(--tool-accent)" stroke="none"><path d="M12 21s-6.7-4.35-9.3-8.1C1 10.2 1.6 6.6 4.6 5.2 6.9 4.1 9.4 5 12 7.6c2.6-2.6 5.1-3.5 7.4-2.4 3 1.4 3.6 5 1.9 7.7C18.7 16.65 12 21 12 21z"/></svg>
               </div>
               <p style="margin:0;font-size:13px;font-weight:700;color:#3f3f46;">Your Reading</p>
             </div>
@@ -193,18 +195,17 @@
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg>
               <p style="font-size:10px;color:#52525b;">This is a general guide and not a diagnosis. Always consult your doctor for personalised advice.</p>
             </div>
-            <div class="tool-result-row">
-              <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></div>
+            <div class="tool-result-row" style="background:var(--tool-tint-strong);">
+              <div class="ic" style="background:#fff;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></div>
               <div class="t">
                 <p class="ttl">Track your readings over 7 days</p>
                 <p class="dsc">See trends, spot changes and share with your doctor.</p>
               </div>
               <svg class="go" viewBox="0 0 20 20" fill="none"><path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
-            <p style="margin:10px 0 0;font-size:12px;font-style:italic;color:#3f3f46;text-align:center;">Healthy heart. Brighter tomorrow.</p>
           </div>
           <div id="bpEmptyCard" class="tool-empty-state">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 12.6a1 1 0 0 0-1-1H17l-1.6-4.3a1 1 0 0 0-1.9.1L11.9 15 10 9a1 1 0 0 0-1.9 0L6.6 11.6H4.2a1 1 0 0 0-1 1"/></svg></div>
+            <div class="ic"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-6.7-4.35-9.3-8.1C1 10.2 1.6 6.6 4.6 5.2 6.9 4.1 9.4 5 12 7.6c2.6-2.6 5.1-3.5 7.4-2.4 3 1.4 3.6 5 1.9 7.7C18.7 16.65 12 21 12 21z"/></svg></div>
             <p class="ttl">Your Reading</p>
             <p class="dsc">Enter a reading to see your blood pressure category here.</p>
           </div>
@@ -217,6 +218,13 @@
           <div class="tool-cat-row"><div style="display:flex;align-items:center;gap:9px;"><span class="bar" style="background:#ea580c;"></span><span class="lbl" style="color:#ea580c;">High BP (Stage 1)</span></div><span class="rng">130&ndash;139/80&ndash;89</span></div>
           <div class="tool-cat-row"><div style="display:flex;align-items:center;gap:9px;"><span class="bar" style="background:#dc2626;"></span><span class="lbl" style="color:#dc2626;">High BP (Stage 2)</span></div><span class="rng">140+/90+</span></div>
           <div class="tool-cat-row"><div style="display:flex;align-items:center;gap:9px;"><span class="bar" style="background:#b91c1c;"></span><span class="lbl" style="color:#b91c1c;">Hypertensive Crisis</span></div><span class="rng">180+/120+</span></div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;margin-top:22px;">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tool-accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+              <p class="tool-tagline-script">Healthy heart. Brighter tomorrow.</p>
+            </div>
+            <svg width="90" height="16" viewBox="0 0 90 16" fill="none" style="margin-top:2px;"><path d="M2 8c8-10 16 10 24 0s16-10 24 0 16 10 24 0" stroke="var(--tool-accent)" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </div>
         </div>
       </div>
 
