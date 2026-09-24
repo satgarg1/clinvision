@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Caveat:wght@600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="/clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="/styles.css?v=361" />
+<link rel="stylesheet" href="/styles.css?v=362" />
 </head>
 <body class="tool-blue">
 
@@ -160,19 +160,30 @@
         </div>
 
         <div class="tool-card-tint" id="durationCard" style="justify-content:flex-start;align-items:stretch;text-align:left;gap:14px;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:48px;height:48px;border-radius:50%;background:var(--tool-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+          <div id="durationEmpty" style="display:flex;align-items:center;gap:12px;">
+            <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.7);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--tool-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
             </div>
             <div>
               <p style="margin:0;font-size:12px;font-weight:600;color:var(--grey-500);">Your Sleep Duration</p>
-              <p style="margin:1px 0 0;font-size:24px;font-weight:800;color:var(--black);line-height:1.15;" id="durationOut">8 hours</p>
-              <span class="tool-badge" id="durationBadge" style="background:#16a34a;font-size:11px;padding:3px 11px;margin-top:3px;">Recommended</span>
+              <p style="margin:1px 0 0;font-size:14px;font-weight:600;color:#3f3f46;">Fill in your details and press Calculate.</p>
             </div>
           </div>
-          <div style="width:100%;background:#fff;border-radius:12px;padding:13px 14px;box-shadow:0 1px 3px rgba(0,0,0,0.06);box-sizing:border-box;">
-            <p style="margin:0 0 4px;font-size:13.5px;font-weight:600;color:#1e293b;" id="durationMsg">You're getting the right amount of sleep!</p>
-            <p style="margin:0;font-size:12px;color:var(--grey-500);line-height:1.5;" id="durationRange">Adults (26&ndash;64 years) need 7&ndash;9 hours of quality sleep each night.</p>
+          <div id="durationFilled" style="display:none;flex-direction:column;gap:14px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:48px;height:48px;border-radius:50%;background:var(--tool-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+              </div>
+              <div>
+                <p style="margin:0;font-size:12px;font-weight:600;color:var(--grey-500);">Your Sleep Duration</p>
+                <p style="margin:1px 0 0;font-size:24px;font-weight:800;color:var(--black);line-height:1.15;" id="durationOut">8 hours</p>
+                <span class="tool-badge" id="durationBadge" style="background:#16a34a;font-size:11px;padding:3px 11px;margin-top:3px;">Recommended</span>
+              </div>
+            </div>
+            <div style="width:100%;background:#fff;border-radius:12px;padding:13px 14px;box-shadow:0 1px 3px rgba(0,0,0,0.06);box-sizing:border-box;">
+              <p style="margin:0 0 4px;font-size:13.5px;font-weight:600;color:#1e293b;" id="durationMsg">You're getting the right amount of sleep!</p>
+              <p style="margin:0;font-size:12px;color:var(--grey-500);line-height:1.5;" id="durationRange">Adults (26&ndash;64 years) need 7&ndash;9 hours of quality sleep each night.</p>
+            </div>
           </div>
           <div style="width:100%;background:#f0f7ff;border-radius:14px;padding:14px;box-sizing:border-box;">
             <div style="display:flex;align-items:center;gap:7px;margin-bottom:11px;">
@@ -311,6 +322,9 @@
     if (diff <= 0) diff += 24 * 60;
     var hours = diff / 60;
 
+    document.getElementById('durationEmpty').style.display = 'none';
+    document.getElementById('durationFilled').style.display = 'flex';
+
     document.getElementById('durationOut').textContent = fmtHours(hours);
     var badge = document.getElementById('durationBadge');
     var msg = document.getElementById('durationMsg');
@@ -329,8 +343,6 @@
     }
     document.getElementById('durationRange').textContent = range.label + ' need ' + range.min + '–' + range.max + ' hours of quality sleep each night.';
   });
-
-  document.getElementById('calcSleepBtn').click();
 })();
 </script>
 </body>
