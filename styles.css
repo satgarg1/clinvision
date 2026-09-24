@@ -6274,15 +6274,13 @@ body.tool-green  { --tool-accent: #15803d; --tool-btn: #15803d; --tool-tint: #e9
 body.tool-orange { --tool-accent: #f59e0b; --tool-btn: #1e3a8a; --tool-tint: #fff7ed; --tool-tint-strong: #f8dcb3; --tool-bg: #fdf3e7; }
 body.tool-purple { --tool-accent: #6d28d9; --tool-btn: #6d28d9; --tool-tint: #f6f1fd; --tool-tint-strong: #ddc7f5; --tool-bg: #f5f0fc; }
 body.tool-blue   { --tool-accent: #3b82f6; --tool-btn: #1e3a5f; --tool-tint: #eef4ff; --tool-tint-strong: #c9defc; --tool-bg: #eaf1fb; }
+/* Sleep Calculator's own softer label treatment -- scoped to this theme
+   since it's the only page using it today, per its own reference design. */
+body.tool-blue .tool-field-label { font-weight: 600; color: var(--grey-500); }
 
-.tool-band { background: var(--tool-bg); padding: 30px 6vw 44px; }
+.tool-band { background: var(--tool-bg); padding: 40px 6vw 44px; }
 .tool-wrap { max-width: 1180px; margin: 0 auto; }
 
-.tool-crumb { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; row-gap: 5px; font-size: 13px; font-weight: 600; color: var(--grey-500); line-height: 1; margin-bottom: 18px; }
-.tool-crumb .n { display: inline-flex; align-items: center; justify-content: center; width: 19px; height: 19px; border-radius: 50%; background: rgba(255,255,255,0.7); color: var(--black); font-size: 10.5px; font-weight: 700; line-height: 1; flex-shrink: 0; }
-.tool-crumb .cur { color: var(--black); font-weight: 700; }
-.tool-crumb a { color: inherit; text-decoration: none; white-space: nowrap; }
-.tool-crumb > svg { flex-shrink: 0; display: block; }
 
 .tool-hero { display: flex; align-items: center; justify-content: space-between; gap: 32px; }
 .tool-h1 { margin: 0 0 10px; font-size: clamp(32px, 3.8vw, 46px); font-weight: 800; line-height: 1.14; color: var(--black); letter-spacing: -0.01em; }
@@ -6388,9 +6386,21 @@ body.tool-blue   { --tool-accent: #3b82f6; --tool-btn: #1e3a5f; --tool-tint: #ee
 .tool-check-item span { font-size: 13.5px; color: #3f3f46; line-height: 1.5; }
 
 .tool-why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.tool-why-item { display: flex; align-items: center; gap: 8px; }
+.tool-why-grid.single-col { grid-template-columns: 1fr; gap: 14px; }
+.tool-why-item { display: flex; align-items: center; gap: 10px; }
 .tool-why-item svg { width: 14px; height: 14px; color: var(--tool-accent); flex-shrink: 0; }
 .tool-why-item span { font-size: 13px; color: #3f3f46; }
+
+/* Circular icon-badge: a softer alternative to the flat line icons and
+   checkmarks above, used where a page wants each row to read as a small
+   pill of its own rather than an icon-plus-text pair. */
+.tool-icon-badge { width: 32px; height: 32px; border-radius: 50%; background: var(--tool-tint); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.tool-icon-badge svg { width: 16px; height: 16px; color: var(--tool-accent); }
+.tool-icon-badge.lg { width: 46px; height: 46px; }
+.tool-icon-badge.lg svg { width: 22px; height: 22px; }
+.tool-icon-badge.on-tint { background: rgba(255,255,255,0.75); }
+
+.tool-tagline-script { font-family: "Caveat", cursive; font-size: 22px; font-weight: 600; color: var(--tool-accent); line-height: 1.2; }
 
 .tool-cta-band { background: var(--black); border-radius: var(--radius-lg); padding: 30px 36px; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin: 40px 6vw 0; max-width: 1180px; margin-left: auto; margin-right: auto; }
 .tool-cta-band .h { margin: 0 0 6px; font-size: 18px; font-weight: 700; color: #fff; }
