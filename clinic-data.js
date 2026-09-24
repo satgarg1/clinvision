@@ -2479,6 +2479,58 @@
     return data;
   }
 
+  function normalizePrescriptionRow(row) {
+    return {
+      id: row.id,
+      createdAt: row.created_at,
+      complaints: row.complaints || '',
+      diagnosis: row.diagnosis || '',
+      advice: row.advice || '',
+      followUpDate: row.follow_up_date || null,
+      patientName: row.patient_name,
+      patientAge: row.patient_age,
+      patientGender: row.patient_gender,
+      patientPhone: row.patient_phone,
+      doctorId: row.doctor_id || null,
+      doctorName: row.doctor_name,
+      doctorSpecialty: row.doctor_specialty || '',
+      doctorQualification: row.doctor_qualification || '',
+      doctorRegistrationNumber: row.doctor_registration_number || '',
+      items: (row.items || []).map((it) => ({
+        name: it.name,
+        composition: it.composition || '',
+        frequency: it.frequency || '',
+        durationText: it.durationText || '',
+        instructions: it.instructions || '',
+      })),
+    };
+  }
+
+  async function canAccessPrescriptions() {
+    const profile = await getMyProfile();
+    return !!profile && profile.isActive && (profile.role === 'admin' || profile.role === 'doctor');
+  }
+
+  async function getPatientPrescriptions(patientId) {
+    const { data, error } = await sb.rpc('get_patient_prescriptions', { p_patient_id: patientId });
+    if (error) throw error;
+    return (data || []).map(normalizePrescriptionRow);
+  }
+
+  async function getClinicPrescriptionsByDate({ date, doctorId }) {
+    const { data, error } = await sb.rpc('get_clinic_prescriptions_by_date', {
+      p_date: date, p_doctor_id: doctorId || null,
+    });
+    if (error) throw error;
+    return (data || []).map(normalizePrescriptionRow);
+  }
+
+  async function searchClinicPrescriptions(query) {
+    const { data, error } = await sb.rpc('search_clinic_prescriptions', { p_query: query || '' });
+    if (error) throw error;
+    return (data || []).map(normalizePrescriptionRow);
+  }
+
   async function onLiveChange(cb) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return;
@@ -2917,6 +2969,10 @@
     getClinicMedicinesForRx,
     searchMedicinesForRx,
     createPrescription,
+    canAccessPrescriptions,
+    getPatientPrescriptions,
+    getClinicPrescriptionsByDate,
+    searchClinicPrescriptions,
 
     onLiveChange,
   };

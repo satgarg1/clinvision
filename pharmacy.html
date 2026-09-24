@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=337" />
+<link rel="stylesheet" href="styles.css?v=338" />
 <style>
   .med-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-radius:var(--radius-sm); border:1px solid var(--grey-300); margin-bottom:8px; }
   .med-row:hover { border-color:var(--grey-500); }
@@ -64,6 +64,7 @@
         <a href="reception.html" class="nav-link" id="receptionNavLink">Reception</a>
         <a href="doctor.html" class="nav-link" id="doctorNavLink">Doctor View</a>
         <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
+        <a href="prescriptions.html" class="nav-link" id="prescriptionsNavLink">Prescriptions</a>
         <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
         <a href="trends.html" class="nav-link" id="trendsNavLink">Insights</a>
         <a href="display.html" class="nav-link" id="displayNavLink">Display Screen</a>
@@ -166,7 +167,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=118"></script>
+  <script src="clinic-data.js?v=119"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -189,6 +190,7 @@
         }
         if (!amAdmin && !amDoctor) {
           document.getElementById('trendsNavLink').style.display = 'none';
+        document.getElementById('prescriptionsNavLink').style.display = 'none';
         }
       }
       await Qlinic.applyFeatureNavGating();

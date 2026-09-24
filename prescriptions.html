@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Prescriptions: ClinVision</title>
+<script>if (localStorage.getItem('qlinic_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
+<link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
+<link rel="stylesheet" href="styles.css?v=338" />
+</head>
+<body style="visibility:hidden;">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <a href="index.html" class="brand">
+        <span class="brand-top">
+        <span class="brand-word-wrap">
+          <span class="brand-word">ClinVision</span>
+          <span class="brand-word-bar"></span>
+        </span>
+      </span>
+      <span class="brand-tagline">Where clinics run better</span>
+      </a>
+      <div class="clinic-name-row">
+        <img class="clinic-logo-thumb" id="clinicLogoThumb" style="display:none;" alt="" />
+        <div class="clinic-name" id="clinicName">Loading…</div>
+      </div>
+      <nav>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="reception.html" class="nav-link" id="receptionNavLink">Reception</a>
+        <a href="doctor.html" class="nav-link">Doctor View</a>
+        <a href="billing.html" class="nav-link" id="billingNavLink">Billing</a>
+        <a href="prescriptions.html" class="nav-link active">Prescriptions</a>
+        <a href="revenue.html" class="nav-link" id="revenueNavLink">Revenue</a>
+        <a href="trends.html" class="nav-link" id="trendsNavLink">Insights</a>
+        <a href="display.html" class="nav-link" id="displayNavLink">Display Screen</a>
+        <a href="settings.html" class="nav-link pinned-bottom" id="settingsNavLink">Settings</a>
+      </nav>
+    </aside>
+
+    <main class="app-main">
+      <div class="app-topbar">
+        <h1>Prescriptions</h1>
+        <div class="clock-pill">
+          <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Time: <span class="time" id="clockTime">--</span></span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="filter-seg" id="rxTabSeg">
+            <button type="button" class="active" data-tab="today">Today</button>
+            <button type="button" data-tab="search">Search a patient</button>
+          </div>
+          <select id="rxDoctorFilter" class="doctor-form-field" style="display:none;height:38px;border:1px solid var(--grey-300);background:var(--grey-100);border-radius:8px;padding:0 12px;font-size:13.5px;font-family:var(--font);min-width:200px;"></select>
+        </div>
+        <div class="field" id="rxSearchWrap" style="display:none;max-width:400px;">
+          <input type="text" id="rxSearchInput" placeholder="Search by patient name or phone…" autocomplete="off" />
+        </div>
+        <div id="rxListContainer"></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Same reusable print target/CSS every other prescription surface uses
+       (see doctor.html) — one #printRx per page, filled right before
+       window.print(). -->
+  <div class="a4" id="printRx" style="display:none;"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="clinic-config.js"></script>
+  <script src="clinic-data.js?v=119"></script>
+  <script>
+    (async function () {
+      if (!(await Qlinic.requireLogin('login.html'))) return;
+
+      document.querySelector('a.brand').addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (await Qlinic.confirmDialog({ message: "Going to the homepage will end your session here, you'll need to log in again to get back in." })) {
+          window.location.href = 'index.html';
+        }
+      });
+
+      if (!(await Qlinic.canAccessPrescriptions())) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      const amAdmin = await Qlinic.isAdmin();
+      if (!amAdmin) {
+        document.getElementById('receptionNavLink').style.display = 'none';
+        document.getElementById('billingNavLink').style.display = 'none';
+        document.getElementById('displayNavLink').style.display = 'none';
+        document.getElementById('revenueNavLink').style.display = 'none';
+      }
+      await Qlinic.applyFeatureNavGating();
+      document.body.style.visibility = 'visible';
+
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      function formatAgeGender(rx) {
+        const age = rx.patientAge != null ? `${rx.patientAge} yrs` : '';
+        const gender = rx.patientGender ? rx.patientGender.charAt(0).toUpperCase() + rx.patientGender.slice(1) : '';
+        return [age, gender].filter(Boolean).join(', ');
+      }
+      function formatDate(iso) {
+        return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+      function initialsOf(name) {
+        return (name || '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
+      }
+
+      const clinic = await Qlinic.getClinic();
+      document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
+      if (clinic && clinic.logo_url) {
+        document.getElementById('clinicLogoThumb').src = clinic.logo_url;
+        document.getElementById('clinicLogoThumb').style.display = 'block';
+      } else {
+        document.getElementById('clinicLogoThumb').style.display = 'none';
+      }
+      document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
+      setInterval(() => { document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date()); }, 30000);
+
+      if (amAdmin) {
+        const doctors = await Qlinic.getDoctors();
+        const sel = document.getElementById('rxDoctorFilter');
+        sel.innerHTML = '<option value="">All doctors</option>' +
+          doctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)}</option>`).join('');
+        sel.style.display = '';
+        sel.addEventListener('change', () => loadCurrentTab());
+      }
+
+      let currentTab = 'today';
+      let expandedId = null;
+      let searchDebounce = null;
+      let searchSeq = 0;
+
+      function renderList(items) {
+        const container = document.getElementById('rxListContainer');
+        if (!items.length) {
+          container.innerHTML = `<div class="empty-state">${currentTab === 'today' ? 'No prescriptions written today yet.' : 'Type a name or phone number to search.'}</div>`;
+          return;
+        }
+        container.innerHTML = items.map((rx) => {
+          const isOpen = rx.id === expandedId;
+          const doctorLine = amAdmin ? `${Qlinic.escapeHtml(rx.doctorName)}${rx.doctorSpecialty ? ' · ' + Qlinic.escapeHtml(rx.doctorSpecialty) : ''}` : '';
+          return `
+            <div class="rx-history-card${isOpen ? ' expanded' : ''}" data-id="${rx.id}">
+              <div class="rx-history-top">
+                <div class="rx-history-who">
+                  <div class="rx-history-avatar">${Qlinic.escapeHtml(initialsOf(rx.patientName))}</div>
+                  <div>
+                    <div class="rx-history-name">${Qlinic.escapeHtml(rx.patientName)}${formatAgeGender(rx) ? ' · ' + Qlinic.escapeHtml(formatAgeGender(rx)) : ''}</div>
+                    <div class="rx-history-meta">${Qlinic.escapeHtml(rx.patientPhone || '')}</div>
+                  </div>
+                </div>
+                <div class="rx-history-right">
+                  <div class="rx-history-date">${formatDate(rx.createdAt)}</div>
+                  ${doctorLine ? `<div class="rx-history-doctor">${doctorLine}</div>` : ''}
+                </div>
+                <svg class="rx-history-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+              ${rx.diagnosis ? `<div class="rx-history-dx"><b>Diagnosis:</b> ${Qlinic.escapeHtml(rx.diagnosis)}</div>` : ''}
+              <div class="rx-history-tags">
+                <span class="rx-tag">${rx.items.length} medicine${rx.items.length === 1 ? '' : 's'}</span>
+                ${rx.followUpDate ? `<span class="rx-tag">Follow up: ${formatDate(rx.followUpDate)}</span>` : ''}
+              </div>
+              ${isOpen ? renderDetail(rx) : ''}
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderDetail(rx) {
+        const medsHtml = rx.items.length
+          ? rx.items.map((item, i) => `
+              <tr>
+                <td style="color:var(--grey-500);">${i + 1}</td>
+                <td><div class="rt-name">${Qlinic.escapeHtml(item.name)}${item.composition ? ` <span class="rt-comp" style="font-weight:400;">(${Qlinic.escapeHtml(item.composition)})</span>` : ''}</div>${item.instructions ? `<div class="rt-instr">${Qlinic.escapeHtml(item.instructions)}</div>` : ''}</td>
+                <td style="white-space:nowrap;">${Qlinic.escapeHtml(item.frequency)}</td>
+                <td>${Qlinic.escapeHtml(item.durationText)}</td>
+              </tr>
+            `).join('')
+          : '<tr><td colspan="4" style="color:var(--grey-500);font-style:italic;">No medicines recorded</td></tr>';
+        return `
+          <div class="rx-history-detail">
+            <div class="rx-pair-row">
+              ${rx.complaints ? `<div class="rx-dx"><b>Chief complaint</b><span>${Qlinic.escapeHtml(rx.complaints)}</span></div>` : ''}
+              ${rx.diagnosis ? `<div class="rx-dx"><b>Diagnosis</b><span>${Qlinic.escapeHtml(rx.diagnosis)}</span></div>` : ''}
+            </div>
+            <table class="rx-table">
+              <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
+              <tbody>${medsHtml}</tbody>
+            </table>
+            <div class="rx-pair-row">
+              ${rx.advice ? `<div class="rx-advice"><b>Advice</b><span>${Qlinic.escapeHtml(rx.advice)}</span></div>` : ''}
+              ${rx.followUpDate ? `<div class="rx-advice"><b>Follow Up</b><span>${Qlinic.escapeHtml(formatDate(rx.followUpDate))}</span></div>` : ''}
+            </div>
+            <div class="rx-history-actions">
+              <button type="button" class="btn-sm accent-outline" data-print-id="${rx.id}">🖨️ Print</button>
+            </div>
+          </div>
+        `;
+      }
+
+      let currentItems = [];
+
+      function buildPrintHtml(rx) {
+        const logoHtml = (clinic && clinic.logo_url) ? `<img class="rx-logo-img" src="${Qlinic.escapeHtml(clinic.logo_url)}" alt="" />` : '';
+        const addressParts = clinic ? [clinic.address_line, clinic.city, clinic.state && clinic.pincode ? `${clinic.state} ${clinic.pincode}` : clinic.state].filter(Boolean) : [];
+        const doctorQualLine = [rx.doctorQualification, rx.doctorRegistrationNumber ? `Reg. No. ${rx.doctorRegistrationNumber}` : ''].filter(Boolean).join(' · ');
+        const medsHtml = rx.items.length
+          ? rx.items.map((item, i) => `
+              <tr>
+                <td style="color:var(--grey-500);">${i + 1}</td>
+                <td><div class="rt-name">${Qlinic.escapeHtml(item.name)}${item.composition ? ` <span class="rt-comp" style="font-weight:400;">(${Qlinic.escapeHtml(item.composition)})</span>` : ''}</div>${item.instructions ? `<div class="rt-instr">${Qlinic.escapeHtml(item.instructions)}</div>` : ''}</td>
+                <td style="white-space:nowrap;">${Qlinic.escapeHtml(item.frequency)}</td>
+                <td>${Qlinic.escapeHtml(item.durationText)}</td>
+              </tr>
+            `).join('')
+          : '<tr><td colspan="4" style="color:var(--grey-500);font-style:italic;">No medicines recorded</td></tr>';
+        const footerLogoHtml = (clinic && clinic.logo_url) ? `<img class="rx-footer-logo" src="${Qlinic.escapeHtml(clinic.logo_url)}" alt="" />` : '';
+        return `
+          <div class="rx-head">
+            ${logoHtml}
+            <div>
+              <div class="rx-clinic-name">${clinic ? Qlinic.escapeHtml(clinic.name) : ''}</div>
+              <div class="rx-clinic-addr">${Qlinic.escapeHtml(addressParts.join(', '))}</div>
+            </div>
+            <div class="rx-doc-block">
+              <div class="rx-doc-name">Dr. ${Qlinic.escapeHtml(rx.doctorName)}</div>
+              <div class="rx-doc-qual">${Qlinic.escapeHtml(rx.doctorSpecialty)}</div>
+              <div class="rx-doc-qual">${Qlinic.escapeHtml(doctorQualLine)}</div>
+            </div>
+          </div>
+          <div class="rx-info-grid">
+            <div><span class="k">Patient:</span> ${Qlinic.escapeHtml(rx.patientName)}</div>
+            <div><span class="k">Date:</span> ${Qlinic.escapeHtml(formatDate(rx.createdAt))}</div>
+            <div><span class="k">Age &amp; Gender:</span> ${Qlinic.escapeHtml(formatAgeGender(rx))}</div>
+            <div><span class="k">Phone:</span> ${Qlinic.escapeHtml(rx.patientPhone || '—')}</div>
+          </div>
+          <div class="rx-pair-row">
+            ${rx.complaints ? `<div class="rx-dx"><b>Chief complaint</b><span>${Qlinic.escapeHtml(rx.complaints)}</span></div>` : ''}
+            ${rx.diagnosis ? `<div class="rx-dx"><b>Diagnosis</b><span>${Qlinic.escapeHtml(rx.diagnosis)}</span></div>` : ''}
+          </div>
+          <table class="rx-table">
+            <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
+            <tbody>${medsHtml}</tbody>
+          </table>
+          <div class="rx-pair-row">
+            ${rx.advice ? `<div class="rx-advice"><b>Advice</b><span>${Qlinic.escapeHtml(rx.advice)}</span></div>` : ''}
+            ${rx.followUpDate ? `<div class="rx-advice"><b>Follow Up</b><span>${Qlinic.escapeHtml(formatDate(rx.followUpDate))}</span></div>` : ''}
+          </div>
+          <div class="rx-footer">
+            ${footerLogoHtml}
+            <div>Thank you for visiting ${clinic ? Qlinic.escapeHtml(clinic.name) : ''}</div>
+          </div>
+        `;
+      }
+
+      document.getElementById('rxListContainer').addEventListener('click', (e) => {
+        const printBtn = e.target.closest('[data-print-id]');
+        if (printBtn) {
+          const rx = currentItems.find((r) => r.id === printBtn.dataset.printId);
+          if (!rx) return;
+          document.getElementById('printRx').innerHTML = buildPrintHtml(rx);
+          window.print();
+          return;
+        }
+        const card = e.target.closest('.rx-history-card');
+        if (card) {
+          const id = card.dataset.id;
+          expandedId = expandedId === id ? null : id;
+          renderList(currentItems);
+        }
+      });
+
+      async function loadCurrentTab() {
+        const container = document.getElementById('rxListContainer');
+        container.innerHTML = '<div class="empty-state">Loading…</div>';
+        try {
+          if (currentTab === 'today') {
+            const doctorId = amAdmin ? (document.getElementById('rxDoctorFilter').value || null) : null;
+            currentItems = await Qlinic.getClinicPrescriptionsByDate({ date: Qlinic.getTodayDate(), doctorId });
+          } else {
+            const q = document.getElementById('rxSearchInput').value.trim();
+            currentItems = q.length >= 2 ? await Qlinic.searchClinicPrescriptions(q) : [];
+          }
+        } catch (err) {
+          showToast(err.message || 'Could not load prescriptions');
+          currentItems = [];
+        }
+        renderList(currentItems);
+      }
+
+      document.getElementById('rxTabSeg').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-tab]');
+        if (!btn) return;
+        document.querySelectorAll('#rxTabSeg button').forEach((b) => b.classList.toggle('active', b === btn));
+        currentTab = btn.dataset.tab;
+        expandedId = null;
+        document.getElementById('rxSearchWrap').style.display = currentTab === 'search' ? '' : 'none';
+        loadCurrentTab();
+      });
+
+      document.getElementById('rxSearchInput').addEventListener('input', () => {
+        clearTimeout(searchDebounce);
+        const mySeq = ++searchSeq;
+        searchDebounce = setTimeout(() => {
+          if (mySeq === searchSeq) loadCurrentTab();
+        }, 300);
+      });
+
+      loadCurrentTab();
+    })();
+  </script>
+</body>
+</html>

@@ -5623,6 +5623,15 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
 .patient-strip .pmeta { font-size: 12.5px; color: var(--grey-500); margin-top: 1px; }
 .patient-strip .pnote { margin-left: auto; font-size: 11.5px; font-weight: 700; color: var(--success); background: var(--success-bg); padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
 
+/* Quick access to a patient's own past prescriptions, right where a
+   doctor is looking at them mid-consultation — the actual fix for
+   "doesn't have to ask the patient to bring their old prescription",
+   not a reason to leave doctor.html for a separate page. */
+.history-chip { display: inline-flex; align-items: center; gap: 7px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--accent-dark); background: #e8f0fe; border: none; padding: 8px 14px; border-radius: 999px; cursor: pointer; margin-bottom: 14px; }
+.history-chip:hover { background: #d9e9fd; }
+.rx-history-panel { margin-bottom: 16px; }
+.rx-history-panel .rx-history-card { background: var(--grey-100); }
+
 /* Medicine search — same shape as pharmacy.html's .patient-suggest*,
    promoted here since two pages now want an id-backed search dropdown.
    .rx-combo reuses the identical dropdown for Frequency/Duration/
@@ -5787,6 +5796,17 @@ table.rx-table .rt-instr { color: var(--grey-700); font-size: 11.5px; margin-top
 .rx-cal-cell.past { color: var(--grey-300); cursor: not-allowed; }
 .rx-cal-cell.past:hover { background: none; }
 
+/* Save & print / Save only / Save & WhatsApp — equal-weight cards with
+   an icon, not one filled primary button next to two plain outlines;
+   these are three parallel ways to finish, not a primary-vs-secondary
+   choice. */
+.rx-action-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.rx-action-btn { display: inline-flex; align-items: center; gap: 9px; font-family: inherit; font-weight: 600; font-size: 13.5px; padding: 12px 18px; border-radius: 12px; border: 1.5px solid var(--grey-300); background: var(--white); color: var(--black); cursor: pointer; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06); transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.rx-action-btn:hover { border-color: var(--accent); box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1); }
+.rx-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.rx-action-btn:disabled:hover { border-color: var(--grey-300); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06); }
+.rx-action-icon { font-size: 16px; line-height: 1; }
+
 @media print {
   body * { visibility: hidden; }
   #printRx, #printRx * { visibility: visible; }
@@ -5804,6 +5824,33 @@ table.rx-table .rt-instr { color: var(--grey-700); font-size: 11.5px; margin-top
    a misclick there ends or skips the visit); the queue-action buttons
    stay in their own row underneath. */
 .now-serving-row { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+
+/* ============================================================
+   prescriptions.html — prescription history (Today / search a patient).
+   Cards reuse the same .rx-dx/.rx-advice/.rx-pair-row/.rx-table classes
+   doctor.html's own print preview already uses, so an expanded card
+   here and the live A4 preview there read as the same document.
+   ============================================================ */
+.rx-history-card { border: 1px solid var(--grey-300); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 10px; cursor: pointer; }
+.rx-history-card:hover { border-color: var(--accent); }
+.rx-history-card.expanded { border-color: var(--accent); background: var(--grey-100); cursor: default; }
+.rx-history-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; cursor: pointer; }
+.rx-history-who { display: flex; align-items: center; gap: 12px; }
+.rx-history-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+.rx-history-name { font-weight: 700; font-size: 14px; }
+.rx-history-meta { font-size: 12px; color: var(--grey-500); margin-top: 1px; }
+.rx-history-right { text-align: right; flex-shrink: 0; }
+.rx-history-date { font-size: 12.5px; font-weight: 600; color: var(--grey-700); }
+.rx-history-doctor { font-size: 11.5px; color: var(--grey-500); margin-top: 2px; }
+.rx-history-chevron { width: 15px; height: 15px; color: var(--grey-500); flex-shrink: 0; margin-top: 3px; transition: transform 0.15s ease; }
+.rx-history-card.expanded .rx-history-chevron { transform: rotate(180deg); }
+.rx-history-dx { font-size: 12.5px; color: var(--grey-700); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--grey-300); }
+.rx-history-dx b { color: var(--black); font-weight: 600; }
+.rx-history-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.rx-tag { font-size: 11px; font-weight: 600; background: var(--white); color: var(--grey-700); padding: 3px 9px; border-radius: 999px; border: 1px solid var(--grey-300); }
+.rx-history-detail { margin-top: 14px; padding: 14px; background: var(--white); border: 1px solid var(--grey-300); border-radius: var(--radius-sm); cursor: default; }
+.rx-history-detail .rx-pair-row:first-child { margin-top: 0; }
+.rx-history-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
 
 /* ============================================================
    admin.html — platform admin panel (Phase 1: clinic subscriptions).
