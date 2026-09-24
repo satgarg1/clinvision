@@ -6280,8 +6280,7 @@ body.tool-orange { --tool-accent: #f59e0b; --tool-btn: #1e3a8a; --tool-tint: #ff
 /* Medicine Timing Planner's own reference asks for a smaller, tighter
    hero than the other 3 tools, a softer hero-image frame, a rounded-
    rect (not pill) primary button, and a dashed "add another" trigger. */
-body.tool-orange .tool-h1 { font-size: 32px; letter-spacing: -0.02em; }
-body.tool-orange .tool-sub { font-size: 16px; font-weight: 500; color: #475569; }
+body.tool-orange .tool-sub { font-weight: 500; color: #475569; }
 body.tool-orange .tool-hero-img { background: #fdf8f0; box-shadow: none; }
 body.tool-orange .tool-btn { border-radius: 12px; }
 body.tool-orange .tool-dashed-btn {

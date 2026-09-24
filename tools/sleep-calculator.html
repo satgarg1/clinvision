@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Caveat:wght@600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="/clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="/styles.css?v=360" />
+<link rel="stylesheet" href="/styles.css?v=361" />
 </head>
 <body class="tool-blue">
 
@@ -147,12 +147,13 @@
             <div class="time-picker-panel" id="wakeTimePanel" style="display:none;"></div>
           </div>
           <label class="tool-field-label">Your age group</label>
-          <select class="tool-select" id="ageGroup">
-            <option value="13-17">13&ndash;17 years</option>
-            <option value="18-25">18&ndash;25 years</option>
-            <option value="26-64" selected>26&ndash;64 years</option>
-            <option value="65+">65+ years</option>
-          </select>
+          <div class="time-picker" id="ageWrap">
+            <button type="button" class="time-picker-trigger" id="ageTrigger">
+              <span id="ageTriggerText">26&ndash;64 years</span>
+              <span class="time-picker-caret">&#9662;</span>
+            </button>
+            <div class="time-picker-panel" id="agePanel" style="display:none;"></div>
+          </div>
           <button type="button" class="tool-btn" id="calcSleepBtn" style="margin-top:18px;">
             Calculate
           </button>
@@ -249,6 +250,46 @@
     initialValue: '07:00'
   });
 
+  // Age group: the same open/close/select dropdown pattern as the time
+  // pickers above, reusing their .time-picker-panel/.time-picker-option
+  // classes, so the native <select>'s plain grey-highlight list is gone.
+  var ageOptions = [
+    { value: '13-17', label: '13–17 years' },
+    { value: '18-25', label: '18–25 years' },
+    { value: '26-64', label: '26–64 years' },
+    { value: '65+', label: '65+ years' }
+  ];
+  var ageValue = '26-64';
+  var ageWrap = document.getElementById('ageWrap');
+  var ageTrigger = document.getElementById('ageTrigger');
+  var ageTriggerText = document.getElementById('ageTriggerText');
+  var agePanel = document.getElementById('agePanel');
+  function renderAgePanel() {
+    agePanel.innerHTML = ageOptions.map(function (o) {
+      return '<div class="time-picker-option' + (o.value === ageValue ? ' selected' : '') + '" data-value="' + o.value + '" data-label="' + o.label + '">' + o.label + '</div>';
+    }).join('');
+  }
+  function closeAgePanel() { agePanel.style.display = 'none'; }
+  ageTrigger.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (agePanel.style.display === 'block') { closeAgePanel(); return; }
+    renderAgePanel();
+    agePanel.style.display = 'block';
+  });
+  agePanel.addEventListener('click', function (e) {
+    var opt = e.target.closest('.time-picker-option');
+    if (!opt) return;
+    ageValue = opt.getAttribute('data-value');
+    ageTriggerText.textContent = opt.getAttribute('data-label');
+    closeAgePanel();
+  });
+  document.addEventListener('click', function (e) {
+    if (!ageWrap.contains(e.target)) closeAgePanel();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeAgePanel();
+  });
+
   function fmtHours(h) {
     var whole = Math.floor(h);
     var mins = Math.round((h - whole) * 60);
@@ -259,7 +300,7 @@
   document.getElementById('calcSleepBtn').addEventListener('click', function () {
     var sleepVal = sleepTimePicker.getValue() || '23:00';
     var wakeVal = wakeTimePicker.getValue() || '07:00';
-    var age = document.getElementById('ageGroup').value;
+    var age = ageValue;
     var range = RANGES[age];
 
     var sParts = sleepVal.split(':').map(Number);
