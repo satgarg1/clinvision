@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=335" />
+<link rel="stylesheet" href="styles.css?v=336" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -269,6 +269,10 @@
             <div class="rx-pair-row">
               <div class="rx-advice" id="rxPrevAdviceWrap" style="display:none;"><b>Advice</b><span id="rxPrevAdvice"></span></div>
               <div class="rx-advice" id="rxPrevFollowUpWrap" style="display:none;"><b>Follow Up</b><span id="rxPrevFollowUp"></span></div>
+            </div>
+            <div class="rx-footer">
+              <img class="rx-footer-logo" id="rxPrevFooterLogo" style="display:none;" alt="" />
+              <div>Thank you for visiting <span id="rxPrevFooterClinicName"></span></div>
             </div>
           </div>
         </div>
@@ -1710,6 +1714,14 @@
         document.getElementById('rxPrevClinicName').textContent = clinic ? clinic.name : '';
         const addressParts = clinic ? [clinic.address_line, clinic.city, clinic.state && clinic.pincode ? `${clinic.state} ${clinic.pincode}` : clinic.state].filter(Boolean) : [];
         document.getElementById('rxPrevClinicAddr').textContent = addressParts.join(', ');
+        const footerLogo = document.getElementById('rxPrevFooterLogo');
+        if (clinic && clinic.logo_url) {
+          footerLogo.src = clinic.logo_url;
+          footerLogo.style.display = 'block';
+        } else {
+          footerLogo.style.display = 'none';
+        }
+        document.getElementById('rxPrevFooterClinicName').textContent = clinic ? clinic.name : '';
         document.getElementById('rxPrevDoctorName').textContent = doctor ? `Dr. ${doctor.name}` : '';
         document.getElementById('rxPrevDoctorSpecialty').textContent = (doctor && doctor.specialty) || '';
         document.getElementById('rxPrevDoctorQual').textContent = doctor
@@ -1804,7 +1816,12 @@
             const printEl = document.getElementById('printRx');
             printEl.innerHTML = '';
             printEl.appendChild(clone);
-            window.print();
+            // Calling print() in the same tick as the DOM insertion above
+            // is what produced a blank print — the browser can generate
+            // the print snapshot before this new content has actually been
+            // laid out and painted. Two animation frames guarantee at
+            // least one full paint cycle has happened first.
+            requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
           }
         } catch (err) {
           console.error('Save prescription failed:', err);

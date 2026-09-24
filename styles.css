@@ -5669,7 +5669,7 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
 /* Doctor-chosen theme color drives the accent throughout the preview and
    the printed page — set inline as --rx-theme from the doctor's saved
    Settings preference (falls back to the site accent when unset). */
-.a4 { --rx-theme: var(--accent); --rx-theme-bg: rgba(0, 113, 227, 0.1); background: var(--white); border-radius: 10px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12); padding: 28px 30px; font-size: 13px; color: var(--black); }
+.a4 { --rx-theme: var(--accent); --rx-theme-bg: rgba(0, 113, 227, 0.1); background: var(--white); border-radius: 10px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12); padding: 28px 30px 40px; font-size: 13px; color: var(--black); }
 /* The on-screen live preview keeps a fixed, real A4 shape (210:297)
    regardless of how much is typed — growing or shrinking it with every
    keystroke was disorienting, and a real prescription pad doesn't
@@ -5708,11 +5708,32 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
    short date — so Follow Up gets a small, right-pinned column instead
    of an even split, leaving Advice the room to wrap onto a second line
    well before it could ever reach, let alone overlap, Follow Up. */
-.rx-pair-row > .rx-advice:first-child { flex: 1 1 auto; }
+/* flex-basis MUST be a length/percentage here, not auto — auto makes a
+   flex item's wrap decision depend on its unbroken max-content width
+   (the full string before any wrap), which for a long run with no
+   spaces is enormous and pushes the sibling to its own line even though
+   the actual, post-wrap rendered text would have fit fine. A 0% basis
+   sidesteps that content-based sizing entirely: Advice just grows to
+   fill whatever room Follow Up's fixed width leaves. This is exactly
+   why Chief complaint/Diagnosis (already percentage-based) wrapped
+   correctly while this pair didn't. */
+.rx-pair-row > .rx-advice:first-child { flex: 1 1 0%; }
 .rx-pair-row > .rx-advice:last-child { flex: 0 0 auto; max-width: 150px; text-align: right; margin-left: auto; }
+/* Same footer content as billing's own receipt (logo + "Thank you for
+   visiting X") — no GST line here, a prescription isn't a billable
+   line item. Doubles as the page's visual bottom anchor, since without
+   one the last table row or advice line just stopped at the padding
+   edge with nothing marking the page as finished. */
+.rx-footer { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--grey-500); margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--grey-100); font-size: 12px; }
+.rx-footer-logo { max-height: 40px; max-width: 120px; width: auto; height: auto; object-fit: contain; }
 table.rx-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
 table.rx-table th { text-align: left; font-size: 9.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--rx-theme); padding: 0 8px 7px 0; border-bottom: 1px solid var(--rx-theme); }
 table.rx-table td { padding: 9px 8px 9px 0; border-bottom: 1px solid var(--grey-100); vertical-align: top; }
+/* A prescription with enough medicines to outgrow one page prints onto a
+   second page rather than shrinking text to force a single-page fit —
+   see the comment on #printRx below for why. This just keeps one
+   medicine's own row from being split mid-row across that page break. */
+table.rx-table tr { page-break-inside: avoid; }
 table.rx-table .rt-name { font-weight: 700; }
 table.rx-table .rt-comp { color: var(--grey-500); font-size: 10px; }
 table.rx-table .rt-instr { color: var(--grey-700); font-size: 11.5px; margin-top: 2px; }
