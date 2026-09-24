@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="/clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="/styles.css?v=354" />
+<link rel="stylesheet" href="/styles.css?v=355" />
 </head>
 <body class="tool-blue">
 
@@ -133,9 +133,21 @@
         <div class="tool-card">
           <p class="tool-card-title">Your Sleep Details</p>
           <label class="tool-field-label">When do you usually sleep?</label>
-          <input class="tool-field" type="time" id="sleepTime" value="23:00" style="margin-bottom:14px;">
+          <div class="time-picker" id="sleepTimeWrap" style="margin-bottom:14px;">
+            <button type="button" class="time-picker-trigger" id="sleepTimeTrigger">
+              <span id="sleepTimeTriggerText">11:00 PM</span>
+              <span class="time-picker-caret">&#9662;</span>
+            </button>
+            <div class="time-picker-panel" id="sleepTimePanel" style="display:none;"></div>
+          </div>
           <label class="tool-field-label">When do you wake up?</label>
-          <input class="tool-field" type="time" id="wakeTime" value="07:00" style="margin-bottom:14px;">
+          <div class="time-picker" id="wakeTimeWrap" style="margin-bottom:14px;">
+            <button type="button" class="time-picker-trigger" id="wakeTimeTrigger">
+              <span id="wakeTimeTriggerText">7:00 AM</span>
+              <span class="time-picker-caret">&#9662;</span>
+            </button>
+            <div class="time-picker-panel" id="wakeTimePanel" style="display:none;"></div>
+          </div>
           <label class="tool-field-label">Your age group</label>
           <select class="tool-select" id="ageGroup">
             <option value="13-17">13&ndash;17 years</option>
@@ -149,7 +161,7 @@
           </button>
         </div>
 
-        <div class="tool-card-tint" id="durationCard">
+        <div class="tool-card-tint" id="durationCard" style="justify-content:flex-start;">
           <div style="width:44px;height:44px;border-radius:13px;background:#fff;display:flex;align-items:center;justify-content:center;">
             <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--tool-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg>
           </div>
@@ -158,23 +170,24 @@
           <span class="tool-badge" id="durationBadge" style="background:#16a34a;">Recommended</span>
           <p style="margin:6px 0 0;font-size:14px;font-weight:700;color:var(--black);" id="durationMsg">You're getting the right amount of sleep!</p>
           <p style="margin:0;font-size:12.5px;color:#3f3f46;line-height:1.5;" id="durationRange">Adults (26&ndash;64 years) need 7&ndash;9 hours of quality sleep each night.</p>
-        </div>
-
-        <div class="tool-card">
-          <p class="tool-card-title">Sleep Tips for You</p>
-          <div class="tool-check-list">
+          <div style="width:100%;height:1px;background:rgba(0,0,0,0.08);margin:14px 0 12px;"></div>
+          <p style="margin:0 0 10px;font-size:13px;font-weight:800;color:var(--black);text-align:left;width:100%;">Sleep Tips for You</p>
+          <div class="tool-check-list" style="width:100%;">
             <div class="tool-check-item"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Stick to a consistent sleep schedule</span></div>
             <div class="tool-check-item"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Avoid screens 1 hour before bed</span></div>
             <div class="tool-check-item"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Keep your room cool, dark and quiet</span></div>
           </div>
-          <p style="margin:14px 0 10px;font-size:13px;font-weight:800;color:var(--black);">Why Sleep Matters</p>
+        </div>
+
+        <div class="tool-card">
+          <p class="tool-card-title">Why Sleep Matters</p>
           <div class="tool-why-grid">
             <div class="tool-why-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg><span>Improves focus &amp; memory</span></div>
             <div class="tool-why-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/></svg><span>Boosts immunity</span></div>
             <div class="tool-why-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 12.6a1 1 0 0 0-1-1H17l-1.6-4.3a1 1 0 0 0-1.9.1L11.9 15 10 9a1 1 0 0 0-1.9 0L6.6 11.6H4.2a1 1 0 0 0-1 1"/></svg><span>Maintains healthy weight</span></div>
             <div class="tool-why-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg><span>Supports heart health</span></div>
           </div>
-          <p style="margin:12px 0 0;font-size:11.5px;font-style:italic;color:var(--grey-500);text-align:right;">Better sleep. A healthier you.</p>
+          <p style="margin:16px 0 0;font-size:12.5px;font-style:italic;color:var(--grey-500);text-align:right;">Better sleep. A healthier you.</p>
         </div>
       </div>
 
@@ -195,6 +208,7 @@
   </footer>
 
 <script src="/mkt-nav.js?v=1"></script>
+<script src="/tool-timepicker.js?v=1"></script>
 <script>
 (function () {
   var RANGES = {
@@ -204,6 +218,15 @@
     '65+': { min: 7, max: 8, label: '65+ years' }
   };
 
+  var sleepTimePicker = ToolTimePicker.init({
+    wrapId: 'sleepTimeWrap', triggerId: 'sleepTimeTrigger', textId: 'sleepTimeTriggerText', panelId: 'sleepTimePanel',
+    initialValue: '23:00'
+  });
+  var wakeTimePicker = ToolTimePicker.init({
+    wrapId: 'wakeTimeWrap', triggerId: 'wakeTimeTrigger', textId: 'wakeTimeTriggerText', panelId: 'wakeTimePanel',
+    initialValue: '07:00'
+  });
+
   function fmtHours(h) {
     var whole = Math.floor(h);
     var mins = Math.round((h - whole) * 60);
@@ -212,8 +235,8 @@
   }
 
   document.getElementById('calcSleepBtn').addEventListener('click', function () {
-    var sleepVal = document.getElementById('sleepTime').value || '23:00';
-    var wakeVal = document.getElementById('wakeTime').value || '07:00';
+    var sleepVal = sleepTimePicker.getValue() || '23:00';
+    var wakeVal = wakeTimePicker.getValue() || '07:00';
     var age = document.getElementById('ageGroup').value;
     var range = RANGES[age];
 

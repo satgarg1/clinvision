@@ -23,6 +23,7 @@ Allow: /suite-records.png
 Allow: /suite-system.png
 Allow: /suite-team.png
 Allow: /resources/
+Allow: /tools/
 Disallow: /
 
 Sitemap: https://clinvision.in/sitemap.xml
