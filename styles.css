@@ -6296,6 +6296,14 @@ body.tool-blue   { --tool-accent: #3b82f6; --tool-btn: #1e3a5f; --tool-tint: #ee
 /* Sleep Calculator's own softer label treatment -- scoped to this theme
    since it's the only page using it today, per its own reference design. */
 body.tool-blue .tool-field-label { font-weight: 600; color: var(--grey-500); }
+/* Sleep's reference wants each card to hug its own content (no forced
+   equal-height stretch), tighter padding throughout, smaller card
+   headers, and a rounded-rect (not pill) primary button. */
+body.tool-blue .tool-grid { align-items: start; }
+body.tool-blue .tool-card { padding: 20px; }
+body.tool-blue .tool-card-tint { padding: 20px; }
+body.tool-blue .tool-card-title { font-size: 15px; margin-bottom: 14px; }
+body.tool-blue .tool-btn { border-radius: 12px; }
 
 .tool-band { background: var(--tool-bg); padding: 40px 6vw 44px; }
 .tool-wrap { max-width: 1180px; margin: 0 auto; }
