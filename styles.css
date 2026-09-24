@@ -6277,6 +6277,20 @@ body.tool-green  { --tool-accent: #15803d; --tool-btn: #15803d; --tool-tint: #e9
 body.tool-green .tool-card-tint { background: var(--tool-tint); border: 1px solid #bbf0d1; box-shadow: none; }
 body.tool-green .tool-tab.active { background: #d1fae5; color: #064e3b; border-color: #d1fae5; }
 body.tool-orange { --tool-accent: #f59e0b; --tool-btn: #1e3a8a; --tool-tint: #fff7ed; --tool-tint-strong: #f8dcb3; --tool-bg: #fdf3e7; }
+/* Medicine Timing Planner's own reference asks for a smaller, tighter
+   hero than the other 3 tools, a softer hero-image frame, a rounded-
+   rect (not pill) primary button, and a dashed "add another" trigger. */
+body.tool-orange .tool-h1 { font-size: 32px; letter-spacing: -0.02em; }
+body.tool-orange .tool-sub { font-size: 16px; font-weight: 500; color: #475569; }
+body.tool-orange .tool-hero-img { background: #fdf8f0; box-shadow: none; }
+body.tool-orange .tool-btn { border-radius: 12px; }
+body.tool-orange .tool-dashed-btn {
+  display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%;
+  border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 12px; margin-top: 12px;
+  background: none; color: #475569; font-size: 13.5px; font-weight: 600; font-family: var(--font); cursor: pointer;
+}
+body.tool-orange .tool-dashed-btn:hover { background: #f8fafc; }
+
 body.tool-purple { --tool-accent: #6d28d9; --tool-btn: #6d28d9; --tool-tint: #f6f1fd; --tool-tint-strong: #ddc7f5; --tool-bg: #f5f0fc; }
 body.tool-blue   { --tool-accent: #3b82f6; --tool-btn: #1e3a5f; --tool-tint: #eef4ff; --tool-tint-strong: #c9defc; --tool-bg: #eaf1fb; }
 /* Sleep Calculator's own softer label treatment -- scoped to this theme
