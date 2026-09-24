@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=340" />
+<link rel="stylesheet" href="styles.css?v=341" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -128,12 +128,11 @@
           <div class="now-serving-row">
             <div id="nowServingBox"></div>
             <button type="button" class="btn-sm accent-outline" id="writeRxBtn" disabled>Write prescription</button>
+            <button type="button" class="history-chip" id="rxHistoryChip" style="display:none;">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+              <span id="rxHistoryChipText">View past prescriptions</span>
+            </button>
           </div>
-          <button type="button" class="history-chip" id="rxHistoryChip" style="display:none;margin-top:10px;">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-            <span id="rxHistoryChipText">View past prescriptions</span>
-          </button>
-          <div class="rx-history-panel" id="rxHistoryPanel" style="display:none;"></div>
           <button class="btn-sm primary" id="callNextBtn" style="margin-top:14px;">Call next patient</button>
           <button class="btn-sm primary" id="finishCurrentBtn" style="margin-top:14px;margin-left:8px;">Done</button>
           <div class="call-confirm-overlay" id="callConfirmOverlay"><span class="call-confirm-check">✓</span>Next patient called</div>
@@ -296,7 +295,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=120"></script>
+  <script src="clinic-data.js?v=121"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -1896,23 +1895,18 @@
       let rxHistoryPatientId = null;
       let rxPastPrescriptions = [];
       let rxHistoryExpandedId = null;
-
-      function collapseRxHistoryPanel() {
-        document.getElementById('rxHistoryPanel').style.display = 'none';
-      }
+      let rxHistoryPatientForModal = null;
 
       async function updateRxHistoryChip(patient) {
         if (!patient) {
           rxHistoryPatientId = null;
           rxPastPrescriptions = [];
           document.getElementById('rxHistoryChip').style.display = 'none';
-          collapseRxHistoryPanel();
           return;
         }
         if (patient.id === rxHistoryPatientId) return;
         rxHistoryPatientId = patient.id;
         document.getElementById('rxHistoryChip').style.display = 'none';
-        collapseRxHistoryPanel();
         let list = [];
         try {
           list = await Qlinic.getPatientPrescriptions(patient.id);
@@ -1966,8 +1960,9 @@
       }
 
       function renderRxHistoryList() {
-        const panel = document.getElementById('rxHistoryPanel');
-        panel.innerHTML = rxPastPrescriptions.map((rx) => {
+        const body = document.getElementById('rxHistoryModalBody');
+        if (!body) return;
+        body.innerHTML = rxPastPrescriptions.map((rx) => {
           const isOpen = rx.id === rxHistoryExpandedId;
           const dateLabel = new Date(rx.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
           return `
@@ -1992,19 +1987,57 @@
         }).join('');
       }
 
-      document.getElementById('rxHistoryChip').addEventListener('click', () => {
-        const panel = document.getElementById('rxHistoryPanel');
-        const isOpen = panel.style.display !== 'none';
-        if (isOpen) { collapseRxHistoryPanel(); return; }
+      // Past prescriptions open in their own popup (not inline in Doctor
+      // View) so a doctor can read a patient's history, close it, and
+      // then start Write prescription without the page layout jumping
+      // around underneath them — built on the same throwaway
+      // create-a-backdrop-on-click pattern as the full-schedule modal
+      // above, not a permanently-mounted element like the write-
+      // prescription modal.
+      function closeRxHistoryModal() {
+        const el = document.getElementById('rxHistoryModalBackdrop');
+        if (el) el.remove();
+        document.removeEventListener('keydown', onRxHistoryModalKey);
+      }
+      function onRxHistoryModalKey(e) {
+        if (e.key === 'Escape') closeRxHistoryModal();
+      }
+      function openRxHistoryModal() {
         rxHistoryExpandedId = null;
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop';
+        backdrop.id = 'rxHistoryModalBackdrop';
+        backdrop.innerHTML = `
+          <div class="modal-card rx-history-modal-card">
+            <div class="rx-history-modal-header">
+              <h2 class="modal-title">Past prescriptions${rxHistoryPatientForModal ? ' — ' + Qlinic.escapeHtml(rxHistoryPatientForModal) : ''}</h2>
+              <button type="button" class="rx-modal-close" id="rxHistoryModalCloseBtn" title="Close">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div class="rx-history-modal-body" id="rxHistoryModalBody"></div>
+          </div>
+        `;
+        document.body.appendChild(backdrop);
         renderRxHistoryList();
-        panel.style.display = 'block';
-      });
-      document.getElementById('rxHistoryPanel').addEventListener('click', (e) => {
-        const card = e.target.closest('.rx-history-card');
-        if (!card) return;
-        rxHistoryExpandedId = rxHistoryExpandedId === card.dataset.id ? null : card.dataset.id;
-        renderRxHistoryList();
+        backdrop.querySelector('#rxHistoryModalCloseBtn').addEventListener('click', closeRxHistoryModal);
+        backdrop.addEventListener('click', (e) => {
+          if (e.target === backdrop) { closeRxHistoryModal(); return; }
+          const card = e.target.closest('.rx-history-card');
+          if (!card) return;
+          rxHistoryExpandedId = rxHistoryExpandedId === card.dataset.id ? null : card.dataset.id;
+          renderRxHistoryList();
+          if (rxHistoryExpandedId) {
+            const opened = backdrop.querySelector(`.rx-history-card[data-id="${rxHistoryExpandedId}"]`);
+            if (opened) opened.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
+        });
+        document.addEventListener('keydown', onRxHistoryModalKey);
+      }
+      document.getElementById('rxHistoryChip').addEventListener('click', () => {
+        const patient = currentQueue && currentQueue.nowServing;
+        rxHistoryPatientForModal = patient ? patient.name : null;
+        openRxHistoryModal();
       });
 
       function openRxModal() {

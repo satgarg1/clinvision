@@ -2527,9 +2527,13 @@
     return (data || []).map(normalizePrescriptionRow);
   }
 
-  async function getClinicPrescriptionsByDate({ date, doctorId }) {
+  // endDate is optional — omitted, this is a single day (p_date); given,
+  // the server widens it to an inclusive [date, endDate] range, which is
+  // all Prescriptions' own period picker (Today/Yesterday/This week/
+  // This month/Custom) actually needs.
+  async function getClinicPrescriptionsByDate({ date, doctorId, endDate }) {
     const { data, error } = await sb.rpc('get_clinic_prescriptions_by_date', {
-      p_date: date, p_doctor_id: doctorId || null,
+      p_date: date, p_doctor_id: doctorId || null, p_end_date: endDate || null,
     });
     if (error) throw error;
     return (data || []).map(normalizePrescriptionRow);

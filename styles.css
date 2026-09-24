@@ -5627,10 +5627,19 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
    doctor is looking at them mid-consultation — the actual fix for
    "doesn't have to ask the patient to bring their old prescription",
    not a reason to leave doctor.html for a separate page. */
-.history-chip { display: inline-flex; align-items: center; gap: 7px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--accent-dark); background: #e8f0fe; border: none; padding: 8px 14px; border-radius: 999px; cursor: pointer; margin-bottom: 14px; }
+.history-chip { display: inline-flex; align-items: center; gap: 7px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--accent-dark); background: #e8f0fe; border: none; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
 .history-chip:hover { background: #d9e9fd; }
-.rx-history-panel { margin-bottom: 16px; }
-.rx-history-panel .rx-history-card { background: var(--grey-100); }
+
+/* Past prescriptions popup — built on the generic .modal-backdrop/
+   .modal-card shell (same one the full-schedule modal and confirmDialog
+   use), sized wider for prescription cards and given the same round-X
+   header bar the Write Prescription modal uses (.rx-modal-close),
+   rather than a plain text Close button. */
+.rx-history-modal-card { max-width: 640px; max-height: 82vh; padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+.rx-history-modal-header { display: flex; align-items: center; gap: 12px; padding: 20px 24px; border-bottom: 1px solid var(--grey-300); flex-shrink: 0; }
+.rx-history-modal-header .modal-title { flex: 1; margin: 0; }
+.rx-history-modal-body { padding: 20px 24px 26px; overflow-y: auto; flex: 1; min-height: 0; }
+.rx-history-modal-body .rx-history-card { background: var(--grey-100); }
 
 /* Medicine search — same shape as pharmacy.html's .patient-suggest*,
    promoted here since two pages now want an id-backed search dropdown.
@@ -5856,26 +5865,51 @@ table.rx-table .rt-instr { color: var(--grey-700); font-size: 11.5px; margin-top
 .rx-action-btn:disabled:hover { border-color: var(--grey-300); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06); }
 .rx-action-icon { font-size: 16px; line-height: 1; }
 
-/* The actual cause of print coming out blank, through every previous
-   attempt: this used to be an INLINE style="display:none" on the
-   element, and an inline style beats any stylesheet rule regardless of
-   selector specificity — the @media print rule below setting
-   display:block could never win against it without !important. As a
-   plain stylesheet rule (same #printRx selector, same specificity),
-   the later @media print declaration legitimately overrides this one
-   during print — the same mechanism .receipt/#printReceipt already
-   relies on for billing's own receipt. */
+/* The earlier cause of print coming out blank: an INLINE
+   style="display:none" on the element, which beats any stylesheet rule
+   regardless of selector specificity. As a plain stylesheet rule (same
+   #printRx selector, same specificity), the @media print declaration
+   below legitimately overrides this one during print. */
 #printRx { display: none; }
 
+/* The visibility:hidden + position:absolute approach this used to use
+   (still what billing's own #printReceipt relies on) has a real cost:
+   visibility:hidden keeps every hidden element's normal box in the
+   layout — the whole invisible .app-shell/.rx-modal-backdrop was still
+   taking up real, measured space during print, and that leftover
+   invisible layout, not the @page margin below (already correct), is
+   what was pushing #printRx's header down from the top and its footer
+   up short of the bottom. display:none instead removes every sibling
+   from layout entirely, so #printRx is the only thing left in the
+   document and just starts at the page's own top margin in normal
+   block flow — no absolute positioning, nothing else contributing
+   height, nothing to get pushed around by. */
 @media print {
-  body * { visibility: hidden; }
-  #printRx, #printRx * { visibility: visible; }
+  @page { size: A4; margin: 15mm; }
+  body { margin: 0; }
+  body > *:not(#printRx) { display: none !important; }
   #printRx {
-    display: block;
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
+    display: flex;
+    flex-direction: column;
+    /* Same fixed-frame + margin-top:auto footer trick #rxLivePreview
+       uses on screen (see its own comment above), scaled to a real A4
+       page instead of the aspect-ratio box: pins the footer to the
+       physical bottom of the sheet for a short prescription, while a
+       long one (many medicines) simply grows past this floor and
+       paginates onto a second page normally — table.rx-table's own
+       page-break-inside:avoid still protects individual rows from
+       being split across that break. */
+    min-height: calc(297mm - 30mm);
+    /* The on-screen "card" look (rounded corners, drop shadow) makes
+       sense floating over the app's grey background; on actual paper
+       it's just a border cut into the printable area, and the shadow
+       specifically was showing up as a stray grey haze around the
+       printed page. Stripped only here — the live preview and history
+       views keep the on-screen card via .a4 itself, untouched. */
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    color: #000;
   }
 }
 

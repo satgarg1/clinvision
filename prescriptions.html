@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=340" />
+<link rel="stylesheet" href="styles.css?v=341" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -49,18 +49,33 @@
       </div>
 
       <div class="panel">
-        <div class="panel-header">
+        <div class="panel-header" style="align-items:flex-end;">
           <div class="filter-seg" id="rxTabSeg">
-            <button type="button" class="active" data-tab="today">Today</button>
+            <button type="button" class="active" data-tab="today">By date</button>
             <button type="button" data-tab="search">Search a patient</button>
           </div>
-        </div>
-        <div class="inline-form" style="margin-bottom:16px;align-items:flex-end;">
-          <div class="field" id="rxSearchWrap" style="display:none;max-width:340px;flex:1;margin-bottom:0;">
+          <div class="period-pills" id="rxPeriodPills" style="margin-bottom:0;">
+            <button type="button" class="period-pill active" data-preset="today">Today</button>
+            <button type="button" class="period-pill" data-preset="yesterday">Yesterday</button>
+            <button type="button" class="period-pill" data-preset="week">This week</button>
+            <button type="button" class="period-pill" data-preset="month">This month</button>
+            <button type="button" class="period-pill" data-preset="custom">Custom</button>
+          </div>
+          <div style="display:none;gap:16px;" id="rxCustomRangeFields">
+            <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+              <label class="pill-label">From</label>
+              <input type="date" lang="en-GB" id="rxRangeStart" class="pill-input" />
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+              <label class="pill-label">To</label>
+              <input type="date" lang="en-GB" id="rxRangeEnd" class="pill-input" />
+            </div>
+          </div>
+          <div class="field" id="rxSearchWrap" style="display:none;max-width:260px;flex:1;min-width:180px;margin-bottom:0;">
             <label>Patient</label>
             <input type="text" id="rxSearchInput" placeholder="Search by name or phone…" autocomplete="off" />
           </div>
-          <div class="field" id="rxDoctorFilterWrap" style="display:none;max-width:260px;margin-bottom:0;">
+          <div class="field" id="rxDoctorFilterWrap" style="display:none;max-width:220px;margin-bottom:0;">
             <label>Doctor</label>
             <select id="rxDoctorFilter"></select>
           </div>
@@ -79,7 +94,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=120"></script>
+  <script src="clinic-data.js?v=121"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -141,21 +156,55 @@
         sel.innerHTML = '<option value="">All doctors</option>' +
           doctors.map((d) => `<option value="${d.id}">${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)}</option>`).join('');
         document.getElementById('rxDoctorFilterWrap').style.display = '';
-        sel.addEventListener('change', () => loadCurrentTab());
+        sel.addEventListener('change', () => { rxListPage = 0; loadCurrentTab(); });
       }
 
       let currentTab = 'today';
       let expandedId = null;
       let searchDebounce = null;
       let searchSeq = 0;
+      let rxListPage = 0;
+      const RX_LIST_PAGE_SIZE = 10;
+
+      // Period picker — same preset-pills-plus-custom-range shape Revenue
+      // already uses, sized to what a doctor reviewing their own written
+      // prescriptions actually asks for (a day or two back, this week,
+      // this month, or a specific range) rather than Revenue's own
+      // financial-year-oriented presets.
+      let currentPreset = 'today';
+      function pad2(n) { return String(n).padStart(2, '0'); }
+      function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
+      function computePresetRange(preset) {
+        const today = new Date();
+        const todayStr = toDateStr(today);
+        if (preset === 'yesterday') {
+          const y = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+          const s = toDateStr(y);
+          return { start: s, end: s };
+        }
+        if (preset === 'week') {
+          const day = today.getDay();
+          const diffToMonday = day === 0 ? 6 : day - 1;
+          const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - diffToMonday);
+          return { start: toDateStr(monday), end: todayStr };
+        }
+        if (preset === 'month') {
+          const first = new Date(today.getFullYear(), today.getMonth(), 1);
+          return { start: toDateStr(first), end: todayStr };
+        }
+        return { start: todayStr, end: todayStr }; // 'today' (and the default)
+      }
 
       function renderList(items) {
         const container = document.getElementById('rxListContainer');
         if (!items.length) {
-          container.innerHTML = `<div class="empty-state">${currentTab === 'today' ? 'No prescriptions written today yet.' : 'Type a name or phone number to search.'}</div>`;
+          container.innerHTML = `<div class="empty-state">${currentTab === 'today' ? 'No prescriptions in this period yet.' : 'Type a name or phone number to search.'}</div>`;
           return;
         }
-        container.innerHTML = items.map((rx) => {
+        const totalPages = Math.max(1, Math.ceil(items.length / RX_LIST_PAGE_SIZE));
+        if (rxListPage >= totalPages) rxListPage = totalPages - 1;
+        const pageItems = items.slice(rxListPage * RX_LIST_PAGE_SIZE, rxListPage * RX_LIST_PAGE_SIZE + RX_LIST_PAGE_SIZE);
+        container.innerHTML = pageItems.map((rx) => {
           const isOpen = rx.id === expandedId;
           const doctorLine = amAdmin ? `${Qlinic.escapeHtml(rx.doctorName)}${rx.doctorSpecialty ? ' · ' + Qlinic.escapeHtml(rx.doctorSpecialty) : ''}` : '';
           return `
@@ -182,7 +231,12 @@
               ${isOpen ? renderDetail(rx) : ''}
             </div>
           `;
-        }).join('');
+        }).join('') + `<div id="rxListPagerWrap">${Qlinic.pagerHtml(rxListPage + 1, totalPages)}</div>`;
+        Qlinic.wirePager(document.getElementById('rxListPagerWrap'), rxListPage + 1, totalPages, (p) => {
+          rxListPage = p - 1;
+          renderList(items);
+          document.getElementById('rxListContainer').scrollIntoView({ block: 'start', behavior: 'smooth' });
+        });
       }
 
       // Same left-column layout doctor.html's own preview/history use —
@@ -328,6 +382,13 @@
           const id = card.dataset.id;
           expandedId = expandedId === id ? null : id;
           renderList(currentItems);
+          // A doctor opening a card shouldn't have to hunt for where its
+          // now-visible detail landed — scroll straight to it instead of
+          // leaving the page exactly where it was.
+          if (expandedId) {
+            const opened = document.querySelector(`.rx-history-card[data-id="${expandedId}"]`);
+            if (opened) opened.scrollIntoView({ block: 'start', behavior: 'smooth' });
+          }
         }
       });
 
@@ -337,7 +398,16 @@
         try {
           if (currentTab === 'today') {
             const doctorId = amAdmin ? (document.getElementById('rxDoctorFilter').value || null) : null;
-            currentItems = await Qlinic.getClinicPrescriptionsByDate({ date: Qlinic.getTodayDate(), doctorId });
+            let range;
+            if (currentPreset === 'custom') {
+              const start = document.getElementById('rxRangeStart').value;
+              const end = document.getElementById('rxRangeEnd').value;
+              if (!start || !end) { currentItems = []; renderList(currentItems); return; }
+              range = { start, end };
+            } else {
+              range = computePresetRange(currentPreset);
+            }
+            currentItems = await Qlinic.getClinicPrescriptionsByDate({ date: range.start, endDate: range.end, doctorId });
           } else {
             const q = document.getElementById('rxSearchInput').value.trim();
             currentItems = q.length >= 2 ? await Qlinic.searchClinicPrescriptions(q) : [];
@@ -355,15 +425,43 @@
         document.querySelectorAll('#rxTabSeg button').forEach((b) => b.classList.toggle('active', b === btn));
         currentTab = btn.dataset.tab;
         expandedId = null;
+        rxListPage = 0;
         document.getElementById('rxSearchWrap').style.display = currentTab === 'search' ? '' : 'none';
+        document.getElementById('rxPeriodPills').style.display = currentTab === 'today' ? '' : 'none';
+        document.getElementById('rxCustomRangeFields').style.display = (currentTab === 'today' && currentPreset === 'custom') ? 'flex' : 'none';
         loadCurrentTab();
+      });
+
+      document.getElementById('rxPeriodPills').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-preset]');
+        if (!btn) return;
+        document.querySelectorAll('#rxPeriodPills .period-pill').forEach((b) => b.classList.toggle('active', b === btn));
+        currentPreset = btn.dataset.preset;
+        rxListPage = 0;
+        document.getElementById('rxCustomRangeFields').style.display = currentPreset === 'custom' ? 'flex' : 'none';
+        if (currentPreset !== 'custom') loadCurrentTab();
+        // Custom waits for both From/To dates before fetching (see the
+        // rxRangeStart/rxRangeEnd change listeners below).
+      });
+
+      const todayStr = Qlinic.getTodayDate();
+      document.getElementById('rxRangeStart').value = todayStr;
+      document.getElementById('rxRangeEnd').value = todayStr;
+      document.getElementById('rxRangeStart').max = todayStr;
+      document.getElementById('rxRangeEnd').max = todayStr;
+      Qlinic.attachDatePicker(document.getElementById('rxRangeStart'), { quickButtons: false });
+      Qlinic.attachDatePicker(document.getElementById('rxRangeEnd'), { quickButtons: false });
+      ['rxRangeStart', 'rxRangeEnd'].forEach((id) => {
+        document.getElementById(id).addEventListener('change', () => {
+          if (currentPreset === 'custom') { rxListPage = 0; loadCurrentTab(); }
+        });
       });
 
       document.getElementById('rxSearchInput').addEventListener('input', () => {
         clearTimeout(searchDebounce);
         const mySeq = ++searchSeq;
         searchDebounce = setTimeout(() => {
-          if (mySeq === searchSeq) loadCurrentTab();
+          if (mySeq === searchSeq) { rxListPage = 0; loadCurrentTab(); }
         }, 300);
       });
 
