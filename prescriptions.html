@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=343" />
+<link rel="stylesheet" href="styles.css?v=344" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -327,13 +327,13 @@
           const id = card.dataset.id;
           expandedId = expandedId === id ? null : id;
           renderList(currentItems);
-          // A doctor opening a card shouldn't have to hunt for where its
-          // now-visible detail landed — scroll straight to it instead of
-          // leaving the page exactly where it was.
-          if (expandedId) {
-            const opened = document.querySelector(`.rx-history-card[data-id="${expandedId}"]`);
-            if (opened) opened.scrollIntoView({ block: 'start', behavior: 'smooth' });
-          }
+          // Whether this just opened (revealing detail below) or closed
+          // (snapping back to one line, likely leaving the page scrolled
+          // to where that now-gone detail used to be), scroll back to
+          // this exact card either way instead of leaving the page
+          // wherever it happened to land.
+          const target = document.querySelector(`.rx-history-card[data-id="${id}"]`);
+          if (target) target.scrollIntoView({ block: 'start', behavior: 'smooth' });
         }
       });
 
