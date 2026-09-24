@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=348" />
+<link rel="stylesheet" href="styles.css?v=349" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -993,7 +993,7 @@
 
         document.getElementById('nowServingBox').innerHTML = q.nowServing
           ? `
-            <div class="ns-name">${Qlinic.escapeHtml(q.nowServing.name)}</div>
+            <div class="ns-name">${Qlinic.escapeHtml(q.nowServing.name)}${nsAgeSexLabel(q.nowServing) ? `<span class="ns-name-sub">Age/Sex: ${nsAgeSexLabel(q.nowServing)}</span>` : ''}</div>
             <div class="ns-meta">
               <span class="ns-meta-item">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -1009,7 +1009,6 @@
                 </span>
               ` : ''}
             </div>
-            ${nsAgeSexLabel(q.nowServing) ? `<div class="ns-sub">Age/Sex: ${nsAgeSexLabel(q.nowServing)}</div>` : ''}
           `
           : isAway
             ? `<div class="empty-state">No one in consultation — ${awayPhrase}.</div>`
