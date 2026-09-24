@@ -16,8 +16,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1b4b'/%3E%3Ctext x='50' y='70' font-family='Georgia, serif' font-size='60' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3Crect x='30' y='80' width='40' height='7' rx='3' fill='%23c9973e'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="/styles.css?v=353" />
+<link rel="icon" type="image/png" href="/clinvision-favicon.png?v=2" />
+<link rel="stylesheet" href="/styles.css?v=354" />
 </head>
 <body class="tool-orange">
 
@@ -129,19 +129,24 @@
         <div class="tool-hero-img"><img src="/tools/medicine-timing-planner-hero.jpg" alt="Medicine organiser and a glass of water"></div>
       </div>
 
-      <div class="tool-grid cols-2" style="padding-top:32px;">
+      <div class="tool-grid cols-2">
         <div class="tool-card">
-          <p class="tool-card-title" style="margin-bottom:2px;">Add Your Medicines</p>
+          <p class="tool-card-title">Add Your Medicines</p>
           <p class="tool-card-sub">Enter the details of your medicines to create your daily schedule.</p>
 
-          <div class="tool-th-row">
+          <div class="tool-med-empty" id="medEmptyState">
+            <p class="ttl">Add your first medicine</p>
+            <p class="dsc">Add the medicine name, dosage, frequency and food timing to build your daily schedule.</p>
+          </div>
+
+          <div class="tool-th-row" id="medThRow" style="display:none;">
             <span>Medicine Name</span><span>Dosage</span><span>Frequency</span><span>Before/After Food</span><span></span>
           </div>
           <div id="medRows"></div>
 
-          <button type="button" class="tool-link-btn" id="addMedBtn" style="margin-top:10px;">
+          <button type="button" class="tool-link-btn" id="addMedBtn" style="margin-top:12px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-            Add Another Medicine
+            Add Medicine
           </button>
 
           <button type="button" class="tool-btn" id="buildScheduleBtn" style="margin-top:18px;">
@@ -155,10 +160,8 @@
         </div>
 
         <div class="tool-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-            <p class="tool-card-title" style="margin-bottom:0;">Today's Schedule</p>
-          </div>
-          <p class="tool-card-sub" id="todayDate" style="margin-top:2px;"></p>
+          <p class="tool-card-title">Today's Schedule</p>
+          <p class="tool-card-sub" id="todayDate"></p>
           <div id="scheduleList"></div>
           <p id="scheduleEmpty" style="margin:8px 0 0;font-size:13px;color:var(--grey-500);text-align:center;">Add a medicine and press Create My Schedule.</p>
 
@@ -213,12 +216,17 @@
     rowsWrap.appendChild(row);
     row.querySelector('.del').addEventListener('click', function () {
       row.remove();
+      refreshMedEmptyState();
     });
+    refreshMedEmptyState();
   }
 
-  addRow('Metformin', '500 mg', '2', 'after');
-  addRow('Pantoprazole', '40 mg', '1', 'before');
-  addRow('Vitamin D3', '1000 IU', '1', 'after');
+  function refreshMedEmptyState() {
+    var hasRows = rowsWrap.children.length > 0;
+    document.getElementById('medEmptyState').style.display = hasRows ? 'none' : 'flex';
+    document.getElementById('medThRow').style.display = hasRows ? 'grid' : 'none';
+  }
+  refreshMedEmptyState();
 
   document.getElementById('addMedBtn').addEventListener('click', function () { addRow(); });
 
