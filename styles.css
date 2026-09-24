@@ -5935,9 +5935,22 @@ table.rx-table .rt-instr { color: var(--grey-700); font-size: 11.5px; margin-top
    exactly as-is (the same mechanism billing's own #printReceipt still
    uses) and layering ONLY inert, non-layout property overrides on top —
    box-shadow/border-radius/padding, nothing touching display, position,
-   or visibility — for the "shadow around the printed page" complaint,
-   without re-risking a blank print over the header/footer whitespace,
-   which needs a real, verified diagnosis rather than another guess. */
+   or visibility — for the "shadow around the printed page" complaint. */
+/* The footer sitting high with a lot of blank paper below it on a short
+   prescription isn't billing's receipt doing anything special to pin
+   its own footer — checked, .receipt-footer above has no bottom-pinning
+   CSS at all, it just happens to have enough header/table/totals content
+   above it to reach the bottom of the page on its own. A prescription
+   with only a few medicines genuinely doesn't have that much content, so
+   the fix has to actually anchor the footer, not just add more content.
+   position:fixed is the standard, narrowly-scoped way to do that in
+   print CSS — pins .rx-footer to the same spot on every physical page
+   without touching #printRx's own display/position (still block/
+   absolute exactly as above, so the mechanism that stopped the blank-
+   page bug stays untouched) or requiring any height/min-height
+   calculation (which is what actually broke it last time). The bottom
+   padding on #printRx just reserves enough room so a genuinely full
+   page's last content row never runs under the now-fixed footer. */
 @media print {
   @page { size: A4; margin: 15mm; }
   body * { visibility: hidden; }
@@ -5950,8 +5963,16 @@ table.rx-table .rt-instr { color: var(--grey-700); font-size: 11.5px; margin-top
     width: 100%;
     border-radius: 0;
     box-shadow: none;
-    padding: 0;
+    padding: 0 0 64px;
     color: #000;
+  }
+  #printRx .rx-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin-top: 0;
+    background: #fff;
   }
 }
 
