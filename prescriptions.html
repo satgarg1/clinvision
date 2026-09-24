@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=339" />
+<link rel="stylesheet" href="styles.css?v=340" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -79,7 +79,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=119"></script>
+  <script src="clinic-data.js?v=120"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -185,6 +185,30 @@
         }).join('');
       }
 
+      // Same left-column layout doctor.html's own preview/history use —
+      // kept as an identical copy here since this page has no shared
+      // module to import it from (renderDetail/buildPrintHtml below are
+      // already independent copies of doctor.html's own functions).
+      function buildRxSidebarHtml({ vitalsBp, vitalsPulse, vitalsTemp, vitalsWeight, testsOrdered }) {
+        const hasVitals = vitalsBp || vitalsPulse || vitalsTemp || vitalsWeight;
+        const vitalsHtml = hasVitals ? `
+          <div class="rx-vital-block">
+            <span class="lbl">Vitals</span>
+            ${vitalsBp ? `<div class="rx-vital-line"><span class="vk">BP:</span> ${Qlinic.escapeHtml(vitalsBp)}</div>` : ''}
+            ${vitalsPulse ? `<div class="rx-vital-line"><span class="vk">Pulse:</span> ${Qlinic.escapeHtml(vitalsPulse)}</div>` : ''}
+            ${vitalsTemp ? `<div class="rx-vital-line"><span class="vk">Temp:</span> ${Qlinic.escapeHtml(vitalsTemp)}</div>` : ''}
+            ${vitalsWeight ? `<div class="rx-vital-line"><span class="vk">Weight:</span> ${Qlinic.escapeHtml(vitalsWeight)}</div>` : ''}
+          </div>
+        ` : '';
+        const testsHtml = (testsOrdered && testsOrdered.length) ? `
+          <div class="rx-vital-block">
+            <span class="lbl">Tests advised</span>
+            ${testsOrdered.map((t) => `<div class="rx-sidebar-test-item">${Qlinic.escapeHtml(t)}</div>`).join('')}
+          </div>
+        ` : '';
+        return (vitalsHtml || testsHtml) ? `<div class="rx-sidebar">${vitalsHtml}${testsHtml}</div>` : '';
+      }
+
       function renderDetail(rx) {
         const medsHtml = rx.items.length
           ? rx.items.map((item, i) => `
@@ -196,19 +220,28 @@
               </tr>
             `).join('')
           : '<tr><td colspan="4" style="color:var(--grey-500);font-style:italic;">No medicines recorded</td></tr>';
+        const sidebarHtml = buildRxSidebarHtml({
+          vitalsBp: rx.vitalsBp, vitalsPulse: rx.vitalsPulse, vitalsTemp: rx.vitalsTemp, vitalsWeight: rx.vitalsWeight,
+          testsOrdered: rx.testsOrdered,
+        });
         return `
           <div class="rx-history-detail">
-            <div class="rx-pair-row">
-              ${rx.complaints ? `<div class="rx-dx"><b>Chief complaint</b><span>${Qlinic.escapeHtml(rx.complaints)}</span></div>` : ''}
-              ${rx.diagnosis ? `<div class="rx-dx"><b>Diagnosis</b><span>${Qlinic.escapeHtml(rx.diagnosis)}</span></div>` : ''}
-            </div>
-            <table class="rx-table">
-              <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
-              <tbody>${medsHtml}</tbody>
-            </table>
-            <div class="rx-pair-row">
-              ${rx.advice ? `<div class="rx-advice"><b>Advice</b><span>${Qlinic.escapeHtml(rx.advice)}</span></div>` : ''}
-              ${rx.followUpDate ? `<div class="rx-advice"><b>Follow Up</b><span>${Qlinic.escapeHtml(formatDate(rx.followUpDate))}</span></div>` : ''}
+            <div class="rx-body-row">
+              ${sidebarHtml}
+              <div class="rx-main">
+                <div class="rx-pair-row">
+                  ${rx.complaints ? `<div class="rx-dx"><b>Chief complaint</b><span>${Qlinic.escapeHtml(rx.complaints)}</span></div>` : ''}
+                  ${rx.diagnosis ? `<div class="rx-dx"><b>Diagnosis</b><span>${Qlinic.escapeHtml(rx.diagnosis)}</span></div>` : ''}
+                </div>
+                <table class="rx-table">
+                  <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
+                  <tbody>${medsHtml}</tbody>
+                </table>
+                <div class="rx-pair-row">
+                  ${rx.advice ? `<div class="rx-advice"><b>Advice</b><span>${Qlinic.escapeHtml(rx.advice)}</span></div>` : ''}
+                  ${rx.followUpDate ? `<div class="rx-advice"><b>Follow Up</b><span>${Qlinic.escapeHtml(formatDate(rx.followUpDate))}</span></div>` : ''}
+                </div>
+              </div>
             </div>
             <div class="rx-history-actions">
               <button type="button" class="btn-sm accent-outline" data-print-id="${rx.id}">🖨️ Print</button>
@@ -234,6 +267,10 @@
             `).join('')
           : '<tr><td colspan="4" style="color:var(--grey-500);font-style:italic;">No medicines recorded</td></tr>';
         const footerLogoHtml = (clinic && clinic.logo_url) ? `<img class="rx-footer-logo" src="${Qlinic.escapeHtml(clinic.logo_url)}" alt="" />` : '';
+        const sidebarHtml = buildRxSidebarHtml({
+          vitalsBp: rx.vitalsBp, vitalsPulse: rx.vitalsPulse, vitalsTemp: rx.vitalsTemp, vitalsWeight: rx.vitalsWeight,
+          testsOrdered: rx.testsOrdered,
+        });
         return `
           <div class="rx-head">
             ${logoHtml}
@@ -247,23 +284,28 @@
               <div class="rx-doc-qual">${Qlinic.escapeHtml(doctorQualLine)}</div>
             </div>
           </div>
-          <div class="rx-info-grid">
-            <div><span class="k">Patient:</span> ${Qlinic.escapeHtml(rx.patientName)}</div>
-            <div><span class="k">Date:</span> ${Qlinic.escapeHtml(formatDate(rx.createdAt))}</div>
-            <div><span class="k">Age &amp; Gender:</span> ${Qlinic.escapeHtml(formatAgeGender(rx))}</div>
-            <div><span class="k">Phone:</span> ${Qlinic.escapeHtml(rx.patientPhone || '—')}</div>
-          </div>
-          <div class="rx-pair-row">
-            ${rx.complaints ? `<div class="rx-dx"><b>Chief complaint</b><span>${Qlinic.escapeHtml(rx.complaints)}</span></div>` : ''}
-            ${rx.diagnosis ? `<div class="rx-dx"><b>Diagnosis</b><span>${Qlinic.escapeHtml(rx.diagnosis)}</span></div>` : ''}
-          </div>
-          <table class="rx-table">
-            <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
-            <tbody>${medsHtml}</tbody>
-          </table>
-          <div class="rx-pair-row">
-            ${rx.advice ? `<div class="rx-advice"><b>Advice</b><span>${Qlinic.escapeHtml(rx.advice)}</span></div>` : ''}
-            ${rx.followUpDate ? `<div class="rx-advice"><b>Follow Up</b><span>${Qlinic.escapeHtml(formatDate(rx.followUpDate))}</span></div>` : ''}
+          <div class="rx-body-row">
+            ${sidebarHtml}
+            <div class="rx-main">
+              <div class="rx-info-grid">
+                <div><span class="k">Patient:</span> ${Qlinic.escapeHtml(rx.patientName)}</div>
+                <div><span class="k">Date:</span> ${Qlinic.escapeHtml(formatDate(rx.createdAt))}</div>
+                <div><span class="k">Age &amp; Gender:</span> ${Qlinic.escapeHtml(formatAgeGender(rx))}</div>
+                <div><span class="k">Phone:</span> ${Qlinic.escapeHtml(rx.patientPhone || '—')}</div>
+              </div>
+              <div class="rx-pair-row">
+                ${rx.complaints ? `<div class="rx-dx"><b>Chief complaint</b><span>${Qlinic.escapeHtml(rx.complaints)}</span></div>` : ''}
+                ${rx.diagnosis ? `<div class="rx-dx"><b>Diagnosis</b><span>${Qlinic.escapeHtml(rx.diagnosis)}</span></div>` : ''}
+              </div>
+              <table class="rx-table">
+                <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
+                <tbody>${medsHtml}</tbody>
+              </table>
+              <div class="rx-pair-row">
+                ${rx.advice ? `<div class="rx-advice"><b>Advice</b><span>${Qlinic.escapeHtml(rx.advice)}</span></div>` : ''}
+                ${rx.followUpDate ? `<div class="rx-advice"><b>Follow Up</b><span>${Qlinic.escapeHtml(formatDate(rx.followUpDate))}</span></div>` : ''}
+              </div>
+            </div>
           </div>
           <div class="rx-footer">
             ${footerLogoHtml}

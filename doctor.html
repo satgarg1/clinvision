@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=339" />
+<link rel="stylesheet" href="styles.css?v=340" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -190,6 +190,22 @@
           </div>
 
           <div class="panel">
+            <div class="panel-header"><h2>Vitals &amp; Tests</h2></div>
+            <div class="rx-vitals-grid">
+              <div class="field"><label>BP (mmHg)</label><input type="text" id="rxVitalBp" placeholder="e.g. 120/80" autocomplete="off"></div>
+              <div class="field"><label>Pulse (bpm)</label><input type="text" id="rxVitalPulse" placeholder="e.g. 78" autocomplete="off"></div>
+              <div class="field"><label>Temp (°F)</label><input type="text" id="rxVitalTemp" placeholder="e.g. 98.6" autocomplete="off"></div>
+              <div class="field"><label>Weight (kg)</label><input type="text" id="rxVitalWeight" placeholder="e.g. 68" autocomplete="off"></div>
+            </div>
+            <div class="field rx-med-search" style="margin-top:12px;margin-bottom:0;">
+              <label>Tests advised</label>
+              <input type="text" id="rxTestInput" placeholder="Search X-Ray, MRI, CBC, Blood Sugar…" autocomplete="off">
+              <div class="rx-med-suggest-list" id="rxTestSuggestList" style="display:none;"></div>
+            </div>
+            <div class="rx-test-chips" id="rxTestChips"></div>
+          </div>
+
+          <div class="panel">
             <div class="panel-header">
               <h2>Medicines</h2>
             </div>
@@ -280,7 +296,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=119"></script>
+  <script src="clinic-data.js?v=120"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -1506,12 +1522,76 @@
         document.getElementById('rxComplaints').value = '';
         document.getElementById('rxDiagnosis').value = '';
         document.getElementById('rxAdvice').value = '';
+        document.getElementById('rxVitalBp').value = '';
+        document.getElementById('rxVitalPulse').value = '';
+        document.getElementById('rxVitalTemp').value = '';
+        document.getElementById('rxVitalWeight').value = '';
+        rxTestsOrdered = [];
+        renderRxTestChips();
         rxFollowUpValue = null;
         updateRxDateTriggerText();
         document.getElementById('rxFollowUpHint').style.display = 'none';
         renderRxRows();
         updateRxPreview();
       }
+
+      // Fixed catalog, not a live search — a diagnostic lab's own list of
+      // what it can run doesn't change often enough to need a network call,
+      // and India's clinics mostly overlap on this same common set.
+      const RX_TEST_CATALOG = [
+        'X-Ray Chest', 'X-Ray Abdomen', 'X-Ray Spine', 'X-Ray Limb/Joint',
+        'Ultrasound (USG) Abdomen', 'Ultrasound (USG) Pelvis', 'Ultrasound (USG) Obstetric',
+        'CT Scan', 'MRI', 'Mammography', 'ECG (Electrocardiogram)', '2D Echo (Echocardiogram)', 'Doppler Study',
+        'CBC (Complete Blood Count)', 'Blood Sugar - Fasting', 'Blood Sugar - Post Prandial', 'Blood Sugar - Random',
+        'HbA1c (Diabetes)', 'Lipid Profile', 'Liver Function Test (LFT)', 'Kidney Function Test (KFT/RFT)',
+        'Thyroid Profile (T3 T4 TSH)', 'Urine Routine & Microscopy', 'Stool Routine', 'Blood Group & Rh Typing',
+        'ESR', 'CRP', 'Widal Test (Typhoid)', 'Dengue NS1/IgG/IgM', 'Malaria Antigen', 'HIV Test',
+        'HBsAg (Hepatitis B)', 'VDRL (Syphilis)', 'Vitamin D', 'Vitamin B12', 'Serum Creatinine', 'Blood Urea',
+        'Uric Acid', 'PSA (Prostate Specific Antigen)', 'Pregnancy Test (Beta hCG)', 'Sputum Culture/AFB',
+        'COVID-19 RT-PCR/Antigen',
+      ];
+      let rxTestsOrdered = [];
+
+      function renderRxTestChips() {
+        document.getElementById('rxTestChips').innerHTML = rxTestsOrdered.map((t, i) => `
+          <span class="rx-test-chip">${Qlinic.escapeHtml(t)}<button type="button" data-idx="${i}" title="Remove">
+            <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button></span>
+        `).join('');
+      }
+      document.getElementById('rxTestChips').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-idx]');
+        if (!btn) return;
+        rxTestsOrdered.splice(Number(btn.dataset.idx), 1);
+        renderRxTestChips();
+        updateRxPreview();
+      });
+      document.getElementById('rxTestInput').addEventListener('input', (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        const list = document.getElementById('rxTestSuggestList');
+        if (!q) { list.style.display = 'none'; list.innerHTML = ''; return; }
+        const matches = RX_TEST_CATALOG.filter((t) => !rxTestsOrdered.includes(t) && t.toLowerCase().includes(q)).slice(0, 8);
+        if (!matches.length) { list.style.display = 'none'; list.innerHTML = ''; return; }
+        list.innerHTML = matches.map((t, i) => `<div class="rx-med-suggest-item" data-i="${i}"><div class="mr-name">${Qlinic.escapeHtml(t)}</div></div>`).join('');
+        list.dataset.results = JSON.stringify(matches);
+        list.style.display = 'block';
+      });
+      document.getElementById('rxTestInput').addEventListener('blur', () => {
+        setTimeout(() => { document.getElementById('rxTestSuggestList').style.display = 'none'; }, 150);
+      });
+      document.getElementById('rxTestSuggestList').addEventListener('mousedown', (e) => {
+        const item = e.target.closest('.rx-med-suggest-item');
+        if (!item) return;
+        const list = document.getElementById('rxTestSuggestList');
+        const results = JSON.parse(list.dataset.results || '[]');
+        const t = results[Number(item.dataset.i)];
+        if (!t) return;
+        rxTestsOrdered.push(t);
+        document.getElementById('rxTestInput').value = '';
+        list.style.display = 'none';
+        renderRxTestChips();
+        updateRxPreview();
+      });
 
       function renderRxRows() {
         const container = document.getElementById('rxRowsContainer');
@@ -1693,6 +1773,30 @@
       // No ids inside this markup: nothing here is ever selectively
       // patched, the whole thing is just regenerated fresh each time, so
       // writing it to two places at once creates no duplicate-id problem.
+      // Shared between the live/print preview (buildRxHtml) and past-
+      // prescription history (renderRxHistoryDetail) — same left-column
+      // layout the reference prescription pad used, running alongside the
+      // patient/medicine content rather than another top-to-bottom row.
+      function buildRxSidebarHtml({ vitalsBp, vitalsPulse, vitalsTemp, vitalsWeight, testsOrdered }) {
+        const hasVitals = vitalsBp || vitalsPulse || vitalsTemp || vitalsWeight;
+        const vitalsHtml = hasVitals ? `
+          <div class="rx-vital-block">
+            <span class="lbl">Vitals</span>
+            ${vitalsBp ? `<div class="rx-vital-line"><span class="vk">BP:</span> ${Qlinic.escapeHtml(vitalsBp)}</div>` : ''}
+            ${vitalsPulse ? `<div class="rx-vital-line"><span class="vk">Pulse:</span> ${Qlinic.escapeHtml(vitalsPulse)}</div>` : ''}
+            ${vitalsTemp ? `<div class="rx-vital-line"><span class="vk">Temp:</span> ${Qlinic.escapeHtml(vitalsTemp)}</div>` : ''}
+            ${vitalsWeight ? `<div class="rx-vital-line"><span class="vk">Weight:</span> ${Qlinic.escapeHtml(vitalsWeight)}</div>` : ''}
+          </div>
+        ` : '';
+        const testsHtml = (testsOrdered && testsOrdered.length) ? `
+          <div class="rx-vital-block">
+            <span class="lbl">Tests advised</span>
+            ${testsOrdered.map((t) => `<div class="rx-sidebar-test-item">${Qlinic.escapeHtml(t)}</div>`).join('')}
+          </div>
+        ` : '';
+        return (vitalsHtml || testsHtml) ? `<div class="rx-sidebar">${vitalsHtml}${testsHtml}</div>` : '';
+      }
+
       function buildRxHtml() {
         const patient = currentQueue && currentQueue.nowServing;
         const doctor = currentDoctor;
@@ -1711,6 +1815,12 @@
         const followUpLabel = rxFollowUpValue
           ? rxSelectedDateObj().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
           : '';
+
+        const vitalsBp = document.getElementById('rxVitalBp').value.trim();
+        const vitalsPulse = document.getElementById('rxVitalPulse').value.trim();
+        const vitalsTemp = document.getElementById('rxVitalTemp').value.trim();
+        const vitalsWeight = document.getElementById('rxVitalWeight').value.trim();
+        const sidebarHtml = buildRxSidebarHtml({ vitalsBp, vitalsPulse, vitalsTemp, vitalsWeight, testsOrdered: rxTestsOrdered });
 
         const medsHtml = rxItems.length
           ? rxItems.map((item, i) => `
@@ -1740,23 +1850,28 @@
               <div class="rx-doc-qual">${Qlinic.escapeHtml(doctorQualLine)}</div>
             </div>
           </div>
-          <div class="rx-info-grid">
-            <div><span class="k">Patient:</span> ${Qlinic.escapeHtml(patient ? patient.name : '')}</div>
-            <div><span class="k">Date:</span> ${Qlinic.escapeHtml(new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</div>
-            <div><span class="k">Age &amp; Gender:</span> ${Qlinic.escapeHtml(rxFormatAgeGender(patient))}</div>
-            <div><span class="k">Phone:</span> ${Qlinic.escapeHtml((patient && patient.phone) || '—')}</div>
-          </div>
-          <div class="rx-pair-row">
-            ${complaints ? `<div class="rx-dx"><b>Chief complaint</b><span>${Qlinic.escapeHtml(complaints)}</span></div>` : ''}
-            ${dx ? `<div class="rx-dx"><b>Diagnosis</b><span>${Qlinic.escapeHtml(dx)}</span></div>` : ''}
-          </div>
-          <table class="rx-table">
-            <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
-            <tbody>${medsHtml}</tbody>
-          </table>
-          <div class="rx-pair-row">
-            ${advice ? `<div class="rx-advice"><b>Advice</b><span>${Qlinic.escapeHtml(advice)}</span></div>` : ''}
-            ${followUpLabel ? `<div class="rx-advice"><b>Follow Up</b><span>${Qlinic.escapeHtml(followUpLabel)}</span></div>` : ''}
+          <div class="rx-body-row">
+            ${sidebarHtml}
+            <div class="rx-main">
+              <div class="rx-info-grid">
+                <div><span class="k">Patient:</span> ${Qlinic.escapeHtml(patient ? patient.name : '')}</div>
+                <div><span class="k">Date:</span> ${Qlinic.escapeHtml(new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</div>
+                <div><span class="k">Age &amp; Gender:</span> ${Qlinic.escapeHtml(rxFormatAgeGender(patient))}</div>
+                <div><span class="k">Phone:</span> ${Qlinic.escapeHtml((patient && patient.phone) || '—')}</div>
+              </div>
+              <div class="rx-pair-row">
+                ${complaints ? `<div class="rx-dx"><b>Chief complaint</b><span>${Qlinic.escapeHtml(complaints)}</span></div>` : ''}
+                ${dx ? `<div class="rx-dx"><b>Diagnosis</b><span>${Qlinic.escapeHtml(dx)}</span></div>` : ''}
+              </div>
+              <table class="rx-table">
+                <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
+                <tbody>${medsHtml}</tbody>
+              </table>
+              <div class="rx-pair-row">
+                ${advice ? `<div class="rx-advice"><b>Advice</b><span>${Qlinic.escapeHtml(advice)}</span></div>` : ''}
+                ${followUpLabel ? `<div class="rx-advice"><b>Follow Up</b><span>${Qlinic.escapeHtml(followUpLabel)}</span></div>` : ''}
+              </div>
+            </div>
           </div>
           <div class="rx-footer">
             ${footerLogoHtml}
@@ -1771,7 +1886,7 @@
         document.getElementById('printRx').innerHTML = html;
       }
 
-      ['rxComplaints', 'rxDiagnosis', 'rxAdvice'].forEach((id) => {
+      ['rxComplaints', 'rxDiagnosis', 'rxAdvice', 'rxVitalBp', 'rxVitalPulse', 'rxVitalTemp', 'rxVitalWeight'].forEach((id) => {
         document.getElementById(id).addEventListener('input', updateRxPreview);
       });
 
@@ -1823,19 +1938,28 @@
               </tr>
             `).join('')
           : '<tr><td colspan="4" style="color:var(--grey-500);font-style:italic;">No medicines recorded</td></tr>';
+        const sidebarHtml = buildRxSidebarHtml({
+          vitalsBp: rx.vitalsBp, vitalsPulse: rx.vitalsPulse, vitalsTemp: rx.vitalsTemp, vitalsWeight: rx.vitalsWeight,
+          testsOrdered: rx.testsOrdered,
+        });
         return `
           <div class="rx-history-detail">
-            <div class="rx-pair-row">
-              ${rx.complaints ? `<div class="rx-dx"><b>Chief complaint</b><span>${Qlinic.escapeHtml(rx.complaints)}</span></div>` : ''}
-              ${rx.diagnosis ? `<div class="rx-dx"><b>Diagnosis</b><span>${Qlinic.escapeHtml(rx.diagnosis)}</span></div>` : ''}
-            </div>
-            <table class="rx-table">
-              <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
-              <tbody>${medsHtml}</tbody>
-            </table>
-            <div class="rx-pair-row">
-              ${rx.advice ? `<div class="rx-advice"><b>Advice</b><span>${Qlinic.escapeHtml(rx.advice)}</span></div>` : ''}
-              ${rx.followUpDate ? `<div class="rx-advice"><b>Follow Up</b><span>${Qlinic.escapeHtml(new Date(rx.followUpDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</span></div>` : ''}
+            <div class="rx-body-row">
+              ${sidebarHtml}
+              <div class="rx-main">
+                <div class="rx-pair-row">
+                  ${rx.complaints ? `<div class="rx-dx"><b>Chief complaint</b><span>${Qlinic.escapeHtml(rx.complaints)}</span></div>` : ''}
+                  ${rx.diagnosis ? `<div class="rx-dx"><b>Diagnosis</b><span>${Qlinic.escapeHtml(rx.diagnosis)}</span></div>` : ''}
+                </div>
+                <table class="rx-table">
+                  <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
+                  <tbody>${medsHtml}</tbody>
+                </table>
+                <div class="rx-pair-row">
+                  ${rx.advice ? `<div class="rx-advice"><b>Advice</b><span>${Qlinic.escapeHtml(rx.advice)}</span></div>` : ''}
+                  ${rx.followUpDate ? `<div class="rx-advice"><b>Follow Up</b><span>${Qlinic.escapeHtml(new Date(rx.followUpDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</span></div>` : ''}
+                </div>
+              </div>
             </div>
           </div>
         `;
@@ -1923,6 +2047,11 @@
             followUpDate: rxFollowUpValue || null,
             items: rxItems,
             doctorId: currentDoctor ? currentDoctor.id : null,
+            vitalsBp: document.getElementById('rxVitalBp').value.trim(),
+            vitalsPulse: document.getElementById('rxVitalPulse').value.trim(),
+            vitalsTemp: document.getElementById('rxVitalTemp').value.trim(),
+            vitalsWeight: document.getElementById('rxVitalWeight').value.trim(),
+            testsOrdered: rxTestsOrdered,
           });
           showToast('Prescription saved');
           // #printRx is already populated — updateRxPreview() writes to it

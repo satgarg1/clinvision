@@ -5764,6 +5764,39 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
 .rx-pair-row > .rx-advice:first-child:not(:only-child) { flex: 1 1 0%; }
 .rx-pair-row > .rx-advice:last-child:not(:only-child) { flex: 0 0 auto; max-width: 150px; text-align: right; margin-left: auto; }
 .rx-pair-row > .rx-advice:only-child { flex: 1 1 auto; }
+
+/* Left-column strip for Vitals + Tests advised, running alongside the
+   patient info/medicines/advice column rather than another stacked
+   top-to-bottom row — matches how a real Indian prescription pad reserves
+   this margin. Present in the modal's live preview, the print copy, and
+   past-prescription history alike since all three build from the same
+   buildRxSidebarHtml() markup (doctor.html) / its copy (prescriptions.html).
+   Omitted entirely (empty string, not just hidden) when a prescription has
+   neither vitals nor tests, so older prescriptions and the common case of
+   no tests ordered render identically to before this feature existed. */
+.rx-body-row { display: flex; gap: 16px; align-items: flex-start; }
+.rx-main { flex: 1; min-width: 0; }
+.rx-sidebar { width: 118px; flex-shrink: 0; border-right: 1px dashed var(--grey-300); padding-right: 14px; }
+.rx-vital-block { margin-bottom: 14px; }
+.rx-vital-block .lbl { display: block; font-size: 9.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--rx-theme); font-weight: 700; margin-bottom: 6px; }
+.rx-vital-line { font-size: 11.5px; margin-bottom: 4px; line-height: 1.3; }
+.rx-vital-line .vk { color: var(--grey-500); }
+.rx-sidebar-test-item { font-size: 11px; padding: 3px 0; border-bottom: 1px dotted var(--grey-200); line-height: 1.3; }
+.rx-sidebar-test-item:last-child { border-bottom: none; }
+
+/* Vitals inputs in the Write Prescription modal — 2x2 grid, same .field
+   markup/styling as every other field on the page. */
+.rx-vitals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+.rx-vitals-grid .field { margin-bottom: 0; }
+
+/* Tests-advised chips — same tag-input pattern as the medicine/frequency
+   combos' suggest list (.rx-med-suggest-list, reused as-is for the
+   dropdown), but multi-select: picking an item adds a removable chip
+   instead of replacing the input's own value. */
+.rx-test-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.rx-test-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--grey-100); border: 1px solid var(--grey-300); border-radius: 999px; padding: 5px 6px 5px 12px; font-size: 12px; font-weight: 600; }
+.rx-test-chip button { display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; border: none; background: var(--grey-300); color: var(--white); cursor: pointer; padding: 0; flex-shrink: 0; }
+.rx-test-chip button:hover { background: var(--grey-500); }
 /* Same footer content as billing's own receipt (logo + "Thank you for
    visiting X") — no GST line here, a prescription isn't a billable
    line item. Doubles as the page's visual bottom anchor, since without

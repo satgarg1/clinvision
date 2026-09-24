@@ -2453,7 +2453,7 @@
   initMobileNav();
 
   // items: [{ clinicMedicineId, genericMedicineId, freeTextName, name, composition, frequency, durationText, instructions }]
-  async function createPrescription({ patientId, complaints, diagnosis, advice, followUpDate, items, doctorId }) {
+  async function createPrescription({ patientId, complaints, diagnosis, advice, followUpDate, items, doctorId, vitalsBp, vitalsPulse, vitalsTemp, vitalsWeight, testsOrdered }) {
     const payload = (items || []).map((it) => ({
       clinic_medicine_id: it.clinicMedicineId || null,
       generic_medicine_id: it.genericMedicineId || null,
@@ -2474,6 +2474,11 @@
       // ignores this for a 'doctor' role, so a doctor can never be sent
       // in as someone else.
       p_doctor_id: doctorId || null,
+      p_vitals_bp: vitalsBp || '',
+      p_vitals_pulse: vitalsPulse || '',
+      p_vitals_temp: vitalsTemp || '',
+      p_vitals_weight: vitalsWeight || '',
+      p_tests_ordered: testsOrdered || [],
     });
     if (error) throw error;
     return data;
@@ -2487,6 +2492,11 @@
       diagnosis: row.diagnosis || '',
       advice: row.advice || '',
       followUpDate: row.follow_up_date || null,
+      vitalsBp: row.vitals_bp || '',
+      vitalsPulse: row.vitals_pulse || '',
+      vitalsTemp: row.vitals_temp || '',
+      vitalsWeight: row.vitals_weight || '',
+      testsOrdered: row.tests_ordered || [],
       patientName: row.patient_name,
       patientAge: row.patient_age,
       patientGender: row.patient_gender,
