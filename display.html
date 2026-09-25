@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=364" />
+<link rel="stylesheet" href="styles.css?v=365" />
 </head>
 <body class="display-body">
   <button class="display-theme-toggle display-sound-toggle" id="displaySoundToggle" aria-label="Turn call sound on or off">
@@ -21,15 +21,6 @@
   <button class="display-theme-toggle display-zoom-in" id="displayZoomIn" aria-label="Enlarge the board to fit this screen">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </button>
-
-  <!-- Shown only on the authenticated board itself (not when viewed via
-       a redeemed session link on a phone) — the QR encodes today's
-       clinic/day code, fetched by refreshDisplayCode() below. A phone
-       that scans it exchanges the code for its own 4-hour session. -->
-  <div class="display-qr-panel" id="displayQrPanel" style="display:none;">
-    <div class="display-qr-label">View on phone</div>
-    <div class="display-qr-code" id="displayQrCode"></div>
-  </div>
 
   <script>
     window.DisplaySound = (function () {
@@ -131,15 +122,36 @@
     <div class="display-all-closed-sub" id="allClosedSub"></div>
   </div>
 
-  <div class="board" id="boardPanel">
-    <div class="board-head">
-      <p class="section-label" style="margin:0;"><span id="waitingNowText">Waiting now</span> <span id="boardCount" class="count"></span></p>
-      <div class="board-page-indicator" id="pageDots"></div>
+  <div class="board-layout">
+    <div class="board" id="boardPanel">
+      <div class="board-head">
+        <p class="board-title" id="queueTitleText">Queue</p>
+        <div class="board-page-indicator" id="pageDots"></div>
+      </div>
+      <div class="board-cols">
+        <span id="colPos">#</span><span id="colTime">Time</span><span id="colPatient">Patient</span><span id="colDoctor">Doctor</span>
+      </div>
+      <div class="board-rows" id="boardRows"></div>
     </div>
-    <div class="board-cols">
-      <span id="colPos">#</span><span id="colTime">Time</span><span id="colPatient">Patient</span><span id="colDoctor">Doctor</span>
+
+    <div class="board-sidebar">
+      <div class="stat-card">
+        <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <div class="stat-card-label" id="patientsWaitingLabel">Patients Waiting</div>
+        <div class="stat-card-value" id="boardCount">0</div>
+      </div>
+
+      <!-- Shown only on the authenticated board itself (not when viewed
+           via a redeemed session link on a phone) — the QR encodes
+           today's clinic/day code, fetched by refreshDisplayCode()
+           below. A phone that scans it exchanges the code for its own
+           4-hour session. -->
+      <div class="display-qr-panel" id="displayQrPanel" style="display:none;">
+        <div class="display-qr-label" id="displayQrLabel">View on Phone</div>
+        <div class="display-qr-code" id="displayQrCode"></div>
+        <div class="display-qr-sub" id="displayQrSub">Scan with your phone camera</div>
+      </div>
     </div>
-    <div class="board-rows" id="boardRows"></div>
   </div>
   </div>
 
@@ -232,7 +244,11 @@
           waitingLabel: 'Waiting',
           nextLabel: 'Next',
           othersLabel: (n) => `+${n} others`,
-          waitingNow: 'Waiting now',
+          queueTitle: 'Queue',
+          patientsWaitingLabel: 'Patients Waiting',
+          drPrefix: 'Dr. ',
+          viewOnPhone: 'View on Phone',
+          scanWithPhone: 'Scan with your phone camera',
           colPos: 'Token',
           colTime: 'Appointment Time',
           runningLate: 'Running a little late',
@@ -257,14 +273,12 @@
           walkin: 'Walk-in',
           priority: 'Priority',
           empty: 'No one waiting right now. The waiting room is clear.',
-          acrossAllDoctors: (n) => `(${n} across all doctors)`,
           allClosedTitle: 'No doctor is available right now',
           allClosedSub: 'All doctors have closed for the day. Please check back tomorrow.',
           clinicClosedTitle: "We're closed for the day",
           clinicClosedSub: 'Thanks for your patience today — the clinic will reopen tomorrow.',
           notArrived: 'Not arrived yet',
           notArrivedSub: 'Queue will start once they arrive',
-          calledAtLabel: (t) => `called in at ${t}`,
         },
         hi: {
           taglineFull: 'जहाँ क्लीनिक बेहतर चलते हैं',
@@ -272,7 +286,11 @@
           waitingLabel: 'प्रतीक्षा में',
           nextLabel: 'अगले',
           othersLabel: (n) => `+${n} और`,
-          waitingNow: 'अभी प्रतीक्षा में',
+          queueTitle: 'कतार',
+          patientsWaitingLabel: 'प्रतीक्षारत मरीज़',
+          drPrefix: 'डॉ. ',
+          viewOnPhone: 'फ़ोन पर देखें',
+          scanWithPhone: 'अपने फ़ोन के कैमरे से स्कैन करें',
           colPos: 'टोकन',
           colTime: 'अपॉइंटमेंट का समय',
           runningLate: 'थोड़ी देर हो रही है',
@@ -297,14 +315,12 @@
           walkin: 'वॉक-इन',
           priority: 'प्राथमिकता',
           empty: 'अभी कोई प्रतीक्षा में नहीं है। प्रतीक्षालय खाली है।',
-          acrossAllDoctors: (n) => `(सभी डॉक्टरों को मिलाकर ${n})`,
           allClosedTitle: 'अभी कोई डॉक्टर उपलब्ध नहीं है',
           allClosedSub: 'आज सभी डॉक्टर बंद हो चुके हैं। कृपया कल फिर देखें।',
           clinicClosedTitle: 'आज के लिए बंद हैं',
           clinicClosedSub: 'आज आपके धैर्य के लिए धन्यवाद — क्लिनिक कल फिर खुलेगा।',
           notArrived: 'अभी नहीं पहुंचे',
           notArrivedSub: 'डॉक्टर के आते ही कतार शुरू होगी',
-          calledAtLabel: (t) => `${t} पर बुलाया गया`,
         },
       };
       let T = STRINGS.en;
@@ -538,7 +554,6 @@
                 ${nowServingToken ? `<span class="tile-token">#${nowServingToken}</span>` : ''}
                 <span class="tile-token-name">${localizeName(queue.nowServing.name)}</span>
               </div>
-              ${queue.nowServing.calledAt ? `<div class="tile-called">${T.calledAtLabel(Qlinic.formatTimestamp(queue.nowServing.calledAt))}</div>` : ''}
             `
             : `<div class="tile-serving-label">${T.nowServing}</div><div class="tile-idle">—</div>`;
 
@@ -556,7 +571,7 @@
           <div class="doc-tile${isWide ? ' wide' : ''}${isEmergency ? ' is-emergency' : ''}" style="--tile-accent: var(--mkt-${ACCENT_COLORS[index % ACCENT_COLORS.length]});">
             <div class="tile-top">
               <div>
-                <div class="tile-name">${localizeName(doctor.name)}</div>
+                <div class="tile-name">${T.drPrefix}${localizeName(doctor.name)}</div>
                 <div class="tile-spec">${localizeSpecialty(doctor.specialty)}</div>
               </div>
               ${pillHtml}
@@ -628,7 +643,10 @@
 
       function applyStaticStrings() {
         document.getElementById('liveStatusText').textContent = T.liveStatusLabel;
-        document.getElementById('waitingNowText').textContent = T.waitingNow;
+        document.getElementById('queueTitleText').textContent = T.queueTitle;
+        document.getElementById('patientsWaitingLabel').textContent = T.patientsWaitingLabel;
+        document.getElementById('displayQrLabel').textContent = T.viewOnPhone;
+        document.getElementById('displayQrSub').textContent = T.scanWithPhone;
         document.getElementById('colPos').textContent = T.colPos;
         document.getElementById('colTime').textContent = T.colTime;
         document.getElementById('colPatient').textContent = T.colPatient;
@@ -649,7 +667,7 @@
         const start = currentPage * PAGE_SIZE;
         const pageItems = combined.slice(start, start + PAGE_SIZE);
         document.getElementById('boardRows').innerHTML = buildRowsHTML(pageItems, start);
-        document.getElementById('boardCount').textContent = combined.length ? T.acrossAllDoctors(combined.length) : '';
+        document.getElementById('boardCount').textContent = combined.length;
         renderDots(totalPages);
       }
 

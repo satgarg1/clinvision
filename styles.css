@@ -4674,17 +4674,18 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .display-body {
   --db-ink: #1e1b4b;
   --db-accent: #0071e3;
-  --db-success: #1e8e3e;
-  --db-success-bg: #e3f6e8;
-  --db-warning: #b26a00;
-  --db-warning-bg: #fdf1de;
-  --db-danger: #c5221f;
-  --db-danger-bg: #fde8e7;
+  --db-accent-bg: #e6f2fd;
+  --db-success: #065f46;
+  --db-success-bg: #d1fae5;
+  --db-warning: #92400e;
+  --db-warning-bg: #fef3c7;
+  --db-danger: #991b1b;
+  --db-danger-bg: #fee2e2;
   --db-grey-700: #4a4a55;
   --db-grey-600: #6b6b76;
   --db-grey-300: #dcdce4;
   --db-paper: #ffffff;
-  background: linear-gradient(160deg, #eef4ff 0%, #fbfbfe 45%, #fdf6ea 100%);
+  background: #f8f9fa;
   color: var(--db-ink);
   min-height: 100vh;
   padding: 18px 44px 44px;
@@ -4745,11 +4746,11 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   background: var(--db-paper);
   border: 1px solid var(--db-grey-300);
   border-left: 5px solid var(--tile-accent, var(--mkt-teal));
-  border-radius: 16px;
-  padding: 16px 20px;
+  border-radius: 14px;
+  padding: 13px 18px;
   box-shadow: 0 2px 10px rgba(30, 27, 75, 0.05);
   display: flex; flex-direction: column; justify-content: space-between;
-  gap: 10px;
+  gap: 7px;
 }
 .doc-tile.is-emergency { border-left-color: var(--db-danger); background: var(--db-danger-bg); }
 .tile-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
@@ -4763,20 +4764,19 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .tile-pill .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 .tile-pill-ok { background: var(--db-success-bg); color: var(--db-success); }
 .tile-pill-warn { background: var(--db-warning-bg); color: var(--db-warning); }
-.tile-pill-danger { background: #fbdada; color: var(--db-danger); }
+.tile-pill-danger { background: var(--db-danger-bg); color: var(--db-danger); }
 
 /* Now Serving: explicit label + token + name grouped as one unit, name
    large and right next to the number so the pairing is unambiguous. */
-.tile-serving { padding-top: 8px; border-top: 1px dashed var(--db-grey-300); flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.tile-serving { padding-top: 6px; border-top: 1px dashed var(--db-grey-300); flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
 .tile-serving-label { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--db-grey-600); }
 .doc-tile.is-emergency .tile-serving-label { color: var(--db-danger); }
 .tile-token-row { display: flex; align-items: baseline; gap: 11px; flex-wrap: wrap; }
-.tile-token { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 40px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--db-ink); line-height: 1; }
+.tile-token { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 34px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--db-ink); line-height: 1; }
 .doc-tile.is-emergency .tile-token { color: var(--db-danger); }
-.tile-token-name { font-size: 19px; font-weight: 800; color: var(--db-ink); line-height: 1.15; }
+.tile-token-name { font-size: 18px; font-weight: 800; color: var(--db-ink); line-height: 1.15; }
 .doc-tile.is-emergency .tile-token-name { color: var(--db-danger); }
-.tile-called { font-size: 11.5px; color: var(--db-grey-600); }
-.tile-idle { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 20px; color: var(--db-grey-600); font-weight: 500; }
+.tile-idle { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 18px; color: var(--db-grey-600); font-weight: 500; }
 /* Status detail (on-break-since, emergency note, not-arrived, day-
    closed countdown) — same information the old departure-board row
    surfaced, restyled; replaces the Next chips only when there's
@@ -4790,20 +4790,37 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .tile-waiting b { color: var(--db-ink); font-weight: 800; }
 .tile-next { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
 .tile-next-label { font-size: 11px; color: var(--db-grey-600); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; margin-right: 1px; }
-.tile-next-chip { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; background: #eceafc; border: 1.5px solid #c9c3f0; border-radius: 7px; padding: 4px 10px; color: var(--db-ink); }
+.tile-next-chip { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; background: #eceafc; border: 1.5px solid #c9c3f0; border-radius: 7px; padding: 3px 8px; color: var(--db-ink); }
 .tile-next-chip.more { color: var(--db-warning); background: var(--db-warning-bg); border-color: #f0d59a; }
 
 /* 1-doctor case: a single card at 100% width lays out horizontally
    (info left, token+name center, next-chips right) instead of the
    vertical stack every other card count uses — a lone card stacked
    vertically at full board width looks sparse and wastes the space. */
-.doc-tile.wide { flex-direction: row; align-items: center; gap: 24px; padding: 18px 28px; }
+.doc-tile.wide { flex-direction: row; align-items: center; gap: 24px; padding: 16px 26px; }
 .doc-tile.wide .tile-top { flex-direction: column; align-items: flex-start; gap: 8px; flex: 0 0 auto; }
 .doc-tile.wide .tile-serving { border-top: none; border-left: 1px dashed var(--db-grey-300); padding-top: 0; padding-left: 24px; flex: 1; }
-.doc-tile.wide .tile-token { font-size: 56px; }
-.doc-tile.wide .tile-token-name { font-size: 24px; }
+.doc-tile.wide .tile-token { font-size: 48px; }
+.doc-tile.wide .tile-token-name { font-size: 22px; }
 .doc-tile.wide .tile-bottom { flex: 0 0 auto; flex-direction: column; align-items: flex-end; gap: 8px; border-left: 1px dashed var(--db-grey-300); padding-left: 24px; }
 .doc-tile.wide .tile-next { justify-content: flex-end; }
+
+/* Queue table + right sidebar (patients-waiting stat, QR-to-phone card) --
+   ~80/20 split, matching the approved mockup's two-column layout. */
+.board-layout { display: grid; grid-template-columns: 1fr 230px; gap: 18px; align-items: start; }
+.board-sidebar { display: flex; flex-direction: column; gap: 14px; }
+
+.stat-card {
+  background: var(--db-paper);
+  border: 1px solid var(--db-grey-300);
+  border-radius: 16px;
+  padding: 20px 16px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(30, 27, 75, 0.05);
+}
+.stat-card-icon { width: 24px; height: 24px; color: var(--db-accent); margin: 0 auto 8px; display: block; }
+.stat-card-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--db-grey-600); margin-bottom: 6px; }
+.stat-card-value { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 42px; font-weight: 600; color: var(--db-ink); line-height: 1; }
 
 /* Queue table */
 .board {
@@ -4819,13 +4836,14 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   align-items: center;
   padding: 14px 20px 10px;
 }
+.board-title { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 19px; font-weight: 600; color: var(--db-ink); margin: 0; }
 .board-page-indicator { display: flex; gap: 6px; }
 .board-page-indicator .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--db-grey-300); transition: background 0.2s ease, width 0.2s ease; }
 .board-page-indicator .dot.active { background: var(--mkt-teal); width: 18px; border-radius: 4px; }
 
 .board-cols {
   display: grid;
-  grid-template-columns: 70px 150px 1fr 170px;
+  grid-template-columns: 60px 130px minmax(120px, 300px) 1fr;
   gap: 10px;
   padding: 10px 20px;
   font-size: 12px;
@@ -4841,7 +4859,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
    the same one doctor) and just wastes width — drop it and the grid
    template both, rather than leaving an empty column. */
 .board.single-doctor-mode .board-cols,
-.board.single-doctor-mode .board-row { grid-template-columns: 70px 150px 1fr; }
+.board.single-doctor-mode .board-row { grid-template-columns: 60px 130px 1fr; }
 .board.single-doctor-mode #colDoctor { display: none; }
 
 .board-rows {
@@ -4856,31 +4874,37 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 
 .board-row {
   display: grid;
-  grid-template-columns: 70px 150px 1fr 170px;
+  grid-template-columns: 60px 130px minmax(120px, 300px) 1fr;
   gap: 10px;
   align-items: center;
-  padding: 13px 20px;
+  padding: 10px 20px;
   border-bottom: 1px solid #f0f0f5;
   font-variant-numeric: tabular-nums;
 }
 .board-row:last-child { border-bottom: none; }
-.board-pos { font-size: 17px; font-weight: 800; color: var(--db-ink); }
-.board-time-cell { font-size: 16.5px; font-weight: 700; color: var(--db-grey-700); display: flex; flex-direction: column; }
-.board-time-late { font-size: 12px; font-weight: 700; color: var(--db-warning); margin-top: 2px; }
+.board-pos { font-size: 16px; font-weight: 800; color: var(--db-ink); }
+.board-time-cell { font-size: 15px; font-weight: 700; color: var(--db-grey-700); display: flex; flex-direction: row; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.board-time-late {
+  font-size: 10.5px; font-weight: 800; color: var(--db-warning); background: var(--db-warning-bg);
+  border-radius: 999px; padding: 2px 7px; white-space: nowrap;
+}
 /* Deliberately not the same color as .board-time-late above -- that
    means "the clinic is running behind," this means something
    different (this specific patient checked in after their own booked
    time), so it gets the board's own accent blue instead of a shade of
    the same warning color. */
-.board-time-arrived-late { font-size: 12px; font-weight: 700; color: var(--db-accent); margin-top: 2px; }
-.board-name { font-size: 16.5px; font-weight: 700; color: var(--db-ink); display: flex; flex-direction: column; }
+.board-time-arrived-late {
+  font-size: 10.5px; font-weight: 800; color: var(--db-accent); background: var(--db-accent-bg);
+  border-radius: 999px; padding: 2px 7px; white-space: nowrap;
+}
+.board-name { font-size: 15.5px; font-weight: 700; color: var(--db-ink); display: flex; flex-direction: column; }
 .board-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .board-priority {
-  font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+  font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
   color: var(--db-danger); background: var(--db-danger-bg);
-  border-radius: 999px; padding: 3px 9px; white-space: nowrap;
+  border-radius: 999px; padding: 2px 8px; white-space: nowrap;
 }
-.board-sub { font-size: 12px; font-weight: 400; color: var(--db-grey-600); margin-top: 2px; }
+.board-sub { font-size: 11.5px; font-weight: 400; color: var(--db-grey-600); margin-top: 1px; }
 .board-doc { font-size: 14px; color: var(--db-grey-700); font-weight: 600; }
 .board-empty { padding: 44px 0; text-align: center; color: var(--db-grey-600); font-size: 16px; }
 
@@ -4922,22 +4946,20 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
    leaving all the freed-up space on one side. */
 .display-scale-wrap { transform-origin: top center; transition: transform 0.15s ease; }
 
-/* QR-to-phone panel — fixed to the bottom-right corner rather than
-   inside the header/board flex flow, so it never competes for space
-   with the doctor strip or the queue table. */
+/* QR-to-phone card — sits in the board sidebar, below the "Patients
+   Waiting" stat card, matching the approved mockup's two-column layout. */
 .display-qr-panel {
-  position: fixed; bottom: 18px; right: 18px;
   background: var(--db-paper); border: 1px solid var(--db-grey-300);
-  border-radius: 12px; padding: 10px 12px; text-align: center;
-  box-shadow: 0 4px 16px rgba(30, 27, 75, 0.12);
-  z-index: 5;
+  border-radius: 16px; padding: 16px; text-align: center;
+  box-shadow: 0 2px 10px rgba(30, 27, 75, 0.05);
 }
 .display-qr-label {
-  font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
-  color: var(--db-grey-600); margin-bottom: 6px;
+  font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--db-grey-600); margin-bottom: 10px;
 }
-.display-qr-code { width: 68px; height: 68px; background: #fff; border-radius: 6px; padding: 4px; }
+.display-qr-code { width: 110px; height: 110px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 6px; }
 .display-qr-code svg { display: block; width: 100%; height: 100%; }
+.display-qr-sub { font-size: 10.5px; color: var(--db-grey-600); margin-top: 10px; line-height: 1.35; }
 
 /* Mobile nav: .mobile-topbar/.mobile-nav-toggle/.mobile-nav-backdrop are
    injected by Qlinic.initMobileNav() (clinic-data.js) on every .app-shell
@@ -5064,18 +5086,30 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 }
 
 @media (max-width: 900px) {
+  /* Also reached by a patient's own phone via the display board's QR
+     code, not just a narrow desktop window — the board's normal
+     N-doctor-cards-in-a-row and table+sidebar layouts assume TV width,
+     so both collapse to a single column here. */
+  .board-layout { grid-template-columns: 1fr; }
+  .display-strip.cols-1, .display-strip.cols-2, .display-strip.cols-3,
+  .display-strip.cols-4, .display-strip.cols-5, .display-strip.cols-6plus {
+    grid-template-columns: 1fr;
+  }
+  .doc-tile.wide { flex-direction: column; align-items: stretch; }
+  .doc-tile.wide .tile-serving { border-left: none; border-top: 1px dashed var(--db-grey-300); padding-left: 0; padding-top: 8px; }
+  .doc-tile.wide .tile-bottom { border-left: none; flex-direction: row; align-items: center; padding-left: 0; }
+
   .board-cols { display: none; }
   .board-row { grid-template-columns: 40px 1fr; row-gap: 4px; }
-  /* Explicit rows for every stacked cell (not just column) — with 5
+  /* Explicit rows for every stacked cell (not just column) — with 4
      cells now flowing into one narrow column, leaving row placement to
      implicit auto-flow risks the browser reordering them relative to
-     each other; pinning row 1-4 keeps time/name/doctor/type in that
-     fixed reading order under the token every time. */
+     each other; pinning row 1-3 keeps time/name/doctor in that fixed
+     reading order under the token every time. */
   .board-pos { grid-column: 1; grid-row: 1; }
   .board-time-cell { grid-column: 2; grid-row: 1; font-size: 13px; }
   .board-name { grid-column: 2; grid-row: 2; }
   .board-doc { grid-column: 2; grid-row: 3; font-size: 13px; }
-  .board-type { grid-column: 2; grid-row: 4; font-size: 13px; }
 }
 
 /* ---------------- Small shared components: slot hints, name/address cells ---------------- */
