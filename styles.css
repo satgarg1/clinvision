@@ -4819,7 +4819,12 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .doc-tile.wide .tile-bottom { flex: 0 0 auto; flex-direction: column; align-items: flex-end; gap: 8px; border-left: 1px dashed var(--db-grey-300); padding-left: 24px; }
 .doc-tile.wide .tile-next { justify-content: flex-end; }
 
-.stat-card {
+/* Prefixed db- (not the sitewide .stat-card, which dashboard/revenue/
+   admin/billing-audit all already use for their own, differently-laid-
+   out stat cards) — a bare .stat-card here previously collided with
+   theirs sitewide, most visibly collapsing revenue.html's 6 summary
+   cards into a single overlapping cell via the grid-area rule below. */
+.db-stat-card {
   background: var(--db-paper);
   border: 1px solid var(--db-grey-300);
   border-radius: 16px;
@@ -4827,9 +4832,9 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   text-align: center;
   box-shadow: 0 2px 10px rgba(30, 27, 75, 0.05);
 }
-.stat-card-icon { width: 24px; height: 24px; color: var(--db-accent); margin: 0 auto 8px; display: block; }
-.stat-card-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--db-grey-600); margin-bottom: 6px; }
-.stat-card-value { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 42px; font-weight: 600; color: var(--db-ink); line-height: 1; }
+.db-stat-card-icon { width: 24px; height: 24px; color: var(--db-accent); margin: 0 auto 8px; display: block; }
+.db-stat-card-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--db-grey-600); margin-bottom: 6px; }
+.db-stat-card-value { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 42px; font-weight: 600; color: var(--db-ink); line-height: 1; }
 
 /* Queue table */
 .board {
@@ -4988,7 +4993,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
    leftover height (the table is taller than the sidebar) now falls
    after the QR card instead of between the two cards. */
 .board-sidebar { grid-area: sidebar; display: flex; flex-direction: column; gap: 18px; }
-.stat-card { grid-area: stat; }
+.db-stat-card { grid-area: stat; }
 .display-qr-panel { grid-area: qr; }
 
 /* QR-to-phone card — sits in the board sidebar, below the "Patients
@@ -5179,10 +5184,10 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   /* Patients-waiting banner: a full-width horizontal strip (icon, label,
      big number) rather than the desktop sidebar's centered vertical
      stack, which only reads well in a narrow fixed-width column. */
-  .stat-card { display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px 16px; }
-  .stat-card-icon { margin: 0; flex-shrink: 0; }
-  .stat-card-label { margin-bottom: 0; flex-grow: 1; }
-  .stat-card-value { font-size: 26px; }
+  .db-stat-card { display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px 16px; }
+  .db-stat-card-icon { margin: 0; flex-shrink: 0; }
+  .db-stat-card-label { margin-bottom: 0; flex-grow: 1; }
+  .db-stat-card-value { font-size: 26px; }
 
   /* Queue rows: a 4-column grid table doesn't fit real names at phone
      width, so each row becomes a compact 2-line list item instead —
