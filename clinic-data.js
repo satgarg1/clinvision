@@ -800,10 +800,10 @@
     }
   }
 
-  async function getClinic() {
+  async function getClinic(forceRefresh) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return null;
-    if (currentClinic && currentClinic.id === clinicId) return currentClinic;
+    if (!forceRefresh && currentClinic && currentClinic.id === clinicId) return currentClinic;
     const { data, error } = await sb.from('clinics').select('*').eq('id', clinicId).single();
     if (error) throw error;
     currentClinic = data;
@@ -1457,12 +1457,12 @@
   async function getInvoicesForDate(dateStr) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    const { data, error } = await sb.from('invoices').select('*')
+    const data = await fetchAllRows((from, to) => sb.from('invoices').select('*')
       .eq('clinic_id', clinicId)
       .eq('invoice_date', dateStr)
       .eq('invoice_type', 'consultation')
-      .order('created_at', { ascending: true });
-    if (error) throw error;
+      .order('created_at', { ascending: true })
+      .range(from, to));
     return data.map(normalizeInvoice);
   }
 
@@ -1473,13 +1473,13 @@
   async function getInvoicesForDateRange(startDateStr, endDateStr) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    const { data, error } = await sb.from('invoices').select('*')
+    const data = await fetchAllRows((from, to) => sb.from('invoices').select('*')
       .eq('clinic_id', clinicId)
       .gte('invoice_date', startDateStr)
       .lte('invoice_date', endDateStr)
       .eq('invoice_type', 'consultation')
-      .order('created_at', { ascending: true });
-    if (error) throw error;
+      .order('created_at', { ascending: true })
+      .range(from, to));
     return data.map(normalizeInvoice);
   }
 
@@ -1498,13 +1498,14 @@
   async function getPatientsInRange(startDateStr, endDateStr, doctorId) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    let query = sb.from('patients').select('*')
-      .eq('clinic_id', clinicId)
-      .gte('token_date', startDateStr)
-      .lte('token_date', endDateStr);
-    if (doctorId) query = query.eq('doctor_id', doctorId);
-    const { data, error } = await query;
-    if (error) throw error;
+    const data = await fetchAllRows((from, to) => {
+      let query = sb.from('patients').select('*')
+        .eq('clinic_id', clinicId)
+        .gte('token_date', startDateStr)
+        .lte('token_date', endDateStr);
+      if (doctorId) query = query.eq('doctor_id', doctorId);
+      return query.order('token_date', { ascending: true }).order('id', { ascending: true }).range(from, to);
+    });
     return data.map(normalizePatient);
   }
 
@@ -1514,12 +1515,14 @@
   async function getNoShowsForDateRange(startDateStr, endDateStr) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    const { data, error } = await sb.from('patients').select('*')
+    const data = await fetchAllRows((from, to) => sb.from('patients').select('*')
       .eq('clinic_id', clinicId)
       .eq('status', 'no_show')
       .gte('token_date', startDateStr)
-      .lte('token_date', endDateStr);
-    if (error) throw error;
+      .lte('token_date', endDateStr)
+      .order('token_date', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to));
     return data.map(normalizePatient);
   }
 

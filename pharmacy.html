@@ -211,6 +211,8 @@
       let catalog = await Qlinic.getMedicines({ activeOnly: true });
       let selectedPatient = null;
       let cart = [];
+      let amountReceivedEdited = false;
+      document.getElementById('amountReceived').addEventListener('input', () => { amountReceivedEdited = true; });
 
       function scheduleBadge(s) {
         if (s === 'h1' || s === 'x') return `<span class="badge" style="background:var(--danger-bg); color:var(--danger);">Schedule ${s.toUpperCase()}</span>`;
@@ -326,7 +328,9 @@
         document.getElementById('sumSubtotal').textContent = money(subtotal);
         document.getElementById('sumTax').textContent = money(tax);
         document.getElementById('sumTotal').textContent = money(total);
-        document.getElementById('amountReceived').value = cart.length ? total.toFixed(2) : '';
+        if (!amountReceivedEdited) {
+          document.getElementById('amountReceived').value = cart.length ? total.toFixed(2) : '';
+        }
         document.getElementById('completeSaleBtn').disabled = cart.length === 0;
         document.getElementById('completeSalePrintBtn').disabled = cart.length === 0;
       }
@@ -389,6 +393,7 @@
         }
 
         cart = [];
+        amountReceivedEdited = false;
         renderCart();
         selectedPatient = null;
         document.getElementById('patientInput').value = '';

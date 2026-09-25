@@ -422,6 +422,13 @@
         banner.style.display = 'flex';
       }
 
+      function clinicBookingBlockReason(clinicForCheck) {
+        const date = document.getElementById('pDate').value;
+        const bookingForToday = patientMode === 'walkin' || date === Qlinic.getTodayDate();
+        if (!bookingForToday) return null;
+        if (!Qlinic.isClinicClosedToday(clinicForCheck)) return null;
+        return "The clinic has closed for the day and can't take any more patients today.";
+      }
       function doctorBookingBlockReason() {
         const doctorId = document.getElementById('pDoctor').value;
         const doctor = doctorsCache.find((d) => d.id === doctorId);
@@ -1281,6 +1288,16 @@
         const gender = document.getElementById('pGender').value;
         const address = document.getElementById('pAddress').value;
         const doctorId = document.getElementById('pDoctor').value;
+
+        const freshClinic = await Qlinic.getClinic(true);
+        const clinicBlock = clinicBookingBlockReason(freshClinic);
+        if (clinicBlock) {
+          const hint = document.getElementById('doctorClosedHint');
+          hint.className = 'slot-hint error';
+          hint.innerHTML = `⛔ ${clinicBlock}`;
+          hint.style.display = 'block';
+          return;
+        }
 
         const doctorBlock = doctorBookingBlockReason();
         if (doctorBlock) {

@@ -1114,8 +1114,15 @@
         doctorByIdCache = Object.fromEntries(doctors.map((d) => [d.id, d]));
         doctorListCache = doctors;
         resetAllTrendDrills();
+        // Always computed (not just for !amDoctor): this also populates
+        // revenueBucketKeysCache/visitsBucketsByDoctorCache, which the
+        // Visits-per-doctor drill-down reads regardless of role. Passing
+        // an empty invoices array for a doctor session means the revenue
+        // side of the cache stays all-zero, which is harmless since the
+        // Revenue tab itself is filtered out of the group selector for
+        // doctors below and its panel/chart never becomes visible.
+        renderRevenueOverTime(invoices, patients, granularity, doctorByIdCache);
         if (!amDoctor) {
-          renderRevenueOverTime(invoices, patients, granularity, doctorByIdCache);
           renderRevenueByDoctor(invoices, doctors);
         }
         renderVisitsPerDoctor(patients, doctors);

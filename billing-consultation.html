@@ -261,6 +261,12 @@
         document.getElementById('bTotal').textContent = `₹${currentAmount || 0}`;
         document.getElementById('bAmountReceived').value = currentAmount || 0;
         updateBalance();
+        updateSubmitEnabled();
+      }
+
+      function updateSubmitEnabled() {
+        const doctor = allDoctors.find((d) => d.id === document.getElementById('bDoctor').value);
+        const feeType = document.getElementById('bFeeType').value;
         const name = document.getElementById('bName').value.trim();
         document.getElementById('billingSubmitBtn').disabled = !(doctor && feeType && name);
       }
@@ -359,7 +365,7 @@
 
       document.getElementById('bDoctor').addEventListener('change', updateFeeTypeOptions);
       document.getElementById('bFeeType').addEventListener('change', updateTotal);
-      document.getElementById('bName').addEventListener('input', updateTotal);
+      document.getElementById('bName').addEventListener('input', updateSubmitEnabled);
 
       const PAYMENT_MODE_LABELS = { cash: 'Paid via cash', upi: 'Paid via UPI', card: 'Paid via card' };
       const FEE_TYPE_LABELS = { consultation: 'Consultation fee', emergency: 'Emergency fee', waived: 'Follow up' };

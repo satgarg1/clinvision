@@ -163,8 +163,14 @@
           sortKey: (p) => p.arrivedAt || p.createdAt,
         },
         avgWait: {
+          // Filter must match the Dashboard's "Avg wait now" card exactly
+          // (dashboard.html's avgWaitMins: only patients currently
+          // waiting, wait = now - effectiveTime) — this page is that
+          // card's own drill-down/proof, so a broader population here
+          // would silently show a different number than the card that
+          // links to it.
           title: 'Average wait, by patient',
-          filter: (p) => ['waiting', 'in_consult', 'done'].includes(p.status),
+          filter: (p) => p.status === 'waiting',
           columns: ['Name', 'Phone', 'Doctor', 'Status', 'Wait (min)'],
           row: (p, doctorName, waitMins) => [p.name, p.phone, doctorName, statusLabel(p.status), waitMins],
           needsWait: true,
