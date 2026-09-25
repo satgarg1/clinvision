@@ -6,16 +6,11 @@
 <title>Waiting Room Display: ClinVision</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=363" />
+<link rel="stylesheet" href="styles.css?v=364" />
 </head>
 <body class="display-body">
-  <script>document.body.setAttribute('data-board-mode', localStorage.getItem('clinvision_display_board_theme') === 'light' ? 'light' : 'dark');</script>
-
-  <button class="display-theme-toggle" id="displayThemeToggle" aria-label="Change screen appearance">
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="4,16 12,7 20,16 12,13"/></svg>
-  </button>
   <button class="display-theme-toggle display-sound-toggle" id="displaySoundToggle" aria-label="Turn call sound on or off">
     <svg class="icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
     <svg class="icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none;"><path d="M11 5 6 9H2v6h4l5 4z"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>
@@ -26,10 +21,6 @@
   <button class="display-theme-toggle display-zoom-in" id="displayZoomIn" aria-label="Enlarge the board to fit this screen">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </button>
-  <div class="display-theme-menu" id="displayThemeMenu">
-    <button type="button" data-mode="dark" aria-label="Dark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button>
-    <button type="button" data-mode="light" aria-label="Light"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor" stroke="none"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke-linecap="round"/></svg></button>
-  </div>
 
   <!-- Shown only on the authenticated board itself (not when viewed via
        a redeemed session link on a phone) — the QR encodes today's
@@ -39,39 +30,6 @@
     <div class="display-qr-label">View on phone</div>
     <div class="display-qr-code" id="displayQrCode"></div>
   </div>
-  <script>
-    (function () {
-      var STORAGE_KEY = 'clinvision_display_board_theme';
-      var toggle = document.getElementById('displayThemeToggle');
-      var menu = document.getElementById('displayThemeMenu');
-      var buttons = menu.querySelectorAll('button');
-
-      function markActive(mode) {
-        buttons.forEach(function (btn) {
-          btn.classList.toggle('active', btn.dataset.mode === mode);
-        });
-      }
-      markActive(document.body.getAttribute('data-board-mode'));
-
-      toggle.addEventListener('click', function () {
-        var isOpen = menu.classList.toggle('open');
-        toggle.classList.toggle('open', isOpen);
-      });
-
-      buttons.forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var mode = btn.dataset.mode;
-          localStorage.setItem(STORAGE_KEY, mode);
-          document.body.setAttribute('data-board-mode', mode);
-          markActive(mode);
-          setTimeout(function () {
-            menu.classList.remove('open');
-            toggle.classList.remove('open');
-          }, 450);
-        });
-      });
-    })();
-  </script>
 
   <script>
     window.DisplaySound = (function () {
@@ -153,11 +111,11 @@
   <div class="display-scale-wrap" id="displayScaleWrap">
   <div class="display-header">
     <div class="brand">
-      <span class="brand-word-wrap">
-        <span class="brand-word">ClinVision</span>
-        <span class="brand-word-bar"></span>
-      </span>
-      <span class="brand-tagline" id="taglineText">Where clinics run better</span>
+      <div class="brand-mark" aria-hidden="true">C</div>
+      <div>
+        <span class="brand-word-wrap"><span class="brand-word">ClinVision</span></span>
+        <div class="brand-tagline" id="taglineText">Where clinics run better</div>
+      </div>
     </div>
     <div style="text-align:right;">
       <div class="clock"><span id="clockTime">--</span></div>
@@ -179,7 +137,7 @@
       <div class="board-page-indicator" id="pageDots"></div>
     </div>
     <div class="board-cols">
-      <span id="colPos">#</span><span id="colTime">Time</span><span id="colPatient">Patient</span><span id="colDoctor">Doctor</span><span id="colType">Type</span>
+      <span id="colPos">#</span><span id="colTime">Time</span><span id="colPatient">Patient</span><span id="colDoctor">Doctor</span>
     </div>
     <div class="board-rows" id="boardRows"></div>
   </div>
@@ -246,7 +204,7 @@
           cleanUrl.search = '';
           history.replaceState(null, '', cleanUrl.toString());
         } catch (err) {
-          document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#fff;font-family:sans-serif;font-size:20px;text-align:center;padding:20px;">' +
+          document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#1e1b4b;background:#fbfbfe;font-family:sans-serif;font-size:20px;text-align:center;padding:20px;">' +
             (err.message || 'This QR code is no longer valid — please scan the one currently on screen.') + '</div>';
           return;
         }
@@ -255,7 +213,7 @@
       const escapeHtml = Qlinic.escapeHtml;
 
       const PAGE_SIZE = 8;
-      const ROTATE_MS = 7000;
+      const ROTATE_MS = 10000;
       const REFRESH_MS = 5000;
 
       let combined = [];
@@ -263,6 +221,7 @@
       let lastServedByDoctor = {};
       let lastStatusByDoctor = {};
       let hasRenderedOnce = false;
+      let showDoctorCol = true;
 
       const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
 
@@ -506,11 +465,11 @@
 
       function buildNextChips(waiting) {
         if (!waiting.length) return '';
-        const shown = waiting.slice(0, 3).map((p) => formatToken(p)).filter(Boolean);
+        const shown = waiting.slice(0, 4).map((p) => formatToken(p)).filter(Boolean);
         const extra = waiting.length - shown.length;
-        const chips = shown.map((t) => `<span class="dboard-next-chip">#${t}</span>`).join('');
-        const more = extra > 0 ? `<span class="dboard-next-chip more">${T.othersLabel(extra)}</span>` : '';
-        return `<div class="dboard-next"><span class="dboard-next-label">${T.nextLabel}</span>${chips}${more}</div>`;
+        const chips = shown.map((t) => `<span class="tile-next-chip">#${t}</span>`).join('');
+        const more = extra > 0 ? `<span class="tile-next-chip more">${T.othersLabel(extra)}</span>` : '';
+        return `<div class="tile-next"><span class="tile-next-label">${T.nextLabel}</span>${chips}${more}</div>`;
       }
 
       function renderDoctorStrip(all) {
@@ -543,55 +502,67 @@
         if (someoneWentEmergency) window.DisplaySound.playEmergencyChime();
         if (someoneCameBack) window.DisplaySound.playAvailableChime();
 
-        document.getElementById('doctorStrip').innerHTML = all.map(({ doctor, queue }, index) => {
+        const isWide = all.length === 1;
+        const colsClass = all.length <= 1 ? 'cols-1'
+          : all.length === 2 ? 'cols-2'
+          : all.length === 3 ? 'cols-3'
+          : all.length === 4 ? 'cols-4'
+          : all.length === 5 ? 'cols-5'
+          : 'cols-6plus';
+        const stripEl = document.getElementById('doctorStrip');
+        stripEl.className = `display-strip ${colsClass}`;
+
+        stripEl.innerHTML = all.map(({ doctor, queue }, index) => {
           const closedToday = !!doctor.dayClosedAt && (Date.now() - new Date(doctor.dayClosedAt).getTime() < DAY_CLOSED_FADE_MS);
           const notArrived = !!doctor.dayClosedAt && !closedToday;
           const statusText = (closedToday || notArrived) ? '' : statusDetailLine(doctor);
+          const isEmergency = !closedToday && !notArrived && doctor.status === 'emergency';
 
-          let detailHtml;
+          let bottomHtml;
           if (closedToday) {
-            detailHtml = `<div class="dboard-detail-line dboard-detail-muted" data-day-closed-at="${doctor.dayClosedAt}"></div>`;
+            bottomHtml = `<div class="tile-detail-line tile-detail-muted" data-day-closed-at="${doctor.dayClosedAt}"></div>`;
           } else if (notArrived) {
-            detailHtml = `<div class="dboard-detail-line dboard-detail-muted">${T.notArrivedSub}</div>`;
+            bottomHtml = `<div class="tile-detail-line tile-detail-muted">${T.notArrivedSub}</div>`;
           } else if (statusText) {
-            detailHtml = `<div class="dboard-detail-line">${statusText}</div>`;
+            bottomHtml = `<div class="tile-detail-line">${statusText}</div>`;
           } else {
-            detailHtml = buildNextChips(queue.waiting);
+            const waitingCount = isWide ? '' : `<div class="tile-waiting"><b>${queue.waiting.length}</b> ${T.waitingLabel}</div>`;
+            bottomHtml = `<div class="tile-bottom${isWide ? ' next-only' : ''}">${waitingCount}${buildNextChips(queue.waiting)}</div>`;
           }
 
           const nowServingToken = queue.nowServing ? formatToken(queue.nowServing) : null;
           const servingHtml = queue.nowServing
             ? `
-              ${nowServingToken ? `<div class="dboard-serving-token">#${nowServingToken}</div>` : ''}
-              <div class="dboard-serving-name">${localizeName(queue.nowServing.name)}</div>
-              ${queue.nowServing.calledAt ? `<div class="dboard-serving-called">${T.calledAtLabel(Qlinic.formatTimestamp(queue.nowServing.calledAt))}</div>` : ''}
+              <div class="tile-serving-label">${T.nowServing}</div>
+              <div class="tile-token-row">
+                ${nowServingToken ? `<span class="tile-token">#${nowServingToken}</span>` : ''}
+                <span class="tile-token-name">${localizeName(queue.nowServing.name)}</span>
+              </div>
+              ${queue.nowServing.calledAt ? `<div class="tile-called">${T.calledAtLabel(Qlinic.formatTimestamp(queue.nowServing.calledAt))}</div>` : ''}
             `
-            : `<div class="dboard-serving-idle">—</div>`;
+            : `<div class="tile-serving-label">${T.nowServing}</div><div class="tile-idle">—</div>`;
+
+          const pillHtml = closedToday
+            ? `<span class="tile-pill tile-pill-warn"><span class="dot"></span>${T.dayClosed}</span>`
+            : notArrived
+              ? `<span class="tile-pill tile-pill-warn"><span class="dot"></span>${T.notArrived}</span>`
+              : doctor.status === 'on_time'
+                ? `<span class="tile-pill tile-pill-ok"><span class="dot"></span>${T.onTime}</span>`
+                : isEmergency
+                  ? `<span class="tile-pill tile-pill-danger"><span class="dot"></span>${statusLabel(doctor.status)}</span>`
+                  : `<span class="tile-pill tile-pill-warn"><span class="dot"></span>${statusLabel(doctor.status)}</span>`;
 
           return `
-          <div class="dboard-row accent-${ACCENT_COLORS[index % ACCENT_COLORS.length]}">
-            <div class="dboard-doc">
-              <div class="dboard-doc-name">${localizeName(doctor.name)}</div>
-              <div class="dboard-doc-spec">${localizeSpecialty(doctor.specialty)}</div>
+          <div class="doc-tile${isWide ? ' wide' : ''}${isEmergency ? ' is-emergency' : ''}" style="--tile-accent: var(--mkt-${ACCENT_COLORS[index % ACCENT_COLORS.length]});">
+            <div class="tile-top">
+              <div>
+                <div class="tile-name">${localizeName(doctor.name)}</div>
+                <div class="tile-spec">${localizeSpecialty(doctor.specialty)}</div>
+              </div>
+              ${pillHtml}
             </div>
-            <div class="dboard-status">
-              ${closedToday
-                ? `<span class="dboard-pill dboard-pill-warn"><span class="dot"></span>${T.dayClosed}</span>`
-                : notArrived
-                  ? `<span class="dboard-pill dboard-pill-warn"><span class="dot"></span>${T.notArrived}</span>`
-                  : doctor.status === 'on_time'
-                    ? `<span class="dboard-pill dboard-pill-ok"><span class="dot"></span>${T.onTime}</span>`
-                    : `<span class="dboard-pill dboard-pill-warn"><span class="dot"></span>${statusLabel(doctor.status)}</span>`}
-            </div>
-            <div class="dboard-serving">
-              <div class="dboard-serving-label">${T.nowServing}</div>
-              ${servingHtml}
-            </div>
-            <div class="dboard-waiting">
-              <div class="dboard-waiting-num">${queue.waiting.length}</div>
-              <div class="dboard-waiting-lbl">${T.waitingLabel}</div>
-            </div>
-            <div class="dboard-detail">${detailHtml}</div>
+            <div class="tile-serving">${servingHtml}</div>
+            ${bottomHtml}
           </div>
         `;
         }).join('');
@@ -650,21 +621,18 @@
               <span class="board-name-row">${localizeName(p.name)}${p.isPriority ? `<span class="board-priority">${T.priority}</span>` : ''}</span>
               ${p.address ? `<span class="board-sub">${localizeName(p.address)}</span>` : ''}
             </span>
-            <span class="board-doc"><span class="board-doc-dot dot-${p.doctorAccent}"></span>${localizeName(p.doctorName)}</span>
-            <span class="board-type">${p.type === 'appointment' ? T.appointment : T.walkin}</span>
+            ${showDoctorCol ? `<span class="board-doc"><span class="board-doc-dot dot-${p.doctorAccent}"></span>${localizeName(p.doctorName)}</span>` : ''}
           </div>
         `).join('');
       }
 
       function applyStaticStrings() {
-        document.getElementById('taglineText').textContent = T.taglineFull;
         document.getElementById('liveStatusText').textContent = T.liveStatusLabel;
         document.getElementById('waitingNowText').textContent = T.waitingNow;
         document.getElementById('colPos').textContent = T.colPos;
         document.getElementById('colTime').textContent = T.colTime;
         document.getElementById('colPatient').textContent = T.colPatient;
         document.getElementById('colDoctor').textContent = T.colDoctor;
-        document.getElementById('colType').textContent = T.colType;
       }
 
       function renderDots(totalPages) {
@@ -704,7 +672,7 @@
         return `${m}:${String(s).padStart(2, '0')}`;
       }
       function tickFadeCountdowns() {
-        document.querySelectorAll('.dboard-detail-line[data-day-closed-at]').forEach((el) => {
+        document.querySelectorAll('.tile-detail-line[data-day-closed-at]').forEach((el) => {
           el.textContent = `${T.fadingLabel} ${formatCountdown(el.getAttribute('data-day-closed-at'))}`;
         });
       }
@@ -740,12 +708,20 @@
         }
         T = STRINGS[clinic && clinic.display_language] || STRINGS.en;
         applyStaticStrings();
+        document.getElementById('taglineText').textContent = (clinic && clinic.name) || T.taglineFull;
         walkinRanks = buildWalkinRanks(allQueues);
         const all = allQueues.filter(({ doctor }) => {
           if (!doctor.dayClosedAt) return true;
           if (Date.now() - new Date(doctor.dayClosedAt).getTime() < DAY_CLOSED_FADE_MS) return true;
           return Date.now() >= nextResetAfter(doctor.dayClosedAt).getTime();
         });
+
+        // Doctor column in the queue table reflects the clinic's real
+        // roster size (allQueues), not just who's currently open — a
+        // 2-doctor clinic keeps the column even if one doctor happens
+        // to be closed for the day right now.
+        showDoctorCol = allQueues.length > 1;
+        document.getElementById('boardPanel').classList.toggle('single-doctor-mode', !showDoctorCol);
 
         const clinicClosedNow = Qlinic.isClinicClosedToday(clinic);
         const allClosedToday = clinicClosedNow || (allQueues.length > 0 && all.length === 0);

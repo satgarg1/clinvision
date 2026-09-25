@@ -4663,148 +4663,155 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 }
 .toast.show { opacity: 1; transform: translateY(0); }
 
-/* ---------------- Waiting-room display screen ---------------- */
-
+/* ---------------- Waiting-room display screen ----------------
+   Light, colorful redesign approved via mockup (claude.ai/artifact/
+   9TQYpytRNcE4gQ3jJP43sR) — replaces the old dark departure-board skin
+   entirely, dark mode included; this is the only mode now, so colors
+   are written directly rather than through a mode-flippable token set.
+   A small local custom-property set (not the sitewide --black/--white/
+   --grey-* tokens, to avoid any confusion with their dark-context
+   meaning elsewhere) carries the palette through this whole section. */
 .display-body {
-  background: var(--black);
-  color: var(--white);
+  --db-ink: #1e1b4b;
+  --db-accent: #0071e3;
+  --db-success: #1e8e3e;
+  --db-success-bg: #e3f6e8;
+  --db-warning: #b26a00;
+  --db-warning-bg: #fdf1de;
+  --db-danger: #c5221f;
+  --db-danger-bg: #fde8e7;
+  --db-grey-700: #4a4a55;
+  --db-grey-600: #6b6b76;
+  --db-grey-300: #dcdce4;
+  --db-paper: #ffffff;
+  background: linear-gradient(160deg, #eef4ff 0%, #fbfbfe 45%, #fdf6ea 100%);
+  color: var(--db-ink);
   min-height: 100vh;
-  /* Top cut roughly in half (was 34px) -- the header block itself
-     already carries enough breathing room via its own margin/padding,
-     so this was just dead space above the wordmark. */
   padding: 18px 44px 44px;
   font-family: var(--font);
+  position: relative;
 }
 .display-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 26px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 18px;
 }
-/* Column now, not a horizontal row -- the old layout was tuned for a
-   single line of "ClinVision · live queue" text; now it's the full
-   wordmark+bar+tagline stack every other page already has. */
-/* Centered, not flex-start -- same wordmark-shoved-to-one-side bug
-   already fixed on every other brand corner on the site. */
-.display-header .brand { display: flex; flex-direction: column; align-items: center; }
-/* White, not the usual navy ink -- this board's background is
-   permanently dark, same reason the old icon needed inverting before
-   the wordmark-only rebrand dropped icons entirely. Sized up from the
-   nav's own 20px -- this is a TV board meant to be read across a room. */
-/* font-size lives on the wrap, not the word -- .brand-word-bar is a
-   sibling of .brand-word, not a child, so its own 2em width only tracks
-   a font-size override set here on their shared parent. Putting it on
-   .brand-word alone (as this used to) left the bar sized off whatever
-   smaller ambient font-size flowed into the wrap instead, so the gold
-   bar came out far too short next to the enlarged wordmark. */
-.display-header .brand-word-wrap { font-size: 26px; }
-.display-header .brand-word { color: #fff; }
-.display-header .brand-tagline { font-size: 14px; margin-top: 5px; }
-.display-header .clock { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--white); display: flex; align-items: center; }
-/* Same green-dot-blinks pattern as queue.html's own .queue-live-line,
-   not the old bare live-dot pulse this used to sit next to -- that one
-   had no label and is redundant once this exists. Color is the
-   brighter green already proven to work on this board's own fixed-dark
-   background (the old live-dot's #34c759), not --success (#1e8e3e),
-   which was tuned for light backgrounds and reads duller here. */
-.display-live-line { display: flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 13px; font-weight: 700; color: #34c759; margin-top: 4px; }
-.display-live-line .dot { width: 6px; height: 6px; border-radius: 50%; background: #34c759; animation: queue-pulse 1.4s infinite; }
-.clock-date { font-size: 14px; color: var(--grey-500); text-align: right; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
-
-.live-dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #34c759;
-  margin-right: 10px;
-  vertical-align: middle;
-  box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.6);
-  animation: live-pulse 1.8s ease-out infinite;
+.display-header .brand { display: flex; align-items: center; gap: 14px; }
+/* Small gradient mark + wordmark, not the sitewide wordmark-plus-gold-
+   bar-underline treatment — matches the approved mockup exactly, and
+   this board's brand row already carries a second line (clinic name)
+   the sitewide brand mark was never designed to sit above. */
+.display-header .brand-mark {
+  width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--mkt-teal), var(--mkt-blue));
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-weight: 700; font-size: 18px;
 }
-@keyframes live-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.55); }
-  70%  { box-shadow: 0 0 0 10px rgba(52, 199, 89, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0); }
-}
+.display-header .brand-word-wrap { display: block; font-size: 23px; }
+.display-header .brand-word { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-weight: 600; color: var(--db-ink); letter-spacing: -0.01em; }
+.display-header .brand-word-bar { display: none; }
+/* Shows the clinic's own name, not a static marketing tagline — a
+   patient cares which clinic they're looking at, not a slogan. */
+.display-header .brand-tagline { font-size: 13px; color: var(--db-grey-600); margin-top: 1px; }
+.display-header .clock { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--db-ink); display: flex; align-items: center; }
+.display-live-line { display: flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--db-success); margin-top: 4px; }
+.display-live-line .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--db-success); animation: queue-pulse 1.4s infinite; }
+.clock-date { font-size: 12px; color: var(--db-grey-600); text-align: right; margin-top: 1px; text-transform: uppercase; letter-spacing: 0.06em; }
 
 .section-label {
   font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-  color: var(--grey-500); margin: 0 0 12px; display: flex; align-items: center; gap: 12px;
+  color: var(--db-grey-600); margin: 0 0 12px; display: flex; align-items: center; gap: 12px;
 }
 .section-label .count { font-weight: 600; text-transform: none; letter-spacing: 0; opacity: 0.75; }
 
-/* Departure-board style: one row per doctor, not a card grid — this is
-   what actually got redesigned. Row order/content is exactly what
-   renderDoctorStrip in display.html computes; this is purely the visual
-   layer, none of the underlying refresh/fade/sort logic changed.
-   Each row is its own bordered card now (was one shared outer border
-   with a faint divider between rows) -- easier to tell doctors apart
-   at a glance from across a room. */
-.display-strip { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
-.dboard-row {
-  display: grid;
-  grid-template-columns: minmax(190px, 0.9fr) 150px 220px 90px 1fr;
-  align-items: center;
-  background: var(--grey-900);
-  padding: 14px 20px;
-  gap: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-left: 4px solid transparent;
-  border-radius: 10px;
+/* Doctor strip: cards span 100% of the row width, split evenly by
+   however many doctors are active — repeat(N, 1fr), N set below via a
+   cols-N class display.html computes from the live doctor count. No
+   auto-fit/centering: that leaves narrow cards with huge empty margins
+   whenever there are fewer than a handful of doctors. Past ~6, a single
+   row of equal columns gets too narrow to read, so that count wraps
+   into rows of auto-sized tiles instead of shrinking further. */
+.display-strip { display: grid; gap: 14px; margin-bottom: 18px; }
+.display-strip.cols-1 { grid-template-columns: repeat(1, 1fr); }
+.display-strip.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.display-strip.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.display-strip.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.display-strip.cols-5 { grid-template-columns: repeat(5, 1fr); }
+.display-strip.cols-6plus { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+.doc-tile {
+  width: 100%;
+  background: var(--db-paper);
+  border: 1px solid var(--db-grey-300);
+  border-left: 5px solid var(--tile-accent, var(--mkt-teal));
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 10px rgba(30, 27, 75, 0.05);
+  display: flex; flex-direction: column; justify-content: space-between;
+  gap: 10px;
 }
-.dboard-row.accent-teal { border-left-color: var(--mkt-teal); }
-.dboard-row.accent-blue { border-left-color: var(--mkt-blue); }
-.dboard-row.accent-purple { border-left-color: var(--mkt-purple); }
-.dboard-row.accent-coral { border-left-color: var(--mkt-coral); }
-.dboard-row.accent-pink { border-left-color: var(--mkt-pink); }
-
-.dboard-doc-name { font-size: 21px; font-weight: 800; letter-spacing: -0.01em; }
-.dboard-doc-spec { font-size: 13px; color: var(--grey-500); margin-top: 2px; }
-
-.dboard-pill {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
-  padding: 6px 12px; border-radius: 999px; white-space: nowrap;
+.doc-tile.is-emergency { border-left-color: var(--db-danger); background: var(--db-danger-bg); }
+.tile-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.tile-name { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
+.tile-spec { font-size: 12px; color: var(--db-grey-600); margin-top: 1px; }
+.tile-pill {
+  display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+  font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 5px 10px; border-radius: 999px; white-space: nowrap;
 }
-.dboard-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.dboard-pill-ok { background: rgba(52, 199, 89, 0.16); color: #34c759; }
-.dboard-pill-warn { background: rgba(255, 159, 10, 0.18); color: #ff9f0a; }
+.tile-pill .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.tile-pill-ok { background: var(--db-success-bg); color: var(--db-success); }
+.tile-pill-warn { background: var(--db-warning-bg); color: var(--db-warning); }
+.tile-pill-danger { background: #fbdada; color: var(--db-danger); }
 
-/* Now Serving: token above, full patient name below it on its own line
-   (wraps rather than truncates — a name is the one thing a waiting
-   patient is actually scanning for), call time last. */
-.dboard-serving-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--grey-500); margin-bottom: 3px; }
-.dboard-serving-token { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: -0.02em; }
-.dboard-serving-name { font-size: 15px; font-weight: 700; color: var(--white); line-height: 1.25; margin-top: 2px; overflow-wrap: break-word; }
-.dboard-serving-idle { font-size: 18px; color: var(--grey-500); font-weight: 700; }
-.dboard-serving-called { font-size: 12px; color: var(--grey-500); margin-top: 3px; }
+/* Now Serving: explicit label + token + name grouped as one unit, name
+   large and right next to the number so the pairing is unambiguous. */
+.tile-serving { padding-top: 8px; border-top: 1px dashed var(--db-grey-300); flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.tile-serving-label { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--db-grey-600); }
+.doc-tile.is-emergency .tile-serving-label { color: var(--db-danger); }
+.tile-token-row { display: flex; align-items: baseline; gap: 11px; flex-wrap: wrap; }
+.tile-token { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 40px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--db-ink); line-height: 1; }
+.doc-tile.is-emergency .tile-token { color: var(--db-danger); }
+.tile-token-name { font-size: 19px; font-weight: 800; color: var(--db-ink); line-height: 1.15; }
+.doc-tile.is-emergency .tile-token-name { color: var(--db-danger); }
+.tile-called { font-size: 11.5px; color: var(--db-grey-600); }
+.tile-idle { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 20px; color: var(--db-grey-600); font-weight: 500; }
+/* Status detail (on-break-since, emergency note, not-arrived, day-
+   closed countdown) — same information the old departure-board row
+   surfaced, restyled; replaces the Next chips only when there's
+   something more important to say than "who's coming up." */
+.tile-detail-line { font-size: 12.5px; font-weight: 600; color: var(--db-warning); line-height: 1.4; }
+.tile-detail-line.tile-detail-muted { color: var(--db-grey-600); font-weight: 500; }
 
-.dboard-waiting { text-align: center; }
-.dboard-waiting-num { font-size: 23px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
-.dboard-waiting-lbl { font-size: 11px; color: var(--grey-500); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+.tile-bottom { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.tile-bottom.next-only { justify-content: flex-end; }
+.tile-waiting { font-size: 12px; color: var(--db-grey-600); font-weight: 600; white-space: nowrap; }
+.tile-waiting b { color: var(--db-ink); font-weight: 800; }
+.tile-next { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+.tile-next-label { font-size: 11px; color: var(--db-grey-600); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; margin-right: 1px; }
+.tile-next-chip { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; background: #eceafc; border: 1.5px solid #c9c3f0; border-radius: 7px; padding: 4px 10px; color: var(--db-ink); }
+.tile-next-chip.more { color: var(--db-warning); background: var(--db-warning-bg); border-color: #f0d59a; }
 
-.dboard-detail { min-width: 0; }
-.dboard-detail-line { font-size: 14px; font-weight: 600; color: #ff9f0a; line-height: 1.4; }
-.dboard-detail-line.dboard-detail-muted { color: var(--grey-500); font-weight: 500; }
-.dboard-detail-reason { color: var(--grey-300); font-weight: 500; }
-.dboard-next { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-.dboard-next-label { font-size: 11px; color: var(--grey-500); text-transform: uppercase; letter-spacing: 0.06em; margin-right: 2px; }
-.dboard-next-chip { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; background: rgba(255, 255, 255, 0.06); color: var(--grey-300); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 3px 9px; }
-/* Distinct from the plain token chips on purpose -- this one isn't a
-   specific upcoming token, it's a count of everyone past the first 3,
-   so it reads as its own category rather than a fourth token at a
-   glance. Gold ties it to the brand accent already used for the
-   wordmark's underline elsewhere. */
-.dboard-next-chip.more { color: #c9973e; background: rgba(201, 151, 62, 0.14); border-color: rgba(201, 151, 62, 0.4); }
+/* 1-doctor case: a single card at 100% width lays out horizontally
+   (info left, token+name center, next-chips right) instead of the
+   vertical stack every other card count uses — a lone card stacked
+   vertically at full board width looks sparse and wastes the space. */
+.doc-tile.wide { flex-direction: row; align-items: center; gap: 24px; padding: 18px 28px; }
+.doc-tile.wide .tile-top { flex-direction: column; align-items: flex-start; gap: 8px; flex: 0 0 auto; }
+.doc-tile.wide .tile-serving { border-top: none; border-left: 1px dashed var(--db-grey-300); padding-top: 0; padding-left: 24px; flex: 1; }
+.doc-tile.wide .tile-token { font-size: 56px; }
+.doc-tile.wide .tile-token-name { font-size: 24px; }
+.doc-tile.wide .tile-bottom { flex: 0 0 auto; flex-direction: column; align-items: flex-end; gap: 8px; border-left: 1px dashed var(--db-grey-300); padding-left: 24px; }
+.doc-tile.wide .tile-next { justify-content: flex-end; }
 
-/* Airport-departures-style rotating board */
+/* Queue table */
 .board {
-  background: var(--grey-900);
-  border-radius: 18px;
+  background: var(--db-paper);
+  border: 1px solid var(--db-grey-300);
+  border-radius: 16px;
   padding: 6px 0 20px;
+  box-shadow: 0 2px 10px rgba(30, 27, 75, 0.05);
 }
 .board-head {
   display: flex;
@@ -4813,22 +4820,29 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   padding: 14px 20px 10px;
 }
 .board-page-indicator { display: flex; gap: 6px; }
-.board-page-indicator .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); transition: background 0.2s ease, width 0.2s ease; }
+.board-page-indicator .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--db-grey-300); transition: background 0.2s ease, width 0.2s ease; }
 .board-page-indicator .dot.active { background: var(--mkt-teal); width: 18px; border-radius: 4px; }
 
 .board-cols {
   display: grid;
-  grid-template-columns: 0.6fr 1fr 1.2fr 1.2fr 0.8fr;
+  grid-template-columns: 70px 150px 1fr 170px;
   gap: 10px;
-  padding: 8px 20px;
-  font-size: 11px;
-  font-weight: 700;
+  padding: 10px 20px;
+  font-size: 12px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--grey-500);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  letter-spacing: 0.05em;
+  color: var(--db-grey-700);
+  border-top: 1px solid var(--db-grey-300);
+  border-bottom: 1px solid var(--db-grey-300);
+  background: #fafaff;
 }
+/* Solo-doctor clinics: the Doctor column is redundant (every row is
+   the same one doctor) and just wastes width — drop it and the grid
+   template both, rather than leaving an empty column. */
+.board.single-doctor-mode .board-cols,
+.board.single-doctor-mode .board-row { grid-template-columns: 70px 150px 1fr; }
+.board.single-doctor-mode #colDoctor { display: none; }
 
 .board-rows {
   min-height: 300px;
@@ -4840,87 +4854,65 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 }
 .board-rows.flip-out { opacity: 0; transform: translateY(-8px); }
 
-/* Each patient row is its own bordered card now, same treatment as the
-   doctor-status rows above -- was a shared box with a faint line
-   between names, harder to pick out one row from the next at a glance. */
 .board-row {
   display: grid;
-  grid-template-columns: 0.6fr 1fr 1.2fr 1.2fr 0.8fr;
+  grid-template-columns: 70px 150px 1fr 170px;
   gap: 10px;
   align-items: center;
-  padding: 11px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
+  padding: 13px 20px;
+  border-bottom: 1px solid #f0f0f5;
   font-variant-numeric: tabular-nums;
 }
-.board-pos { font-size: 17px; font-weight: 800; color: var(--grey-500); }
-.board-time-cell { font-size: 15px; font-weight: 700; color: var(--grey-300); display: flex; flex-direction: column; }
-/* Same amber this board already uses for a warning state (.dboard-pill-
-   warn) — bright on the default dark board, the darker/muted shade
-   below once data-board-mode switches to light, same as that pill's
-   own light-mode override right below it. */
-.board-time-late { font-size: 12px; font-weight: 600; color: #ff9f0a; margin-top: 2px; }
-/* Deliberately not the same amber as .board-time-late above -- that
-   color already means "the clinic is running behind," and this means
-   something different (this specific patient checked in after their
-   own booked time), so it needs its own color, not a shade of the same
-   one. Same iOS-system-color family the board's dark palette already
-   uses (#ff9f0a amber, #ff3b30 red for priority) -- #0a84ff is that
-   family's blue, informational rather than a warning. */
-.board-time-arrived-late { font-size: 12px; font-weight: 600; color: #0a84ff; margin-top: 2px; }
-.board-name { font-size: 17px; font-weight: 600; display: flex; flex-direction: column; }
+.board-row:last-child { border-bottom: none; }
+.board-pos { font-size: 17px; font-weight: 800; color: var(--db-ink); }
+.board-time-cell { font-size: 16.5px; font-weight: 700; color: var(--db-grey-700); display: flex; flex-direction: column; }
+.board-time-late { font-size: 12px; font-weight: 700; color: var(--db-warning); margin-top: 2px; }
+/* Deliberately not the same color as .board-time-late above -- that
+   means "the clinic is running behind," this means something
+   different (this specific patient checked in after their own booked
+   time), so it gets the board's own accent blue instead of a shade of
+   the same warning color. */
+.board-time-arrived-late { font-size: 12px; font-weight: 700; color: var(--db-accent); margin-top: 2px; }
+.board-name { font-size: 16.5px; font-weight: 700; color: var(--db-ink); display: flex; flex-direction: column; }
 .board-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .board-priority {
   font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
-  color: #ff3b30; background: rgba(255, 59, 48, 0.18);
+  color: var(--db-danger); background: var(--db-danger-bg);
   border-radius: 999px; padding: 3px 9px; white-space: nowrap;
 }
-.board-sub { font-size: 12px; font-weight: 400; color: var(--grey-500); margin-top: 2px; }
-.board-doc { font-size: 14px; color: var(--grey-300); }
-.board-type { font-size: 13px; color: var(--grey-500); }
-.board-empty { padding: 44px 0; text-align: center; color: var(--grey-500); font-size: 16px; }
+.board-sub { font-size: 12px; font-weight: 400; color: var(--db-grey-600); margin-top: 2px; }
+.board-doc { font-size: 14px; color: var(--db-grey-700); font-weight: 600; }
+.board-empty { padding: 44px 0; text-align: center; color: var(--db-grey-600); font-size: 16px; }
 
 /* Replaces the doctor strip + waiting board entirely once every doctor
    has closed for the day — a passerby glancing at an otherwise-quiet TV
    screen shouldn't have to guess whether it's broken or just genuinely
    nobody's here. Deliberately much bigger than anything else on this
-   screen (.board-title is 18px) since it's meant to be read from across
-   a waiting room, not up close. */
+   screen since it's meant to be read from across a waiting room. */
 .display-all-closed {
-  background: var(--grey-900);
+  background: var(--db-paper);
+  border: 1px solid var(--db-grey-300);
   border-radius: 20px;
   padding: 80px 40px;
   text-align: center;
   margin-bottom: 28px;
+  box-shadow: 0 2px 10px rgba(30, 27, 75, 0.05);
 }
-.display-all-closed-title { font-size: 56px; font-weight: 700; color: var(--white); margin-bottom: 16px; letter-spacing: -0.01em; }
-.display-all-closed-sub { font-size: 22px; color: var(--grey-300); }
+.display-all-closed-title { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 48px; font-weight: 600; color: var(--db-ink); margin-bottom: 16px; letter-spacing: -0.01em; }
+.display-all-closed-sub { font-size: 20px; color: var(--db-grey-700); }
 
-/* Day/night toggle for the display board -- a per-device localStorage
-   preference set from this button, not the app's own Settings toggle
-   (which this board has always ignored on purpose, see .display-body
-   above). Deliberately outside the header's own flex row so it never
-   becomes a third column there; sits inside .display-body's own top
-   padding instead, right above the clock, small enough to read as a
-   faint mark rather than a control a patient would notice. */
-.display-body { position: relative; }
+/* Sound + zoom controls -- theme toggle removed along with dark mode.
+   Faint marks in the corner, not controls a patient would notice. */
 .display-theme-toggle {
-  position: absolute; top: 2px; right: 44px;
+  position: absolute; top: 2px; right: 22px;
   width: 17px; height: 17px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   border: none; cursor: pointer; padding: 0;
-  background: rgba(255, 255, 255, 0.14); color: #fff;
+  background: rgba(30, 27, 75, 0.08); color: var(--db-ink);
   opacity: 0.45;
   transition: opacity 0.15s ease, background 0.15s ease;
 }
 .display-theme-toggle:hover { opacity: 0.85; }
-/* Sits just outside the theme toggle (smaller `right` = further toward
-   the actual screen edge), same faint treatment, so the two read as a
-   pair of quiet controls rather than one of them looking like an
-   afterthought bolted on beside the other. */
-.display-sound-toggle { right: 22px; }
-/* Same faint pair treatment, one step further out again -- reads as a
-   third quiet control alongside theme/sound, not a bolted-on extra. */
 .display-zoom-out { right: 66px; }
 .display-zoom-in { right: 88px; }
 .display-theme-toggle svg { width: 11px; height: 11px; display: block; transition: transform 0.25s ease; }
@@ -4929,79 +4921,23 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
    corner, and centers the narrower board left-to-right rather than
    leaving all the freed-up space on one side. */
 .display-scale-wrap { transform-origin: top center; transition: transform 0.15s ease; }
-.display-theme-toggle.open svg { transform: rotate(180deg); }
-.display-theme-menu {
-  position: absolute; top: 2px; right: 65px;
-  display: flex; gap: 3px; padding: 2px; border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  opacity: 0; transform: translateX(4px); pointer-events: none;
-  transition: opacity 0.18s ease, transform 0.18s ease;
-}
-.display-theme-menu.open { opacity: 1; transform: translateX(0); pointer-events: auto; }
-.display-theme-menu button {
-  width: 17px; height: 17px; border-radius: 50%; border: none; cursor: pointer; padding: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: transparent; color: #fff; opacity: 0.55;
-}
-.display-theme-menu button svg { width: 11px; height: 11px; display: block; }
-.display-theme-menu button.active { background: rgba(255, 255, 255, 0.9); color: #1d1d1f; opacity: 1; }
 
 /* QR-to-phone panel — fixed to the bottom-right corner rather than
    inside the header/board flex flow, so it never competes for space
-   with the doctor strip or the queue table. Reuses the same --white/
-   --grey-900/--grey-500 tokens the rest of this board already flips
-   for light mode, so no separate light-mode override is needed here. */
+   with the doctor strip or the queue table. */
 .display-qr-panel {
   position: fixed; bottom: 18px; right: 18px;
-  background: var(--grey-900); border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--db-paper); border: 1px solid var(--db-grey-300);
   border-radius: 12px; padding: 10px 12px; text-align: center;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 16px rgba(30, 27, 75, 0.12);
   z-index: 5;
 }
 .display-qr-label {
-  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-  color: var(--grey-500); margin-bottom: 6px;
+  font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--db-grey-600); margin-bottom: 6px;
 }
 .display-qr-code { width: 68px; height: 68px; background: #fff; border-radius: 6px; padding: 4px; }
 .display-qr-code svg { display: block; width: 100%; height: 100%; }
-
-/* ---------------- Waiting-room display screen: light mode ----------------
-   A deliberate second hand-built skin, not a token flip. Most of this
-   page's own rules already read through --white/--black/--grey-900/
-   --grey-500/--grey-300 -- redefined here exactly the way the app's own
-   day/night toggle already inverts those same names elsewhere -- so
-   redefining them once, scoped to this board, is enough for most of the
-   page. The handful of rules below are the exceptions: colors that were
-   hardcoded when this board was built dark-only, which need their own
-   explicit light-mode value since there's no shared token to redefine. */
-body[data-board-mode="light"].display-body {
-  --black: #f5f5f7;
-  --white: #1d1d1f;
-  --grey-900: #ffffff;
-  --grey-500: #6e6e73;
-  --grey-300: #48484a;
-}
-body[data-board-mode="light"] .display-theme-toggle { background: rgba(0, 0, 0, 0.08); color: #1d1d1f; }
-body[data-board-mode="light"] .display-theme-menu { background: rgba(0, 0, 0, 0.08); }
-body[data-board-mode="light"] .display-theme-menu button { color: #1d1d1f; }
-body[data-board-mode="light"] .display-theme-menu button.active { background: #1d1d1f; color: #fff; }
-body[data-board-mode="light"] .display-header { border-bottom-color: rgba(0, 0, 0, 0.08); }
-body[data-board-mode="light"] .display-header .brand-word { color: #1e1b4b; }
-body[data-board-mode="light"] .display-live-line { color: #1e8e3e; }
-body[data-board-mode="light"] .display-live-line .dot { background: #1e8e3e; }
-/* Only the top/right/bottom sides -- border-left stays whatever the
-   row's own accent-color class set it to. */
-body[data-board-mode="light"] .dboard-row { border-top-color: #d6d6da; border-right-color: #d6d6da; border-bottom-color: #d6d6da; }
-body[data-board-mode="light"] .dboard-pill-ok { background: rgba(30, 142, 62, 0.12); color: #1e8e3e; }
-body[data-board-mode="light"] .dboard-pill-warn { background: rgba(178, 106, 0, 0.14); color: #b26a00; }
-body[data-board-mode="light"] .dboard-detail-line { color: #b26a00; }
-body[data-board-mode="light"] .board-time-late { color: #b26a00; }
-body[data-board-mode="light"] .board-time-arrived-late { color: #0071e3; }
-body[data-board-mode="light"] .dboard-next-chip { background: #f0f0f2; border-color: #e3e3e6; }
-body[data-board-mode="light"] .dboard-next-chip.more { color: #8a6a2f; }
-body[data-board-mode="light"] .board-page-indicator .dot { background: rgba(0, 0, 0, 0.12); }
-body[data-board-mode="light"] .board-cols { border-top-color: #e3e3e6; border-bottom-color: #e3e3e6; }
-body[data-board-mode="light"] .board-row { border-color: #d6d6da; }
 
 /* Mobile nav: .mobile-topbar/.mobile-nav-toggle/.mobile-nav-backdrop are
    injected by Qlinic.initMobileNav() (clinic-data.js) on every .app-shell

@@ -90,7 +90,11 @@ begin
   v_clinic_id := public.my_clinic_id();
   v_day := public.board_day();
   v_code := encode(
-    hmac(v_clinic_id::text || '|' || v_day::text, 'qlinic-display-board-pepper-8f3a1c9e2b7d4f60', 'sha256'),
+    hmac(
+      (v_clinic_id::text || '|' || v_day::text)::bytea,
+      'qlinic-display-board-pepper-8f3a1c9e2b7d4f60'::bytea,
+      'sha256'
+    ),
     'hex'
   );
   return jsonb_build_object('clinicId', v_clinic_id, 'code', v_code);
@@ -117,7 +121,11 @@ declare
   v_expires timestamptz;
 begin
   v_expected := encode(
-    hmac(p_clinic_id::text || '|' || public.board_day()::text, 'qlinic-display-board-pepper-8f3a1c9e2b7d4f60', 'sha256'),
+    hmac(
+      (p_clinic_id::text || '|' || public.board_day()::text)::bytea,
+      'qlinic-display-board-pepper-8f3a1c9e2b7d4f60'::bytea,
+      'sha256'
+    ),
     'hex'
   );
   if p_code is null or p_code <> v_expected then
