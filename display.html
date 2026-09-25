@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=365" />
+<link rel="stylesheet" href="styles.css?v=366" />
 </head>
 <body class="display-body">
   <button class="display-theme-toggle display-sound-toggle" id="displaySoundToggle" aria-label="Turn call sound on or off">
@@ -279,6 +279,7 @@
           clinicClosedSub: 'Thanks for your patience today — the clinic will reopen tomorrow.',
           notArrived: 'Not arrived yet',
           notArrivedSub: 'Queue will start once they arrive',
+          calledAtLabel: (t) => `called in at ${t}`,
         },
         hi: {
           taglineFull: 'जहाँ क्लीनिक बेहतर चलते हैं',
@@ -321,6 +322,7 @@
           clinicClosedSub: 'आज आपके धैर्य के लिए धन्यवाद — क्लिनिक कल फिर खुलेगा।',
           notArrived: 'अभी नहीं पहुंचे',
           notArrivedSub: 'डॉक्टर के आते ही कतार शुरू होगी',
+          calledAtLabel: (t) => `${t} पर बुलाया गया`,
         },
       };
       let T = STRINGS.en;
@@ -554,6 +556,7 @@
                 ${nowServingToken ? `<span class="tile-token">#${nowServingToken}</span>` : ''}
                 <span class="tile-token-name">${localizeName(queue.nowServing.name)}</span>
               </div>
+              ${queue.nowServing.calledAt ? `<div class="tile-called">${T.calledAtLabel(Qlinic.formatTimestamp(queue.nowServing.calledAt))}</div>` : ''}
             `
             : `<div class="tile-serving-label">${T.nowServing}</div><div class="tile-idle">—</div>`;
 

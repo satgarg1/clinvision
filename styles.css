@@ -4776,6 +4776,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .doc-tile.is-emergency .tile-token { color: var(--db-danger); }
 .tile-token-name { font-size: 18px; font-weight: 800; color: var(--db-ink); line-height: 1.15; }
 .doc-tile.is-emergency .tile-token-name { color: var(--db-danger); }
+.tile-called { font-size: 11.5px; color: var(--db-grey-600); }
 .tile-idle { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 18px; color: var(--db-grey-600); font-weight: 500; }
 /* Status detail (on-break-since, emergency note, not-arrived, day-
    closed countdown) — same information the old departure-board row
@@ -4836,14 +4837,14 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   align-items: center;
   padding: 14px 20px 10px;
 }
-.board-title { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 19px; font-weight: 600; color: var(--db-ink); margin: 0; }
+.board-title { font-family: var(--font); font-size: 19px; font-weight: 800; color: var(--db-ink); margin: 0; }
 .board-page-indicator { display: flex; gap: 6px; }
 .board-page-indicator .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--db-grey-300); transition: background 0.2s ease, width 0.2s ease; }
 .board-page-indicator .dot.active { background: var(--mkt-teal); width: 18px; border-radius: 4px; }
 
 .board-cols {
   display: grid;
-  grid-template-columns: 60px 130px minmax(120px, 300px) 1fr;
+  grid-template-columns: 60px 130px 2fr 1fr;
   gap: 10px;
   padding: 10px 20px;
   font-size: 12px;
@@ -4874,7 +4875,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 
 .board-row {
   display: grid;
-  grid-template-columns: 60px 130px minmax(120px, 300px) 1fr;
+  grid-template-columns: 60px 130px 2fr 1fr;
   gap: 10px;
   align-items: center;
   padding: 10px 20px;

@@ -77,7 +77,7 @@ create or replace function public.get_daily_board_code()
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_clinic_id uuid;
@@ -113,7 +113,7 @@ create or replace function public.redeem_daily_board_code(p_clinic_id uuid, p_co
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_expected text;

@@ -1,19 +1,19 @@
 -- ============================================================
--- Qlinic — migration 100: fix a real bug in 099, caught by live testing.
+-- Qlinic — migration 101: fix a second real bug in the display-board
+-- QR feature, caught by live testing after 100 was already run.
 --
--- pgcrypto's hmac() signature is hmac(data bytea, key bytea, type text)
--- — 099 called it with two plain text arguments, which doesn't match
--- any overload ("function hmac(text, unknown, unknown) does not
--- exist"). Every call to get_daily_board_code() and
--- redeem_daily_board_code() was failing outright — caught before this
--- ever reached a real patient, while testing the QR panel against the
--- live board with real data.
+-- Migration 100 fixed hmac()'s argument types (bytea, not text) but
+-- the call still failed: "function hmac(bytea, bytea, unknown) does
+-- not exist". Root cause is Supabase-specific — pgcrypto is installed
+-- into the `extensions` schema here, not `public`, and both functions
+-- below pin `search_path = public` (deliberately, to avoid the same
+-- "REVOKE FROM PUBLIC isn't enough" class of surprise this codebase
+-- already hit once this session for a different reason) — which
+-- excludes `extensions`, so hmac() can't be resolved at all. Confirmed
+-- live: calling public.get_daily_board_code() as a real staff session
+-- threw exactly that error.
 --
--- Fixing the argument types alone wasn't enough — see migration 101 for
--- the second bug this uncovered (pgcrypto lives in the `extensions`
--- schema here, outside this function's own `search_path = public`).
---
--- Run this once in the Supabase SQL Editor, after 099_display_board_daily_codes.sql.
+-- Run this once in the Supabase SQL Editor, after 100_fix_hmac_bytea_cast.sql.
 -- ============================================================
 
 create or replace function public.get_daily_board_code()
