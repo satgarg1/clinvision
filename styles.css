@@ -4714,10 +4714,10 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 /* Shows the clinic's own name, not a static marketing tagline — a
    patient cares which clinic they're looking at, not a slogan. */
 .display-header .brand-tagline { font-size: 13px; color: var(--db-grey-600); margin-top: 1px; }
-.display-header .clock { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--db-ink); display: flex; align-items: center; }
+.display-header .clock { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--db-ink); display: flex; align-items: center; white-space: nowrap; }
 .display-live-line { display: flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--db-success); margin-top: 4px; }
 .display-live-line .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--db-success); animation: queue-pulse 1.4s infinite; }
-.clock-date { font-size: 12px; color: var(--db-grey-600); text-align: right; margin-top: 1px; text-transform: uppercase; letter-spacing: 0.06em; }
+.clock-date { font-size: 12px; color: var(--db-grey-600); text-align: right; margin-top: 1px; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
 
 .section-label {
   font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
@@ -5142,6 +5142,18 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
       "table"
       "qr";
   }
+
+  /* The clock/date and the brand block were fighting for the same row's
+     width — real phones (unlike the width this was first tested at)
+     wrapped the clock text itself mid-string ("5:47" / "PM" on separate
+     lines). Give each its own full-width row instead of trying to fit
+     both side by side, so the clock/date text always has room to sit
+     on one line. */
+  .display-header { flex-wrap: wrap; row-gap: 8px; }
+  .display-header .brand { flex: 1 1 100%; }
+  .display-header-meta { flex: 1 1 100%; text-align: right; }
+  .display-header .clock { font-size: 20px; justify-content: flex-end; }
+
   .display-strip.cols-1, .display-strip.cols-2, .display-strip.cols-3,
   .display-strip.cols-4, .display-strip.cols-5, .display-strip.cols-6plus {
     grid-template-columns: 1fr;
@@ -5165,11 +5177,13 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   .board-cols { display: none; }
   .board-row {
     /* Time gets a capped, not "auto", track — "auto" sizes to the
-       widest UNWRAPPED content, and a late-arrival badge's full phrase
-       ("Late Patient Arrival") is wide enough to starve the name
-       column down to a few px. Capping it forces the badge to wrap
-       inside its own column instead. */
-    grid-template-columns: auto 1fr minmax(58px, 92px);
+       widest UNWRAPPED content, which would otherwise starve the name
+       column. Wide enough (130px) for the late-arrival badge to sit on
+       ONE line as a normal compact pill — letting it wrap to two lines
+       inside a 999px-radius pill is what made it look cheap: wrapped
+       text inside a stadium shape reads as a bloated, distorted blob
+       instead of a clean tag. */
+    grid-template-columns: auto 1fr minmax(70px, 130px);
     grid-template-areas:
       "pos name time"
       "doc doc doc";
@@ -5181,14 +5195,14 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   .board-pos { grid-area: pos; }
   .board-name-row { grid-area: name; font-size: 14px; min-width: 0; }
   .board-time-cell { grid-area: time; font-size: 12px; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 0; }
-  .board-time-late, .board-time-arrived-late { white-space: normal; text-align: right; font-size: 9.5px; }
+  .board-time-late, .board-time-arrived-late { font-size: 9.5px; padding: 2px 6px; }
   .board-doc { grid-area: doc; font-size: 11.5px; }
   /* Same stacked template for a solo-doctor clinic (no Doctor column to
      begin with) — otherwise the desktop override below wins on
      specificity alone regardless of this media query. */
   .board.single-doctor-mode .board-cols,
   .board.single-doctor-mode .board-row {
-    grid-template-columns: auto 1fr minmax(58px, 92px);
+    grid-template-columns: auto 1fr minmax(70px, 130px);
     grid-template-areas: "pos name time";
   }
 }
