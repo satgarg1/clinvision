@@ -32,8 +32,9 @@
   </div>
 
   <!-- Shown only on the authenticated board itself (not when viewed via
-       the token link on a phone) — the QR encodes a 24h-boxed link to
-       this same page, minted/rotated by refreshDisplayToken() below. -->
+       a redeemed session link on a phone) — the QR encodes today's
+       clinic/day code, fetched by refreshDisplayCode() below. A phone
+       that scans it exchanges the code for its own 4-hour session. -->
   <div class="display-qr-panel" id="displayQrPanel" style="display:none;">
     <div class="display-qr-label">View on phone</div>
     <div class="display-qr-code" id="displayQrCode"></div>
@@ -211,20 +212,44 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=124"></script>
+  <script src="clinic-data.js?v=125"></script>
   <script>
     (async function () {
       const urlParams = new URLSearchParams(location.search);
-      const publicToken = urlParams.get('token');
-      const isPublicMode = !!publicToken;
+      const SESSION_STORAGE_KEY = 'clinvision_display_session_id';
+      let publicSessionId = urlParams.get('session') || sessionStorage.getItem(SESSION_STORAGE_KEY) || null;
+      const scannedClinicId = urlParams.get('clinic');
+      const scannedDailyCode = urlParams.get('daily');
+      let isPublicMode = !!publicSessionId;
 
-      if (!isPublicMode) {
+      if (!isPublicMode && !(scannedClinicId && scannedDailyCode)) {
         if (!(await Qlinic.requireLogin('login.html'))) return;
       }
 
-      if (await Qlinic.isDoctor()) {
+      if (!isPublicMode && !(scannedClinicId && scannedDailyCode) && await Qlinic.isDoctor()) {
         window.location.href = 'dashboard.html';
         return;
+      }
+
+      if (!isPublicMode && scannedClinicId && scannedDailyCode) {
+        // First scan of a QR that hasn't been redeemed into a session
+        // yet — exchange it now, then drop the daily-code params from
+        // the URL so a reload/bookmark reuses this phone's own session
+        // instead of re-redeeming (and so this same session survives
+        // even after the underlying daily code itself has rotated).
+        try {
+          const redeemed = await Qlinic.redeemDailyBoardCode(scannedClinicId, scannedDailyCode);
+          publicSessionId = redeemed.sessionId;
+          sessionStorage.setItem(SESSION_STORAGE_KEY, publicSessionId);
+          isPublicMode = true;
+          const cleanUrl = new URL(location.href);
+          cleanUrl.search = '';
+          history.replaceState(null, '', cleanUrl.toString());
+        } catch (err) {
+          document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#fff;font-family:sans-serif;font-size:20px;text-align:center;padding:20px;">' +
+            (err.message || 'This QR code is no longer valid — please scan the one currently on screen.') + '</div>';
+          return;
+        }
       }
 
       const escapeHtml = Qlinic.escapeHtml;
@@ -689,8 +714,9 @@
         document.getElementById('boardPanel').style.display = 'none';
         const el = document.getElementById('allClosedMessage');
         el.style.display = 'block';
-        document.getElementById('allClosedTitle').textContent = 'This link has expired';
-        document.getElementById('allClosedSub').textContent = 'Please check the display screen in the waiting room for a fresh QR code.';
+        document.getElementById('allClosedTitle').textContent = 'Your session has ended';
+        document.getElementById('allClosedSub').textContent = 'Please scan the QR code on the display screen in the waiting room again.';
+        sessionStorage.removeItem(SESSION_STORAGE_KEY);
       }
 
       async function refreshData() {
@@ -701,7 +727,7 @@
         let clinic, allQueues;
         if (isPublicMode) {
           try {
-            const result = await Qlinic.getPublicDisplayBoard(publicToken);
+            const result = await Qlinic.getDisplayBoardBySession(publicSessionId);
             clinic = result.clinic;
             allQueues = result.allQueues;
           } catch (err) {
@@ -749,11 +775,12 @@
         }, 320);
       }
 
-      async function refreshDisplayToken() {
+      async function refreshDisplayCode() {
         try {
-          const { token } = await Qlinic.mintDisplayBoardToken();
+          const { clinicId, code } = await Qlinic.getDailyBoardCode();
           const url = new URL('display.html', location.href);
-          url.searchParams.set('token', token);
+          url.searchParams.set('clinic', clinicId);
+          url.searchParams.set('daily', code);
           const qr = qrcode(0, 'M');
           qr.addData(url.toString());
           qr.make();
@@ -771,11 +798,22 @@
       setInterval(rotatePage, ROTATE_MS);
       if (!isPublicMode) {
         Qlinic.onLiveChange(refreshData);
-        refreshDisplayToken();
-        // Well inside both the 24h token life and the 1h-before-expiry
-        // reuse window mint_display_board_token() already applies, so
-        // this never rotates the QR mid-life for no reason.
-        setInterval(refreshDisplayToken, 2 * 60 * 60 * 1000);
+        refreshDisplayCode();
+        // The code is deterministic for (clinic, board day) — no expiry
+        // math to get right here, just re-fetch on a safety-net
+        // interval so a stuck/throttled tab still self-corrects if it
+        // somehow missed the 2am board-day rollover. Refetching costs
+        // nothing extra: the code comes back identical until the day
+        // actually changes.
+        setInterval(refreshDisplayCode, 60 * 60 * 1000);
+        // Smart TV / embedded browsers throttle or suspend background
+        // timers for a tab left running unattended for hours — this
+        // catches a missed rollover the moment the tab actually wakes
+        // up (user interaction, TV coming out of standby, etc.),
+        // rather than depending solely on the interval firing on time.
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') refreshDisplayCode();
+        });
       }
     })();
   </script>

@@ -1064,26 +1064,44 @@
     return doctors.map((d, i) => ({ doctor: d, queue: queues[i] }));
   }
 
-  // Staff-side: mint (or reuse) this clinic's current time-boxed display
-  // token, for encoding into the QR code the board itself shows.
-  async function mintDisplayBoardToken() {
-    const { data, error } = await sb.rpc('mint_display_board_token');
+  // Staff-side: today's deterministic day-code for this clinic (the QR
+  // the board shows). No expiry math on this end at all — it's the
+  // same value all "board day" (2am-2am), a different value once the
+  // day rolls over, so the TV can just re-fetch it freely with no risk
+  // of handing out a near-dead value.
+  async function getDailyBoardCode() {
+    const { data, error } = await sb.rpc('get_daily_board_code');
     if (error) throw error;
-    return { token: data.token, expiresAt: data.expiresAt };
+    return { clinicId: data.clinicId, code: data.code };
   }
 
-  // Anonymous/patient-side: same shape getAllQueues() returns
-  // ([{doctor, queue: {nowServing, waiting, booked, done, noShow}}]),
-  // built from the token-scoped public RPC instead of an authenticated
-  // session, so display.html's existing render functions work
-  // unchanged regardless of which path supplied the data.
-  async function getPublicDisplayBoard(token, dateStr) {
-    const targetDate = dateStr || todayDateStr();
-    const { data, error } = await sb.rpc('get_display_board_by_token', { p_token: token, p_date: targetDate });
+  // Patient-side, step 1: exchange a scanned day-code for this specific
+  // phone's own 4-hour session, anchored to the moment of this call —
+  // not to the day-code's own rotation, so a patient's visit never
+  // breaks just because the wall-clock crossed 2am while they waited.
+  async function redeemDailyBoardCode(clinicId, code) {
+    const { data, error } = await sb.rpc('redeem_daily_board_code', { p_clinic_id: clinicId, p_code: code });
     if (error) throw error;
     if (!data || data.error) {
-      const err = new Error('This display link has expired.');
-      err.code = 'DISPLAY_LINK_EXPIRED';
+      const err = new Error('This QR code is no longer valid — please scan the one currently on screen.');
+      err.code = 'DISPLAY_CODE_INVALID';
+      throw err;
+    }
+    return { sessionId: data.sessionId, expiresAt: data.expiresAt };
+  }
+
+  // Patient-side, step 2: same shape getAllQueues() returns
+  // ([{doctor, queue: {nowServing, waiting, booked, done, noShow}}]),
+  // built from the session-scoped public RPC instead of an
+  // authenticated session, so display.html's existing render functions
+  // work unchanged regardless of which path supplied the data.
+  async function getDisplayBoardBySession(sessionId, dateStr) {
+    const targetDate = dateStr || todayDateStr();
+    const { data, error } = await sb.rpc('get_display_board_by_session', { p_session_id: sessionId, p_date: targetDate });
+    if (error) throw error;
+    if (!data || data.error) {
+      const err = new Error('Your session has ended — please scan the QR code again.');
+      err.code = 'DISPLAY_SESSION_EXPIRED';
       throw err;
     }
     const clinic = data.clinic;
@@ -2919,8 +2937,9 @@
 
     getQueueForDoctor,
     getAllQueues,
-    mintDisplayBoardToken,
-    getPublicDisplayBoard,
+    getDailyBoardCode,
+    redeemDailyBoardCode,
+    getDisplayBoardBySession,
     intendedMoment,
     effectiveMoment,
     searchBookedPatients,
