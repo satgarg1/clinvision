@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=366" />
+<link rel="stylesheet" href="styles.css?v=367" />
 </head>
 <body class="display-body">
   <button class="display-theme-toggle display-sound-toggle" id="displaySoundToggle" aria-label="Turn call sound on or off">
@@ -249,11 +249,11 @@
           drPrefix: 'Dr. ',
           viewOnPhone: 'View on Phone',
           scanWithPhone: 'Scan with your phone camera',
-          colPos: 'Token',
-          colTime: 'Appointment Time',
+          colPos: 'Token No.',
+          colTime: 'Time',
           runningLate: 'Running a little late',
           arrivedLate: 'Late Patient Arrival',
-          colPatient: 'Patient',
+          colPatient: 'Patient Name',
           colDoctor: 'Doctor',
           colType: 'Type',
           nowServing: 'Now serving',
@@ -292,11 +292,11 @@
           drPrefix: 'डॉ. ',
           viewOnPhone: 'फ़ोन पर देखें',
           scanWithPhone: 'अपने फ़ोन के कैमरे से स्कैन करें',
-          colPos: 'टोकन',
-          colTime: 'अपॉइंटमेंट का समय',
+          colPos: 'टोकन नंबर',
+          colTime: 'समय',
           runningLate: 'थोड़ी देर हो रही है',
           arrivedLate: 'मरीज़ देर से आए',
-          colPatient: 'मरीज़',
+          colPatient: 'मरीज़ का नाम',
           colDoctor: 'डॉक्टर',
           colType: 'प्रकार',
           nowServing: 'अभी देखा जा रहा है',
@@ -619,12 +619,13 @@
         const intended = p.intendedTime instanceof Date ? p.intendedTime : new Date(p.intendedTime);
         const arrived = p.arrivedAt ? new Date(p.arrivedAt) : null;
         const arrivedLate = p.type === 'appointment' && arrived && arrived.getTime() > intended.getTime();
+        const timeSpan = `<span class="board-time-value">${Qlinic.formatTimestamp(intended)}</span>`;
         if (arrivedLate) {
-          return `${Qlinic.formatTimestamp(intended)}<span class="board-time-arrived-late">${T.arrivedLate}</span>`;
+          return `${timeSpan}<span class="board-time-arrived-late">${T.arrivedLate}</span>`;
         }
         const LATE_GRACE_MS = 10 * 60 * 1000;
         const isLate = Date.now() - intended.getTime() >= LATE_GRACE_MS;
-        return `${Qlinic.formatTimestamp(intended)}${isLate ? `<span class="board-time-late">${T.runningLate}</span>` : ''}`;
+        return `${timeSpan}${isLate ? `<span class="board-time-late">${T.runningLate}</span>` : ''}`;
       }
 
       function buildRowsHTML(pageItems, startIdx) {
@@ -635,11 +636,8 @@
           <div class="board-row">
             <span class="board-pos">${p.tokenDisplay ? '#' + p.tokenDisplay : '·'}</span>
             <span class="board-time-cell">${boardTimeCell(p)}</span>
-            <span class="board-name">
-              <span class="board-name-row">${localizeName(p.name)}${p.isPriority ? `<span class="board-priority">${T.priority}</span>` : ''}</span>
-              ${p.address ? `<span class="board-sub">${localizeName(p.address)}</span>` : ''}
-            </span>
-            ${showDoctorCol ? `<span class="board-doc"><span class="board-doc-dot dot-${p.doctorAccent}"></span>${localizeName(p.doctorName)}</span>` : ''}
+            <span class="board-name-row">${localizeName(p.name)}${p.isPriority ? `<span class="board-priority">${T.priority}</span>` : ''}</span>
+            ${showDoctorCol ? `<span class="board-doc">${T.drPrefix}${localizeName(p.doctorName)}</span>` : ''}
           </div>
         `).join('');
       }

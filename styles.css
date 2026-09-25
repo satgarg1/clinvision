@@ -4743,6 +4743,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 
 .doc-tile {
   width: 100%;
+  min-width: 0;
   background: var(--db-paper);
   border: 1px solid var(--db-grey-300);
   border-left: 5px solid var(--tile-accent, var(--mkt-teal));
@@ -4837,21 +4838,25 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   align-items: center;
   padding: 14px 20px 10px;
 }
-.board-title { font-family: var(--font); font-size: 19px; font-weight: 800; color: var(--db-ink); margin: 0; }
+.board-title { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 22px; font-weight: 700; color: var(--db-ink); margin: 0; }
 .board-page-indicator { display: flex; gap: 6px; }
 .board-page-indicator .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--db-grey-300); transition: background 0.2s ease, width 0.2s ease; }
 .board-page-indicator .dot.active { background: var(--mkt-teal); width: 18px; border-radius: 4px; }
 
+/* Strict, fixed proportions (Token 15% / Time 20% / Patient 35% /
+   Doctor 30%) rather than a flexible fr column — an auto-sizing column
+   drifts row to row and leaves dead space wherever content is short;
+   a fixed grid keeps every row's columns aligned identically. */
 .board-cols {
   display: grid;
-  grid-template-columns: 60px 130px 2fr 1fr;
+  grid-template-columns: 15% 20% 35% 30%;
   gap: 10px;
-  padding: 10px 20px;
-  font-size: 12px;
+  padding: 12px 20px;
+  font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--db-grey-700);
+  color: var(--db-grey-600);
   border-top: 1px solid var(--db-grey-300);
   border-bottom: 1px solid var(--db-grey-300);
   background: #fafaff;
@@ -4860,7 +4865,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
    the same one doctor) and just wastes width — drop it and the grid
    template both, rather than leaving an empty column. */
 .board.single-doctor-mode .board-cols,
-.board.single-doctor-mode .board-row { grid-template-columns: 60px 130px 1fr; }
+.board.single-doctor-mode .board-row { grid-template-columns: 15% 20% 65%; }
 .board.single-doctor-mode #colDoctor { display: none; }
 
 .board-rows {
@@ -4875,16 +4880,17 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 
 .board-row {
   display: grid;
-  grid-template-columns: 60px 130px 2fr 1fr;
+  grid-template-columns: 15% 20% 35% 30%;
   gap: 10px;
   align-items: center;
-  padding: 10px 20px;
+  padding: 12px 20px;
   border-bottom: 1px solid #f0f0f5;
   font-variant-numeric: tabular-nums;
 }
 .board-row:last-child { border-bottom: none; }
-.board-pos { font-size: 16px; font-weight: 800; color: var(--db-ink); }
-.board-time-cell { font-size: 15px; font-weight: 700; color: var(--db-grey-700); display: flex; flex-direction: row; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.board-pos { font-size: 15px; font-weight: 800; color: var(--db-ink); }
+.board-time-cell { font-size: 14px; font-weight: 600; color: var(--db-grey-700); display: flex; flex-direction: row; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.board-time-value { text-transform: uppercase; }
 .board-time-late {
   font-size: 10.5px; font-weight: 800; color: var(--db-warning); background: var(--db-warning-bg);
   border-radius: 999px; padding: 2px 7px; white-space: nowrap;
@@ -4898,15 +4904,13 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   font-size: 10.5px; font-weight: 800; color: var(--db-accent); background: var(--db-accent-bg);
   border-radius: 999px; padding: 2px 7px; white-space: nowrap;
 }
-.board-name { font-size: 15.5px; font-weight: 700; color: var(--db-ink); display: flex; flex-direction: column; }
-.board-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.board-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 15px; font-weight: 700; color: var(--db-ink); }
 .board-priority {
   font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
   color: var(--db-danger); background: var(--db-danger-bg);
   border-radius: 999px; padding: 2px 8px; white-space: nowrap;
 }
-.board-sub { font-size: 11.5px; font-weight: 400; color: var(--db-grey-600); margin-top: 1px; }
-.board-doc { font-size: 14px; color: var(--db-grey-700); font-weight: 600; }
+.board-doc { font-size: 14px; color: var(--db-grey-700); font-weight: 400; }
 .board-empty { padding: 44px 0; text-align: center; color: var(--db-grey-600); font-size: 16px; }
 
 /* Replaces the doctor strip + waiting board entirely once every doctor
@@ -5109,7 +5113,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
      reading order under the token every time. */
   .board-pos { grid-column: 1; grid-row: 1; }
   .board-time-cell { grid-column: 2; grid-row: 1; font-size: 13px; }
-  .board-name { grid-column: 2; grid-row: 2; }
+  .board-name-row { grid-column: 2; grid-row: 2; }
   .board-doc { grid-column: 2; grid-row: 3; font-size: 13px; }
 }
 
