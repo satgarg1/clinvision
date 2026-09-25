@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=367" />
+<link rel="stylesheet" href="styles.css?v=368" />
 </head>
 <body class="display-body">
   <button class="display-theme-toggle display-sound-toggle" id="displaySoundToggle" aria-label="Turn call sound on or off">
@@ -122,36 +122,31 @@
     <div class="display-all-closed-sub" id="allClosedSub"></div>
   </div>
 
-  <div class="board-layout">
-    <div class="board" id="boardPanel">
-      <div class="board-head">
-        <p class="board-title" id="queueTitleText">Queue</p>
-        <div class="board-page-indicator" id="pageDots"></div>
-      </div>
-      <div class="board-cols">
-        <span id="colPos">#</span><span id="colTime">Time</span><span id="colPatient">Patient</span><span id="colDoctor">Doctor</span>
-      </div>
-      <div class="board-rows" id="boardRows"></div>
-    </div>
+  <div class="stat-card">
+    <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <div class="stat-card-label" id="patientsWaitingLabel">Patients Waiting</div>
+    <div class="stat-card-value" id="boardCount">0</div>
+  </div>
 
-    <div class="board-sidebar">
-      <div class="stat-card">
-        <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <div class="stat-card-label" id="patientsWaitingLabel">Patients Waiting</div>
-        <div class="stat-card-value" id="boardCount">0</div>
-      </div>
-
-      <!-- Shown only on the authenticated board itself (not when viewed
-           via a redeemed session link on a phone) — the QR encodes
-           today's clinic/day code, fetched by refreshDisplayCode()
-           below. A phone that scans it exchanges the code for its own
-           4-hour session. -->
-      <div class="display-qr-panel" id="displayQrPanel" style="display:none;">
-        <div class="display-qr-label" id="displayQrLabel">View on Phone</div>
-        <div class="display-qr-code" id="displayQrCode"></div>
-        <div class="display-qr-sub" id="displayQrSub">Scan with your phone camera</div>
-      </div>
+  <div class="board" id="boardPanel">
+    <div class="board-head">
+      <p class="board-title" id="queueTitleText">Queue</p>
+      <div class="board-page-indicator" id="pageDots"></div>
     </div>
+    <div class="board-cols">
+      <span id="colPos">#</span><span id="colTime">Time</span><span id="colPatient">Patient</span><span id="colDoctor">Doctor</span>
+    </div>
+    <div class="board-rows" id="boardRows"></div>
+  </div>
+
+  <!-- Shown only on the authenticated board itself (not when viewed via
+       a redeemed session link on a phone) — the QR encodes today's
+       clinic/day code, fetched by refreshDisplayCode() below. A phone
+       that scans it exchanges the code for its own 4-hour session. -->
+  <div class="display-qr-panel" id="displayQrPanel" style="display:none;">
+    <div class="display-qr-label" id="displayQrLabel">View on Phone</div>
+    <div class="display-qr-code" id="displayQrCode"></div>
+    <div class="display-qr-sub" id="displayQrSub">Scan with your phone camera</div>
   </div>
   </div>
 
@@ -186,8 +181,15 @@
   <script>
     (async function () {
       const urlParams = new URLSearchParams(location.search);
+      // localStorage, not sessionStorage: mobile browsers routinely clear
+      // sessionStorage on a hard refresh (and some webviews treat a
+      // background/foreground cycle as a fresh session), which was
+      // sending patients straight to the login screen after refreshing
+      // a page they'd reached anonymously via QR code. localStorage
+      // survives a refresh reliably; the session still expires
+      // server-side after 4 hours regardless of what the client holds.
       const SESSION_STORAGE_KEY = 'clinvision_display_session_id';
-      let publicSessionId = urlParams.get('session') || sessionStorage.getItem(SESSION_STORAGE_KEY) || null;
+      let publicSessionId = urlParams.get('session') || localStorage.getItem(SESSION_STORAGE_KEY) || null;
       const scannedClinicId = urlParams.get('clinic');
       const scannedDailyCode = urlParams.get('daily');
       let isPublicMode = !!publicSessionId;
@@ -210,7 +212,7 @@
         try {
           const redeemed = await Qlinic.redeemDailyBoardCode(scannedClinicId, scannedDailyCode);
           publicSessionId = redeemed.sessionId;
-          sessionStorage.setItem(SESSION_STORAGE_KEY, publicSessionId);
+          localStorage.setItem(SESSION_STORAGE_KEY, publicSessionId);
           isPublicMode = true;
           const cleanUrl = new URL(location.href);
           cleanUrl.search = '';
@@ -699,11 +701,12 @@
       function showExpiredLinkMessage() {
         document.getElementById('doctorStrip').style.display = 'none';
         document.getElementById('boardPanel').style.display = 'none';
+        document.querySelector('.stat-card').style.display = 'none';
         const el = document.getElementById('allClosedMessage');
         el.style.display = 'block';
         document.getElementById('allClosedTitle').textContent = 'Your session has ended';
         document.getElementById('allClosedSub').textContent = 'Please scan the QR code on the display screen in the waiting room again.';
-        sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        localStorage.removeItem(SESSION_STORAGE_KEY);
       }
 
       async function refreshData() {

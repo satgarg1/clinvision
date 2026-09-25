@@ -4696,7 +4696,6 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 18px;
 }
 .display-header .brand { display: flex; align-items: center; gap: 14px; }
 /* Small gradient mark + wordmark, not the sitewide wordmark-plus-gold-
@@ -4733,7 +4732,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
    whenever there are fewer than a handful of doctors. Past ~6, a single
    row of equal columns gets too narrow to read, so that count wraps
    into rows of auto-sized tiles instead of shrinking further. */
-.display-strip { display: grid; gap: 14px; margin-bottom: 18px; }
+.display-strip { display: grid; gap: 14px; }
 .display-strip.cols-1 { grid-template-columns: repeat(1, 1fr); }
 .display-strip.cols-2 { grid-template-columns: repeat(2, 1fr); }
 .display-strip.cols-3 { grid-template-columns: repeat(3, 1fr); }
@@ -4806,11 +4805,6 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .doc-tile.wide .tile-token-name { font-size: 22px; }
 .doc-tile.wide .tile-bottom { flex: 0 0 auto; flex-direction: column; align-items: flex-end; gap: 8px; border-left: 1px dashed var(--db-grey-300); padding-left: 24px; }
 .doc-tile.wide .tile-next { justify-content: flex-end; }
-
-/* Queue table + right sidebar (patients-waiting stat, QR-to-phone card) --
-   ~80/20 split, matching the approved mockup's two-column layout. */
-.board-layout { display: grid; grid-template-columns: 1fr 230px; gap: 18px; align-items: start; }
-.board-sidebar { display: flex; flex-direction: column; gap: 14px; }
 
 .stat-card {
   background: var(--db-paper);
@@ -4924,7 +4918,6 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   border-radius: 20px;
   padding: 80px 40px;
   text-align: center;
-  margin-bottom: 28px;
   box-shadow: 0 2px 10px rgba(30, 27, 75, 0.05);
 }
 .display-all-closed-title { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 48px; font-weight: 600; color: var(--db-ink); margin-bottom: 16px; letter-spacing: -0.01em; }
@@ -4949,7 +4942,33 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
    clock pinned where they already are instead of drifting toward a
    corner, and centers the narrower board left-to-right rather than
    leaving all the freed-up space on one side. */
-.display-scale-wrap { transform-origin: top center; transition: transform 0.15s ease; }
+/* Single top-level grid for the whole board so the "Patients Waiting"
+   stat, the queue table and the QR card can each be relocated purely
+   by re-assigning grid-template-areas per breakpoint — desktop keeps
+   the stat/QR stacked in a narrow right column beside the table,
+   mobile promotes the stat banner above the doctor cards and lets
+   table/QR fall in below, matching the approved mobile mockup, with
+   no DOM changes between the two. */
+.display-scale-wrap {
+  transform-origin: top center;
+  transition: transform 0.15s ease;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1fr 230px;
+  grid-template-areas:
+    "header header"
+    "strip  strip"
+    "closed closed"
+    "table  stat"
+    "table  qr";
+  align-items: start;
+}
+.display-header { grid-area: header; }
+.display-strip { grid-area: strip; }
+.display-all-closed { grid-area: closed; }
+.board { grid-area: table; }
+.stat-card { grid-area: stat; }
+.display-qr-panel { grid-area: qr; }
 
 /* QR-to-phone card — sits in the board sidebar, below the "Patients
    Waiting" stat card, matching the approved mockup's two-column layout. */
@@ -5093,9 +5112,23 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 @media (max-width: 900px) {
   /* Also reached by a patient's own phone via the display board's QR
      code, not just a narrow desktop window — the board's normal
-     N-doctor-cards-in-a-row and table+sidebar layouts assume TV width,
-     so both collapse to a single column here. */
-  .board-layout { grid-template-columns: 1fr; }
+     N-doctor-cards-in-a-row and table+sidebar layouts assume TV width.
+     Approved mobile mockup: https://claude.ai/artifact/XSogKdfLEmNS4KEU7BzX6V
+     — the "Patients Waiting" stat is promoted above the doctor cards
+     (a patient wants that number before anything else), doctor cards
+     drop to one full-width card per row, and the table/QR fall in
+     below, all via the same grid-template-areas reshuffle used on
+     desktop — no DOM change needed between breakpoints. */
+  .display-scale-wrap {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "stat"
+      "strip"
+      "closed"
+      "table"
+      "qr";
+  }
   .display-strip.cols-1, .display-strip.cols-2, .display-strip.cols-3,
   .display-strip.cols-4, .display-strip.cols-5, .display-strip.cols-6plus {
     grid-template-columns: 1fr;
@@ -5104,17 +5137,47 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   .doc-tile.wide .tile-serving { border-left: none; border-top: 1px dashed var(--db-grey-300); padding-left: 0; padding-top: 8px; }
   .doc-tile.wide .tile-bottom { border-left: none; flex-direction: row; align-items: center; padding-left: 0; }
 
+  /* Patients-waiting banner: a full-width horizontal strip (icon, label,
+     big number) rather than the desktop sidebar's centered vertical
+     stack, which only reads well in a narrow fixed-width column. */
+  .stat-card { display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px 16px; }
+  .stat-card-icon { margin: 0; flex-shrink: 0; }
+  .stat-card-label { margin-bottom: 0; flex-grow: 1; }
+  .stat-card-value { font-size: 26px; }
+
+  /* Queue rows: a 4-column grid table doesn't fit real names at phone
+     width, so each row becomes a compact 2-line list item instead —
+     token + patient name + time on top, doctor name (plus any late-
+     arrival badge) on its own smaller line underneath. */
   .board-cols { display: none; }
-  .board-row { grid-template-columns: 40px 1fr; row-gap: 4px; }
-  /* Explicit rows for every stacked cell (not just column) — with 4
-     cells now flowing into one narrow column, leaving row placement to
-     implicit auto-flow risks the browser reordering them relative to
-     each other; pinning row 1-3 keeps time/name/doctor in that fixed
-     reading order under the token every time. */
-  .board-pos { grid-column: 1; grid-row: 1; }
-  .board-time-cell { grid-column: 2; grid-row: 1; font-size: 13px; }
-  .board-name-row { grid-column: 2; grid-row: 2; }
-  .board-doc { grid-column: 2; grid-row: 3; font-size: 13px; }
+  .board-row {
+    /* Time gets a capped, not "auto", track — "auto" sizes to the
+       widest UNWRAPPED content, and a late-arrival badge's full phrase
+       ("Late Patient Arrival") is wide enough to starve the name
+       column down to a few px. Capping it forces the badge to wrap
+       inside its own column instead. */
+    grid-template-columns: auto 1fr minmax(58px, 92px);
+    grid-template-areas:
+      "pos name time"
+      "doc doc doc";
+    column-gap: 8px;
+    row-gap: 3px;
+    align-items: baseline;
+    padding: 12px 16px;
+  }
+  .board-pos { grid-area: pos; }
+  .board-name-row { grid-area: name; font-size: 14px; min-width: 0; }
+  .board-time-cell { grid-area: time; font-size: 12px; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 0; }
+  .board-time-late, .board-time-arrived-late { white-space: normal; text-align: right; font-size: 9.5px; }
+  .board-doc { grid-area: doc; font-size: 11.5px; }
+  /* Same stacked template for a solo-doctor clinic (no Doctor column to
+     begin with) — otherwise the desktop override below wins on
+     specificity alone regardless of this media query. */
+  .board.single-doctor-mode .board-cols,
+  .board.single-doctor-mode .board-row {
+    grid-template-columns: auto 1fr minmax(58px, 92px);
+    grid-template-areas: "pos name time";
+  }
 }
 
 /* ---------------- Small shared components: slot hints, name/address cells ---------------- */
