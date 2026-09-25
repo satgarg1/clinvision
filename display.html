@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=362" />
+<link rel="stylesheet" href="styles.css?v=363" />
 </head>
 <body class="display-body">
   <script>document.body.setAttribute('data-board-mode', localStorage.getItem('clinvision_display_board_theme') === 'light' ? 'light' : 'dark');</script>
@@ -29,6 +29,14 @@
   <div class="display-theme-menu" id="displayThemeMenu">
     <button type="button" data-mode="dark" aria-label="Dark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button>
     <button type="button" data-mode="light" aria-label="Light"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor" stroke="none"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke-linecap="round"/></svg></button>
+  </div>
+
+  <!-- Shown only on the authenticated board itself (not when viewed via
+       the token link on a phone) — the QR encodes a 24h-boxed link to
+       this same page, minted/rotated by refreshDisplayToken() below. -->
+  <div class="display-qr-panel" id="displayQrPanel" style="display:none;">
+    <div class="display-qr-label">View on phone</div>
+    <div class="display-qr-code" id="displayQrCode"></div>
   </div>
   <script>
     (function () {
@@ -201,11 +209,18 @@
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=123"></script>
+  <script src="clinic-data.js?v=124"></script>
   <script>
     (async function () {
-      if (!(await Qlinic.requireLogin('login.html'))) return;
+      const urlParams = new URLSearchParams(location.search);
+      const publicToken = urlParams.get('token');
+      const isPublicMode = !!publicToken;
+
+      if (!isPublicMode) {
+        if (!(await Qlinic.requireLogin('login.html'))) return;
+      }
 
       if (await Qlinic.isDoctor()) {
         window.location.href = 'dashboard.html';
@@ -669,14 +684,36 @@
         });
       }
 
+      function showExpiredLinkMessage() {
+        document.getElementById('doctorStrip').style.display = 'none';
+        document.getElementById('boardPanel').style.display = 'none';
+        const el = document.getElementById('allClosedMessage');
+        el.style.display = 'block';
+        document.getElementById('allClosedTitle').textContent = 'This link has expired';
+        document.getElementById('allClosedSub').textContent = 'Please check the display screen in the waiting room for a fresh QR code.';
+      }
+
       async function refreshData() {
         const now = new Date();
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(now);
         document.getElementById('clockDate').textContent = now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' });
-        const clinic = await Qlinic.getClinic();
+
+        let clinic, allQueues;
+        if (isPublicMode) {
+          try {
+            const result = await Qlinic.getPublicDisplayBoard(publicToken);
+            clinic = result.clinic;
+            allQueues = result.allQueues;
+          } catch (err) {
+            showExpiredLinkMessage();
+            return;
+          }
+        } else {
+          clinic = await Qlinic.getClinic();
+          allQueues = await Qlinic.getAllQueues();
+        }
         T = STRINGS[clinic && clinic.display_language] || STRINGS.en;
         applyStaticStrings();
-        const allQueues = await Qlinic.getAllQueues();
         walkinRanks = buildWalkinRanks(allQueues);
         const all = allQueues.filter(({ doctor }) => {
           if (!doctor.dayClosedAt) return true;
@@ -712,11 +749,34 @@
         }, 320);
       }
 
+      async function refreshDisplayToken() {
+        try {
+          const { token } = await Qlinic.mintDisplayBoardToken();
+          const url = new URL('display.html', location.href);
+          url.searchParams.set('token', token);
+          const qr = qrcode(0, 'M');
+          qr.addData(url.toString());
+          qr.make();
+          document.getElementById('displayQrCode').innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2 });
+          document.getElementById('displayQrPanel').style.display = '';
+        } catch (err) {
+          // Non-fatal — the board itself still works without the QR panel.
+          document.getElementById('displayQrPanel').style.display = 'none';
+        }
+      }
+
       refreshData();
       setInterval(refreshData, REFRESH_MS);
       setInterval(tickFadeCountdowns, 1000);
       setInterval(rotatePage, ROTATE_MS);
-      Qlinic.onLiveChange(refreshData);
+      if (!isPublicMode) {
+        Qlinic.onLiveChange(refreshData);
+        refreshDisplayToken();
+        // Well inside both the 24h token life and the 1h-before-expiry
+        // reuse window mint_display_board_token() already applies, so
+        // this never rotates the QR mid-life for no reason.
+        setInterval(refreshDisplayToken, 2 * 60 * 60 * 1000);
+      }
     })();
   </script>
 </body>

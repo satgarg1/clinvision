@@ -1064,6 +1064,53 @@
     return doctors.map((d, i) => ({ doctor: d, queue: queues[i] }));
   }
 
+  // Staff-side: mint (or reuse) this clinic's current time-boxed display
+  // token, for encoding into the QR code the board itself shows.
+  async function mintDisplayBoardToken() {
+    const { data, error } = await sb.rpc('mint_display_board_token');
+    if (error) throw error;
+    return { token: data.token, expiresAt: data.expiresAt };
+  }
+
+  // Anonymous/patient-side: same shape getAllQueues() returns
+  // ([{doctor, queue: {nowServing, waiting, booked, done, noShow}}]),
+  // built from the token-scoped public RPC instead of an authenticated
+  // session, so display.html's existing render functions work
+  // unchanged regardless of which path supplied the data.
+  async function getPublicDisplayBoard(token, dateStr) {
+    const targetDate = dateStr || todayDateStr();
+    const { data, error } = await sb.rpc('get_display_board_by_token', { p_token: token, p_date: targetDate });
+    if (error) throw error;
+    if (!data || data.error) {
+      const err = new Error('This display link has expired.');
+      err.code = 'DISPLAY_LINK_EXPIRED';
+      throw err;
+    }
+    const clinic = data.clinic;
+    const doctors = (data.doctors || []).map(normalizeDoctor);
+    const patientsByDoctor = {};
+    (data.patients || []).forEach((row) => {
+      const p = normalizePatient(row);
+      (patientsByDoctor[p.doctorId] = patientsByDoctor[p.doctorId] || []).push(p);
+    });
+    const allQueues = doctors.map((doctor) => {
+      const mine = patientsByDoctor[doctor.id] || [];
+      const nowServing = mine.find((p) => p.status === 'in_consult') || null;
+      const waiting = mine
+        .filter((p) => p.status === 'waiting')
+        .sort((a, b) => compareQueueOrder(a, b, doctor))
+        .map((p, idx) => Object.assign({}, p, { position: idx + 1, effectiveTime: effectiveMoment(p, doctor), intendedTime: intendedMoment(p) }));
+      const booked = mine
+        .filter((p) => p.status === 'booked')
+        .sort((a, b) => compareQueueOrder(a, b, doctor))
+        .map((p) => Object.assign({}, p, { effectiveTime: effectiveMoment(p, doctor) }));
+      const done = mine.filter((p) => p.status === 'done');
+      const noShow = mine.filter((p) => p.status === 'no_show');
+      return { doctor, queue: { nowServing, waiting, booked, done, noShow } };
+    });
+    return { clinic, allQueues };
+  }
+
   function escapeOrFilterValue(v) {
     return `"${String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
   }
@@ -2872,6 +2919,8 @@
 
     getQueueForDoctor,
     getAllQueues,
+    mintDisplayBoardToken,
+    getPublicDisplayBoard,
     intendedMoment,
     effectiveMoment,
     searchBookedPatients,
