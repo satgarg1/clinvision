@@ -4969,17 +4969,25 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   gap: 18px;
   grid-template-columns: 1fr 230px;
   grid-template-areas:
-    "header header"
-    "strip  strip"
-    "closed closed"
-    "table  stat"
-    "table  qr";
+    "header  header"
+    "strip   strip"
+    "closed  closed"
+    "table   sidebar";
   align-items: start;
 }
 .display-header { grid-area: header; }
 .display-strip { grid-area: strip; }
 .display-all-closed { grid-area: closed; }
 .board { grid-area: table; }
+/* A table item spanning two separate named rows (one per sidebar card)
+   forces CSS Grid to inflate BOTH those rows to jointly fit the
+   table's full height, leaving a large empty gap between the short
+   stat card and the QR card below it. Giving stat+QR one shared
+   "sidebar" row instead — sized to their own combined content via this
+   flex column, not stretched to match the table — fixes that; any
+   leftover height (the table is taller than the sidebar) now falls
+   after the QR card instead of between the two cards. */
+.board-sidebar { grid-area: sidebar; display: flex; flex-direction: column; gap: 18px; }
 .stat-card { grid-area: stat; }
 .display-qr-panel { grid-area: qr; }
 
@@ -5142,17 +5150,23 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
       "table"
       "qr";
   }
+  /* Undo the desktop-only grouping wrapper so the stat card and QR
+     card go back to being independent grid items — required for them
+     to land in their very different mobile positions above/below the
+     doctor strip and table. */
+  .board-sidebar { display: contents; }
 
-  /* The clock/date and the brand block were fighting for the same row's
-     width — real phones (unlike the width this was first tested at)
-     wrapped the clock text itself mid-string ("5:47" / "PM" on separate
-     lines). Give each its own full-width row instead of trying to fit
-     both side by side, so the clock/date text always has room to sit
-     on one line. */
-  .display-header { flex-wrap: wrap; row-gap: 8px; }
-  .display-header .brand { flex: 1 1 100%; }
-  .display-header-meta { flex: 1 1 100%; text-align: right; }
-  .display-header .clock { font-size: 20px; justify-content: flex-end; }
+  /* Keep brand and clock/date on the SAME row (stacking them onto
+     separate rows, tried earlier, looked wrong) — instead let the
+     brand block (which can carry a long clinic name) shrink and wrap
+     ITS OWN text, while the clock/date block never shrinks, so the
+     clock text always keeps the room it needs and never wraps
+     mid-string regardless of how long the clinic name runs. */
+  .display-header { align-items: flex-start; }
+  .display-header .brand { min-width: 0; flex: 1 1 auto; }
+  .display-header .brand > div { min-width: 0; }
+  .display-header-meta { flex: 0 0 auto; }
+  .display-header .clock { font-size: 20px; }
 
   .display-strip.cols-1, .display-strip.cols-2, .display-strip.cols-3,
   .display-strip.cols-4, .display-strip.cols-5, .display-strip.cols-6plus {

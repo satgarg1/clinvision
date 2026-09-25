@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=370" />
+<link rel="stylesheet" href="styles.css?v=371" />
 </head>
 <body class="display-body">
   <button class="display-theme-toggle display-sound-toggle" id="displaySoundToggle" aria-label="Turn call sound on or off">
@@ -122,12 +122,6 @@
     <div class="display-all-closed-sub" id="allClosedSub"></div>
   </div>
 
-  <div class="stat-card">
-    <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-    <div class="stat-card-label" id="patientsWaitingLabel">Patients Waiting</div>
-    <div class="stat-card-value" id="boardCount">0</div>
-  </div>
-
   <div class="board" id="boardPanel">
     <div class="board-head">
       <p class="board-title" id="queueTitleText">Queue</p>
@@ -139,14 +133,28 @@
     <div class="board-rows" id="boardRows"></div>
   </div>
 
-  <!-- Shown only on the authenticated board itself (not when viewed via
-       a redeemed session link on a phone) — the QR encodes today's
-       clinic/day code, fetched by refreshDisplayCode() below. A phone
-       that scans it exchanges the code for its own 4-hour session. -->
-  <div class="display-qr-panel" id="displayQrPanel" style="display:none;">
-    <div class="display-qr-label" id="displayQrLabel">View on Phone</div>
-    <div class="display-qr-code" id="displayQrCode"></div>
-    <div class="display-qr-sub" id="displayQrSub">Scan with your phone camera</div>
+  <!-- Grouped only so the desktop sidebar column can size to its own
+       (short) content instead of the queue table's — see the
+       .board-sidebar comment in styles.css for why. On mobile this
+       wrapper goes display:contents so the stat card and QR card
+       return to being independent, freely-repositionable grid items. -->
+  <div class="board-sidebar">
+    <div class="stat-card">
+      <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <div class="stat-card-label" id="patientsWaitingLabel">Patients Waiting</div>
+      <div class="stat-card-value" id="boardCount">0</div>
+    </div>
+
+    <!-- Shown only on the authenticated board itself (not when viewed
+         via a redeemed session link on a phone) — the QR encodes
+         today's clinic/day code, fetched by refreshDisplayCode()
+         below. A phone that scans it exchanges the code for its own
+         4-hour session. -->
+    <div class="display-qr-panel" id="displayQrPanel" style="display:none;">
+      <div class="display-qr-label" id="displayQrLabel">View on Phone</div>
+      <div class="display-qr-code" id="displayQrCode"></div>
+      <div class="display-qr-sub" id="displayQrSub">Scan with your phone camera</div>
+    </div>
   </div>
   </div>
 

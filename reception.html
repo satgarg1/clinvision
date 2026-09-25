@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=370" />
+<link rel="stylesheet" href="styles.css?v=371" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -1029,6 +1029,10 @@
           const countLabel = isToday ? `${q.waiting.length} waiting, ${q.booked.length} booked` : `${q.booked.length} booked`;
           return `<option value="${d.id}" ${d.id === queueDoctorId ? 'selected' : ''}>${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)} (${countLabel})</option>`;
         }).join('');
+        // Handed back so renderQueues() can reuse the selected doctor's
+        // queue instead of fetching it a second time immediately after —
+        // this loop already fetched every doctor's, including theirs.
+        return new Map(doctors.map((d, i) => [d.id, queues[i]]));
       }
 
       document.getElementById('queueDoctorFilter').addEventListener('change', (e) => {
@@ -1073,14 +1077,13 @@
           return;
         }
 
-        await fillQueueDoctorFilter();
+        const queuesByDoctorId = await fillQueueDoctorFilter();
         if (myToken !== queueRenderToken) return;
         if (!queueDoctorId) { panelEl.innerHTML = ''; return; }
 
         const isTodayView = queueViewDate === Qlinic.getTodayDate();
         const doctor = doctorsCache.find((d) => d.id === queueDoctorId);
-        const queue = await Qlinic.getQueueForDoctor(queueDoctorId, queueViewDate);
-        if (myToken !== queueRenderToken) return;
+        const queue = queuesByDoctorId.get(queueDoctorId);
 
         const invoiceByPatientId = {};
         if (canBill && isTodayView) {
