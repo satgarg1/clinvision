@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=368" />
+<link rel="stylesheet" href="styles.css?v=369" />
 </head>
 <body class="display-body">
   <button class="display-theme-toggle display-sound-toggle" id="displaySoundToggle" aria-label="Turn call sound on or off">
@@ -537,6 +537,7 @@
           const notArrived = !!doctor.dayClosedAt && !closedToday;
           const statusText = (closedToday || notArrived) ? '' : statusDetailLine(doctor);
           const isEmergency = !closedToday && !notArrived && doctor.status === 'emergency';
+          const isOnBreak = !closedToday && !notArrived && doctor.status === 'on_break';
 
           let bottomHtml;
           if (closedToday) {
@@ -573,7 +574,7 @@
                   : `<span class="tile-pill tile-pill-warn"><span class="dot"></span>${statusLabel(doctor.status)}</span>`;
 
           return `
-          <div class="doc-tile${isWide ? ' wide' : ''}${isEmergency ? ' is-emergency' : ''}" style="--tile-accent: var(--mkt-${ACCENT_COLORS[index % ACCENT_COLORS.length]});">
+          <div class="doc-tile${isWide ? ' wide' : ''}${isEmergency ? ' is-emergency' : ''}${isOnBreak ? ' is-on-break' : ''}" style="--tile-accent: var(--mkt-${ACCENT_COLORS[index % ACCENT_COLORS.length]});">
             <div class="tile-top">
               <div>
                 <div class="tile-name">${T.drPrefix}${localizeName(doctor.name)}</div>

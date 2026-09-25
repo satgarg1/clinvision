@@ -4753,6 +4753,10 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   gap: 7px;
 }
 .doc-tile.is-emergency { border-left-color: var(--db-danger); background: var(--db-danger-bg); }
+/* On-break gets the same full-tint treatment as emergency (a card the
+   viewer's eye should catch immediately) but in amber, so the two
+   never compete for the same "urgent red" attention at a glance. */
+.doc-tile.is-on-break { border-left-color: #b45309; background: var(--db-warning-bg); }
 .tile-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 .tile-name { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
 .tile-spec { font-size: 12px; color: var(--db-grey-600); margin-top: 1px; }
@@ -4765,19 +4769,28 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .tile-pill-ok { background: var(--db-success-bg); color: var(--db-success); }
 .tile-pill-warn { background: var(--db-warning-bg); color: var(--db-warning); }
 .tile-pill-danger { background: var(--db-danger-bg); color: var(--db-danger); }
+/* Pill would otherwise blend into the on-break card's own tinted
+   background (both var(--db-warning-bg)) — give it a richer amber so
+   it still reads as a distinct pill. */
+.doc-tile.is-on-break .tile-pill-warn { background: #fde8b8; }
 
 /* Now Serving: explicit label + token + name grouped as one unit, name
    large and right next to the number so the pairing is unambiguous. */
 .tile-serving { padding-top: 6px; border-top: 1px dashed var(--db-grey-300); flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
+.doc-tile.is-on-break .tile-serving { border-color: #e8c988; }
 .tile-serving-label { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--db-grey-600); }
 .doc-tile.is-emergency .tile-serving-label { color: var(--db-danger); }
+.doc-tile.is-on-break .tile-serving-label { color: var(--db-warning); }
 .tile-token-row { display: flex; align-items: baseline; gap: 11px; flex-wrap: wrap; }
 .tile-token { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 34px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--db-ink); line-height: 1; }
 .doc-tile.is-emergency .tile-token { color: var(--db-danger); }
+.doc-tile.is-on-break .tile-token { color: var(--db-warning); }
 .tile-token-name { font-size: 18px; font-weight: 800; color: var(--db-ink); line-height: 1.15; }
 .doc-tile.is-emergency .tile-token-name { color: var(--db-danger); }
+.doc-tile.is-on-break .tile-token-name { color: var(--db-warning); }
 .tile-called { font-size: 11.5px; color: var(--db-grey-600); }
 .tile-idle { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-size: 18px; color: var(--db-grey-600); font-weight: 500; }
+.doc-tile.is-on-break .tile-idle { color: var(--db-warning); opacity: 0.75; }
 /* Status detail (on-break-since, emergency note, not-arrived, day-
    closed countdown) — same information the old departure-board row
    surfaced, restyled; replaces the Next chips only when there's
