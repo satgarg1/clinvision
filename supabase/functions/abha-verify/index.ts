@@ -24,6 +24,7 @@
 import { getServiceRoleClient } from '../_shared/supabase-client.ts';
 import { jsonResponse, CORS_HEADERS } from '../_shared/http.ts';
 import { abdmBaseUrl, getAbdmSessionToken, isAbdmMockMode } from '../_shared/abdm-token.ts';
+import { patientBelongsToClinic, requireStaffSession } from '../_shared/staff-auth.ts';
 
 interface InitBody {
   step: 'init';
@@ -56,11 +57,23 @@ Deno.serve(async (req: Request) => {
     return jsonResponseWithCors({ error: 'Invalid JSON body' }, 400);
   }
 
+  // Both steps require a logged-in, active staff member — handleInit
+  // triggers a real OTP send once ABDM_MOCK=false (an anonymous caller
+  // could otherwise spam OTPs to any mobile number they choose), and
+  // handleConfirm writes ABHA identifiers onto a specific patient row
+  // (an anonymous or cross-clinic caller could otherwise overwrite any
+  // patient's ABHA identity by guessing/reusing a patientId).
+  const supabase = getServiceRoleClient();
+  const authResult = await requireStaffSession(req, supabase);
+  if (authResult.ok === false) {
+    return jsonResponseWithCors({ error: authResult.error }, authResult.status);
+  }
+
   if (body.step === 'init') {
     return handleInit(body);
   }
   if (body.step === 'confirm') {
-    return handleConfirm(body);
+    return handleConfirm(body, supabase, authResult.staff.clinicId);
   }
   return jsonResponseWithCors({ error: 'step must be "init" or "confirm"' }, 400);
 });
@@ -84,15 +97,29 @@ async function handleInit(body: InitBody): Promise<Response> {
     body: JSON.stringify({ scope: [body.method], loginHint: body.method, value: body.value }),
   });
   if (!res.ok) {
-    return jsonResponseWithCors({ error: `ABDM OTP request failed: ${res.status} ${await res.text()}` }, 502);
+    console.error('abha-verify OTP request failed:', res.status, await res.text());
+    return jsonResponseWithCors({ error: 'ABDM OTP request failed.' }, 502);
   }
   const data = await res.json();
   return jsonResponseWithCors({ txnId: data.txnId });
 }
 
-async function handleConfirm(body: ConfirmBody): Promise<Response> {
+async function handleConfirm(
+  body: ConfirmBody,
+  supabase: ReturnType<typeof getServiceRoleClient>,
+  clinicId: string,
+): Promise<Response> {
   if (!body.txnId || !body.otp || !body.patientId) {
     return jsonResponseWithCors({ error: 'txnId, otp, and patientId are required' }, 400);
+  }
+
+  // Same clinic boundary my_clinic_id()-scoped RPCs enforce at the DB
+  // layer — this function runs on the service-role client (bypasses
+  // RLS entirely), so without this check any caller with a valid staff
+  // session at ANY clinic could overwrite ANY patient's ABHA identity
+  // just by supplying a different clinic's patientId.
+  if (!(await patientBelongsToClinic(supabase, body.patientId, clinicId))) {
+    return jsonResponseWithCors({ error: 'Patient not found in your clinic.' }, 404);
   }
 
   let abhaNumber: string;
@@ -109,7 +136,8 @@ async function handleConfirm(body: ConfirmBody): Promise<Response> {
       body: JSON.stringify({ txnId: body.txnId, otp: body.otp }),
     });
     if (!res.ok) {
-      return jsonResponseWithCors({ error: `ABDM OTP verification failed: ${res.status} ${await res.text()}` }, 502);
+      console.error('abha-verify OTP verification failed:', res.status, await res.text());
+      return jsonResponseWithCors({ error: 'ABDM OTP verification failed.' }, 502);
     }
     const data = await res.json();
     abhaNumber = data.ABHANumber;
@@ -120,7 +148,6 @@ async function handleConfirm(body: ConfirmBody): Promise<Response> {
   // abha_verified_at: only after this function itself has performed
   // (or, under mock mode, simulated) a real OTP verification - never
   // from an unauthenticated claim of "this is already verified."
-  const supabase = getServiceRoleClient();
   const { error } = await supabase
     .from('patients')
     .update({
@@ -132,7 +159,8 @@ async function handleConfirm(body: ConfirmBody): Promise<Response> {
     .eq('id', body.patientId);
 
   if (error) {
-    return jsonResponseWithCors({ error: error.message }, 500);
+    console.error('abha-verify patient update failed:', error.message);
+    return jsonResponseWithCors({ error: 'Internal error.' }, 500);
   }
 
   return jsonResponseWithCors({ abhaNumber, abhaAddress, verified: true });

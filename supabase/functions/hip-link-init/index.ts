@@ -19,6 +19,7 @@
 // against ABDM's live API reference before Milestone D.
 
 import { jsonResponse } from '../_shared/http.ts';
+import { verifyGatewayAuth } from '../_shared/gateway-auth.ts';
 
 interface LinkInitRequest {
   transactionId: string;
@@ -29,6 +30,8 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
+  const authError = verifyGatewayAuth(req);
+  if (authError) return authError;
 
   let body: LinkInitRequest;
   try {

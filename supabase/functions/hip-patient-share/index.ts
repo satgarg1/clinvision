@@ -24,6 +24,7 @@
 
 import { getServiceRoleClient } from '../_shared/supabase-client.ts';
 import { jsonResponse } from '../_shared/http.ts';
+import { verifyGatewayAuth } from '../_shared/gateway-auth.ts';
 
 interface PatientShareRequest {
   transactionId: string;
@@ -42,6 +43,8 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
+  const authError = verifyGatewayAuth(req);
+  if (authError) return authError;
 
   let body: PatientShareRequest;
   try {
@@ -90,7 +93,8 @@ Deno.serve(async (req: Request) => {
     .eq('id', candidates[0].id);
 
   if (error) {
-    return jsonResponse({ error: error.message }, 500);
+    console.error('hip-patient-share update failed:', error.message);
+    return jsonResponse({ error: 'Internal error.' }, 500);
   }
 
   return jsonResponse({ transactionId: body.transactionId, status: 'LINKED', patientId: candidates[0].id });

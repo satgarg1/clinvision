@@ -24,6 +24,7 @@ import { jsonResponse } from '../_shared/http.ts';
 import { isAbdmMockMode } from '../_shared/abdm-token.ts';
 import { buildOpConsultationBundle } from '../_shared/fhir-bundle.ts';
 import { encryptForHiu, generateKeyMaterial } from '../_shared/fidelius.ts';
+import { verifyGatewayAuth } from '../_shared/gateway-auth.ts';
 
 interface HealthInfoRequest {
   transactionId: string;
@@ -42,6 +43,8 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
+  const authError = verifyGatewayAuth(req);
+  if (authError) return authError;
 
   let body: HealthInfoRequest;
   try {
@@ -79,7 +82,8 @@ Deno.serve(async (req: Request) => {
     .single();
 
   if (insertError) {
-    return jsonResponse({ error: insertError.message }, 500);
+    console.error('hip-health-info-request insert failed:', insertError.message);
+    return jsonResponse({ error: 'Internal error.' }, 500);
   }
 
   // ACK first - everything below runs after the response is sent, per

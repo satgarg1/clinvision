@@ -100,6 +100,13 @@ export async function encryptForHiu(
   );
 
   const theirNonce = fromBase64(theirNonceB64);
+  if (theirNonce.length !== 32) {
+    // xorBytes silently truncates to the shorter input otherwise,
+    // which would shrink or overlap the salt/iv split below and
+    // silently weaken (or break) the AES-GCM guarantees this whole
+    // scheme depends on — the Fidelius spec requires exactly 32 bytes.
+    throw new Error(`HIU-supplied nonce must be exactly 32 bytes, got ${theirNonce.length}.`);
+  }
   const xored = xorBytes(ours.nonce, theirNonce);
   const salt = xored.slice(0, 20);
   const iv = xored.slice(xored.length - 12);

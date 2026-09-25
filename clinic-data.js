@@ -1212,11 +1212,7 @@
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
     const data = await fetchAllRows((from, to) => sb
-      .from('patients')
-      .select('name, phone, age, gender, address, doctor_id, token_date, status, created_at')
-      .eq('clinic_id', clinicId)
-      .order('created_at', { ascending: false })
-      .order('id', { ascending: true })
+      .rpc('get_patient_directory')
       .range(from, to));
 
     const byPhone = {};
@@ -2822,28 +2818,11 @@
   }
 
   async function searchPatientsForPharmacy(query) {
-    const clinicId = await ensureClinicContext();
     const q = (query || '').trim();
-    if (!q || !clinicId) return [];
-    const pharmacyFilter = escapeOrFilterValue(`%${q}%`);
-    const { data, error } = await sb
-      .from('patients')
-      .select('id, name, phone')
-      .eq('clinic_id', clinicId)
-      .or(`name.ilike.${pharmacyFilter},phone.ilike.${pharmacyFilter}`)
-      .order('created_at', { ascending: false })
-      .limit(50);
+    if (!q) return [];
+    const { data, error } = await sb.rpc('search_patients_for_pharmacy', { p_query: q });
     if (error) throw error;
-    const seenPhones = new Set();
-    const results = [];
-    for (const row of data) {
-      const phone = (row.phone || '').trim();
-      if (phone && seenPhones.has(phone)) continue;
-      if (phone) seenPhones.add(phone);
-      results.push({ id: row.id, name: row.name, phone: row.phone });
-      if (results.length >= 20) break;
-    }
-    return results;
+    return (data || []).map((row) => ({ id: row.id, name: row.name, phone: row.phone }));
   }
 
   async function getInvoiceItems(invoiceId) {

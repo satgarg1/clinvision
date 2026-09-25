@@ -22,6 +22,7 @@
 // silently glossed over as if it worked.
 
 import { jsonResponse } from '../_shared/http.ts';
+import { verifyGatewayAuth } from '../_shared/gateway-auth.ts';
 
 interface LinkConfirmRequest {
   confirmation: {
@@ -34,6 +35,8 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
+  const authError = verifyGatewayAuth(req);
+  if (authError) return authError;
 
   let body: LinkConfirmRequest;
   try {
