@@ -1713,6 +1713,149 @@ a { color: inherit; }
   .contact-panel { padding: 40px 24px; }
 }
 
+/* ---------------- Pricing page ----------------
+   Single flat plan (₹899/mo or ₹8,999/yr, 2,000 patient SMS included) --
+   ported from the reviewed Artifact mockup. Desktop values below match
+   that mockup's final, corrected pass (56->68px H1, scaled-up card type,
+   shrink-wrapped SMS banner, softened features background); the 900px/
+   700px stack is new for production, same breakpoints every other
+   marketing page already uses. */
+
+.pricing-hero {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 40px; max-width: 1220px; margin: 0 auto; padding: 64px 6vw 40px;
+}
+.pricing-hero-copy { max-width: 600px; }
+.pricing-pill {
+  display: inline-block; background: #e8f6f4; color: var(--mkt-teal);
+  font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: var(--radius-pill);
+  margin-bottom: 18px;
+}
+.pricing-h1 {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-size: clamp(36px, 5vw, 68px); font-weight: 700; line-height: 1.08;
+  letter-spacing: -0.02em; margin: 0 0 18px;
+}
+.pricing-hero-sub { font-size: 16px; color: var(--grey-700); line-height: 1.6; margin: 0; }
+.pricing-hero-img {
+  width: 440px; max-width: 40vw; aspect-ratio: 12 / 7; object-fit: cover;
+  border-radius: 24px; flex-shrink: 0;
+}
+
+/* Pricing card, its decorative blobs/sparkles, and the SMS/contact lines
+   under it. Position: relative wrapper centers the card and gives the
+   absolutely-positioned decoration something to anchor to. */
+.pricing-card-section { position: relative; padding: 30px 6vw 70px; overflow: hidden; }
+.pricing-card-wrap { position: relative; display: flex; justify-content: center; }
+.pricing-blob {
+  position: absolute; z-index: 0; border-radius: 55% 45% 60% 40% / 50% 55% 45% 50%;
+  pointer-events: none;
+}
+.pricing-blob.b1 { top: -40px; left: 6vw; width: 300px; height: 260px; background: radial-gradient(circle, rgba(37,99,235,0.13), transparent 72%); }
+.pricing-blob.b2 { bottom: -50px; right: 6vw; width: 340px; height: 300px; border-radius: 45% 55% 40% 60% / 55% 45% 55% 45%; background: radial-gradient(circle, rgba(13,148,136,0.13), transparent 72%); }
+.pricing-sparkle { position: absolute; z-index: 1; pointer-events: none; }
+
+.pricing-card {
+  position: relative; z-index: 1; width: 820px; max-width: 100%;
+  background: var(--white); border: 1px solid #e5e5ea; border-radius: 24px;
+  box-shadow: 0 12px 40px rgba(29,29,31,0.08); padding: 40px 52px 32px; text-align: center;
+}
+.pricing-plan-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mkt-teal); margin-bottom: 8px; }
+.pricing-plan-name {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-size: 38px; font-weight: 600; margin-bottom: 10px;
+}
+.pricing-plan-sub { font-size: 16px; color: var(--grey-500); margin-bottom: 26px; }
+
+.pricing-toggle-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; }
+.pricing-toggle { display: inline-flex; align-items: center; background: #f5f5f7; border-radius: var(--radius-pill); padding: 5px; }
+.pricing-toggle span { padding: 9px 22px; border-radius: var(--radius-pill); font-size: 14.5px; font-weight: 600; color: var(--grey-700); }
+.pricing-toggle span.active { font-weight: 700; color: var(--white); background: var(--mkt-blue); }
+.pricing-save-badge { background: #e3f6e8; color: #1e8e3e; font-size: 12.5px; font-weight: 700; padding: 6px 11px; border-radius: var(--radius-pill); white-space: nowrap; }
+
+.pricing-price-row { display: flex; align-items: flex-start; justify-content: center; gap: 36px; margin-bottom: 28px; flex-wrap: wrap; }
+.pricing-price-block { flex: 0 0 auto; }
+.pricing-price {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-size: 44px; font-weight: 600; line-height: 1;
+}
+.pricing-price .period { font-size: 16.5px; font-weight: 500; color: var(--grey-500); }
+.pricing-billed-note { font-size: 13.5px; color: #9a9aa0; margin-top: 10px; }
+.pricing-effective { font-size: 15px; font-weight: 800; color: #1e8e3e; margin-top: 8px; }
+.pricing-price-divider { width: 2px; height: 42px; background: #d9d9de; flex-shrink: 0; margin-top: 4px; }
+
+.pricing-cta {
+  display: inline-block; background: var(--mkt-teal); color: var(--white); border: none;
+  border-radius: var(--radius-pill); padding: 15px 56px; font-size: 15.5px; font-weight: 700;
+  cursor: pointer; margin-bottom: 16px; text-decoration: none;
+}
+.pricing-cta:hover { background: #0b7d72; }
+
+.pricing-sms-banner {
+  display: inline-flex; align-items: center; gap: 12px; background: #f5f8fb; border-radius: 12px;
+  padding: 12px 16px; text-align: left; margin: 0 auto 16px; max-width: 100%;
+}
+.pricing-sms-banner-icon {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--white); display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 1px 4px rgba(29,29,31,0.1);
+}
+.pricing-sms-banner-text { font-size: 12.5px; color: #4a4a55; white-space: nowrap; }
+.pricing-contact-line { font-size: 13px; color: var(--grey-500); }
+.pricing-contact-line a { color: var(--mkt-blue); text-decoration: none; font-weight: 700; }
+.pricing-contact-line a:hover { text-decoration: underline; }
+
+/* Features grid, in its own soft rounded container. */
+.pricing-features {
+  margin: 0 6vw 48px; background: #f8f9fa; border-radius: 32px; padding: 48px 5vw 56px; max-width: 1220px;
+  margin-left: auto; margin-right: auto;
+}
+.pricing-features .pricing-pill { margin-bottom: 16px; }
+.pricing-features h2 {
+  font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-size: 30px; font-weight: 600; margin: 0 0 10px;
+}
+.pricing-features-sub { font-size: 15px; color: var(--grey-700); margin: 0 0 40px; max-width: 640px; line-height: 1.6; }
+.pricing-features-grid { display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 56px; row-gap: 40px; }
+.pricing-feature { display: flex; gap: 16px; }
+.pricing-icon-box { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.pricing-icon-box.c-teal { background: #d7f0ec; }
+.pricing-icon-box.c-blue { background: #d9e6fc; }
+.pricing-icon-box.c-purple { background: #e6dbfc; }
+.pricing-icon-box.c-coral { background: #fbe2cc; }
+.pricing-icon-box.c-pink { background: #f9dce8; }
+.pricing-feat-name { font-size: 15.5px; font-weight: 700; color: var(--black); margin-bottom: 4px; }
+.pricing-feat-desc { font-size: 13px; color: var(--grey-500); line-height: 1.55; }
+
+/* Trust band: curved top transition into a light gradient strip, above
+   the site's real .mkt-footer (kept as-is on every marketing page). */
+.pricing-trust-wave { display: block; width: 100%; height: 40px; }
+.pricing-trust-band {
+  height: 90px; background: linear-gradient(90deg, #eef8f6, #eef3fc); display: flex; align-items: center;
+  justify-content: center; gap: 14px; position: relative; overflow: hidden; text-align: left; padding: 0 24px;
+}
+.pricing-trust-title { font-size: 15px; font-weight: 700; color: var(--black); }
+.pricing-trust-sub { font-size: 12.5px; color: var(--grey-700); margin-top: 2px; }
+.pricing-trust-leaf { position: absolute; pointer-events: none; }
+
+@media (max-width: 900px) {
+  .pricing-hero { flex-direction: column-reverse; text-align: center; gap: 28px; padding: 48px 6vw 32px; }
+  .pricing-hero-copy { max-width: 100%; }
+  .pricing-hero-img { width: 100%; max-width: 380px; }
+  .pricing-card { padding: 32px 28px 26px; }
+  .pricing-price-row { gap: 24px; }
+  .pricing-price { font-size: 36px; }
+  .pricing-features { padding: 40px 6vw 44px; }
+  .pricing-features-grid { grid-template-columns: 1fr; row-gap: 32px; }
+  .pricing-blob, .pricing-sparkle { display: none; }
+  /* Card padding shrinks here, so the one-line SMS sentence no longer
+     reliably fits -- let it wrap instead of bleeding past the card. */
+  .pricing-sms-banner-text { white-space: normal; }
+}
+@media (max-width: 480px) {
+  .pricing-price-row { flex-direction: column; align-items: center; gap: 14px; }
+  .pricing-price-divider { display: none; }
+}
+
 /* ---------------- Shared colorful accents (used across every logged-in page) ----------------
    Same 5-color palette as the landing page, applied consistently: each doctor
    gets a stable color (by their position in the doctors list) shown as a top

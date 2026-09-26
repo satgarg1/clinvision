@@ -10,6 +10,7 @@ on:
     branches: [main]
     paths:
       - "index.html"
+      - "pricing.html"
       - "about-us.html"
       - "contact.html"
       - "solo-practice.html"
@@ -31,6 +32,7 @@ jobs:
               "keyLocation": "https://clinvision.in/25d2654713bf95ebb0349171bd808c3d.txt",
               "urlList": [
                 "https://clinvision.in/",
+                "https://clinvision.in/pricing",
                 "https://clinvision.in/solo-practice",
                 "https://clinvision.in/multi-doctor-clinics",
                 "https://clinvision.in/contact",
