@@ -1,5 +1,8 @@
 User-agent: *
 Allow: /$
+Allow: /pricing
+Allow: /pricing.html
+Allow: /pricing-hero-illustration.png
 Allow: /about-us
 Allow: /about-us.html
 Allow: /contact
