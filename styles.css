@@ -1760,22 +1760,20 @@ a { color: inherit; }
   background: var(--white); border: 1px solid #e5e5ea; border-radius: 24px;
   box-shadow: 0 12px 40px rgba(29,29,31,0.08); padding: 40px 52px 32px; text-align: center;
 }
-.pricing-plan-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mkt-teal); margin-bottom: 8px; margin-top: 14px; }
+.pricing-plan-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mkt-teal); margin-bottom: 8px; margin-top: 52px; }
 
-/* Introductory-offer badge, straddling the card's top-left corner. */
+/* Introductory-offer badge, fully inside the card with its own breathing
+   room -- not straddling or touching the card's edges. */
 .pricing-intro-badge {
-  position: absolute; top: -2px; left: 36px; z-index: 3; display: inline-flex; align-items: center;
-  gap: 10px; background: #d7f0ec; border-radius: var(--radius-pill); padding: 6px 18px 6px 6px;
-  box-shadow: 0 6px 16px rgba(13,148,136,0.2);
+  position: absolute; top: 24px; left: 28px; z-index: 3; display: inline-flex; align-items: center;
+  gap: 9px; background: #d7f0ec; border-radius: var(--radius-pill); padding: 6px 16px 6px 6px;
+  box-shadow: 0 3px 10px rgba(13,148,136,0.16);
 }
 .pricing-intro-badge-icon {
-  width: 34px; height: 34px; border-radius: 50%; background: var(--mkt-teal); display: flex;
+  width: 30px; height: 30px; border-radius: 50%; background: var(--mkt-teal); display: flex;
   align-items: center; justify-content: center; flex-shrink: 0;
 }
-.pricing-intro-badge-text { font-size: 13.5px; font-weight: 700; color: #0d5c53; white-space: nowrap; }
-.pricing-intro-spark { position: absolute; z-index: 3; pointer-events: none; }
-.pricing-intro-spark.s1 { top: -14px; left: 6px; }
-.pricing-intro-spark.s2 { top: -10px; left: 232px; }
+.pricing-intro-badge-text { font-size: 13px; font-weight: 700; color: #0d5c53; white-space: nowrap; }
 .pricing-plan-name {
   font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   font-size: 38px; font-weight: 600; margin-bottom: 10px;
@@ -1857,11 +1855,15 @@ a { color: inherit; }
   .pricing-hero-copy { max-width: 100%; }
   .pricing-hero-img { width: 100%; max-width: 380px; }
   .pricing-card { padding: 32px 28px 26px; }
+  .pricing-intro-badge { top: 20px; left: 20px; padding: 5px 14px 5px 5px; }
+  .pricing-intro-badge-icon { width: 26px; height: 26px; }
+  .pricing-intro-badge-text { font-size: 12px; }
+  .pricing-plan-label { margin-top: 40px; }
   .pricing-price-row { gap: 24px; }
   .pricing-price { font-size: 36px; }
   .pricing-features { padding: 40px 6vw 44px; }
   .pricing-features-grid { grid-template-columns: 1fr; row-gap: 32px; }
-  .pricing-blob, .pricing-sparkle, .pricing-intro-spark { display: none; }
+  .pricing-blob, .pricing-sparkle { display: none; }
   /* Card padding shrinks here, so the one-line SMS sentence no longer
      reliably fits -- let it wrap instead of bleeding past the card. */
   .pricing-sms-banner-text { white-space: normal; }
