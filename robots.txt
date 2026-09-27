@@ -14,6 +14,8 @@ Allow: /multi-doctor-clinics
 Allow: /multi-doctor-clinics.html
 Allow: /multi-doctor-clinics.png
 Allow: /styles.css
+Allow: /mkt-nav.js
+Allow: /clinic-config.js
 Allow: /sitemap.xml
 Allow: /25d2654713bf95ebb0349171bd808c3d.txt
 Allow: /og-image.png
