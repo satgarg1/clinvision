@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=376" />
+<link rel="stylesheet" href="styles.css?v=377" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -225,7 +225,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=126"></script>
+  <script src="clinic-data.js?v=127"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -272,13 +272,10 @@
           const panel = document.getElementById(panelId);
           panel.style.display = 'block';
           // Flip above the trigger when there isn't room below and there's
-          // more room above -- same shouldFlipUp approach as tool-calendar.js.
+          // more room above.
           const trigger = document.getElementById(triggerId);
           const rect = trigger.getBoundingClientRect();
-          const estimatedHeight = panel.offsetHeight || 260;
-          const spaceBelow = window.innerHeight - rect.bottom;
-          const spaceAbove = rect.top;
-          panel.classList.toggle('flip-up', spaceBelow < estimatedHeight && spaceAbove > spaceBelow);
+          panel.classList.toggle('flip-up', Qlinic.shouldFlipUp(rect, panel.offsetHeight));
           const target = panel.querySelector('.selected') || panel.querySelector('.time-picker-option');
           if (target) target.scrollIntoView({ block: 'nearest' });
         }
@@ -308,6 +305,16 @@
         });
         document.addEventListener('click', (e) => {
           if (!document.getElementById(pickerId).contains(e.target)) close();
+        });
+        // Re-check the flip direction if the viewport changes while this
+        // panel is open. Safe as a permanent listener: every dropdown on
+        // this page is created once at page init and lives for its lifetime.
+        window.addEventListener('resize', () => {
+          const panel = document.getElementById(panelId);
+          if (panel.style.display === 'block') {
+            const rect = document.getElementById(triggerId).getBoundingClientRect();
+            panel.classList.toggle('flip-up', Qlinic.shouldFlipUp(rect, panel.offsetHeight));
+          }
         });
         return { close, setValue };
       }

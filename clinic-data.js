@@ -513,10 +513,7 @@
 
       function positionPop() {
         const rect = wrap.getBoundingClientRect();
-        const estimatedHeight = pop.offsetHeight || 380;
-        const spaceBelow = window.innerHeight - rect.bottom;
-        const spaceAbove = rect.top;
-        const flipUp = spaceBelow < estimatedHeight && spaceAbove > spaceBelow;
+        const flipUp = shouldFlipUp(rect, pop.offsetHeight);
         if (flipUp) {
           pop.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
           pop.style.top = 'auto';
@@ -618,6 +615,7 @@
       destroy() {
         window.removeEventListener('scroll', onReposition, true);
         window.removeEventListener('resize', onReposition);
+        document.removeEventListener('click', closeAll);
         pop.remove();
         wrap.remove();
         input.style.display = '';
@@ -626,6 +624,17 @@
     };
     input._qlinicDatePicker = api;
     return api;
+  }
+
+  // Shared by attachDatePicker's own positionPop() below and by the plain
+  // .time-picker-panel dropdowns in reception.html/clinic-settings.html --
+  // one place for the "flip above the trigger when there isn't room below
+  // and there's more room above" decision, instead of three copies of the
+  // same formula.
+  function shouldFlipUp(triggerRect, estimatedHeight) {
+    const spaceBelow = window.innerHeight - triggerRect.bottom;
+    const spaceAbove = triggerRect.top;
+    return spaceBelow < estimatedHeight && spaceAbove > spaceBelow;
   }
 
   function parseTime(hhmm) {
@@ -3006,6 +3015,7 @@
     confirmDialog,
     openAdjustBillingModal,
     attachDatePicker,
+    shouldFlipUp,
     getQueueStatus,
     submitProductFeedback,
 

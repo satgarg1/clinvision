@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="/styles.css?v=376" />
+<link rel="stylesheet" href="/styles.css?v=377" />
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -182,9 +182,9 @@
         <div class="pricing-plan-sub">Powerful tools. Smarter workflows. Better patient care.</div>
 
         <div class="pricing-toggle-row">
-          <div class="pricing-toggle">
-            <span>Monthly</span>
-            <span class="active">Yearly</span>
+          <div class="pricing-toggle" role="tablist" aria-label="Billing period">
+            <button type="button" class="pricing-toggle-btn" data-plan="monthly" role="tab" aria-selected="false">Monthly</button>
+            <button type="button" class="pricing-toggle-btn active" data-plan="yearly" role="tab" aria-selected="true">Yearly</button>
           </div>
         </div>
 
@@ -197,7 +197,7 @@
           <div class="pricing-price-block">
             <div class="pricing-price">₹8,999 <span class="period">/year</span></div>
             <div class="pricing-effective">≈ ₹749/month</div>
-            <span class="pricing-save-badge">Save 20% (≈ 2 months free)</span>
+            <span class="pricing-save-badge">Save 17% (≈ 2 months free)</span>
             <div class="pricing-billed-note">Billed yearly</div>
           </div>
         </div>
@@ -367,5 +367,16 @@
   </footer>
 
 <script src="/mkt-nav.js?v=1"></script>
+<script>
+  document.querySelectorAll('.pricing-toggle-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.pricing-toggle-btn').forEach((b) => {
+        const isActive = b === btn;
+        b.classList.toggle('active', isActive);
+        b.setAttribute('aria-selected', String(isActive));
+      });
+    });
+  });
+</script>
 </body>
 </html>

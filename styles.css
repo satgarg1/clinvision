@@ -1780,14 +1780,17 @@ a { color: inherit; }
 }
 .pricing-plan-sub { font-size: 16px; color: var(--grey-500); margin-bottom: 26px; }
 
-.pricing-toggle-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; }
-.pricing-toggle { display: inline-flex; align-items: center; background: #f5f5f7; border-radius: var(--radius-pill); padding: 5px; }
-.pricing-toggle span { padding: 9px 22px; border-radius: var(--radius-pill); font-size: 14.5px; font-weight: 600; color: var(--grey-700); }
-.pricing-toggle span.active { font-weight: 700; color: var(--white); background: var(--mkt-blue); }
+.pricing-toggle-row { display: flex; align-items: center; justify-content: center; margin-bottom: 28px; }
+.pricing-toggle { display: inline-flex; align-items: center; background: var(--grey-100); border-radius: var(--radius-pill); padding: 5px; }
+.pricing-toggle-btn {
+  padding: 9px 22px; border-radius: var(--radius-pill); font-size: 14.5px; font-weight: 600; color: var(--grey-700);
+  font-family: var(--font); border: none; background: none; cursor: pointer;
+}
+.pricing-toggle-btn.active { font-weight: 700; color: var(--white); background: var(--mkt-blue); }
 /* inline-block (not inline) so the top/bottom margins that place it
    between "≈₹749/month" and "Billed yearly" actually take effect. */
 .pricing-save-badge {
-  display: inline-block; background: #e3f6e8; color: #1e8e3e; font-size: 12.5px; font-weight: 700;
+  display: inline-block; background: #e3f6e8; color: var(--success); font-size: 12.5px; font-weight: 700;
   padding: 6px 11px; border-radius: var(--radius-pill); white-space: nowrap; margin: 8px 0;
 }
 
@@ -1798,8 +1801,8 @@ a { color: inherit; }
   font-size: 44px; font-weight: 600; line-height: 1;
 }
 .pricing-price .period { font-size: 16.5px; font-weight: 500; color: var(--grey-500); }
-.pricing-billed-note { font-size: 13.5px; color: #9a9aa0; margin-top: 10px; }
-.pricing-effective { font-size: 15px; font-weight: 800; color: #1e8e3e; margin-top: 8px; }
+.pricing-billed-note { font-size: 13.5px; color: var(--grey-500); margin-top: 10px; }
+.pricing-effective { font-size: 15px; font-weight: 800; color: var(--success); margin-top: 8px; }
 .pricing-price-divider { width: 2px; height: 42px; background: #d9d9de; flex-shrink: 0; margin-top: 4px; }
 
 .pricing-cta {
@@ -4176,6 +4179,10 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   position: fixed; z-index: 30;
   background: var(--white); border-radius: var(--radius-md); box-shadow: var(--shadow-resting);
   border: 1px solid var(--grey-300); padding: 14px; width: 264px; display: none;
+  /* Safety net for a viewport too short for either side to fully fit the
+     popup (flip-up only picks whichever side has MORE room, not enough) --
+     without this it could render partly off-screen with no way to reach it. */
+  max-height: calc(100vh - 16px); overflow-y: auto;
 }
 .qdp-pop.open { display: block; }
 .qdp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
