@@ -454,6 +454,7 @@
     let closeAll = () => {};
     let triggerEl;
     let pop;
+    let onReposition = () => {};
 
     {
       wrap.innerHTML = `
@@ -512,9 +513,26 @@
 
       function positionPop() {
         const rect = wrap.getBoundingClientRect();
-        pop.style.top = (rect.bottom + 6) + 'px';
+        const estimatedHeight = pop.offsetHeight || 380;
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const flipUp = spaceBelow < estimatedHeight && spaceAbove > spaceBelow;
+        if (flipUp) {
+          pop.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+          pop.style.top = 'auto';
+        } else {
+          pop.style.top = (rect.bottom + 6) + 'px';
+          pop.style.bottom = 'auto';
+        }
         pop.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - 264 - 8)) + 'px';
       }
+      // Keeps the fixed-position pop glued to its trigger as the page (or
+      // a qtable panel's own overflow-x:auto body) scrolls -- without this
+      // it stayed put in viewport coordinates while the trigger moved,
+      // so it visually detached and could end up over unrelated content.
+      onReposition = function () { if (pop.classList.contains('open')) positionPop(); };
+      window.addEventListener('scroll', onReposition, true);
+      window.addEventListener('resize', onReposition);
       showDayView = function () {
         yearView.style.display = 'none';
         monthView.style.display = 'none';
@@ -598,6 +616,8 @@
       setValue(d) { commit(d); },
       refresh: syncFromInput,
       destroy() {
+        window.removeEventListener('scroll', onReposition, true);
+        window.removeEventListener('resize', onReposition);
         pop.remove();
         wrap.remove();
         input.style.display = '';
