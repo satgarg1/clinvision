@@ -3398,7 +3398,15 @@ th.th-filterable { position: relative; }
 /* Qlinic.confirmDialog()'s modal — replaces every window.confirm() in
    the app. --white/--black/--grey-700 already flip under dark mode
    (redefined at the token level, not hardcoded here), so this needs no
-   separate dark-theme block of its own. */
+   separate dark-theme block of its own.
+   z-index was 1000 -- invisible behind the Rx modal's own z-index:1500
+   backdrop (.rx-modal-backdrop below), so "Discard this prescription?"
+   rendered but was never seen when closing Write Prescription or Quick
+   Walk-In Rx with unsaved content: the click landed on the still-open,
+   still-fully-interactive Rx modal on top of it, so nothing visibly
+   happened. Same root cause .toast was already bumped to 2000 for --
+   any confirmDialog() must outrank whichever modal it's confirming the
+   close of, not just this one call site. */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -3406,7 +3414,7 @@ th.th-filterable { position: relative; }
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1600;
   padding: 20px;
 }
 .modal-card {
