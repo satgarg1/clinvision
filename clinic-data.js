@@ -2550,6 +2550,180 @@
   }
   initMobileNav();
 
+  // ---------- Shared Rx-composer helpers ----------
+  // Write Prescription (doctor.html) and Quick Walk-In Rx
+  // (prescriptions.html) each built their own copy of these. They're
+  // pure enough (no page-specific DOM ids baked in) to share for real
+  // instead of maintaining two copies that quietly drift apart.
+
+  // follow_up_date (and other saved-prescription dates) is a bare
+  // "YYYY-MM-DD" -- new Date() on a date-only string parses it as UTC
+  // midnight, which toLocaleDateString() then rolls back a day for any
+  // viewer in a negative-UTC-offset timezone. Build the Date from its
+  // own Y/M/D components instead (same approach as formatDateLabel above,
+  // just without that one's "Today"/"Tomorrow" relative labels).
+  function formatDateOnly(isoDate) {
+    const [y, m, d] = isoDate.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  // Vitals are numbers (plus / for BP's "120/80"), never free text, and
+  // never legitimately negative -- strips anything else as it's typed.
+  function sanitizeVitalInput(value) {
+    return value.replace(/[^0-9/.]/g, '');
+  }
+
+  // The vitals + tests-ordered sidebar block, shared by both composers'
+  // live preview/print and by prescriptions.html's printed history.
+  function buildRxSidebarHtml({ vitalsBp, vitalsPulse, vitalsTemp, vitalsWeight, testsOrdered }) {
+    const hasVitals = vitalsBp || vitalsPulse || vitalsTemp || vitalsWeight;
+    const vitalsHtml = hasVitals ? `
+      <div class="rx-vital-block">
+        <span class="lbl">Vitals</span>
+        ${vitalsBp ? `<div class="rx-vital-line"><span class="vk">BP:</span> ${escapeHtml(vitalsBp)} mmHg</div>` : ''}
+        ${vitalsPulse ? `<div class="rx-vital-line"><span class="vk">Pulse:</span> ${escapeHtml(vitalsPulse)} bpm</div>` : ''}
+        ${vitalsTemp ? `<div class="rx-vital-line"><span class="vk">Temp:</span> ${escapeHtml(vitalsTemp)}°F</div>` : ''}
+        ${vitalsWeight ? `<div class="rx-vital-line"><span class="vk">Weight:</span> ${escapeHtml(vitalsWeight)} kg</div>` : ''}
+      </div>
+    ` : '';
+    const testsHtml = (testsOrdered && testsOrdered.length) ? `
+      <div class="rx-vital-block">
+        <span class="lbl">Tests advised</span>
+        ${testsOrdered.map((t) => `<div class="rx-sidebar-test-item">${escapeHtml(t)}</div>`).join('')}
+      </div>
+    ` : '';
+    return (vitalsHtml || testsHtml) ? `<div class="rx-sidebar">${vitalsHtml}${testsHtml}</div>` : '';
+  }
+
+  // Vitals as icon cards, tests as a checklist, clinical details and the
+  // medicine table in their own panels, advice/follow-up grouped on the
+  // right -- the past-prescription detail view shared by doctor.html's
+  // history popup and prescriptions.html's history tab. showPrintButton
+  // is the one real difference between the two call sites: prescriptions.html
+  // can print a historical Rx from here, doctor.html's popup never wires
+  // printing so it leaves the button out entirely rather than rendering
+  // a dead one.
+  function buildRxDetailPanelsHtml(rx, { showPrintButton = false } = {}) {
+    const vitalDefs = [
+      { label: 'Pulse', value: rx.vitalsPulse ? `${rx.vitalsPulse} bpm` : '', cls: 'pulse', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>' },
+      { label: 'Temp', value: rx.vitalsTemp ? `${rx.vitalsTemp}°F` : '', cls: 'temp', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>' },
+      { label: 'Weight', value: rx.vitalsWeight ? `${rx.vitalsWeight} kg` : '', cls: 'weight', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5h5"/></svg>' },
+      { label: 'BP', value: rx.vitalsBp ? `${rx.vitalsBp} mmHg` : '', cls: 'bp', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.33-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.33 6c-2.33 4.5-9.33 9-9.33 9Z"/></svg>' },
+    ].filter((v) => v.value);
+    const testsOrdered = rx.testsOrdered || [];
+    const hasLeft = vitalDefs.length > 0 || testsOrdered.length > 0;
+
+    const leftHtml = hasLeft ? `
+      <div>
+        ${vitalDefs.length ? `
+          <div class="rx-panel-h">Vitals</div>
+          <div class="rx-vitals-grid-view">
+            ${vitalDefs.map((v) => `
+              <div class="rx-vital-card">
+                <div class="rx-vital-icon ${v.cls}">${v.icon}</div>
+                <div class="rx-vital-label">${v.label.toUpperCase()}</div>
+                <div class="rx-vital-value">${escapeHtml(v.value)}</div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        ${testsOrdered.length ? `
+          <div class="rx-panel-h">Tests advised</div>
+          <div class="rx-tests-list">
+            ${testsOrdered.map((t) => `<div class="rx-test-item"><span class="rx-test-check"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>${escapeHtml(t)}</div>`).join('')}
+          </div>
+        ` : ''}
+      </div>
+    ` : '';
+
+    const medsHtml = rx.items.length
+      ? rx.items.map((item, i) => `
+          <tr>
+            <td style="color:var(--grey-500);">${i + 1}</td>
+            <td><div class="rt-name">${escapeHtml(item.name)}${item.composition ? ` <span class="rt-comp" style="font-weight:400;">(${escapeHtml(item.composition)})</span>` : ''}</div>${item.instructions ? `<div class="rt-instr">${escapeHtml(item.instructions)}</div>` : ''}</td>
+            <td><span class="rt-dose"><span class="rx-pill-icon"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="8" rx="4"/><path d="M8 8v8"/></svg></span>${escapeHtml(item.frequency)}</span></td>
+            <td>${escapeHtml(item.durationText)}</td>
+          </tr>
+        `).join('')
+      : '<tr><td colspan="4" style="color:var(--grey-500);font-style:italic;">No medicines recorded</td></tr>';
+
+    return `
+      <div class="rx-detail-grid${hasLeft ? '' : ' no-left'}">
+        ${leftHtml}
+        <div>
+          ${(rx.complaints || rx.diagnosis) ? `
+            <div class="rx-panel-h">Clinical details</div>
+            <div class="rx-clinical-grid">
+              ${rx.complaints ? `<div class="rx-clinical-box"><div class="k">Chief complaint</div><div class="v">${escapeHtml(rx.complaints)}</div></div>` : ''}
+              ${rx.diagnosis ? `<div class="rx-clinical-box"><div class="k">Diagnosis</div><div class="v">${escapeHtml(rx.diagnosis)}</div></div>` : ''}
+            </div>
+          ` : ''}
+          <div class="rx-panel-h">Prescription (Rx)</div>
+          <table class="rx-table">
+            <thead><tr><th style="width:16px;">#</th><th>Medicine</th><th>Dosage</th><th>Duration</th></tr></thead>
+            <tbody>${medsHtml}</tbody>
+          </table>
+        </div>
+        <div>
+          ${rx.advice ? `
+            <div class="rx-panel-h">Advice</div>
+            <div class="rx-advice-box"><div class="v">${escapeHtml(rx.advice)}</div></div>
+          ` : ''}
+          ${rx.followUpDate ? `
+            <div class="rx-followup-chip">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              <div><span class="f-date">Follow up</span>${escapeHtml(formatDateOnly(rx.followUpDate))}</div>
+            </div>
+          ` : ''}
+          ${showPrintButton ? `
+            <button type="button" class="rx-print-btn" data-print-id="${rx.id}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Print
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // Validates and shapes one prescription-line item from the composer's
+  // draft-medicine fields. Used by both "+ Add this medicine" and by the
+  // save action itself (so a medicine that's typed but never explicitly
+  // added isn't silently left off the saved/printed prescription).
+  // Returns { ok: false, field } naming the first empty required field,
+  // or { ok: true, item } ready to push onto the composer's items array
+  // -- a prescription line with no dosing schedule is clinically
+  // meaningless, so name/frequency/duration aren't optional.
+  function buildDraftMedicineItem({ name, frequency, durationText, instructions, draftMed }) {
+    if (!name) return { ok: false, field: 'name' };
+    if (!frequency) return { ok: false, field: 'frequency' };
+    if (!durationText) return { ok: false, field: 'duration' };
+    return {
+      ok: true,
+      item: {
+        clinicMedicineId: draftMed ? draftMed.clinicMedicineId : null,
+        genericMedicineId: draftMed ? draftMed.genericMedicineId : null,
+        freeTextName: draftMed ? null : name,
+        name,
+        composition: draftMed ? draftMed.composition : '',
+        frequency,
+        durationText,
+        instructions: instructions || '',
+      },
+    };
+  }
+
+  // True once the composer has anything typed that isn't saved yet --
+  // used to warn before an ordinary close/reopen discards it, and before
+  // an accidental tab close/refresh does. DOM reads stay in the caller
+  // (each page's fields live under different ids); this just applies the
+  // one shared rule to whatever values it's handed.
+  function hasUnsavedRxContent({ itemCount, fieldValues, testsCount }) {
+    if (itemCount) return true;
+    if (fieldValues.some((v) => v && v.trim())) return true;
+    return !!testsCount;
+  }
+
   // items: [{ clinicMedicineId, genericMedicineId, freeTextName, name, composition, frequency, durationText, instructions }]
   // patientId is optional (Quick Walk-In Rx) — omit it and pass
   // walkinName/walkinAge/walkinGender/walkinPhone instead for a
@@ -3092,6 +3266,12 @@
     getClinicPrescriptions,
     getClinicPrescriptionsByDate,
     searchClinicPrescriptions,
+    formatDateOnly,
+    sanitizeVitalInput,
+    buildRxSidebarHtml,
+    buildRxDetailPanelsHtml,
+    buildDraftMedicineItem,
+    hasUnsavedRxContent,
 
     onLiveChange,
   };
