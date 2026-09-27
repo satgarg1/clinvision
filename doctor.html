@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=378" />
+<link rel="stylesheet" href="styles.css?v=379" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -206,10 +206,10 @@
           <div class="panel">
             <div class="panel-header"><h2>Vitals &amp; Tests</h2></div>
             <div class="rx-vitals-grid">
-              <div class="field"><label>BP (mmHg)</label><input type="text" id="rxVitalBp" placeholder="e.g. 120/80" autocomplete="off"></div>
-              <div class="field"><label>Pulse (bpm)</label><input type="text" id="rxVitalPulse" placeholder="e.g. 78" autocomplete="off"></div>
-              <div class="field"><label>Temp (°F)</label><input type="text" id="rxVitalTemp" placeholder="e.g. 98.6" autocomplete="off"></div>
-              <div class="field"><label>Weight (kg)</label><input type="text" id="rxVitalWeight" placeholder="e.g. 68" autocomplete="off"></div>
+              <div class="field"><label>BP (mmHg)</label><input type="text" id="rxVitalBp" placeholder="e.g. 120/80" autocomplete="off" maxlength="7"></div>
+              <div class="field"><label>Pulse (bpm)</label><input type="text" id="rxVitalPulse" placeholder="e.g. 78" autocomplete="off" maxlength="3"></div>
+              <div class="field"><label>Temp (°F)</label><input type="text" id="rxVitalTemp" placeholder="e.g. 98.6" autocomplete="off" maxlength="5"></div>
+              <div class="field"><label>Weight (kg)</label><input type="text" id="rxVitalWeight" placeholder="e.g. 68" autocomplete="off" maxlength="6"></div>
             </div>
             <div class="field rx-med-search" style="margin-top:12px;margin-bottom:0;">
               <label>Tests advised</label>
@@ -310,7 +310,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=129"></script>
+  <script src="clinic-data.js?v=130"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -1960,9 +1960,28 @@
       // Registered before the preview-update listener below (on the same
       // input event, same elements) so the preview reflects the already-
       // stripped value rather than lagging one keystroke behind it.
-      ['rxVitalBp', 'rxVitalPulse', 'rxVitalTemp', 'rxVitalWeight'].forEach((id) => {
-        document.getElementById(id).addEventListener('input', function () {
+      // kind matches Qlinic.validateVital's first argument -- character
+      // sanitizing alone (above) still lets a value like "2222222222"
+      // through, since every character in it is individually valid; this
+      // catches the VALUE being implausible, checked once the doctor
+      // moves on from the field rather than on every keystroke (so
+      // "1" and "12" while typing "120" don't flash as errors).
+      const RX_VITAL_FIELDS = [
+        { id: 'rxVitalBp', kind: 'bp' },
+        { id: 'rxVitalPulse', kind: 'pulse' },
+        { id: 'rxVitalTemp', kind: 'temp' },
+        { id: 'rxVitalWeight', kind: 'weight' },
+      ];
+      RX_VITAL_FIELDS.forEach(({ id, kind }) => {
+        const el = document.getElementById(id);
+        el.addEventListener('input', function () {
           this.value = Qlinic.sanitizeVitalInput(this.value);
+          this.classList.remove('err');
+        });
+        el.addEventListener('blur', function () {
+          const result = Qlinic.validateVital(kind, this.value);
+          this.classList.toggle('err', !result.ok);
+          if (!result.ok) showToast(result.message);
         });
       });
       ['rxComplaints', 'rxDiagnosis', 'rxAdvice', 'rxVitalBp', 'rxVitalPulse', 'rxVitalTemp', 'rxVitalWeight'].forEach((id) => {
@@ -2222,6 +2241,20 @@
           return;
         }
         if (!rxItems.length) { showToast('Add at least one medicine first'); return; }
+        // Final safety net: a vital can reach here without ever firing its
+        // own blur check (browser autofill, or tabbing through fast enough
+        // that focus/blur never actually lands on the field) -- never let
+        // an implausible value make it into the saved record.
+        for (const { id, kind } of RX_VITAL_FIELDS) {
+          const el = document.getElementById(id);
+          const result = Qlinic.validateVital(kind, el.value);
+          if (!result.ok) {
+            el.classList.add('err');
+            el.focus();
+            showToast(result.message);
+            return;
+          }
+        }
         rxSaving = true;
         document.getElementById('rxSavePrintBtn').disabled = true;
         document.getElementById('rxSaveOnlyBtn').disabled = true;

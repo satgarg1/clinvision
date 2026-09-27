@@ -2456,6 +2456,10 @@ a { color: inherit; }
   font-family: var(--font);
 }
 .field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+/* Implausible-vital state (Qlinic.validateVital) -- same .err naming as
+   .tool-field.err, just scoped to the app's own .field inputs. */
+.field input.err { border-color: var(--danger); }
+.field input.err:focus { outline-color: var(--danger); border-color: var(--danger); }
 /* input/select size from their own content; a textarea has none to size
    from, so it needs an explicit floor -- admin.html's Internal note was
    rendering at the browser's bare, unpadded default height without this. */

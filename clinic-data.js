@@ -2573,6 +2573,53 @@
     return value.replace(/[^0-9/.]/g, '');
   }
 
+  // Plausibility bounds, not "normal" bounds -- wide enough to admit any
+  // real clinical reading, including documented extremes, while still
+  // catching keyboard-mashing like "2222222222" that sails straight
+  // through sanitizeVitalInput above (every one of those characters is
+  // individually a valid vitals character; only the resulting VALUE is
+  // nonsense). A genuine outside-this-range emergency reading is rare
+  // enough, and important enough, that it deserves a doctor's free-text
+  // note, not a wider number here.
+  const VITAL_BOUNDS = {
+    bpSystolic: [40, 300],
+    bpDiastolic: [20, 200],
+    pulse: [20, 300],
+    temp: [90, 110],
+    weight: [0.5, 300],
+  };
+
+  // kind: 'bp' | 'pulse' | 'temp' | 'weight'. Every vital is optional, so
+  // an empty value is always valid. Returns { ok: true } or
+  // { ok: false, message } for a toast naming the field and the expected
+  // range.
+  function validateVital(kind, value) {
+    const v = (value || '').trim();
+    if (!v) return { ok: true };
+    if (kind === 'bp') {
+      const m = /^(\d{1,3})\/(\d{1,3})$/.exec(v);
+      if (!m) return { ok: false, message: 'BP should look like 120/80' };
+      const [sysMin, sysMax] = VITAL_BOUNDS.bpSystolic;
+      const [diaMin, diaMax] = VITAL_BOUNDS.bpDiastolic;
+      const sys = Number(m[1]);
+      const dia = Number(m[2]);
+      if (sys < sysMin || sys > sysMax || dia < diaMin || dia > diaMax) {
+        return { ok: false, message: `BP looks implausible -- expected roughly ${sysMin}-${sysMax}/${diaMin}-${diaMax} mmHg` };
+      }
+      return { ok: true };
+    }
+    const bounds = VITAL_BOUNDS[kind];
+    const n = Number(v);
+    if (!Number.isFinite(n)) return { ok: false, message: 'Enter a valid number' };
+    const [min, max] = bounds;
+    if (n < min || n > max) {
+      const label = { pulse: 'Pulse', temp: 'Temp', weight: 'Weight' }[kind];
+      const unit = { pulse: 'bpm', temp: '°F', weight: 'kg' }[kind];
+      return { ok: false, message: `${label} looks implausible -- expected roughly ${min}-${max} ${unit}` };
+    }
+    return { ok: true };
+  }
+
   // The vitals + tests-ordered sidebar block, shared by both composers'
   // live preview/print and by prescriptions.html's printed history.
   function buildRxSidebarHtml({ vitalsBp, vitalsPulse, vitalsTemp, vitalsWeight, testsOrdered }) {
@@ -3268,6 +3315,7 @@
     searchClinicPrescriptions,
     formatDateOnly,
     sanitizeVitalInput,
+    validateVital,
     buildRxSidebarHtml,
     buildRxDetailPanelsHtml,
     buildDraftMedicineItem,
