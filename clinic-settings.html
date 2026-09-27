@@ -269,8 +269,16 @@
         }
         function open() {
           render();
-          document.getElementById(panelId).style.display = 'block';
           const panel = document.getElementById(panelId);
+          panel.style.display = 'block';
+          // Flip above the trigger when there isn't room below and there's
+          // more room above -- same shouldFlipUp approach as tool-calendar.js.
+          const trigger = document.getElementById(triggerId);
+          const rect = trigger.getBoundingClientRect();
+          const estimatedHeight = panel.offsetHeight || 260;
+          const spaceBelow = window.innerHeight - rect.bottom;
+          const spaceAbove = rect.top;
+          panel.classList.toggle('flip-up', spaceBelow < estimatedHeight && spaceAbove > spaceBelow);
           const target = panel.querySelector('.selected') || panel.querySelector('.time-picker-option');
           if (target) target.scrollIntoView({ block: 'nearest' });
         }
