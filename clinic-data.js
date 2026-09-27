@@ -2581,7 +2581,9 @@
       p_vitals_weight: vitalsWeight || '',
       p_tests_ordered: testsOrdered || [],
       p_walkin_name: walkinName || null,
-      p_walkin_age: walkinAge || null,
+      // ?? (not ||) so a genuine walk-in age of 0 (a newborn) isn't
+      // coerced into "not provided" the way a falsy-zero check would.
+      p_walkin_age: walkinAge ?? null,
       p_walkin_gender: walkinGender || null,
       p_walkin_phone: walkinPhone || null,
     });

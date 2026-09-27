@@ -310,7 +310,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=127"></script>
+  <script src="clinic-data.js?v=128"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -338,6 +338,13 @@
       if (!amAdmin && !amDoctor) {
         document.getElementById('trendsNavLink').style.display = 'none';
         document.getElementById('prescriptionsNavLink').style.display = 'none';
+        // Same "only admin/doctor" boundary Qlinic.canAccessPrescriptions()
+        // enforces server-side -- reception can use this page for queue
+        // management, but shouldn't see or be able to open the clinical
+        // Write Prescription form (the RPC does reject the save either way,
+        // but the confidential-looking form itself shouldn't render at all).
+        document.getElementById('writeRxBtn').style.display = 'none';
+        document.getElementById('rxHistoryChip').style.display = 'none';
       }
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
@@ -1311,6 +1318,15 @@
       let rxMedSearchSeq = 0;
       let rxSaving = false;
       let rxSearchErrorShown = false;
+      // Captured once when the modal opens and used everywhere the composer
+      // needs "who is this prescription for" -- never re-derived from
+      // currentQueue.nowServing later, since the queue can advance (e.g. the
+      // long-consultation nag's "Mark Done") while the modal is still open,
+      // which would otherwise save the prescription against whichever
+      // patient is now being served instead of the one it was written for.
+      let rxPinnedPatient = null;
+      let rxCatalogLoaded = false;
+      let rxClosureLoadedForDoctorId = null;
 
       const RX_FREQUENCY_PRESETS = [
         '1-0-0 (Once daily / OD)', '0-0-1 (Once at night / HS)', '1-0-1 (Twice daily / BD)',
@@ -1523,6 +1539,15 @@
         if (!document.getElementById('rxDatePickerWrap').contains(e.target)) closeRxDatePanel();
       });
 
+      // follow_up_date on a saved prescription is a bare "YYYY-MM-DD" (no
+      // time/zone). new Date() on a date-only string parses it as UTC
+      // midnight, which toLocaleDateString() then rolls back a day for any
+      // viewer in a negative-UTC-offset timezone -- build the Date from its
+      // own Y/M/D components instead.
+      function formatSavedDateOnly(isoDate) {
+        const [y, m, d] = isoDate.split('-').map(Number);
+        return new Date(y, m - 1, d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+      }
       function rxFormatAgeGender(patient) {
         if (!patient) return '';
         const age = patient.age != null ? `${patient.age} yrs` : '';
@@ -1804,25 +1829,45 @@
         resetRxDraftFields();
       });
 
-      document.getElementById('rxAddMedBtn').addEventListener('click', () => {
+      // Commits whatever's currently typed in the draft medicine row into
+      // rxItems. Used both by the "+ Add this medicine" button and by
+      // saveRxPrescription() (so a medicine the doctor finished typing but
+      // never clicked "+ Add" for isn't silently left out of the saved/
+      // printed prescription). Focuses the first missing required field
+      // and returns false without changing rxItems if name/frequency/
+      // duration aren't all filled in -- a prescription line with no
+      // dosing schedule is clinically meaningless, so those aren't optional.
+      function rxCommitDraftMedicine() {
         const nameInput = document.getElementById('rxMedNameInput');
+        const frequencyInput = document.getElementById('rxFrequencyInput');
+        const durationInput = document.getElementById('rxDurationInput');
         const name = nameInput.value.trim();
-        if (!name) { nameInput.focus(); return; }
+        const frequency = frequencyInput.value.trim();
+        const durationText = durationInput.value.trim();
+        if (!name) { nameInput.focus(); return false; }
+        if (!frequency) { frequencyInput.focus(); return false; }
+        if (!durationText) { durationInput.focus(); return false; }
         rxItems.push({
           clinicMedicineId: rxDraftMed ? rxDraftMed.clinicMedicineId : null,
           genericMedicineId: rxDraftMed ? rxDraftMed.genericMedicineId : null,
           freeTextName: rxDraftMed ? null : name,
           name,
           composition: rxDraftMed ? rxDraftMed.composition : '',
-          frequency: document.getElementById('rxFrequencyInput').value.trim(),
-          durationText: document.getElementById('rxDurationInput').value.trim(),
+          frequency,
+          durationText,
           instructions: document.getElementById('rxInstructionsInput').value.trim(),
         });
         resetRxDraftFields();
         renderRxRows();
         updateRxPreview();
-        nameInput.focus();
-        scrollActiveMedRowIntoView();
+        return true;
+      }
+      document.getElementById('rxAddMedBtn').addEventListener('click', () => {
+        const nameInput = document.getElementById('rxMedNameInput');
+        if (rxCommitDraftMedicine()) {
+          nameInput.focus();
+          scrollActiveMedRowIntoView();
+        }
       });
 
       // Builds the whole prescription as a plain HTML string and writes it
@@ -1945,14 +1990,17 @@
         document.getElementById('printRx').innerHTML = html;
       }
 
-      // Vitals are numbers (plus / for BP's "120/80" and - for a negative
-      // reading), never free text — strips anything else as it's typed.
+      // Vitals are numbers (plus / for BP's "120/80"), never free text --
+      // strips anything else as it's typed. No vital sign is ever
+      // legitimately negative, so "-" is stripped too (it used to be
+      // allowed "for a negative reading", which let a stray keystroke
+      // save nonsense like Temp: -98.6).
       // Registered before the preview-update listener below (on the same
       // input event, same elements) so the preview reflects the already-
       // stripped value rather than lagging one keystroke behind it.
       ['rxVitalBp', 'rxVitalPulse', 'rxVitalTemp', 'rxVitalWeight'].forEach((id) => {
         document.getElementById(id).addEventListener('input', function () {
-          this.value = this.value.replace(/[^0-9/.-]/g, '');
+          this.value = this.value.replace(/[^0-9/.]/g, '');
         });
       });
       ['rxComplaints', 'rxDiagnosis', 'rxAdvice', 'rxVitalBp', 'rxVitalPulse', 'rxVitalTemp', 'rxVitalWeight'].forEach((id) => {
@@ -2080,7 +2128,7 @@
               ${rx.followUpDate ? `
                 <div class="rx-followup-chip">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                  <div><span class="f-date">Follow up</span>${Qlinic.escapeHtml(new Date(rx.followUpDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</div>
+                  <div><span class="f-date">Follow up</span>${Qlinic.escapeHtml(formatSavedDateOnly(rx.followUpDate))}</div>
                 </div>
               ` : ''}
             </div>
@@ -2143,7 +2191,7 @@
                   ` : ''}
                   <div class="rx-history-tags">
                     <span class="rx-tag">${rx.items.length} medicine${rx.items.length === 1 ? '' : 's'}</span>
-                    ${rx.followUpDate ? `<span class="rx-tag follow">Follow up: ${Qlinic.escapeHtml(new Date(rx.followUpDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</span>` : ''}
+                    ${rx.followUpDate ? `<span class="rx-tag follow">Follow up: ${Qlinic.escapeHtml(formatSavedDateOnly(rx.followUpDate))}</span>` : ''}
                   </div>
                 </div>
                 <div class="rx-history-right">
@@ -2213,9 +2261,25 @@
         openRxHistoryModal();
       });
 
+      // True once the doctor has typed anything into the composer that
+      // isn't yet saved -- used to warn before an ordinary close/reopen
+      // discards it, and before an accidental tab close/refresh does.
+      function rxHasUnsavedContent() {
+        if (rxItems.length) return true;
+        const fields = ['rxComplaints', 'rxDiagnosis', 'rxAdvice', 'rxVitalBp', 'rxVitalPulse', 'rxVitalTemp', 'rxVitalWeight', 'rxMedNameInput'];
+        return fields.some((id) => document.getElementById(id).value.trim()) || rxTestsOrdered.length > 0;
+      }
+      window.addEventListener('beforeunload', (e) => {
+        if (document.getElementById('rxModalBackdrop').style.display !== 'none' && rxHasUnsavedContent()) {
+          e.preventDefault();
+          e.returnValue = '';
+        }
+      });
+
       function openRxModal() {
         const patient = currentQueue && currentQueue.nowServing;
         if (!patient) return;
+        rxPinnedPatient = patient;
         resetRxModalState();
         const initials = (patient.name || '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
         document.getElementById('rxPatientAvatar').textContent = initials;
@@ -2224,26 +2288,55 @@
         document.getElementById('rxModalPatientSub').textContent = [patient.name, rxFormatAgeGender(patient)].filter(Boolean).join(' · ');
         document.getElementById('rxModalBackdrop').style.display = 'flex';
         updateRxPreview();
-        if (currentDoctor) loadRxClosureData(currentDoctor.id);
-        Qlinic.getClinicMedicinesForRx().then((meds) => { rxClinicMedicinesCache = meds; }).catch(() => { rxClinicMedicinesCache = []; });
+        // The clinic's own medicine catalog and closure calendar don't
+        // change between consultations in the same shift -- fetch once per
+        // page load (or once per doctor, for closures, since a switched
+        // "viewing as" doctor has their own holiday set), not once per
+        // patient/modal-open.
+        if (currentDoctor && rxClosureLoadedForDoctorId !== currentDoctor.id) {
+          rxClosureLoadedForDoctorId = currentDoctor.id;
+          loadRxClosureData(currentDoctor.id).catch(() => { rxClosureLoadedForDoctorId = null; });
+        }
+        if (!rxCatalogLoaded) {
+          rxCatalogLoaded = true;
+          Qlinic.getClinicMedicinesForRx().then((meds) => { rxClinicMedicinesCache = meds; }).catch(() => { rxClinicMedicinesCache = []; rxCatalogLoaded = false; });
+        }
       }
-      function closeRxModal() {
+      async function closeRxModal() {
+        if (rxHasUnsavedContent() && !(await Qlinic.confirmDialog({
+          title: 'Discard this prescription?',
+          message: "You've entered details that haven't been saved yet. Closing now will discard them.",
+          confirmLabel: 'Discard',
+          cancelLabel: 'Keep editing',
+          danger: true,
+        }))) return;
         document.getElementById('rxModalBackdrop').style.display = 'none';
+        rxPinnedPatient = null;
       }
       document.getElementById('writeRxBtn').addEventListener('click', openRxModal);
       document.getElementById('rxModalCloseBtn').addEventListener('click', closeRxModal);
       document.getElementById('rxModalBackdrop').addEventListener('click', (e) => {
         if (e.target === document.getElementById('rxModalBackdrop')) closeRxModal();
       });
+      // Save/print's own successful-save path closes the modal directly
+      // (bypassing the unsaved-content prompt above, since it just saved)
+      // rather than calling closeRxModal().
 
       async function saveRxPrescription(shouldPrint) {
         if (rxSaving) return;
-        const patient = currentQueue && currentQueue.nowServing;
+        const patient = rxPinnedPatient;
         if (!patient) { showToast('No patient is currently in consultation'); return; }
+        // A medicine the doctor finished typing but never clicked "+ Add
+        // this medicine" for would otherwise be silently left out.
+        if (document.getElementById('rxMedNameInput').value.trim() && !rxCommitDraftMedicine()) {
+          showToast('Finish or clear the medicine you were adding before saving');
+          return;
+        }
         if (!rxItems.length) { showToast('Add at least one medicine first'); return; }
         rxSaving = true;
         document.getElementById('rxSavePrintBtn').disabled = true;
         document.getElementById('rxSaveOnlyBtn').disabled = true;
+        let saved = false;
         try {
           await Qlinic.createPrescription({
             patientId: patient.id,
@@ -2259,6 +2352,7 @@
             vitalsWeight: document.getElementById('rxVitalWeight').value.trim(),
             testsOrdered: rxTestsOrdered,
           });
+          saved = true;
           showToast('Prescription saved');
           // #printRx is already populated — updateRxPreview() writes to it
           // on every change, the same way billing-consultation.html's
@@ -2272,19 +2366,37 @@
             // modal and drop the doctor straight back onto Doctor View
             // for the next patient instead of leaving them staring at a
             // now-stale modal they'd otherwise have to close by hand.
+            // rxSaving stays true (see finally below) until this fires, so
+            // a click during the print dialog can't submit a duplicate.
             window.addEventListener('afterprint', function onAfterPrint() {
               window.removeEventListener('afterprint', onAfterPrint);
-              closeRxModal();
+              document.getElementById('rxModalBackdrop').style.display = 'none';
+              rxPinnedPatient = null;
+              rxSaving = false;
+              document.getElementById('rxSavePrintBtn').disabled = false;
+              document.getElementById('rxSaveOnlyBtn').disabled = false;
             });
             window.print();
+          } else {
+            document.getElementById('rxModalBackdrop').style.display = 'none';
+            rxPinnedPatient = null;
+            rxSaving = false;
           }
         } catch (err) {
           console.error('Save prescription failed:', err);
           showToast(err.message || 'Could not save the prescription');
         } finally {
-          rxSaving = false;
-          document.getElementById('rxSavePrintBtn').disabled = false;
-          document.getElementById('rxSaveOnlyBtn').disabled = false;
+          // Once a save succeeds, the buttons stay disabled (the modal is
+          // closing, or -- for Save & print -- already has, or is about to
+          // once printing finishes, at which point the afterprint handler
+          // above resets them) so a second click can never fire the RPC
+          // again for the same content. Only a genuine failure re-enables
+          // them here, so the doctor can retry.
+          if (!saved) {
+            rxSaving = false;
+            document.getElementById('rxSavePrintBtn').disabled = false;
+            document.getElementById('rxSaveOnlyBtn').disabled = false;
+          }
         }
       }
       document.getElementById('rxSavePrintBtn').addEventListener('click', () => saveRxPrescription(true));
