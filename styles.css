@@ -4888,19 +4888,15 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   align-items: center;
 }
 .display-header .brand { display: flex; align-items: center; gap: 14px; }
-/* Small gradient mark + wordmark, not the sitewide wordmark-plus-gold-
-   bar-underline treatment — matches the approved mockup exactly, and
-   this board's brand row already carries a second line (clinic name)
-   the sitewide brand mark was never designed to sit above. */
+/* Real logo mark, sized to sit next to the wordmark -- and now the same
+   wordmark-plus-gold-bar treatment every other page uses, even though
+   this board's brand row also carries a second line (clinic name)
+   underneath that no other page's brand mark sits above. */
 .display-header .brand-mark {
-  width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
-  background: linear-gradient(135deg, var(--mkt-teal), var(--mkt-blue));
-  display: flex; align-items: center; justify-content: center;
-  color: #fff; font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-weight: 700; font-size: 18px;
+  width: 42px; height: 42px; flex-shrink: 0; object-fit: contain;
 }
-.display-header .brand-word-wrap { display: block; font-size: 23px; }
+.display-header .brand-word-wrap { display: inline-block; font-size: 23px; }
 .display-header .brand-word { font-family: "Fraunces", "Iowan Old Style", Georgia, serif; font-weight: 600; color: var(--db-ink); letter-spacing: -0.01em; }
-.display-header .brand-word-bar { display: none; }
 /* Shows the clinic's own name, not a static marketing tagline — a
    patient cares which clinic they're looking at, not a slogan. */
 .display-header .brand-tagline { font-size: 13px; color: var(--db-grey-600); margin-top: 1px; }
