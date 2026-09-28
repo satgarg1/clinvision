@@ -3642,6 +3642,11 @@ th.th-filterable { position: relative; }
    to this one form rather than changed on .inline-form itself, which
    other pages rely on for their own flex-end alignment. */
 #clinicForm.inline-form { align-items: flex-start; }
+/* Same fix, same cause: the review link field has a .field-hint
+   underneath it, the Save button field doesn't, so flex-end (the
+   .inline-form default) bottom-aligns the row to the hint's bottom
+   edge and pushes Save down out of line with the input box beside it. */
+#reviewLinkForm.inline-form { align-items: flex-start; }
 
 /* Team's "Add a staff member" form is deliberately two literal
    .inline-form rows (name/email/phone/role, then password/confirm/the
