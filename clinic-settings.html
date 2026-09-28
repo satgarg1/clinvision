@@ -91,11 +91,6 @@
             <input type="text" id="hfrIdInput" placeholder="e.g., IN2910000123" maxlength="20" style="text-transform:uppercase;" />
             <span class="field-hint">From your ABDM Health Facility Registry registration</span>
           </div>
-          <div class="field" style="min-width:280px;">
-            <label>Review link <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
-            <input type="url" id="reviewLinkInput" placeholder="e.g., https://g.page/r/.../review" />
-            <span class="field-hint">Your Google Business Profile's "get more reviews" link, not your regular Maps link. Happy patients get a one tap prompt to post it here.</span>
-          </div>
           <div class="field" style="flex:0;">
             <label>&nbsp;</label>
             <button type="submit" class="btn-sm primary">Save</button>
@@ -166,6 +161,22 @@
               <div class="time-picker-panel" id="scheduleIntervalPanel" style="display:none;"></div>
             </div>
             <span class="field-hint">Bucket size for Reception's "View day's schedule" popup</span>
+          </div>
+          <div class="field" style="flex:0;">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn-sm primary">Save</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>Patient reviews</h2></div>
+        <p class="panel-note">Happy patients get a one tap prompt to post this as a public review, right from their queue link.</p>
+        <form id="reviewLinkForm" class="inline-form">
+          <div class="field" style="min-width:320px;flex:1;">
+            <label>Review link <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
+            <input type="url" id="reviewLinkInput" placeholder="e.g., https://g.page/r/.../review" />
+            <span class="field-hint">Your Google Business Profile's "get more reviews" link, not your regular Maps link.</span>
           </div>
           <div class="field" style="flex:0;">
             <label>&nbsp;</label>
@@ -484,7 +495,6 @@
             state: document.getElementById('stateInput').value,
             gstin: document.getElementById('gstinInput').value.trim().toUpperCase(),
             hfrId: document.getElementById('hfrIdInput').value.trim().toUpperCase(),
-            reviewLinkUrl: document.getElementById('reviewLinkInput').value.trim(),
           });
         } catch (err) {
           showToast(err.message || 'Could not update clinic profile — please try again.');
@@ -492,6 +502,19 @@
         }
         showToast('Clinic profile updated');
         loadClinic();
+      });
+
+      document.getElementById('reviewLinkForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          await Qlinic.updateClinic({
+            reviewLinkUrl: document.getElementById('reviewLinkInput').value.trim(),
+          });
+        } catch (err) {
+          showToast(err.message || 'Could not update the review link — please try again.');
+          return;
+        }
+        showToast('Review link updated');
       });
 
       function renderLogoPreview(logoUrl) {
