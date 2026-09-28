@@ -3016,6 +3016,9 @@ input[type="number"] { -moz-appearance: textfield; }
 .app-sidebar nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 
 .app-sidebar a.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 9px 12px;
   border-radius: var(--radius-sm);
   color: var(--grey-700);
@@ -3028,6 +3031,11 @@ input[type="number"] { -moz-appearance: textfield; }
   border-left: 2px solid transparent;
   transition: background 0.12s ease, color 0.12s ease, transform 0.12s ease, border-color 0.12s ease;
 }
+/* Each link's icon is plain inline SVG (no icon library in this app),
+   stroke="currentColor" so it always matches the link's own text color
+   -- active/hover/inactive all come free from the existing color rules
+   below, no separate icon-color logic needed. */
+.app-sidebar a.nav-link svg { flex-shrink: 0; }
 /* Gated to real pointer devices: on touchscreens there's no mouse-leave
    event after a tap, so a plain :hover rule here would stay "stuck" on
    whatever link was last tapped (this is exactly what happened, visible
