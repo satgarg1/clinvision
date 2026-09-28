@@ -1837,7 +1837,13 @@ a { color: inherit; }
 }
 .pricing-features-sub { font-size: 15px; color: var(--grey-700); margin: 0 0 40px; max-width: 640px; line-height: 1.6; }
 .pricing-features-grid { display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 56px; row-gap: 40px; }
-.pricing-feature { display: flex; gap: 16px; }
+/* Scroll-triggered stagger, same curve as .compare-col's cards. */
+.pricing-feature {
+  display: flex; gap: 16px;
+  opacity: 0; transform: translateY(18px);
+  transition: opacity 0.6s cubic-bezier(0.19, 1, 0.22, 1), transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+}
+.pricing-feature.show { opacity: 1; transform: translateY(0); }
 .pricing-icon-box { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .pricing-icon-box.c-teal { background: #d7f0ec; }
 .pricing-icon-box.c-blue { background: #d9e6fc; }

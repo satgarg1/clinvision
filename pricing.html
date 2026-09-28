@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="/styles.css?v=379" />
+<link rel="stylesheet" href="/styles.css?v=380" />
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -153,12 +153,30 @@
   <!-- Hero -->
   <div class="pricing-hero">
     <div class="pricing-hero-copy">
-      <span class="pricing-pill">Complete Clinic Management Solution</span>
-      <h1 class="pricing-h1">Simple, powerful, all-in-one clinic management.</h1>
-      <p class="pricing-hero-sub">Everything you need to streamline your clinic operations, improve patient experience and grow your practice — all in one platform.</p>
+      <span class="pricing-pill hero-fx" id="pxFxPill">Complete Clinic Management Solution</span>
+      <h1 class="pricing-h1 hero-fx" id="pxFxH1">Simple, powerful, all-in-one clinic management.</h1>
+      <p class="pricing-hero-sub hero-fx" id="pxFxSub">Everything you need to streamline your clinic operations, improve patient experience and grow your practice — all in one platform.</p>
     </div>
-    <img class="pricing-hero-img" src="pricing-hero-illustration.png" alt="Illustration of a doctor at a desk using ClinVision on a laptop." />
+    <img class="pricing-hero-img hero-fx" id="pxFxImg" src="pricing-hero-illustration.png" alt="Illustration of a doctor at a desk using ClinVision on a laptop." />
   </div>
+
+  <script>
+    (function () {
+      var seq = [
+        ['pxFxPill', 0],
+        ['pxFxImg', 250],
+        ['pxFxH1', 200],
+        ['pxFxSub', 650]
+      ];
+      seq.forEach(function (pair) {
+        var id = pair[0], delay = pair[1];
+        window.setTimeout(function () {
+          var el = document.getElementById(id);
+          if (el) el.classList.add('show');
+        }, delay);
+      });
+    })();
+  </script>
 
   <!-- Pricing card -->
   <div class="pricing-card-section">
@@ -168,7 +186,7 @@
     <svg class="pricing-sparkle" style="left: 8%; top: 190px;" width="16" height="16" viewBox="0 0 24 24" fill="#f97316" aria-hidden="true"><path d="M12 0 L14.2 9.8 L24 12 L14.2 14.2 L12 24 L9.8 14.2 L0 12 L9.8 9.8 Z"/></svg>
     <svg class="pricing-sparkle" style="left: 14%; top: 330px;" width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" aria-hidden="true"><path d="M12 0 L14.2 9.8 L24 12 L14.2 14.2 L12 24 L9.8 14.2 L0 12 L9.8 9.8 Z"/></svg>
 
-    <div class="pricing-card-wrap">
+    <div class="pricing-card-wrap reveal">
       <div class="pricing-card">
         <div class="pricing-intro-badge">
           <span class="pricing-intro-badge-icon">
@@ -218,11 +236,13 @@
 
   <!-- Features -->
   <div class="pricing-features">
-    <span class="pricing-pill">Everything included</span>
-    <h2>Powerful features. Built for your clinic.</h2>
-    <p class="pricing-features-sub">From patient check-in to prescription, billing and insights — all the tools you need, right at your fingertips.</p>
+    <div class="reveal">
+      <span class="pricing-pill">Everything included</span>
+      <h2>Powerful features. Built for your clinic.</h2>
+      <p class="pricing-features-sub">From patient check-in to prescription, billing and insights — all the tools you need, right at your fingertips.</p>
+    </div>
 
-    <div class="pricing-features-grid">
+    <div class="pricing-features-grid" id="pricingFeaturesGrid">
 
       <div class="pricing-feature">
         <div class="pricing-icon-box c-teal">
@@ -346,6 +366,21 @@
 
     </div>
   </div>
+
+  <script>
+    (function () {
+      var cards = document.querySelectorAll('#pricingFeaturesGrid .pricing-feature');
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry, i) {
+          if (entry.isIntersecting) {
+            window.setTimeout(function () { entry.target.classList.add('show'); }, i * 80);
+            obs.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.2 });
+      cards.forEach(function (el) { obs.observe(el); });
+    })();
+  </script>
 
   <section class="faq reveal">
     <div class="faq-glow" aria-hidden="true"></div>
