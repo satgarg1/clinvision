@@ -1729,7 +1729,7 @@
   async function getClinicFeedback() {
     const { data, error } = await sb
       .from('visit_feedback')
-      .select('id, rating, feedback_text, routed_to_review, submitted_at, patients(name, phone)')
+      .select('id, rating, feedback_text, routed_to_review, submitted_at, patients(name, phone, doctor_id)')
       .order('submitted_at', { ascending: false });
     if (error) throw error;
     return (data || []).map((row) => ({
@@ -1740,6 +1740,7 @@
       submittedAt: row.submitted_at,
       patientName: row.patients ? row.patients.name : '',
       patientPhone: row.patients ? row.patients.phone : '',
+      doctorId: row.patients ? row.patients.doctor_id : null,
     }));
   }
 

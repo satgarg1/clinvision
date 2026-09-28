@@ -65,9 +65,22 @@
 
       <input type="text" id="feedbackSearch" placeholder="Search by patient name or phone..." />
 
+      <div style="display:flex;align-items:flex-end;flex-wrap:wrap;gap:16px 24px;margin:12px 0;">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">From</label>
+          <input type="date" lang="en-GB" id="feedbackDateFrom" class="pill-input" />
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+          <label class="pill-label">To</label>
+          <input type="date" lang="en-GB" id="feedbackDateTo" class="pill-input" />
+        </div>
+      </div>
+
       <div class="panel">
         <div class="panel-header">
           <h2 id="feedbackListSummary">Loading…</h2>
+          <div id="activeFilterChipsRow" class="active-filter-chips" style="margin-bottom:0;"></div>
+          <button type="button" class="btn-sm primary" id="resetFiltersBtn" style="margin-left:auto;">Reset filters</button>
         </div>
         <div id="feedbackTableWrap"></div>
         <div class="pager" id="feedbackPager"></div>
@@ -79,7 +92,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=131"></script>
+  <script src="clinic-data.js?v=132"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -98,9 +111,13 @@
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
-      const PAGE_SIZE = 100;
+      const PAGE_SIZE = 15;
       let allEntries = [];
       let currentPage = 1;
+      let doctorById = {};
+      let doctorFilterIds = new Set();
+      let dateFrom = '';
+      let dateTo = '';
 
       function showToast(msg) {
         const t = document.getElementById('toast');
@@ -117,17 +134,115 @@
         return `<span class="fb-stars">${out}</span>`;
       }
 
+      function FILTER_ICON_SVG(className) {
+        return `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>`;
+      }
+
+      function pad2(n) { return String(n).padStart(2, '0'); }
+      function entryDateStr(e) {
+        const d = new Date(e.submittedAt);
+        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+      }
+
       function searchTerm() {
         return document.getElementById('feedbackSearch').value.trim().toLowerCase();
       }
 
-      function filteredEntries() {
+      function searchAndDateEntries() {
         const term = searchTerm();
-        if (!term) return allEntries;
-        return allEntries.filter((e) =>
-          (e.patientName || '').toLowerCase().includes(term) ||
-          (e.patientPhone || '').toLowerCase().includes(term)
-        );
+        return allEntries.filter((e) => {
+          if (term && !(
+            (e.patientName || '').toLowerCase().includes(term) ||
+            (e.patientPhone || '').toLowerCase().includes(term)
+          )) return false;
+          if (dateFrom && entryDateStr(e) < dateFrom) return false;
+          if (dateTo && entryDateStr(e) > dateTo) return false;
+          return true;
+        });
+      }
+
+      function filteredEntries() {
+        return searchAndDateEntries().filter((e) => {
+          if (doctorFilterIds.size > 0 && !doctorFilterIds.has(e.doctorId)) return false;
+          return true;
+        });
+      }
+
+      function doctorFilterOptions() {
+        const counting = searchAndDateEntries();
+        return Object.values(doctorById)
+          .map((d) => ({ value: d.id, label: d.name, count: counting.filter((e) => e.doctorId === d.id).length }))
+          .filter((o) => o.count > 0)
+          .sort((a, b) => b.count - a.count);
+      }
+
+      let openFilterColumn = null;
+      function closeColumnFilter() {
+        openFilterColumn = null;
+        document.querySelectorAll('.filter-dropdown').forEach((el) => el.remove());
+      }
+      function openColumnFilter(column, anchorTh, options, selectedSet, onChange) {
+        if (openFilterColumn === column) { closeColumnFilter(); return; }
+        closeColumnFilter();
+        openFilterColumn = column;
+        const dropdown = document.createElement('div');
+        dropdown.className = 'filter-dropdown';
+        dropdown.innerHTML = options.map((o) => `
+          <label><input type="checkbox" value="${Qlinic.escapeHtml(o.value)}" ${selectedSet.has(o.value) ? 'checked' : ''} /> ${Qlinic.escapeHtml(o.label)}<span class="fd-count">${o.count}</span></label>
+        `).join('');
+        dropdown.addEventListener('click', (e) => e.stopPropagation());
+        dropdown.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+          cb.addEventListener('change', () => {
+            if (cb.checked) selectedSet.add(cb.value); else selectedSet.delete(cb.value);
+            closeColumnFilter();
+            onChange();
+          });
+        });
+        const anchorRect = anchorTh.getBoundingClientRect();
+        dropdown.style.top = (anchorRect.bottom + 6) + 'px';
+        dropdown.style.left = Math.max(8, Math.min(anchorRect.left, window.innerWidth - 208)) + 'px';
+        document.body.appendChild(dropdown);
+      }
+      document.addEventListener('click', () => closeColumnFilter());
+
+      function onFeedbackFilterChange() {
+        currentPage = 1;
+        renderTable();
+      }
+
+      function activeFilterChipsHtml() {
+        const chips = [];
+        if (doctorFilterIds.size > 0) {
+          const labels = Object.values(doctorById).filter((d) => doctorFilterIds.has(d.id)).map((d) => d.name);
+          chips.push({ key: 'doctor', label: `Doctor: ${labels.join(', ')}` });
+        }
+        if (dateFrom || dateTo) {
+          const label = dateFrom && dateTo ? `${Qlinic.formatDateLabel(dateFrom)} to ${Qlinic.formatDateLabel(dateTo)}`
+            : dateFrom ? `From ${Qlinic.formatDateLabel(dateFrom)}` : `Until ${Qlinic.formatDateLabel(dateTo)}`;
+          chips.push({ key: 'date', label: `Date: ${label}` });
+        }
+        if (chips.length === 0) return '';
+        return `<div class="active-filter-chips">${chips.map((c) => `<div class="filter-chip">${Qlinic.escapeHtml(c.label)}<button type="button" class="clear-filter-chip" data-key="${c.key}" aria-label="Clear filter">×</button></div>`).join('')}</div>`;
+      }
+      function clearFilterByKey(key) {
+        if (key === 'doctor') {
+          doctorFilterIds.clear();
+        } else if (key === 'date') {
+          dateFrom = '';
+          dateTo = '';
+          document.getElementById('feedbackDateFrom').value = '';
+          document.getElementById('feedbackDateTo').value = '';
+        }
+        onFeedbackFilterChange();
+      }
+      function resetAllFilters() {
+        doctorFilterIds.clear();
+        dateFrom = '';
+        dateTo = '';
+        document.getElementById('feedbackDateFrom').value = '';
+        document.getElementById('feedbackDateTo').value = '';
+        document.getElementById('feedbackSearch').value = '';
+        onFeedbackFilterChange();
       }
 
       function renderSummary() {
@@ -162,13 +277,18 @@
           ? `${filtered.length} of ${allEntries.length} responses`
           : `${allEntries.length} response${allEntries.length === 1 ? '' : 's'}`;
 
+        document.getElementById('activeFilterChipsRow').innerHTML = activeFilterChipsHtml();
+        document.querySelectorAll('#activeFilterChipsRow .clear-filter-chip').forEach((btn) => {
+          btn.addEventListener('click', () => clearFilterByKey(btn.dataset.key));
+        });
+
         if (allEntries.length === 0) {
           wrap.innerHTML = '<div class="empty-state">No feedback collected yet. It starts showing up here once patients rate their visit from their queue link.</div>';
           document.getElementById('feedbackPager').innerHTML = '';
           return;
         }
         if (filtered.length === 0) {
-          wrap.innerHTML = '<div class="empty-state">No feedback matches this search.</div>';
+          wrap.innerHTML = '<div class="empty-state">No feedback matches these filters.</div>';
           document.getElementById('feedbackPager').innerHTML = '';
           return;
         }
@@ -178,14 +298,17 @@
         const start = (currentPage - 1) * PAGE_SIZE;
         const pageItems = filtered.slice(start, start + PAGE_SIZE);
 
+        const doctorIconClass = doctorFilterIds.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
         wrap.innerHTML = `
           <table class="qtable qtable-fixed">
             <colgroup>
-              <col style="width:18%;"><col style="width:13%;"><col style="width:12%;">
-              <col style="width:40%;"><col style="width:12%;"><col style="width:12%;">
+              <col style="width:11%;"><col style="width:14%;"><col style="width:14%;">
+              <col style="width:18%;"><col style="width:13%;"><col style="width:13%;"><col style="width:17%;">
             </colgroup>
             <thead><tr>
-              <th>Patient</th><th>Phone</th><th>Rating</th><th>Comment</th><th>Shared to Google</th><th>Date</th>
+              <th>Patient</th><th>Phone</th><th>Rating</th><th>Comment</th>
+              <th class="th-filterable"><span class="th-filter-trigger" id="doctorFilterTrigger">Doctor ${FILTER_ICON_SVG(doctorIconClass)}</span></th>
+              <th>To Google</th><th>Date</th>
             </tr></thead>
             <tbody>
               ${pageItems.map((e) => `
@@ -194,6 +317,7 @@
                   <td>${e.patientPhone ? Qlinic.escapeHtml(e.patientPhone) : '—'}</td>
                   <td>${starsHtml(e.rating)}</td>
                   <td class="qtable-wrap">${e.feedbackText ? Qlinic.escapeHtml(e.feedbackText) : '<span style="color:var(--grey-500);">No comment</span>'}</td>
+                  <td class="qtable-wrap">${e.doctorId && doctorById[e.doctorId] ? Qlinic.escapeHtml(doctorById[e.doctorId].name) : '—'}</td>
                   <td>${e.routedToReview ? '<span class="fb-routed-yes">Yes</span>' : '—'}</td>
                   <td>${Qlinic.formatDateTime(e.submittedAt)}</td>
                 </tr>
@@ -201,6 +325,10 @@
             </tbody>
           </table>
         `;
+        document.getElementById('doctorFilterTrigger').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openColumnFilter('doctor', e.currentTarget.closest('th'), doctorFilterOptions(), doctorFilterIds, onFeedbackFilterChange);
+        });
         renderPager(filtered.length);
       }
 
@@ -208,6 +336,15 @@
         currentPage = 1;
         renderTable();
       });
+      document.getElementById('feedbackDateFrom').addEventListener('change', (e) => {
+        dateFrom = e.target.value;
+        onFeedbackFilterChange();
+      });
+      document.getElementById('feedbackDateTo').addEventListener('change', (e) => {
+        dateTo = e.target.value;
+        onFeedbackFilterChange();
+      });
+      document.getElementById('resetFiltersBtn').addEventListener('click', resetAllFilters);
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
@@ -217,6 +354,9 @@
       } else {
         document.getElementById('clinicLogoThumb').style.display = 'none';
       }
+
+      const doctors = await Qlinic.getDoctors({ includeInactive: true });
+      doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
 
       try {
         allEntries = await Qlinic.getClinicFeedback();
