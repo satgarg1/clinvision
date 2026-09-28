@@ -171,7 +171,15 @@ a { color: inherit; }
    line plus the gold bar beneath it -- measured live at 29px -- so it
    never stretches down into the tagline's row; align-items:flex-start on
    .brand itself keeps the icon's top flush with the wordmark's top. */
-.brand-icon { height: 29px; width: auto; flex-shrink: 0; }
+/* Zero flex-gap still left visible daylight next to the wordmark: the
+   source mark is an open "C" ring trailing off into a few small
+   decorative dots on its right side (confirmed by sampling the PNG's
+   own alpha channel -- the crop itself has no padding, content runs
+   solid to the image's last pixel column). That trailing dot cluster
+   reads as empty space to the eye long before the pixels actually run
+   out, so a negative margin pulls the wordmark in past it, closer to
+   the ring's actual solid body. */
+.brand-icon { height: 29px; width: auto; flex-shrink: 0; margin-right: -5px; }
 .mkt-nav .brand-text {
   display: flex;
   flex-direction: column;
@@ -2725,15 +2733,20 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .auth-corner-brand {
   display: flex;
-  /* Column now that there's no icon sitting beside the wordmark --
-     word and tagline stack, same as every other page's brand corner. */
+  /* Icon sits beside the wordmark again (row), which itself stacks
+     over the tagline (column) -- same split as .mkt-nav .brand. */
+  flex-direction: row;
+  align-items: flex-start;
+  text-decoration: none;
+}
+.auth-corner-brand .brand-text {
+  display: flex;
   flex-direction: column;
   /* Centered, not flex-start: "ClinVision" is much shorter than "Where
      clinics run better" underneath it, so sharing a left edge left the
      wordmark looking shoved off to one side instead of centered over
      the tagline. */
   align-items: center;
-  text-decoration: none;
   /* Same fix as .login-brand-corner: a column flex box with no
      explicit width shrink-to-fits against the wordmark's narrower
      width here, not the wider tagline, collapsing the box to
