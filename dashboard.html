@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=393" />
+<link rel="stylesheet" href="styles.css?v=394" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -40,29 +40,31 @@
       </nav>
     </aside>
 
-    <main class="app-main">
+    <main class="app-main dash-main">
       <div class="dash-header">
-        <svg class="dash-header-illustration" width="220" height="130" viewBox="0 0 220 130" aria-hidden="true">
-          <ellipse cx="185" cy="118" rx="16" ry="7" fill="#99f6e4"/>
-          <ellipse cx="205" cy="100" rx="12" ry="20" fill="#5eead4"/>
-          <rect x="70" y="35" width="70" height="90" rx="4" fill="#bfdbfe"/>
-          <rect x="130" y="55" width="45" height="70" rx="4" fill="#93c5fd"/>
-          <rect x="82" y="48" width="12" height="12" rx="2" fill="#eff6ff"/>
-          <rect x="102" y="48" width="12" height="12" rx="2" fill="#eff6ff"/>
-          <rect x="82" y="68" width="12" height="12" rx="2" fill="#eff6ff"/>
-          <rect x="102" y="68" width="12" height="12" rx="2" fill="#eff6ff"/>
-          <rect x="82" y="88" width="12" height="12" rx="2" fill="#eff6ff"/>
-          <rect x="102" y="88" width="12" height="12" rx="2" fill="#eff6ff"/>
-          <rect x="140" y="68" width="10" height="10" rx="2" fill="#eff6ff"/>
-          <rect x="157" y="68" width="10" height="10" rx="2" fill="#eff6ff"/>
-          <rect x="140" y="88" width="10" height="10" rx="2" fill="#eff6ff"/>
-          <rect x="157" y="88" width="10" height="10" rx="2" fill="#eff6ff"/>
-          <rect x="98" y="15" width="14" height="24" rx="2" fill="#bfdbfe"/>
-          <rect x="102" y="8" width="6" height="14" fill="#bfdbfe"/>
-          <path d="M100 8h10v3h-3.5v3.5h-3v-3.5h-3.5z" fill="#3b82f6"/>
-          <ellipse cx="60" cy="122" rx="14" ry="6" fill="#99f6e4"/>
-          <ellipse cx="52" cy="105" rx="10" ry="18" fill="#2dd4bf"/>
-        </svg>
+        <div class="dash-header-illustration-clip">
+          <svg class="dash-header-illustration" width="220" height="130" viewBox="0 0 220 130" aria-hidden="true">
+            <ellipse cx="185" cy="118" rx="16" ry="7" fill="#99f6e4"/>
+            <ellipse cx="205" cy="100" rx="12" ry="20" fill="#5eead4"/>
+            <rect x="70" y="35" width="70" height="90" rx="4" fill="#bfdbfe"/>
+            <rect x="130" y="55" width="45" height="70" rx="4" fill="#93c5fd"/>
+            <rect x="82" y="48" width="12" height="12" rx="2" fill="#eff6ff"/>
+            <rect x="102" y="48" width="12" height="12" rx="2" fill="#eff6ff"/>
+            <rect x="82" y="68" width="12" height="12" rx="2" fill="#eff6ff"/>
+            <rect x="102" y="68" width="12" height="12" rx="2" fill="#eff6ff"/>
+            <rect x="82" y="88" width="12" height="12" rx="2" fill="#eff6ff"/>
+            <rect x="102" y="88" width="12" height="12" rx="2" fill="#eff6ff"/>
+            <rect x="140" y="68" width="10" height="10" rx="2" fill="#eff6ff"/>
+            <rect x="157" y="68" width="10" height="10" rx="2" fill="#eff6ff"/>
+            <rect x="140" y="88" width="10" height="10" rx="2" fill="#eff6ff"/>
+            <rect x="157" y="88" width="10" height="10" rx="2" fill="#eff6ff"/>
+            <rect x="98" y="15" width="14" height="24" rx="2" fill="#bfdbfe"/>
+            <rect x="102" y="8" width="6" height="14" fill="#bfdbfe"/>
+            <path d="M100 8h10v3h-3.5v3.5h-3v-3.5h-3.5z" fill="#3b82f6"/>
+            <ellipse cx="60" cy="122" rx="14" ry="6" fill="#99f6e4"/>
+            <ellipse cx="52" cy="105" rx="10" ry="18" fill="#2dd4bf"/>
+          </svg>
+        </div>
         <div class="dash-header-row">
           <div>
             <div class="dash-eyebrow">Dashboard</div>
@@ -206,7 +208,7 @@
       // Purely decorative -- not a real chart of this metric's history,
       // just the visual language the approved mockup asked for.
       function kpiSparklineSvg(color) {
-        return `<svg class="dash-kpi-sparkline" width="50" height="38" viewBox="0 0 50 38">
+        return `<svg class="dash-kpi-sparkline" width="38" height="32" viewBox="0 0 50 38">
           <defs><linearGradient id="spark-${color.replace('#','')}" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="${color}" stop-opacity="0.3"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/>
           </linearGradient></defs>
@@ -730,7 +732,7 @@
                 const tokenDisplay = (num) => num == null ? '' : (num > 100000 ? 'W' + (num - 100000) : '#' + num);
                 const nextTimeLabel = next && next.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(next.bookedTime)) : '&mdash;';
                 return `
-                  <tr>
+                  <tr class="dash-doc-row${pill.key === 'on-break' || pill.key === 'emergency' ? ' row-' + pill.key : ''}">
                     <td>
                       <div style="display:flex;align-items:center;gap:10px;">
                         <div class="dash-doc-avatar accent-${avatarAccentFor(d.id, doctors)}">${Qlinic.escapeHtml(initialsFor(d.name))}</div>
