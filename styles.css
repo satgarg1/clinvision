@@ -2433,21 +2433,35 @@ a { color: inherit; }
 
 /* Search + From/To + Rating all sit in one row, so they need pixel-equal
    boxes to actually look aligned -- padding-derived height alone drifts
-   a px or two between a native <select>, a native <input type="date">
-   and a plain text input (same root cause already documented above for
-   #rxDoctorFilter/#rxSearchInput). Explicit height plus the identical
-   pill shape as that reception/prescriptions search family, reused
-   directly instead of the shorter, non-pill .pill-input/.pill-select
-   tier those two-date-field rows elsewhere use alone. */
-#feedbackSearch, #feedbackDateFrom, #feedbackDateTo, #feedbackRatingFilter {
+   a px or two between a native <select>, Qlinic.attachDatePicker's own
+   .qdp-trigger button, and a plain text input (same root cause already
+   documented above for #rxDoctorFilter/#rxSearchInput). Explicit height
+   plus the identical pill shape as that reception/prescriptions search
+   family, reused directly instead of the shorter, non-pill
+   .pill-input/.pill-select tier those two-date-field rows elsewhere use
+   alone.
+   Note: attachDatePicker hides the underlying <input type="date"> itself
+   (display:none) and renders its own .qdp-trigger button next to it, so
+   styling #feedbackDateFrom/#feedbackDateTo directly has no visible
+   effect once the picker attaches -- the real target is .qdp-trigger,
+   scoped to .fb-filters-right so it doesn't affect every date picker
+   app-wide. */
+#feedbackSearch, #feedbackRatingFilter {
   height: 42px; box-sizing: border-box; padding: 0 18px;
   font-size: 14.5px; font-weight: 500; font-family: var(--font);
   border: 1px solid var(--grey-300); border-radius: var(--radius-pill);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   background-color: var(--white); color: var(--black);
 }
-#feedbackDateFrom, #feedbackDateTo { width: 160px; }
-#feedbackSearch:focus, #feedbackDateFrom:focus, #feedbackDateTo:focus, #feedbackRatingFilter:focus {
+.fb-filters-right .qdp-trigger {
+  height: 42px; box-sizing: border-box; padding: 0 16px;
+  font-size: 14.5px; font-weight: 500; font-family: var(--font);
+  border: 1px solid var(--grey-300); border-radius: var(--radius-pill);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  width: 160px;
+}
+.fb-filters-right .qdp { width: 160px; }
+#feedbackSearch:focus, #feedbackRatingFilter:focus {
   outline: 2px solid var(--accent); border-color: var(--accent);
 }
 #feedbackRatingFilter {
