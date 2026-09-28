@@ -2421,13 +2421,37 @@ a { color: inherit; }
   color: var(--success); padding: 4px 10px; border-radius: var(--radius-pill);
   font-size: var(--text-xs); font-weight: 600;
 }
-.fb-search-wrap { position: relative; flex: 1; min-width: 260px; max-width: 380px; }
-.fb-search-wrap .fb-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; }
-.fb-search-wrap input { width: 100%; padding-left: 34px; box-sizing: border-box; }
 .fb-filters-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
 .fb-filters-right { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
-.fb-section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-.fb-section-title h2 { margin: 0; }
+
+/* Search + From/To + Rating all sit in one row, so they need pixel-equal
+   boxes to actually look aligned -- padding-derived height alone drifts
+   a px or two between a native <select>, a native <input type="date">
+   and a plain text input (same root cause already documented above for
+   #rxDoctorFilter/#rxSearchInput). Explicit height plus the identical
+   pill shape as that reception/prescriptions search family, reused
+   directly instead of the shorter, non-pill .pill-input/.pill-select
+   tier those two-date-field rows elsewhere use alone. */
+#feedbackSearch, #feedbackDateFrom, #feedbackDateTo, #feedbackRatingFilter {
+  height: 42px; box-sizing: border-box; padding: 0 18px;
+  font-size: 14.5px; font-weight: 500; font-family: var(--font);
+  border: 1px solid var(--grey-300); border-radius: var(--radius-pill);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background-color: var(--white); color: var(--black);
+}
+#feedbackDateFrom, #feedbackDateTo { width: 160px; }
+#feedbackSearch:focus, #feedbackDateFrom:focus, #feedbackDateTo:focus, #feedbackRatingFilter:focus {
+  outline: 2px solid var(--accent); border-color: var(--accent);
+}
+#feedbackRatingFilter {
+  appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  cursor: pointer; width: 150px; padding-right: 38px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234a4a4c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 16px center; background-size: 12px;
+}
+:root[data-theme="dark"] #feedbackRatingFilter {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
 
 /* Registration has 10 fields (address split into 3 rows) where every
    other login-card page has 1-4, so it alone gets a denser tier on top
