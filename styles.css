@@ -160,6 +160,20 @@ a { color: inherit; }
   text-decoration: none;
   color: var(--black);
   display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  transition: transform 0.15s ease;
+}
+.mkt-nav .brand:hover { transform: scale(1.04); }
+/* The icon mark sits beside the wordmark now (previously just the
+   stacked text block below). Height is pinned to exactly the "ClinVision"
+   line plus the gold bar beneath it -- measured live at 29px -- so it
+   never stretches down into the tagline's row; align-items:flex-start on
+   .brand itself keeps the icon's top flush with the wordmark's top. */
+.brand-icon { height: 29px; width: auto; flex-shrink: 0; }
+.mkt-nav .brand-text {
+  display: flex;
   flex-direction: column;
   /* Centered, not flex-start: "ClinVision" is much shorter than "Where
      clinics run better" underneath it, so sharing a left edge left the
@@ -167,9 +181,7 @@ a { color: inherit; }
      the tagline -- same bug already fixed on .login-brand-corner and
      .auth-corner-brand. */
   align-items: center;
-  transition: transform 0.15s ease;
 }
-.mkt-nav .brand:hover { transform: scale(1.04); }
 
 .mkt-nav-links { display: flex; align-items: center; gap: 24px; }
 
