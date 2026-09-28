@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=385" />
+<link rel="stylesheet" href="styles.css?v=386" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -83,9 +83,12 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="feedbackPanel">
         <div class="fb-filters-row">
-          <input type="text" id="feedbackSearch" placeholder="Search by patient name or phone number..." style="flex:1;min-width:220px;margin-bottom:0;" />
+          <div style="flex:1;min-width:220px;">
+            <label class="pill-label" for="feedbackSearch" style="visibility:hidden;">Search</label>
+            <input type="text" id="feedbackSearch" placeholder="Search by patient name or phone number..." style="width:100%;box-sizing:border-box;margin-bottom:0;" />
+          </div>
           <div class="fb-filters-right">
             <div>
               <label class="pill-label" for="feedbackDateFrom">From</label>
