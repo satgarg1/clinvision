@@ -3343,6 +3343,132 @@ input[type="number"] { -moz-appearance: textfield; }
 .trend-chip.good { background: var(--mkt-teal-bg); color: var(--mkt-teal); }
 .trend-chip.bad { background: var(--danger-bg); color: var(--danger); }
 
+/* Dashboard redesign (locked from the approved mockup). Own class names
+   throughout (.dash-*) rather than reusing .stat-card/.card-grid, which
+   revenue.html/patient-directory.html/etc. still use in their original
+   left-border form -- this redesign is scoped to the dashboard page only. */
+.dash-header {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  padding: 22px 28px;
+  margin-bottom: 20px;
+  background: linear-gradient(90deg, rgba(239,246,255,0.9) 0%, rgba(238,242,255,0.45) 55%, rgba(240,253,250,0.6) 100%);
+}
+:root[data-theme="dark"] .dash-header {
+  background: linear-gradient(90deg, rgba(37,99,235,0.14) 0%, rgba(124,58,237,0.08) 55%, rgba(13,148,136,0.1) 100%);
+}
+.dash-header-illustration { position: absolute; top: -10px; right: 10px; opacity: 0.4; pointer-events: none; }
+.dash-header-row { position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.dash-eyebrow { font-size: 13px; color: var(--grey-500); font-weight: 600; margin-bottom: 10px; }
+.dash-greeting-row { display: flex; align-items: center; gap: 10px; }
+.dash-greeting { font-size: 24px; font-weight: 700; color: var(--black); }
+.dash-subtitle { font-size: 14px; color: var(--grey-500); margin-top: 4px; margin-left: 38px; }
+.dash-pill-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.dash-pill {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.9);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  border: 1px solid var(--grey-300); border-radius: 12px;
+  padding: 8px 16px; font-size: 14px; color: var(--grey-700);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+:root[data-theme="dark"] .dash-pill { background: rgba(28,28,30,0.85); }
+
+.dash-kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 20px; }
+@media (max-width: 1300px) { .dash-kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 700px) { .dash-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+.dash-kpi-card {
+  background: var(--white); border: 1px solid var(--grey-300); border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(30,64,175,0.05), 0 4px 12px rgba(30,64,175,0.04);
+  padding: 15px; display: flex; justify-content: space-between; align-items: center;
+  gap: 6px; overflow: hidden;
+}
+.dash-kpi-card.clickable { cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.dash-kpi-card.clickable:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.dash-kpi-left { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.dash-kpi-label-row { display: flex; align-items: center; gap: 7px; }
+.dash-kpi-icon { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.dash-kpi-icon svg { width: 15px; height: 15px; }
+.dash-kpi-title { font-size: 11.5px; font-weight: 700; color: var(--black); white-space: nowrap; }
+.dash-kpi-value { font-size: 22px; font-weight: 700; color: var(--black); letter-spacing: -0.01em; margin-top: 2px; white-space: nowrap; }
+.dash-kpi-trend { font-size: 10.5px; font-weight: 600; white-space: nowrap; color: var(--grey-500); }
+.dash-kpi-trend.good { color: var(--success); }
+.dash-kpi-trend.bad { color: var(--danger); }
+.dash-kpi-sparkline { flex-shrink: 0; }
+/* Icon circle color per stat card's existing `accent` value -- same
+   accent names the dashboard's own data already assigns per card, just
+   given an icon-circle tint here instead of the old left-border color. */
+.dash-kpi-icon.accent-teal { background: #ccfbf1; color: #0d9488; }
+.dash-kpi-icon.accent-coral { background: #ffedd5; color: #f97316; }
+.dash-kpi-icon.accent-sky { background: #e0f2fe; color: #0284c7; }
+.dash-kpi-icon.accent-blue { background: #dbeafe; color: #2563eb; }
+.dash-kpi-icon.accent-purple { background: #ede9fe; color: #7c3aed; }
+.dash-kpi-icon.accent-indigo { background: #e0e7ff; color: #4f46e5; }
+.dash-kpi-icon.accent-amber { background: #fef3c7; color: #f59e0b; }
+.dash-kpi-icon.accent-pink { background: #fce7f3; color: #db2777; }
+.dash-kpi-icon.accent-rose { background: #ffe4e6; color: #be123c; }
+.dash-kpi-icon.accent-cyan { background: #cffafe; color: #0e7490; }
+.dash-kpi-icon.accent-green { background: #dcfce7; color: #16a34a; }
+
+.dash-main-row { display: flex; gap: 18px; align-items: flex-start; }
+.dash-table-panel {
+  flex: 1; background: var(--white); border: 1px solid var(--grey-300); border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(30,64,175,0.05), 0 4px 12px rgba(30,64,175,0.04);
+  padding: 20px;
+}
+.dash-table-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.dash-table-header-row h2 { margin: 0; font-size: 16px; }
+.dash-view-all-link { font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
+.dash-view-all-link:hover { text-decoration: underline; }
+table.dash-table { width: 100%; border-collapse: collapse; }
+table.dash-table th {
+  text-align: left; padding: 0 8px 10px; border-bottom: 1px solid var(--grey-300);
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--grey-500);
+}
+table.dash-table td { padding: 13px 8px; border-bottom: 1px solid var(--grey-100); vertical-align: middle; }
+table.dash-table tr:last-child td { border-bottom: none; }
+.dash-doc-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.dash-doc-avatar.accent-teal { background: #ccfbf1; color: #0d9488; }
+.dash-doc-avatar.accent-coral { background: #ffedd5; color: #f97316; }
+.dash-doc-avatar.accent-blue { background: #dbeafe; color: #2563eb; }
+.dash-doc-avatar.accent-purple { background: #ede9fe; color: #7c3aed; }
+.dash-doc-avatar.accent-pink { background: #fce7f3; color: #db2777; }
+.dash-doc-name { font-size: 13px; font-weight: 600; color: var(--black); }
+.dash-doc-specialty { font-size: 11px; color: var(--grey-500); }
+.dash-cell-primary { font-size: 13px; color: var(--black); }
+.dash-cell-sub { font-size: 11px; color: var(--grey-500); }
+.dash-specialty-cell { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--grey-700); }
+.dash-status-pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+  border-radius: var(--radius-pill); font-size: 12px; font-weight: 600;
+}
+.dash-status-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+.dash-status-pill.status-available { background: var(--success-bg); color: var(--success); }
+.dash-status-pill.status-available .dot { background: var(--success); }
+.dash-status-pill.status-in-consultation { background: var(--mkt-blue-bg); color: #1d4ed8; }
+.dash-status-pill.status-in-consultation .dot { background: #1d4ed8; }
+.dash-status-pill.status-on-break { background: var(--warning-bg); color: var(--warning); }
+.dash-status-pill.status-on-break .dot { background: #f59e0b; }
+.dash-status-pill.status-offline { background: var(--grey-100); color: var(--grey-500); }
+.dash-status-pill.status-offline .dot { background: var(--grey-500); }
+.dash-status-pill.status-emergency { background: var(--danger-bg); color: var(--danger); }
+.dash-status-pill.status-emergency .dot { background: var(--danger); }
+
+.dash-sidebar { width: 300px; flex-shrink: 0; }
+.dash-sidebar-card {
+  background: var(--white); border: 1px solid var(--grey-300); border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(30,64,175,0.05), 0 4px 12px rgba(30,64,175,0.04);
+  padding: 20px; display: flex; flex-direction: column; gap: 16px;
+}
+.dash-sidebar-title-row { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: var(--black); }
+.dash-sidebar-total { font-size: 30px; font-weight: 700; color: var(--black); }
+.dash-sidebar-total-label { font-size: 12px; color: var(--grey-500); }
+.dash-sidebar-breakdown-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+.dash-sidebar-breakdown-label { display: flex; align-items: center; gap: 8px; color: var(--grey-700); }
+.dash-sidebar-breakdown-dot { width: 8px; height: 8px; border-radius: 50%; }
+.dash-sidebar-breakdown-count { font-weight: 700; color: var(--black); }
+
 .panel {
   background: var(--white);
   border: 1px solid var(--grey-300);

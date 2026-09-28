@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=392" />
+<link rel="stylesheet" href="styles.css?v=393" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -41,27 +41,76 @@
     </aside>
 
     <main class="app-main">
-      <div class="app-topbar">
-        <h1>Dashboard</h1>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div class="holiday-chip-wrap" id="holidayChipWrap" style="display:none;">
-            <button type="button" class="holiday-chip" id="holidayChipBtn" aria-expanded="false">
-              <span aria-hidden="true">🗓️</span>
-              <span id="holidayChipText"></span>
-            </button>
-            <div class="holiday-popover" id="holidayPopover"></div>
+      <div class="dash-header">
+        <svg class="dash-header-illustration" width="220" height="130" viewBox="0 0 220 130" aria-hidden="true">
+          <ellipse cx="185" cy="118" rx="16" ry="7" fill="#99f6e4"/>
+          <ellipse cx="205" cy="100" rx="12" ry="20" fill="#5eead4"/>
+          <rect x="70" y="35" width="70" height="90" rx="4" fill="#bfdbfe"/>
+          <rect x="130" y="55" width="45" height="70" rx="4" fill="#93c5fd"/>
+          <rect x="82" y="48" width="12" height="12" rx="2" fill="#eff6ff"/>
+          <rect x="102" y="48" width="12" height="12" rx="2" fill="#eff6ff"/>
+          <rect x="82" y="68" width="12" height="12" rx="2" fill="#eff6ff"/>
+          <rect x="102" y="68" width="12" height="12" rx="2" fill="#eff6ff"/>
+          <rect x="82" y="88" width="12" height="12" rx="2" fill="#eff6ff"/>
+          <rect x="102" y="88" width="12" height="12" rx="2" fill="#eff6ff"/>
+          <rect x="140" y="68" width="10" height="10" rx="2" fill="#eff6ff"/>
+          <rect x="157" y="68" width="10" height="10" rx="2" fill="#eff6ff"/>
+          <rect x="140" y="88" width="10" height="10" rx="2" fill="#eff6ff"/>
+          <rect x="157" y="88" width="10" height="10" rx="2" fill="#eff6ff"/>
+          <rect x="98" y="15" width="14" height="24" rx="2" fill="#bfdbfe"/>
+          <rect x="102" y="8" width="6" height="14" fill="#bfdbfe"/>
+          <path d="M100 8h10v3h-3.5v3.5h-3v-3.5h-3.5z" fill="#3b82f6"/>
+          <ellipse cx="60" cy="122" rx="14" ry="6" fill="#99f6e4"/>
+          <ellipse cx="52" cy="105" rx="10" ry="18" fill="#2dd4bf"/>
+        </svg>
+        <div class="dash-header-row">
+          <div>
+            <div class="dash-eyebrow">Dashboard</div>
+            <div class="dash-greeting-row">
+              <span id="greetingIcon"></span>
+              <h1 class="dash-greeting" id="greetingText">Loading…</h1>
+            </div>
+            <div class="dash-subtitle">Here's a quick snapshot of your clinic today.</div>
           </div>
-          <div class="clock-pill">
-            <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Clinic time: <span class="time" id="clockTime">--</span></span>
+          <div class="dash-pill-row">
+            <div class="holiday-chip-wrap" id="holidayChipWrap" style="display:none;">
+              <button type="button" class="holiday-chip" id="holidayChipBtn" aria-expanded="false">
+                <span aria-hidden="true">🗓️</span>
+                <span id="holidayChipText"></span>
+              </button>
+              <div class="holiday-popover" id="holidayPopover"></div>
+            </div>
+            <div class="dash-pill">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span id="todayDateLabel">--</span>
+            </div>
+            <div class="dash-pill">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>Clinic time: <span id="clockTime">--</span></span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="card-grid" id="statCards"></div>
+      <div class="dash-kpi-grid" id="statCards"></div>
 
-      <div class="panel">
-        <div class="panel-header"><h2>Doctor status</h2></div>
-        <div id="doctorStatusList"></div>
+      <div class="dash-main-row">
+        <div class="dash-table-panel">
+          <div class="dash-table-header-row">
+            <h2>Doctor status</h2>
+            <a href="#" class="dash-view-all-link" id="doctorStatusViewAll">View all &#8594;</a>
+          </div>
+          <div id="doctorStatusList"></div>
+        </div>
+        <div class="dash-sidebar">
+          <div class="dash-sidebar-card">
+            <div class="dash-sidebar-title-row">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Live Queue
+            </div>
+            <div id="liveQueueSummary"></div>
+          </div>
+        </div>
       </div>
     </main>
   </div>
@@ -111,17 +160,15 @@
 
       let currentCards = [];
       document.getElementById('statCards').addEventListener('click', (e) => {
-        const card = e.target.closest('.stat-card');
+        const card = e.target.closest('.dash-kpi-card');
         if (!card) return;
         const c = currentCards[Number(card.getAttribute('data-idx'))];
         if (c && c.onClick) c.onClick();
       });
-
-      function formatStatusTimestamp(value) {
-        if (!value) return '·';
-        const date = new Date(value);
-        return `${date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} at ${date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
-      }
+      document.getElementById('doctorStatusViewAll').addEventListener('click', (e) => {
+        e.preventDefault();
+        showToast('Full doctor list coming soon');
+      });
 
       function statusLabel(status) {
         return {
@@ -135,6 +182,85 @@
         if (mins < 60) return `${mins} min`;
         if (mins % 30 === 0) return `${mins / 60} hr`;
         return `${Math.floor(mins / 60)} hr ${mins % 60} min`;
+      }
+
+      // KPI card icon per the card's existing `accent` value -- purely a
+      // display lookup, no effect on which cards render or their values.
+      const ACCENT_ICON_PATHS = {
+        teal: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+        coral: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+        sky: '<path d="M11 2v2"/><path d="M5 2v2"/><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"/><path d="M8 15a6 6 0 0 0 12 0v-3"/><circle cx="20" cy="10" r="2"/>',
+        blue: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+        purple: '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+        indigo: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+        amber: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="16" y1="14" x2="12" y2="12"/>',
+        pink: '<line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/>',
+        rose: '<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/>',
+        cyan: '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
+        green: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+      };
+      function kpiIconSvg(accent) {
+        const path = ACCENT_ICON_PATHS[accent] || ACCENT_ICON_PATHS.blue;
+        return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+      }
+      // Purely decorative -- not a real chart of this metric's history,
+      // just the visual language the approved mockup asked for.
+      function kpiSparklineSvg(color) {
+        return `<svg class="dash-kpi-sparkline" width="50" height="38" viewBox="0 0 50 38">
+          <defs><linearGradient id="spark-${color.replace('#','')}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${color}" stop-opacity="0.3"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+          </linearGradient></defs>
+          <path d="M0,26 C6,20 10,28 16,17 C22,7 28,20 34,13 C40,7 44,14 50,9 L50,38 L0,38 Z" fill="url(#spark-${color.replace('#','')})"/>
+          <path d="M0,26 C6,20 10,28 16,17 C22,7 28,20 34,13 C40,7 44,14 50,9" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+        </svg>`;
+      }
+      const ACCENT_HEX = { teal: '#0d9488', coral: '#f97316', sky: '#0284c7', blue: '#2563eb', purple: '#7c3aed', indigo: '#4f46e5', amber: '#f59e0b', pink: '#db2777', rose: '#be123c', cyan: '#0e7490', green: '#16a34a' };
+
+      function initialsFor(name) {
+        const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+        if (parts.length === 0) return '?';
+        if (parts.length === 1) return parts[0][0].toUpperCase();
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      const AVATAR_ACCENTS = ['teal', 'coral', 'blue', 'purple', 'pink'];
+      function avatarAccentFor(doctorId, doctors) {
+        const idx = doctors.findIndex((d) => d.id === doctorId);
+        return AVATAR_ACCENTS[Math.max(idx, 0) % AVATAR_ACCENTS.length];
+      }
+
+      // Free-text specialty -> a representative icon. Falls back to a
+      // generic medical-cross icon for anything unmatched, since a clinic
+      // can type any specialty name.
+      const SPECIALTY_ICON_RULES = [
+        [/dent/i, '<path d="M12 5.5c-1.5-2-4-2.5-6-1-2 1.5-2 4.5-1 7 1 3 3 7 5 9.5 1-1 1.5-3 2-4"/><path d="M12 5.5c1.5-2 4-2.5 6-1 2 1.5 2 4.5 1 7-1 3-3 7-5 9.5-1-1-1.5-3-2-4"/>'],
+        [/ortho|bone/i, '<circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.5 8.5 15.5 15.5"/>'],
+        [/gynec|obstet/i, '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>'],
+        [/pediatric|child/i, '<circle cx="12" cy="8" r="3"/><path d="M6 21c0-4 3-6 6-6s6 2 6 6"/><path d="M9 4c0-1 1-2 3-2s3 1 3 2"/>'],
+        [/cardio|heart/i, '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z"/>'],
+        [/skin|derma/i, '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>'],
+        [/eye|ophthal/i, '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'],
+        [/ent|ear|nose|throat/i, '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>'],
+      ];
+      function specialtyIconSvg(specialty) {
+        const rule = SPECIALTY_ICON_RULES.find(([re]) => re.test(specialty || ''));
+        const path = rule ? rule[1] : '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>';
+        return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--grey-500)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+      }
+
+      function greetingParts() {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 12) return {
+          text: 'Good morning',
+          icon: '<svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="#fbbf24"/><g stroke="#f59e0b" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="1.5" x2="12" y2="3.5"/><line x1="12" y1="20.5" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="3.5" y2="12"/><line x1="20.5" y1="12" x2="22.5" y2="12"/><line x1="4.7" y1="4.7" x2="6.1" y2="6.1"/><line x1="17.9" y1="17.9" x2="19.3" y2="19.3"/><line x1="17.9" y1="6.1" x2="19.3" y2="4.7"/><line x1="4.7" y1="19.3" x2="6.1" y2="17.9"/></g></svg>',
+        };
+        if (hour >= 12 && hour < 17) return {
+          text: 'Good afternoon',
+          icon: '<svg width="28" height="28" viewBox="0 0 24 24"><circle cx="9" cy="10" r="4.5" fill="#fbbf24"/><g stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"><line x1="9" y1="2" x2="9" y2="3.5"/><line x1="2" y1="10" x2="3.5" y2="10"/><line x1="3.4" y1="4.4" x2="4.5" y2="5.5"/></g><path d="M4 19a5 5 0 0 1 5-5c.4 0 .8 0 1.2.1A6 6 0 0 1 22 17a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z" fill="#e2e8f0"/></svg>',
+        };
+        return {
+          text: 'Good evening',
+          icon: '<svg width="28" height="28" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z" fill="#818cf8"/></svg>',
+        };
       }
 
       const ACCENT_COLORS = ['teal', 'blue', 'purple', 'coral', 'pink'];
@@ -249,6 +375,10 @@
 
       async function render() {
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
+        document.getElementById('todayDateLabel').textContent =
+          new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+        const greeting = greetingParts();
+        document.getElementById('greetingIcon').innerHTML = greeting.icon;
 
         const clinic = await Qlinic.getClinic();
         document.getElementById('clinicName').textContent = clinic ? clinic.name : '';
@@ -276,6 +406,10 @@
           Qlinic.getPatientsInRange(Qlinic.getTodayDate(), Qlinic.getTodayDate(), myDoctorId || undefined),
         ]);
         const doctors = amDoctor ? (doctorsRaw ? [doctorsRaw] : []) : doctorsRaw;
+        const greetingName = amDoctor
+          ? (doctorsRaw ? 'Dr. ' + doctorsRaw.name : 'Dr.')
+          : (myProfile.fullName || myProfile.email || '');
+        document.getElementById('greetingText').textContent = `${greeting.text}, ${greetingName}`;
         const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
         const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id, undefined, d)));
 
@@ -378,8 +512,12 @@
           },
         ];
 
+        // Declared here (not inside the block below) so the Live Queue
+        // sidebar section further down, which runs after that block closes,
+        // can still read it without a second fetch.
+        let allWaiting = [];
         if (doctors.length > 0) {
-          const allWaiting = queues.flatMap((q) => q.waiting);
+          allWaiting = queues.flatMap((q) => q.waiting);
           const nowMs = Date.now();
           const waitMinsFor = (p) => Math.max(0, Math.round((nowMs - p.effectiveTime.getTime()) / 60000));
 
@@ -496,15 +634,55 @@
 
         currentCards = cards;
         document.getElementById('statCards').innerHTML = cards.map((c, i) => `
-          <div class="stat-card accent-${c.accent}${c.onClick ? ' clickable' : ''}" data-idx="${i}">
-            <div class="top-row">
-              <div class="value">${c.value}${c.unit ? ` <span class="stat-unit">${Qlinic.escapeHtml(c.unit)}</span>` : ''}</div>
-              ${c.chip ? `<span class="trend-chip ${c.chip.good ? 'good' : 'bad'}">${c.chip.arrow} ${c.chip.text}</span>` : ''}
+          <div class="dash-kpi-card${c.onClick ? ' clickable' : ''}" data-idx="${i}">
+            <div class="dash-kpi-left">
+              <div class="dash-kpi-label-row">
+                <div class="dash-kpi-icon accent-${c.accent}">${kpiIconSvg(c.accent)}</div>
+                <div class="dash-kpi-title">${Qlinic.escapeHtml(c.label)}</div>
+              </div>
+              <div class="dash-kpi-value">${c.value}${c.unit ? ` <span style="font-size:12px;font-weight:600;color:var(--grey-500);">${Qlinic.escapeHtml(c.unit)}</span>` : ''}</div>
+              <div class="dash-kpi-trend${c.chip ? (c.chip.good ? ' good' : ' bad') : ''}">${
+                c.chip ? `${c.chip.arrow === '▲' ? '&#8593;' : '&#8595;'} ${c.chip.text} vs yesterday` : (c.sub ? Qlinic.escapeHtml(c.sub) : 'Right now')
+              }</div>
             </div>
-            <div class="label">${c.label}</div>
-            ${c.sub ? `<div class="stat-sub">${Qlinic.escapeHtml(c.sub)}</div>` : ''}
+            ${kpiSparklineSvg(ACCENT_HEX[c.accent] || '#2563eb')}
           </div>
         `).join('');
+
+        // Live Queue sidebar: In Consultation / Walk-in / Emergency, all
+        // computed from the same waiting-patient and queue data the KPI
+        // cards above already use -- not a separate fetch.
+        function renderLiveQueue(emergencyCount, walkinCount, inConsultCount) {
+          const total = emergencyCount + walkinCount + inConsultCount;
+          document.getElementById('liveQueueSummary').innerHTML = `
+            <div>
+              <div class="dash-sidebar-total">${total}</div>
+              <div class="dash-sidebar-total-label">Patients in queue</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
+              <div class="dash-sidebar-breakdown-row">
+                <span class="dash-sidebar-breakdown-label"><span class="dash-sidebar-breakdown-dot" style="background:#2563eb;"></span>In Consultation</span>
+                <span class="dash-sidebar-breakdown-count">${inConsultCount}</span>
+              </div>
+              <div class="dash-sidebar-breakdown-row">
+                <span class="dash-sidebar-breakdown-label"><span class="dash-sidebar-breakdown-dot" style="background:#0d9488;"></span>Walk-in</span>
+                <span class="dash-sidebar-breakdown-count">${walkinCount}</span>
+              </div>
+              <div class="dash-sidebar-breakdown-row">
+                <span class="dash-sidebar-breakdown-label"><span class="dash-sidebar-breakdown-dot" style="background:#be123c;"></span>Emergency</span>
+                <span class="dash-sidebar-breakdown-count">${emergencyCount}</span>
+              </div>
+            </div>
+          `;
+        }
+        if (doctors.length > 0) {
+          const emergencyWaitingCount = allWaiting.filter((p) => p.isPriority).length;
+          const walkinWaitingCount = allWaiting.filter((p) => !p.isPriority && p.type === 'walkin').length;
+          const inConsultCount = queues.filter((q) => q.nowServing).length;
+          renderLiveQueue(emergencyWaitingCount, walkinWaitingCount, inConsultCount);
+        } else {
+          renderLiveQueue(0, 0, 0);
+        }
 
         if (doctors.length === 0) {
           document.getElementById('doctorStatusList').innerHTML = '<div class="empty-state">No doctors yet, add one from <a href="settings.html">Settings</a>.</div>';
@@ -522,36 +700,68 @@
           document.getElementById('doctorStatusList').innerHTML = '<div class="empty-state">Every doctor is on holiday today.</div>';
           return;
         }
-        document.getElementById('doctorStatusList').innerHTML = workingToday.map(({ d, q }) => {
-          const rowClass = d.dayClosedAt
-            ? 'row-status-closed'
-            : (q.nowServing ? 'row-in-consult' : (d.status !== 'on_time' ? 'row-status-' + d.status : ''));
-          const rightCol = d.dayClosedAt
-            ? `
-                <span class="status-pill status-closed">Day closed</span>
-                <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">closed ${formatStatusTimestamp(d.dayClosedAt)}</div>
-              `
-            : `
-                <span class="status-pill status-${d.status}">${statusLabel(d.status)}${d.delayMins ? ' for ' + formatDurationLabel(d.delayMins) : ''}${Qlinic.isRealStatusReason(d.statusNote) ? ': "' + Qlinic.escapeHtml(d.statusNote) + '"' : ''}</span>
-                <div style="font-size:12px;color:var(--grey-500);margin-top:6px;">last updated ${formatStatusTimestamp(d.statusUpdatedAt)}</div>
-              `;
-          return `
-            <div class="doctor-status-row ${rowClass}">
-              <div style="display:flex;align-items:center;gap:10px;">
-                <span class="board-doc-dot dot-${accentForDoctor(d.id, doctors)}"></span>
-                <div>
-                  <div class="doc-name">${Qlinic.escapeHtml(d.name)}</div>
-                  <div class="doc-specialty">${Qlinic.escapeHtml(d.specialty)}</div>
-                  <div class="doc-status-line">Patients Waiting: ${q.waiting.length}</div>
-                  ${q.nowServing ? `<div class="doc-status-line">In consultation with ${Qlinic.escapeHtml(q.nowServing.name)}${q.nowServing.calledAt ? ' from ' + Qlinic.formatTimestamp(q.nowServing.calledAt) : ''}</div>` : ''}
-                </div>
-              </div>
-              <div style="text-align:right;">
-                ${rightCol}
-              </div>
-            </div>
-          `;
-        }).join('');
+
+        function dashStatusPill(d, q) {
+          if (d.dayClosedAt) return { key: 'offline', text: 'Offline' };
+          if (q.nowServing) return { key: 'in-consultation', text: 'In Consultation' };
+          if (d.status === 'on_break') return { key: 'on-break', text: 'On Break' + (d.delayMins ? ' &bull; ' + formatDurationLabel(d.delayMins) : '') };
+          if (d.status === 'emergency') return { key: 'emergency', text: 'Emergency' };
+          return { key: 'available', text: 'Available' };
+        }
+
+        document.getElementById('doctorStatusList').innerHTML = `
+          <table class="dash-table">
+            <thead>
+              <tr>
+                <th>Doctor</th>
+                <th>Speciality</th>
+                <th>Current Patient</th>
+                <th>Next Appointment</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${workingToday.map(({ d, q }) => {
+                const pill = dashStatusPill(d, q);
+                const next = q.booked && q.booked.length ? q.booked[0] : null;
+                const waitedMins = q.nowServing && q.nowServing.calledAt
+                  ? Math.max(0, Math.round((Date.now() - new Date(q.nowServing.calledAt).getTime()) / 60000))
+                  : null;
+                const tokenDisplay = (num) => num == null ? '' : (num > 100000 ? 'W' + (num - 100000) : '#' + num);
+                const nextTimeLabel = next && next.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(next.bookedTime)) : '&mdash;';
+                return `
+                  <tr>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:10px;">
+                        <div class="dash-doc-avatar accent-${avatarAccentFor(d.id, doctors)}">${Qlinic.escapeHtml(initialsFor(d.name))}</div>
+                        <div>
+                          <div class="dash-doc-name">Dr. ${Qlinic.escapeHtml(d.name)}</div>
+                          <div class="dash-doc-specialty">${Qlinic.escapeHtml(d.specialty)}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="dash-specialty-cell">${specialtyIconSvg(d.specialty)}${Qlinic.escapeHtml(d.specialty)}</div>
+                    </td>
+                    <td>
+                      ${q.nowServing
+                        ? `<div class="dash-cell-primary">${Qlinic.escapeHtml(q.nowServing.name)}</div><div class="dash-cell-sub">Token ${Qlinic.escapeHtml(tokenDisplay(q.nowServing.tokenNumber))}${waitedMins !== null ? ' &bull; ' + waitedMins + ' mins' : ''}</div>`
+                        : '<div class="dash-cell-sub">No patient right now</div>'}
+                    </td>
+                    <td>
+                      ${next
+                        ? `<div class="dash-cell-primary">${nextTimeLabel}</div><div class="dash-cell-sub">${Qlinic.escapeHtml(next.name)}</div>`
+                        : '<div class="dash-cell-sub">No upcoming appointment</div>'}
+                    </td>
+                    <td>
+                      <span class="dash-status-pill status-${pill.key}"><span class="dot"></span>${pill.text}</span>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
       }
 
       render();
