@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=381" />
+<link rel="stylesheet" href="styles.css?v=382" />
 </head>
 <body>
   <div class="login-wrap">
@@ -79,6 +79,18 @@
               <button type="button" class="queue-feedback-star" data-val="4" aria-label="4"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-4-6.3 4 1.7-7L2 9.5l7.1-.6z"/></svg></button>
               <button type="button" class="queue-feedback-star" data-val="5" aria-label="5"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-4-6.3 4 1.7-7L2 9.5l7.1-.6z"/></svg></button>
             </div>
+
+            <div class="queue-google-block" id="googleBlock" style="display:none;">
+              <div class="queue-google-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+              </div>
+              <div class="queue-google-copy">
+                <p class="h" id="googleHeading"></p>
+                <p class="s" id="googleSub"></p>
+                <button type="button" class="queue-google-btn" id="googleBtn"></button>
+              </div>
+            </div>
+
             <div class="queue-feedback-extra" id="feedbackExtra">
               <textarea class="queue-feedback-textarea" id="feedbackTextInput"></textarea>
               <button type="button" class="btn-sm primary queue-feedback-send" id="feedbackSendBtn"></button>
@@ -139,7 +151,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=130"></script>
+  <script src="clinic-data.js?v=131"></script>
   <script>
     (async function () {
       const params = new URLSearchParams(window.location.search);
@@ -317,10 +329,14 @@
           visitCompleteExpired: 'Thank you for visiting: This link has now expired.',
           tokenWas: 'Your token was',
           needAnythingElse: 'Need anything else? Please contact the clinic directly.',
-          feedbackQuestion: "How was your experience with ClinVision's queue link and display screen today?",
+          feedbackQuestion: (doctorName) => `How was your visit with ${doctorName} today?`,
           feedbackPlaceholder: "Anything you'd like to add? (optional)",
           feedbackSend: 'Send feedback',
-          feedbackThanks: 'Thanks for letting us know!',
+          feedbackThanks: 'Thanks, this helps the clinic improve.',
+          googleHeading: 'Glad you had a good visit!',
+          googleSub: 'Mind sharing it publicly? It helps other patients find this clinic.',
+          googleBtn: 'Share on Google',
+          googleBtnSent: 'Opened, thank you!',
           detailsTitle: 'Queue details',
           detailsInConsult: (nowStr) => `You're currently with the doctor — here's how the rest of today's queue looks right now (${nowStr}).`,
           detailsWaiting: (nowStr) => `You've checked in and are waiting — here's how today's queue looks right now (${nowStr}).`,
@@ -391,10 +407,14 @@
           visitCompleteExpired: 'मिलने के लिए धन्यवाद: यह लिंक अब समाप्त हो गया है।',
           tokenWas: 'आपका टोकन था',
           needAnythingElse: 'कुछ और चाहिए? कृपया सीधे क्लिनिक से संपर्क करें।',
-          feedbackQuestion: 'आज ClinVision के कतार लिंक और डिस्प्ले स्क्रीन का अनुभव कैसा रहा?',
+          feedbackQuestion: (doctorName) => `आज ${doctorName} के साथ आपकी विज़िट कैसी रही?`,
           feedbackPlaceholder: 'कुछ और जोड़ना चाहेंगे? (वैकल्पिक)',
           feedbackSend: 'फ़ीडबैक भेजें',
-          feedbackThanks: 'हमें बताने के लिए धन्यवाद!',
+          feedbackThanks: 'धन्यवाद, इससे क्लिनिक को बेहतर बनाने में मदद मिलेगी।',
+          googleHeading: 'खुशी है कि आपकी विज़िट अच्छी रही!',
+          googleSub: 'क्या आप इसे सार्वजनिक रूप से साझा करना चाहेंगे? इससे अन्य मरीज़ों को यह क्लिनिक ढूंढने में मदद मिलती है।',
+          googleBtn: 'Google पर शेयर करें',
+          googleBtnSent: 'खोल दिया गया, धन्यवाद!',
           detailsTitle: 'कतार का विवरण',
           detailsInConsult: (nowStr) => `आप अभी डॉक्टर के साथ हैं — अभी (${nowStr}) बाकी कतार ऐसी दिख रही है।`,
           detailsWaiting: (nowStr) => `आपने चेक-इन कर लिया है और प्रतीक्षा कर रहे हैं — अभी (${nowStr}) कतार ऐसी दिख रही है।`,
@@ -512,11 +532,18 @@
           feedbackBlock.style.display = 'none';
         } else {
           feedbackBlock.style.display = 'block';
-          document.getElementById('feedbackQuestion').textContent = T.feedbackQuestion;
+          document.getElementById('feedbackQuestion').textContent = T.feedbackQuestion(localizeName(data.doctorName));
           document.getElementById('feedbackTextInput').placeholder = T.feedbackPlaceholder;
           document.getElementById('feedbackSendBtn').textContent = T.feedbackSend;
           document.getElementById('feedbackThanksText').textContent = T.feedbackThanks;
-          feedbackBlock.classList.toggle('submitted', !!data.feedbackSubmitted);
+          document.getElementById('googleHeading').textContent = T.googleHeading;
+          document.getElementById('googleSub').textContent = T.googleSub;
+          reviewLinkUrl = data.reviewLinkUrl || null;
+          routedToReview = !!data.visitFeedbackRoutedToReview;
+          feedbackPicked = data.visitFeedbackRating || 0;
+          feedbackBlock.classList.toggle('submitted', !!data.visitFeedbackSubmitted);
+          paintFeedbackStars(feedbackPicked);
+          renderGoogleBlock();
         }
 
         if (pollIntervalId) { clearInterval(pollIntervalId); pollIntervalId = null; }
@@ -781,11 +808,32 @@
 
       document.getElementById('detailsOpenBtn').addEventListener('click', openDetailsModal);
 
+      // Visit feedback (rating the clinic/doctor). A star pick and a
+      // "Share on Google" click are independent actions -- either can
+      // happen first, neither is gated behind the other -- so both
+      // just call the same upserting RPC with whatever they know at
+      // that moment.
       let feedbackPicked = 0;
+      let reviewLinkUrl = null;
+      let routedToReview = false;
       function paintFeedbackStars(n) {
         document.querySelectorAll('.queue-feedback-star').forEach((s) => {
           s.classList.toggle('lit', parseInt(s.dataset.val, 10) <= n);
         });
+      }
+      // 1-3 stars never see this block at all, not even a softened
+      // version -- this is a router to a public review, not a
+      // persuasion flow. Once routedToReview is true (this visit or a
+      // prior page load) the button shows its own done state instead
+      // of disappearing, so a returning patient sees what they did.
+      function renderGoogleBlock() {
+        const block = document.getElementById('googleBlock');
+        const btn = document.getElementById('googleBtn');
+        const eligible = feedbackPicked >= 4 && !!reviewLinkUrl;
+        block.style.display = eligible ? 'flex' : 'none';
+        if (!eligible) return;
+        btn.textContent = routedToReview ? T.googleBtnSent : T.googleBtn;
+        btn.classList.toggle('sent', routedToReview);
       }
       document.querySelectorAll('.queue-feedback-star').forEach((star) => {
         star.addEventListener('mouseenter', () => paintFeedbackStars(parseInt(star.dataset.val, 10)));
@@ -794,6 +842,8 @@
           feedbackPicked = parseInt(star.dataset.val, 10);
           paintFeedbackStars(feedbackPicked);
           document.getElementById('feedbackExtra').classList.add('open');
+          document.getElementById('feedbackBlock').classList.remove('submitted');
+          renderGoogleBlock();
         });
       });
       document.getElementById('feedbackSendBtn').addEventListener('click', async () => {
@@ -801,11 +851,32 @@
         const btn = document.getElementById('feedbackSendBtn');
         btn.disabled = true;
         try {
-          await Qlinic.submitProductFeedback(patientId, feedbackPicked, document.getElementById('feedbackTextInput').value);
+          await Qlinic.submitVisitFeedback({
+            patientId,
+            rating: feedbackPicked,
+            feedbackText: document.getElementById('feedbackTextInput').value,
+          });
           document.getElementById('feedbackBlock').classList.add('submitted');
         } catch (err) {
           btn.disabled = false;
         }
+      });
+      document.getElementById('googleBtn').addEventListener('click', async () => {
+        if (routedToReview || !reviewLinkUrl) return;
+        routedToReview = true;
+        renderGoogleBlock();
+        try {
+          await Qlinic.submitVisitFeedback({
+            patientId,
+            rating: feedbackPicked,
+            feedbackText: document.getElementById('feedbackTextInput').value,
+            routedToReview: true,
+          });
+        } catch (err) {
+          // The review link still opens either way -- a failed save here
+          // shouldn't block the one thing the patient actually asked to do.
+        }
+        window.open(reviewLinkUrl, '_blank', 'noopener');
       });
 
       if (!patientId) {

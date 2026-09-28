@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=381" />
+<link rel="stylesheet" href="styles.css?v=382" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -90,6 +90,11 @@
             <label>HFR ID <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
             <input type="text" id="hfrIdInput" placeholder="e.g., IN2910000123" maxlength="20" style="text-transform:uppercase;" />
             <span class="field-hint">From your ABDM Health Facility Registry registration</span>
+          </div>
+          <div class="field" style="min-width:280px;">
+            <label>Review link <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
+            <input type="url" id="reviewLinkInput" placeholder="e.g., https://g.page/r/.../review" />
+            <span class="field-hint">Your Google Business Profile's "get more reviews" link, not your regular Maps link. Happy patients get a one tap prompt to post it here.</span>
           </div>
           <div class="field" style="flex:0;">
             <label>&nbsp;</label>
@@ -225,7 +230,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=130"></script>
+  <script src="clinic-data.js?v=131"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -431,6 +436,7 @@
         setStateValue(document.getElementById('stateInput'), clinic.state || '');
         document.getElementById('gstinInput').value = clinic.gstin || '';
         document.getElementById('hfrIdInput').value = clinic.hfr_id || '';
+        document.getElementById('reviewLinkInput').value = clinic.review_link_url || '';
         graceWindowPicker.setValue(clinic.grace_window_mins);
         slotIntervalPicker.setValue(clinic.slot_interval_mins);
         slotCapacityPicker.setValue(clinic.slot_capacity);
@@ -478,6 +484,7 @@
             state: document.getElementById('stateInput').value,
             gstin: document.getElementById('gstinInput').value.trim().toUpperCase(),
             hfrId: document.getElementById('hfrIdInput').value.trim().toUpperCase(),
+            reviewLinkUrl: document.getElementById('reviewLinkInput').value.trim(),
           });
         } catch (err) {
           showToast(err.message || 'Could not update clinic profile — please try again.');

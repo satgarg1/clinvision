@@ -860,6 +860,7 @@
     if (fields.gstin !== undefined) payload.gstin = fields.gstin || null;
     if (fields.hfrId !== undefined) payload.hfr_id = fields.hfrId || null;
     if (fields.logoUrl !== undefined) payload.logo_url = fields.logoUrl;
+    if (fields.reviewLinkUrl !== undefined) payload.review_link_url = fields.reviewLinkUrl || null;
     const { error } = await sb.from('clinics').update(payload).eq('id', clinicId);
     if (error) throw error;
     currentClinic = null;
@@ -1702,6 +1703,44 @@
     });
     if (error) throw error;
     return data;
+  }
+
+  // Visit feedback (rating the clinic/doctor, distinct from
+  // submitProductFeedback above which rates ClinVision itself).
+  // routedToReview is true only on the call fired by the "Share on
+  // Google" click -- the RPC only ever ORs that flag forward, so
+  // calling this again later (e.g. to save a comment typed after
+  // already sharing) can't un-mark it.
+  async function submitVisitFeedback({ patientId, rating, feedbackText, routedToReview }) {
+    const { data, error } = await sb.rpc('submit_visit_feedback', {
+      p_patient_id: patientId,
+      p_rating: rating,
+      p_feedback_text: feedbackText || null,
+      p_routed_to_review: !!routedToReview,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  // For the clinic's own feedback list (feedback.html) -- RLS already
+  // scopes this to the caller's own clinic, same as every other direct
+  // table read in this file. Embeds the patient's name/phone via the
+  // foreign key relationship rather than a second round trip.
+  async function getClinicFeedback() {
+    const { data, error } = await sb
+      .from('visit_feedback')
+      .select('id, rating, feedback_text, routed_to_review, submitted_at, patients(name, phone)')
+      .order('submitted_at', { ascending: false });
+    if (error) throw error;
+    return (data || []).map((row) => ({
+      id: row.id,
+      rating: row.rating,
+      feedbackText: row.feedback_text || '',
+      routedToReview: row.routed_to_review,
+      submittedAt: row.submitted_at,
+      patientName: row.patients ? row.patients.name : '',
+      patientPhone: row.patients ? row.patients.phone : '',
+    }));
   }
 
   async function callNextPatient(doctorId) {
@@ -3241,6 +3280,8 @@
     shouldFlipUp,
     getQueueStatus,
     submitProductFeedback,
+    submitVisitFeedback,
+    getClinicFeedback,
 
     signUp,
     login,

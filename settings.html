@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=381" />
+<link rel="stylesheet" href="styles.css?v=382" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -83,6 +83,12 @@
         <div class="panel-header"><h2>Patient Directory</h2></div>
         <p class="panel-note">A running record of every patient — total visits, first and last visit, and which doctors they've seen.</p>
         <a href="patient-directory.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Open directory</a>
+      </div>
+
+      <div class="panel" id="patientFeedbackPanel" data-group="records">
+        <div class="panel-header"><h2>Patient Feedback</h2></div>
+        <p class="panel-note">Star ratings and comments patients leave about their visit, plus how many shared it as a Google review.</p>
+        <a href="feedback.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">View feedback</a>
       </div>
 
       <div class="panel" id="noShowsPanel" data-group="records">
@@ -159,7 +165,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=130"></script>
+  <script src="clinic-data.js?v=131"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
