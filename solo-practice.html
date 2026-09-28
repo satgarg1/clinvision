@@ -206,6 +206,67 @@
     </div>
   </section>
 
+  <section class="faq reveal">
+    <div class="faq-glow" aria-hidden="true"></div>
+    <div class="faq-inner">
+      <h2 class="faq-heading">Frequently asked questions</h2>
+      <div class="faq-list" id="faqList">
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Is ClinVision only for single doctor practices?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">No. Solo practices and multi doctor clinics both run on the same system.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Will my front desk need training to switch?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">Very little. They keep working the way they already do, just on one shared screen.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Do patients need to install an app to check their queue position?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">No. There's nothing for patients to install or sign up for.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Does billing happen automatically, or do I still create invoices by hand?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">It's automatic. Your front desk isn't creating invoices between patients anymore.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            What happens if I bring on a second doctor later?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">You just add them. ClinVision already supports multiple doctors on one system.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    document.querySelectorAll('.faq-question').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var item = btn.closest('.faq-item');
+        var answer = item.querySelector('.faq-answer');
+        var isOpen = item.classList.contains('open');
+        if (isOpen) {
+          answer.style.maxHeight = null;
+          item.classList.remove('open');
+        } else {
+          item.classList.add('open');
+          answer.style.maxHeight = answer.scrollHeight + 'px';
+        }
+      });
+    });
+  </script>
+
   <section class="final-cta centered reveal">
     <div class="final-cta-glow" aria-hidden="true"></div>
     <div class="final-cta-inner">

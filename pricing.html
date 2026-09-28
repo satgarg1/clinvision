@@ -347,6 +347,94 @@
     </div>
   </div>
 
+  <section class="faq reveal">
+    <div class="faq-glow" aria-hidden="true"></div>
+    <div class="faq-inner">
+      <h2 class="faq-heading">Frequently asked questions</h2>
+      <div class="faq-list" id="faqList">
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Is there a free trial?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">Yes, one month free before you pay anything.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Does the price change based on clinic size or number of doctors?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">No. Price stays the same no matter how many doctors you add.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            What happens if I go over 2,000 SMS a month?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">Just contact us, we'll sort out a fair add on for the extra usage.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Are all features included, or are some behind a higher plan?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">Everything's included. There's no higher tier hiding features from you.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Is there a discount for paying yearly?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">Yes. Paying yearly works out to about ₹749 a month instead of ₹899.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Do I need to buy any extra hardware to get started?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">No extra hardware. Nothing new to buy or set up.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Can I cancel anytime, or is there a lock in period?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">No contract, no lock in. Just month to month, cancel when you want.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Do I need a credit card to start the free trial?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">No. Start the free month without entering any card details.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    document.querySelectorAll('.faq-question').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var item = btn.closest('.faq-item');
+        var answer = item.querySelector('.faq-answer');
+        var isOpen = item.classList.contains('open');
+        if (isOpen) {
+          answer.style.maxHeight = null;
+          item.classList.remove('open');
+        } else {
+          item.classList.add('open');
+          answer.style.maxHeight = answer.scrollHeight + 'px';
+        }
+      });
+    });
+    const faqRevealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) { entry.target.classList.add('visible'); faqRevealObserver.unobserve(entry.target); }
+      });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach((el) => faqRevealObserver.observe(el));
+  </script>
+
   <!-- Trust band -->
   <svg class="pricing-trust-wave" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true">
     <path d="M0,40 C 240,0 480,60 720,30 C 960,0 1200,55 1440,20 L1440,60 L0,60 Z" fill="#eef4fb"/>

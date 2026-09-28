@@ -252,6 +252,74 @@
     </div>
   </section>
 
+  <section class="faq reveal">
+    <div class="faq-glow" aria-hidden="true"></div>
+    <div class="faq-inner">
+      <h2 class="faq-heading">Frequently asked questions</h2>
+      <div class="faq-list" id="faqList">
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Does each doctor get their own queue, or is it all mixed together?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">Each doctor gets their own queue. Reception sees all of them on one screen.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Does adding more doctors cost extra?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">No. Add as many doctors as you need at the same price.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Can doctors manage their own fees and holidays?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">Yes. Fees, specialties, and holidays are managed centrally, not doctor by doctor.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            What happens when two patients walk in for two different doctors at once?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">Each one goes straight into the right doctor's queue, automatically.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Does reception have to keep telling each doctor their queue status?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">No. Doctors see it themselves, so reception doesn't have to say it out loud.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            Is there a limit on how many doctors I can add?
+            <svg class="faq-chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-answer"><div class="faq-answer-inner">No limit. The plan supports unlimited doctors as your clinic grows.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    document.querySelectorAll('.faq-question').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var item = btn.closest('.faq-item');
+        var answer = item.querySelector('.faq-answer');
+        var isOpen = item.classList.contains('open');
+        if (isOpen) {
+          answer.style.maxHeight = null;
+          item.classList.remove('open');
+        } else {
+          item.classList.add('open');
+          answer.style.maxHeight = answer.scrollHeight + 'px';
+        }
+      });
+    });
+  </script>
+
   <section class="final-cta centered reveal">
     <div class="final-cta-glow" aria-hidden="true"></div>
     <div class="final-cta-inner">
