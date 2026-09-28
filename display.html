@@ -138,7 +138,7 @@
        .board-sidebar comment in styles.css for why. On mobile this
        wrapper goes display:contents so the stat card and QR card
        return to being independent, freely-repositionable grid items. -->
-  <div class="board-sidebar">
+  <div class="board-sidebar" id="boardSidebar">
     <div class="db-stat-card">
       <svg class="db-stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       <div class="db-stat-card-label" id="patientsWaitingLabel">Patients Waiting</div>
@@ -758,6 +758,11 @@
         const allClosedToday = clinicClosedNow || (allQueues.length > 0 && all.length === 0);
         document.getElementById('doctorStrip').style.display = allClosedToday ? 'none' : '';
         document.getElementById('boardPanel').style.display = allClosedToday ? 'none' : '';
+        // .board-sidebar (Patients Waiting card + QR panel) is a sibling of
+        // #boardPanel, not nested inside it, so hiding boardPanel alone left
+        // it showing on the "closed for the day" screen -- nothing to wait
+        // for or scan when the clinic isn't taking patients.
+        document.getElementById('boardSidebar').style.display = allClosedToday ? 'none' : '';
         document.getElementById('allClosedMessage').style.display = allClosedToday ? 'block' : 'none';
         if (allClosedToday) {
           document.getElementById('allClosedTitle').textContent = clinicClosedNow ? T.clinicClosedTitle : T.allClosedTitle;
