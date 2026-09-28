@@ -162,7 +162,7 @@ a { color: inherit; }
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: 4px;
+  gap: 0;
   transition: transform 0.15s ease;
 }
 .mkt-nav .brand:hover { transform: scale(1.04); }
