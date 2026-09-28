@@ -83,12 +83,8 @@
               <div class="holiday-popover" id="holidayPopover"></div>
             </div>
             <div class="dash-pill">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <span id="todayDateLabel">--</span>
-            </div>
-            <div class="dash-pill">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span>Clinic time: <span id="clockTime">--</span></span>
+              <span id="todayDateTimeLabel">--</span>
             </div>
           </div>
         </div>
@@ -375,10 +371,13 @@
         return { text: `${Math.abs(diff)} min`, arrow: isIncrease ? '▲' : '▼', good: isIncrease === higherIsGood };
       }
 
+      function updateDateTimeLabel() {
+        const dateLabel = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+        document.getElementById('todayDateTimeLabel').textContent = `${dateLabel}, ${Qlinic.formatTimestamp(new Date())}`;
+      }
+
       async function render() {
-        document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
-        document.getElementById('todayDateLabel').textContent =
-          new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+        updateDateTimeLabel();
         const greeting = greetingParts();
         document.getElementById('greetingIcon').innerHTML = greeting.icon;
 
@@ -706,7 +705,18 @@
         function dashStatusPill(d, q) {
           if (d.dayClosedAt) return { key: 'offline', text: 'Offline' };
           if (q.nowServing) return { key: 'in-consultation', text: 'In Consultation' };
-          if (d.status === 'on_break') return { key: 'on-break', text: 'On Break' + (d.delayMins ? ' &bull; ' + formatDurationLabel(d.delayMins) : '') };
+          if (d.status === 'on_break') {
+            // Same "<duration> since <time>" convention display.html's own
+            // on-break detail already uses (T.onBreakDetail) -- delayMins is
+            // the estimate entered when going on break, statusUpdatedAt is
+            // when that happened, not a live-ticking elapsed timer.
+            const duration = d.delayMins ? formatDurationLabel(d.delayMins) : '';
+            // Non-breaking space between the time and AM/PM so a line wrap
+            // in the status column can't split "9:24" from "PM".
+            const since = d.statusUpdatedAt ? Qlinic.formatTimestamp(d.statusUpdatedAt).replace(' ', '&nbsp;') : '';
+            const detail = [duration, since ? 'since ' + since : ''].filter(Boolean).join(' ');
+            return { key: 'on-break', text: 'On Break' + (detail ? ' &bull; ' + detail : '') };
+          }
           if (d.status === 'emergency') return { key: 'emergency', text: 'Emergency' };
           return { key: 'available', text: 'Available' };
         }
@@ -767,8 +777,20 @@
       }
 
       render();
-      setInterval(() => { document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date()); }, 30000);
+      setInterval(updateDateTimeLabel, 30000);
       Qlinic.onLiveChange(render);
+
+      // Chrome/Safari restore this exact page (including its old scroll
+      // position) from bfcache on Back/forward instead of reloading it, so
+      // returning to the dashboard after visiting another page could leave
+      // it scrolled to wherever it was left, looking like a stuck/broken
+      // layout until a hard refresh. A plain 'load' handler doesn't fire for
+      // a bfcache restore -- 'pageshow' does, with event.persisted true.
+      window.addEventListener('pageshow', (e) => {
+        if (e.persisted) {
+          document.querySelector('.app-main').scrollTop = 0;
+        }
+      });
     })();
   </script>
 
