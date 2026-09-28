@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=383" />
+<link rel="stylesheet" href="styles.css?v=384" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -48,27 +48,77 @@
         </div>
       </div>
 
-      <div class="card-grid" id="feedbackStatCards" style="margin-bottom:20px;">
-        <div class="stat-card accent-amber">
-          <div class="value" id="summaryAvg">—</div>
-          <div class="label">Average rating</div>
+      <div class="fb-kpi-grid">
+        <div class="fb-kpi-card">
+          <div class="fb-kpi-icon amber">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div>
+            <div class="fb-kpi-value" id="summaryAvg">—</div>
+            <div class="fb-kpi-label">Average rating</div>
+          </div>
         </div>
-        <div class="stat-card accent-blue">
-          <div class="value" id="summaryCount">—</div>
-          <div class="label">Total responses</div>
+        <div class="fb-kpi-card">
+          <div class="fb-kpi-icon blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#2563eb"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><rect x="7" y="8" width="10" height="1.6" rx="0.8" fill="#dbeafe"/><rect x="7" y="11.4" width="7" height="1.6" rx="0.8" fill="#dbeafe"/></svg>
+          </div>
+          <div>
+            <div class="fb-kpi-value" id="summaryCount">—</div>
+            <div class="fb-kpi-label">Total responses</div>
+          </div>
         </div>
-        <div class="stat-card accent-teal">
-          <div class="value" id="summaryRouted">—</div>
-          <div class="label">Shared to Google</div>
+        <div class="fb-kpi-card">
+          <div class="fb-kpi-icon purple">
+            <svg width="22" height="22" viewBox="0 0 48 48">
+              <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+              <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+              <path fill="#FBBC05" d="M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/>
+              <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="fb-kpi-value" id="summaryRouted">—</div>
+            <div class="fb-kpi-label">Shared to Google</div>
+          </div>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panel-header">
-          <h2 id="feedbackListSummary">Loading…</h2>
-          <div id="activeFilterChipsRow" class="active-filter-chips" style="margin-bottom:0;"></div>
-          <button type="button" class="btn-sm primary" id="resetFiltersBtn" style="margin-left:auto;">Reset filters</button>
+        <div class="fb-filters-row">
+          <div class="fb-search-wrap">
+            <label for="feedbackSearch" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Search patients</label>
+            <svg class="fb-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--grey-500)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="feedbackSearch" placeholder="Search by patient name or phone number..." />
+          </div>
+          <div class="fb-filters-right">
+            <div>
+              <label class="pill-label" for="feedbackDateFrom">From</label>
+              <input type="date" lang="en-GB" id="feedbackDateFrom" class="pill-input" />
+            </div>
+            <div>
+              <label class="pill-label" for="feedbackDateTo">To</label>
+              <input type="date" lang="en-GB" id="feedbackDateTo" class="pill-input" />
+            </div>
+            <div>
+              <label class="pill-label" for="feedbackRatingFilter">Rating</label>
+              <select id="feedbackRatingFilter" class="pill-select">
+                <option value="">All Ratings</option>
+                <option value="5">5 stars</option>
+                <option value="4">4 stars</option>
+                <option value="3">3 stars</option>
+                <option value="2">2 stars</option>
+                <option value="1">1 star</option>
+              </select>
+            </div>
+          </div>
         </div>
+
+        <div class="fb-section-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/></svg>
+          <h2 id="feedbackListSummary">Loading…</h2>
+        </div>
+        <div id="activeFilterChipsRow" class="active-filter-chips" style="margin-bottom:12px;"></div>
+
         <div id="feedbackTableWrap"></div>
         <div class="pager" id="feedbackPager"></div>
       </div>
@@ -103,6 +153,14 @@
       let currentPage = 1;
       let doctorById = {};
       let doctorFilterIds = new Set();
+      let dateFrom = '';
+      let dateTo = '';
+      let ratingFilter = '';
+
+      const GOOGLE_G_SVG = '<svg width="12" height="12" viewBox="0 0 48 48"><path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/><path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/><path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/></svg>';
+      const PHONE_ICON_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--grey-500)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+      const CALENDAR_ICON_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--grey-500)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+      const AVATAR_COLORS = ['mkt-teal', 'mkt-coral', 'mkt-blue', 'mkt-purple', 'mkt-pink'];
 
       function showToast(msg) {
         const t = document.getElementById('toast');
@@ -123,14 +181,64 @@
         return `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>`;
       }
 
+      function initialsFor(name) {
+        const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+        if (parts.length === 0) return '?';
+        if (parts.length === 1) return parts[0][0].toUpperCase();
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      function avatarColorFor(key) {
+        let hash = 0;
+        const s = String(key || '');
+        for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) | 0;
+        return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+      }
+      function splitDateTime(iso) {
+        const d = new Date(iso);
+        const dateLabel = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+        const timeLabel = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+        return { dateLabel, timeLabel };
+      }
+
+      function pad2(n) { return String(n).padStart(2, '0'); }
+      function entryDateStr(e) {
+        const d = new Date(e.submittedAt);
+        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+      }
+      function computeDateRange() {
+        if (!dateFrom || !dateTo) return null;
+        return dateFrom <= dateTo ? { start: dateFrom, end: dateTo } : { start: dateTo, end: dateFrom };
+      }
+
+      function searchTerm() {
+        return document.getElementById('feedbackSearch').value.trim().toLowerCase();
+      }
+
+      function searchDateRatingEntries() {
+        const term = searchTerm();
+        const range = computeDateRange();
+        return allEntries.filter((e) => {
+          if (term && !(
+            (e.patientName || '').toLowerCase().includes(term) ||
+            (e.patientPhone || '').toLowerCase().includes(term)
+          )) return false;
+          if (range && !(entryDateStr(e) >= range.start && entryDateStr(e) <= range.end)) return false;
+          if (ratingFilter && String(e.rating) !== ratingFilter) return false;
+          return true;
+        });
+      }
+
       function filteredEntries() {
-        if (doctorFilterIds.size === 0) return allEntries;
-        return allEntries.filter((e) => doctorFilterIds.has(e.doctorId));
+        return searchDateRatingEntries().filter((e) => {
+          if (doctorFilterIds.size > 0 && !doctorFilterIds.has(e.doctorId)) return false;
+          return true;
+        });
       }
 
       function doctorFilterOptions() {
+        const counting = searchDateRatingEntries();
         return Object.values(doctorById)
-          .map((d) => ({ value: d.id, label: d.name, count: allEntries.filter((e) => e.doctorId === d.id).length }))
+          .map((d) => ({ value: d.id, label: d.name, count: counting.filter((e) => e.doctorId === d.id).length }))
           .filter((o) => o.count > 0)
           .sort((a, b) => b.count - a.count);
       }
@@ -175,17 +283,28 @@
           const labels = Object.values(doctorById).filter((d) => doctorFilterIds.has(d.id)).map((d) => d.name);
           chips.push({ key: 'doctor', label: `Doctor: ${labels.join(', ')}` });
         }
+        if (ratingFilter) {
+          chips.push({ key: 'rating', label: `Rating: ${ratingFilter} star${ratingFilter === '1' ? '' : 's'}` });
+        }
+        const range = computeDateRange();
+        if (range) {
+          chips.push({ key: 'date', label: `Date: ${Qlinic.formatDateLabel(range.start)} to ${Qlinic.formatDateLabel(range.end)}` });
+        }
         if (chips.length === 0) return '';
-        return `<div class="active-filter-chips">${chips.map((c) => `<div class="filter-chip">${Qlinic.escapeHtml(c.label)}<button type="button" class="clear-filter-chip" data-key="${c.key}" aria-label="Clear filter">×</button></div>`).join('')}</div>`;
+        return chips.map((c) => `<div class="filter-chip">${Qlinic.escapeHtml(c.label)}<button type="button" class="clear-filter-chip" data-key="${c.key}" aria-label="Clear filter">×</button></div>`).join('');
       }
       function clearFilterByKey(key) {
         if (key === 'doctor') {
           doctorFilterIds.clear();
+        } else if (key === 'rating') {
+          ratingFilter = '';
+          document.getElementById('feedbackRatingFilter').value = '';
+        } else if (key === 'date') {
+          dateFrom = '';
+          dateTo = '';
+          document.getElementById('feedbackDateFrom').value = '';
+          document.getElementById('feedbackDateTo').value = '';
         }
-        onFeedbackFilterChange();
-      }
-      function resetAllFilters() {
-        doctorFilterIds.clear();
         onFeedbackFilterChange();
       }
 
@@ -218,8 +337,8 @@
         const wrap = document.getElementById('feedbackTableWrap');
         const isFiltered = filtered.length !== allEntries.length;
         document.getElementById('feedbackListSummary').textContent = isFiltered
-          ? `${filtered.length} of ${allEntries.length} responses`
-          : `${allEntries.length} response${allEntries.length === 1 ? '' : 's'}`;
+          ? `Patient Feedback (${filtered.length} of ${allEntries.length})`
+          : `Patient Feedback (${allEntries.length})`;
 
         document.getElementById('activeFilterChipsRow').innerHTML = activeFilterChipsHtml();
         document.querySelectorAll('#activeFilterChipsRow .clear-filter-chip').forEach((btn) => {
@@ -246,8 +365,8 @@
         wrap.innerHTML = `
           <table class="qtable qtable-fixed">
             <colgroup>
-              <col style="width:11%;"><col style="width:14%;"><col style="width:14%;">
-              <col style="width:18%;"><col style="width:13%;"><col style="width:13%;"><col style="width:17%;">
+              <col style="width:15%;"><col style="width:13%;"><col style="width:15%;">
+              <col style="width:18%;"><col style="width:14%;"><col style="width:11%;"><col style="width:14%;">
             </colgroup>
             <thead><tr>
               <th>Patient</th><th>Phone</th><th>Rating</th><th>Comment</th>
@@ -255,17 +374,39 @@
               <th>To Google</th><th>Date</th>
             </tr></thead>
             <tbody>
-              ${pageItems.map((e) => `
+              ${pageItems.map((e) => {
+                const doctor = e.doctorId ? doctorById[e.doctorId] : null;
+                const { dateLabel, timeLabel } = splitDateTime(e.submittedAt);
+                return `
                 <tr>
-                  <td class="qtable-wrap">${e.patientName ? Qlinic.escapeHtml(e.patientName) : '—'}</td>
-                  <td>${e.patientPhone ? Qlinic.escapeHtml(e.patientPhone) : '—'}</td>
-                  <td>${starsHtml(e.rating)}</td>
-                  <td class="qtable-wrap">${e.feedbackText ? Qlinic.escapeHtml(e.feedbackText) : '<span style="color:var(--grey-500);">No comment</span>'}</td>
-                  <td class="qtable-wrap">${e.doctorId && doctorById[e.doctorId] ? Qlinic.escapeHtml(doctorById[e.doctorId].name) : '—'}</td>
-                  <td>${e.routedToReview ? '<span class="fb-routed-yes">Yes</span>' : '—'}</td>
-                  <td>${Qlinic.formatDateTime(e.submittedAt)}</td>
+                  <td class="qtable-wrap">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <div class="fb-avatar ${avatarColorFor(e.id)}">${Qlinic.escapeHtml(initialsFor(e.patientName))}</div>
+                      <span style="font-weight:600;color:var(--black);">${e.patientName ? Qlinic.escapeHtml(e.patientName) : '—'}</span>
+                    </div>
+                  </td>
+                  <td><div class="fb-phone-cell">${e.patientPhone ? PHONE_ICON_SVG + Qlinic.escapeHtml(e.patientPhone) : '—'}</div></td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      ${starsHtml(e.rating)}
+                      <span style="font-size:var(--text-sm);font-weight:600;color:var(--grey-700);">${e.rating.toFixed(1)}</span>
+                    </div>
+                  </td>
+                  <td class="qtable-wrap">
+                    ${e.feedbackText
+                      ? `<div class="fb-comment-cell"><span class="fb-comment-quote">&ldquo;</span><span class="fb-comment-text">${Qlinic.escapeHtml(e.feedbackText)}</span></div>`
+                      : '<span style="color:var(--grey-500);">No comment</span>'}
+                  </td>
+                  <td class="qtable-wrap">
+                    ${doctor
+                      ? `<div><div style="font-size:var(--text-sm);font-weight:600;color:var(--black);">Dr. ${Qlinic.escapeHtml(doctor.name)}</div>${doctor.specialty ? `<div style="font-size:var(--text-xs);color:var(--grey-500);">${Qlinic.escapeHtml(doctor.specialty)}</div>` : ''}</div>`
+                      : '—'}
+                  </td>
+                  <td>${e.routedToReview ? `<span class="fb-google-pill">${GOOGLE_G_SVG}Yes</span>` : '—'}</td>
+                  <td><div class="fb-date-cell">${CALENDAR_ICON_SVG}<div><div style="font-size:var(--text-sm);color:var(--black);">${dateLabel},</div><div style="font-size:var(--text-xs);color:var(--grey-500);">${timeLabel}</div></div></div></td>
                 </tr>
-              `).join('')}
+              `;
+              }).join('')}
             </tbody>
           </table>
         `;
@@ -276,7 +417,26 @@
         renderPager(filtered.length);
       }
 
-      document.getElementById('resetFiltersBtn').addEventListener('click', resetAllFilters);
+      document.getElementById('feedbackSearch').addEventListener('input', () => {
+        currentPage = 1;
+        renderTable();
+      });
+      document.getElementById('feedbackDateFrom').addEventListener('change', (e) => {
+        dateFrom = e.target.value;
+        onFeedbackFilterChange();
+      });
+      document.getElementById('feedbackDateTo').addEventListener('change', (e) => {
+        dateTo = e.target.value;
+        onFeedbackFilterChange();
+      });
+      document.getElementById('feedbackRatingFilter').addEventListener('change', (e) => {
+        ratingFilter = e.target.value;
+        onFeedbackFilterChange();
+      });
+      Qlinic.attachDatePicker(document.getElementById('feedbackDateFrom'), { quickButtons: false });
+      Qlinic.attachDatePicker(document.getElementById('feedbackDateTo'), { quickButtons: false });
+      document.getElementById('feedbackDateFrom').max = Qlinic.getTodayDate();
+      document.getElementById('feedbackDateTo').max = Qlinic.getTodayDate();
 
       const clinic = await Qlinic.getClinic();
       document.getElementById('clinicName').textContent = clinic ? clinic.name : '';

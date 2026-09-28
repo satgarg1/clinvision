@@ -2385,6 +2385,50 @@ a { color: inherit; }
 .fb-star.lit { color: #f0a83c; }
 .fb-routed-yes { color: var(--success); font-weight: 700; }
 
+/* Patient Feedback's KPI row -- circular icon badge + value/label, no
+   left border (replaces the generic .stat-card treatment used elsewhere,
+   per an explicit redesign request for this page only). */
+.fb-kpi-grid { display: flex; gap: var(--space-5); margin-bottom: 20px; }
+.fb-kpi-card {
+  flex: 1; background: var(--white); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-resting); padding: var(--space-5);
+  display: flex; gap: 14px; align-items: flex-start;
+}
+.fb-kpi-icon { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.fb-kpi-icon.amber { background: var(--warning-bg); }
+.fb-kpi-icon.blue { background: var(--mkt-blue-bg); }
+.fb-kpi-icon.purple { background: var(--mkt-purple-bg); }
+.fb-kpi-value { font-size: 26px; font-weight: 700; line-height: 1; color: var(--black); }
+.fb-kpi-label { font-size: var(--text-sm); color: var(--grey-500); margin-top: 4px; }
+
+/* Row-level avatar initials, cycling through the same tint tokens as
+   the pricing feature grid's icon boxes for a consistent, non-random
+   palette. */
+.fb-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.fb-avatar.mkt-teal { background: var(--mkt-teal-bg); color: var(--mkt-teal); }
+.fb-avatar.mkt-blue { background: var(--mkt-blue-bg); color: var(--mkt-blue); }
+.fb-avatar.mkt-purple { background: var(--mkt-purple-bg); color: var(--mkt-purple); }
+.fb-avatar.mkt-coral { background: var(--mkt-coral-bg); color: var(--mkt-coral); }
+.fb-avatar.mkt-pink { background: var(--mkt-pink-bg); color: var(--mkt-pink); }
+
+.fb-phone-cell, .fb-date-cell { display: flex; align-items: center; gap: 6px; }
+.fb-date-cell { align-items: flex-start; }
+.fb-comment-cell { display: flex; gap: 6px; align-items: flex-start; }
+.fb-comment-quote { font-size: 16px; color: var(--grey-300); line-height: 1; font-family: Georgia, serif; }
+.fb-comment-text { font-size: var(--text-sm); color: var(--grey-700); line-height: 1.4; }
+.fb-google-pill {
+  display: inline-flex; align-items: center; gap: 6px; background: var(--success-bg);
+  color: var(--success); padding: 4px 10px; border-radius: var(--radius-pill);
+  font-size: var(--text-xs); font-weight: 600;
+}
+.fb-search-wrap { position: relative; flex: 1; min-width: 260px; max-width: 380px; }
+.fb-search-wrap .fb-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.fb-search-wrap input { width: 100%; padding-left: 34px; box-sizing: border-box; }
+.fb-filters-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.fb-filters-right { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+.fb-section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.fb-section-title h2 { margin: 0; }
+
 /* Registration has 10 fields (address split into 3 rows) where every
    other login-card page has 1-4, so it alone gets a denser tier on top
    of the shared login-card scale — not applied to login/forgot/reset,
