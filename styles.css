@@ -3516,6 +3516,7 @@ table.dash-table tr.row-emergency td { background: var(--danger-bg); }
 .dash-cell-primary { font-size: 13px; color: var(--black); }
 .dash-cell-sub { font-size: 11px; color: var(--grey-500); }
 .dash-specialty-cell { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--grey-700); }
+.dash-specialty-emoji { width: 18px; flex: none; text-align: center; font-size: 15px; line-height: 1; }
 .dash-status-pill {
   display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
   border-radius: var(--radius-pill); font-size: 12px; font-weight: 600;
