@@ -2997,8 +2997,9 @@ input[type="number"] { -moz-appearance: textfield; }
   letter-spacing: -0.01em;
   color: var(--black);
   text-decoration: none;
-  padding: 4px 10px 0;
-  margin-bottom: 20px;
+  padding: 4px 10px 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--grey-300);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3097,10 +3098,13 @@ input[type="number"] { -moz-appearance: textfield; }
   overflow-y: auto;
 }
 
-/* Global top bar: same 60px, transparent, on every sidebar page. Sits in
-   the .app-shell grid above .app-main so it stays put while the page
-   scrolls; the profile pill floats on the page background. */
+/* Global top bar: same 60px on every sidebar page, no bar of its own --
+   it takes .app-main's background (not transparent: the .app-shell behind
+   it is the white page, which read as a white banner) so it blends into
+   the canvas and only the profile pill floats. Sits in the .app-shell grid
+   above .app-main so it stays put while the page scrolls. */
 .global-topbar {
+  background: var(--grey-100);
   --tb-name: #1e1b4b;
   --tb-clinic: #4b6a9b;
   --tb-pill-bg: rgba(255, 255, 255, 0.8);
