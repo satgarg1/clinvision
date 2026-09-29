@@ -3000,12 +3000,28 @@ input[type="number"] { -moz-appearance: textfield; }
   padding: 4px 10px 12px;
   margin-bottom: 12px;
   border-bottom: 1px solid var(--grey-300);
+  /* Icon mark beside the wordmark, text block (wordmark + gold bar +
+     tagline) centered as a column -- same split as .mkt-nav .brand. */
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
   transition: transform 0.15s ease;
 }
 .app-sidebar .brand:hover { transform: scale(1.04); }
+.app-sidebar .brand .brand-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+/* Pinned to the wordmark line plus the gold bar beneath it (measured live
+   at 26.6px here; the marketing nav's same rule is 29px at its larger
+   wordmark) so it never drops into the tagline's row. The negative margin
+   cancels the ~24px of slack on each side of the wordmark, which is
+   centered over the (wider) tagline, so the icon sits right beside
+   "ClinVision" and its gold bar instead of floating off to the side. */
+.app-sidebar .brand-icon { height: 27px; margin-right: -24px; }
 
 .app-sidebar nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 
