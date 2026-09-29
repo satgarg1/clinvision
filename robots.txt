@@ -31,4 +31,37 @@ Allow: /resources/
 Allow: /tools/
 Disallow: /
 
+User-agent: Google-Extended
+Allow: /$
+Allow: /pricing
+Allow: /pricing.html
+Allow: /pricing-hero-illustration.png
+Allow: /about-us
+Allow: /about-us.html
+Allow: /contact
+Allow: /contact.html
+Allow: /solo-practice
+Allow: /solo-practice.html
+Allow: /solo-practice.png
+Allow: /multi-doctor-clinics
+Allow: /multi-doctor-clinics.html
+Allow: /multi-doctor-clinics.png
+Allow: /styles.css
+Allow: /mkt-nav.js
+Allow: /clinic-config.js
+Allow: /sitemap.xml
+Allow: /25d2654713bf95ebb0349171bd808c3d.txt
+Allow: /og-image.png
+Allow: /clinvision-favicon.png
+Allow: /hero.png
+Allow: /suite-analytics.png
+Allow: /suite-billing.png
+Allow: /suite-queue.png
+Allow: /suite-records.png
+Allow: /suite-system.png
+Allow: /suite-team.png
+Allow: /resources/
+Allow: /tools/
+Disallow: /
+
 Sitemap: https://clinvision.in/sitemap.xml
