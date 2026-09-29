@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=394" />
+<link rel="stylesheet" href="styles.css?v=395" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -23,10 +23,6 @@
       </span>
       <span class="brand-tagline">Where clinics run better</span>
       </a>
-      <div class="clinic-name-row">
-        <img class="clinic-logo-thumb" id="clinicLogoThumb" style="display:none;" alt="" />
-        <div class="clinic-name" id="clinicName">Loading…</div>
-      </div>
       <nav>
         <a href="dashboard.html" class="nav-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></a>
         <a href="reception.html" class="nav-link" id="receptionNavLink"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Reception</span></a>
@@ -116,18 +112,6 @@
         <a href="team.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage team</a>
       </div>
 
-      <div class="panel" data-group="team-access">
-        <div class="panel-header"><h2>Account &amp; security</h2></div>
-        <p class="panel-note">Signed in as <strong id="currentEmail">·</strong></p>
-        <a href="account-security.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage account &amp; security</a>
-      </div>
-
-      <div class="panel" data-group="team-access">
-        <div class="panel-header"><h2>Session</h2></div>
-        <p class="panel-note">Signed in on this device. Logging out ends this session everywhere it's open.</p>
-        <a href="#" id="logoutLink" class="btn-sm danger-solid" style="display:inline-block;text-decoration:none;">Log out</a>
-      </div>
-
       <div class="panel" id="displayScreenPanel" data-group="preferences">
         <div class="panel-header"><h2>Display screen</h2></div>
         <p class="panel-note">
@@ -166,6 +150,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
   <script src="clinic-data.js?v=132"></script>
+  <script src="app-topbar.js?v=1"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -265,13 +250,6 @@
       async function loadClinic() {
         const clinic = await Qlinic.getClinic();
         if (!clinic) return;
-        document.getElementById('clinicName').textContent = clinic.name;
-        if (clinic.logo_url) {
-          document.getElementById('clinicLogoThumb').src = clinic.logo_url;
-          document.getElementById('clinicLogoThumb').style.display = 'block';
-        } else {
-          document.getElementById('clinicLogoThumb').style.display = 'none';
-        }
         document.getElementById('displayLanguageInput').value = clinic.display_language;
       }
 
@@ -296,18 +274,6 @@
         btn.addEventListener('click', () => applyTheme(btn.getAttribute('data-theme-choice')));
       });
 
-      document.getElementById('logoutLink').addEventListener('click', async (e) => {
-        e.preventDefault();
-        try {
-          await Qlinic.logout();
-        } catch (err) {
-          showToast(err.message || 'Could not log out — please try again.');
-          return;
-        }
-        window.location.href = 'login.html';
-      });
-
-      document.getElementById('currentEmail').textContent = (await Qlinic.getCurrentUserEmail()) || '·';
       await loadClinic();
       applyTheme(Qlinic.getTheme());
       if (amAdmin) {

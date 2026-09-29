@@ -70,14 +70,6 @@
   --mkt-rose: #be123c;
   --mkt-sky: #0369a1;
 
-  /* Sidebar clinic name — deliberately its own token, not --mkt-teal:
-     that one is #0d9488, only 3.7:1 on white (fine for a large icon
-     background, not for 13.5px bold text, which needs 4.5:1). This is
-     the darker teal-700 shade that actually clears AA at this size,
-     picked distinct from --accent so a clinic's own name can't be
-     mistaken for the active nav link's blue. One fixed value across
-     every clinic, not a per-clinic customization. */
-  --clinic-name-color: #0f766e;
 }
 
 /* Day/Night toggle (Settings page) — a personal, local-device preference
@@ -93,12 +85,6 @@
   --grey-300: #48484a;
   --grey-100: #232325;
   --white: #1c1c1e;
-  /* Light teal, not the same #0f766e as day mode -- that shade was
-     calibrated for contrast against a white sidebar; against the
-     sidebar's own dark background here (--white above) it would read
-     as barely-there. A lighter tint keeps the same hue with real
-     contrast against the inverted background (11.5:1 vs #1c1c1e). */
-  --clinic-name-color: #5eead4;
   --success-bg: rgba(30, 142, 62, 0.22);
   --warning-bg: rgba(178, 106, 0, 0.24);
   --danger-bg: rgba(197, 34, 31, 0.22);
@@ -2979,7 +2965,15 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* ---------------- App shell (dashboard / reception / doctor) ---------------- */
 
-.app-shell { display: flex; height: 100vh; }
+.app-shell {
+  display: grid;
+  grid-template-columns: 224px minmax(0, 1fr);
+  grid-template-rows: 60px minmax(0, 1fr);
+  height: 100vh;
+}
+.app-shell > .app-sidebar { grid-column: 1; grid-row: 1 / 3; }
+.app-shell > .global-topbar { grid-column: 2; grid-row: 1; }
+.app-shell > .app-main { grid-column: 2; grid-row: 2; }
 
 .app-sidebar {
   width: 224px;
@@ -2998,29 +2992,15 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 
 .app-sidebar .brand {
-  /* Was 17px, then 14px, then 15px -- still read as smaller than the
-     clinic name below it once that name started wrapping to 2 lines
-     (a 2-line bold block reads as "bigger" than a single short word
-     even at the same font-size). Bumped again, and the clinic name's
-     own size brought down to match -- see .app-sidebar .clinic-name. */
   font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--black);
   text-decoration: none;
-  padding: 0 10px 6px;
-  /* Was 28px, then 14px, then 10px -- still read as a gap once the
-     clinic row below got its own margin tightened too, so ClinVision
-     and the clinic's own identity read as one merged block instead of
-     two distinct things. Same full-width-rule pattern the
-     pinned-bottom Settings link already uses lower in this same
-     sidebar. */
-  margin-bottom: 6px;
-  border-bottom: 1px solid var(--grey-300);
+  padding: 4px 10px 0;
+  margin-bottom: 20px;
   display: flex;
   flex-direction: column;
-  /* Centered, not flex-start -- same wordmark-shoved-to-one-side bug
-     already fixed on every other brand corner on the site. */
   align-items: center;
   transition: transform 0.15s ease;
 }
@@ -3073,98 +3053,12 @@ input[type="number"] { -moz-appearance: textfield; }
   border-top: 1px solid var(--grey-300);
 }
 
-/* Was a side-by-side row (logo left, name right). A real uploaded logo
-   turned out just as often to be a tall lockup (icon + wordmark +
-   sub-tagline, stacked) as a wide one -- height-capping it to sit
-   inline with one line of text left it tiny and unreadable regardless
-   of how big that height cap was. Stacked instead: the logo sits on
-   its own line first, free to be shown at a real size, with the
-   clinic's name below it, wrapping full-width instead of being
-   squeezed into whatever space was left beside a small icon. */
-.app-sidebar .clinic-name-row {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  /* Was 8px -- with the logo now a standalone element above the name
-     instead of sitting beside it, that read as a gap between two
-     separate things rather than a logo with its caption right under
-     it. */
-  gap: 3px;
-  padding: 0 10px;
-  /* Was 18px -- with the brand block above it now sitting close (see
-     .app-sidebar .brand's own margin), this was the last big gap left
-     between the clinic identity and the first nav link. */
-  margin-bottom: 8px;
-}
-/* Was a 12px grey caption — read as an afterthought once the logo
-   beside it grew to its real size (see .clinic-logo-thumb below). A
-   clinic's own name is identity, not a footnote, so it gets real
-   weight now. Centered to match the stacked logo above it and the
-   brand block above that, rather than left-aligned like the nav links
-   below (which read as a list of destinations, not identity). flex/
-   min-width still keep it from overflowing the fixed-width sidebar;
-   that used to be paired with nowrap+ellipsis to force it onto one
-   line, which was the actual bug reported against a genuinely long
-   name ("Ram Mittal Kinora Clinic and Diagnostic Centre" cut down to
-   "Ram Mittal Kinora ..."). break-word guards the one remaining edge
-   case a wrap-based approach has to cover: a name with no spaces at
-   all overflowing sideways instead of wrapping. */
-.app-sidebar .clinic-name {
-  /* Was 15px, same as .app-sidebar .brand -- identical on paper, but a
-     name that wraps to 2 lines reads as visually louder than a single
-     short word at the same size. Brought down a notch (brand went up
-     one instead) so ClinVision reads as the more prominent of the two,
-     regardless of how many lines a given clinic's name takes. Color
-     was var(--black) -- same as the nav links' hover/active text and
-     close enough to Dashboard-through-Settings' own dark grey that the
-     clinic name and the nav below it read as one undifferentiated
-     block. --clinic-name-color (teal, AA-checked, see :root) gives it
-     a clearly separate identity instead. */
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--clinic-name-color);
-  text-align: center;
-  width: 100%;
-  min-width: 0;
-  overflow: hidden;
-  white-space: normal;
-  overflow-wrap: break-word;
-  line-height: 1.3;
-}
-/* A fixed box, not max-width/max-height on an auto-sized image -- with
-   only max-* set, the browser has no size to reserve before the image
-   actually loads (its src is set by JS once clinic data comes back),
-   so the sidebar below it visibly jumped down the moment it finished
-   loading — a real layout shift, not just a page-to-page rendering
-   quirk, even though it reads as "only happens on some pages" since
-   it depends on exactly when the image happens to finish loading
-   relative to first paint. A fixed box reserves the space up front
-   regardless of load timing; contain (not cover) still keeps the
-   whole logo visible within it, whether the source image is a wide
-   lockup or a tall stacked one, rather than cropping it to fill the
-   box. */
-.clinic-logo-thumb {
-  width: 100px;
-  height: 56px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-/* A clinic's uploaded logo is whatever colors they chose — often
-   designed against a white background, so it can vanish against the
-   sidebar's own background once that goes dark. A fixed white chip
-   behind it keeps it visible regardless of the logo's own colors. */
-:root[data-theme="dark"] .clinic-logo-thumb {
-  background: #fff;
-  border-radius: var(--radius-sm);
-  padding: 3px;
-}
-
 /* Settings' upload/change/remove row and the matching field at
    registration (signup.html) share this look — a small preview plus a
    button, not a full dropzone, since this is a one-off logo pick rather
-   than a repeated file-management task. Same contain-not-cover
-   reasoning as .clinic-logo-thumb above: the box caps height and width,
-   but the logo itself is never cropped to force it into a square. */
+   than a repeated file-management task. Contain-not-cover: the box
+   caps height and width, but the logo itself is never cropped to force
+   it into a square. */
 /* .logo-upload-row (signup's compact logo picker) stays side-by-side,
    button-height preview box. Clinic Settings uses .logo-upload-col
    instead: the logo gets its own row so it can be shown at a real
@@ -3198,10 +3092,147 @@ input[type="number"] { -moz-appearance: textfield; }
 .app-main {
   flex: 1;
   background: var(--grey-100);
-  padding: 40px 48px;
+  padding: 12px 48px 40px;
   min-width: 0;
   overflow-y: auto;
 }
+
+/* Global top bar: same 60px, transparent, on every sidebar page. Sits in
+   the .app-shell grid above .app-main so it stays put while the page
+   scrolls; the profile pill floats on the page background. */
+.global-topbar {
+  --tb-name: #1e1b4b;
+  --tb-clinic: #4b6a9b;
+  --tb-pill-bg: rgba(255, 255, 255, 0.8);
+  --tb-pill-bg-hover: #ffffff;
+  --tb-pill-border: rgba(226, 232, 240, 0.8);
+  --tb-menu-bg: #ffffff;
+  --tb-menu-border: #f1f5f9;
+  --tb-menu-text: #334155;
+  --tb-menu-muted: #64748b;
+  --tb-menu-faint: #94a3b8;
+  --tb-row-hover: rgba(241, 245, 249, 0.9);
+  --tb-out: #e11d48;
+  --tb-out-hover: #fff1f2;
+  --tb-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
+  height: 60px;
+  box-sizing: border-box;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+  z-index: 5;
+}
+:root[data-theme="dark"] .global-topbar {
+  --tb-name: #f2f2f4;
+  --tb-clinic: #93b4e6;
+  --tb-pill-bg: rgba(44, 44, 46, 0.8);
+  --tb-pill-bg-hover: #2c2c2e;
+  --tb-pill-border: rgba(255, 255, 255, 0.12);
+  --tb-menu-bg: #2c2c2e;
+  --tb-menu-border: rgba(255, 255, 255, 0.1);
+  --tb-menu-text: #e5e5ea;
+  --tb-menu-muted: #aeaeb2;
+  --tb-menu-faint: #8e8e93;
+  --tb-row-hover: rgba(255, 255, 255, 0.08);
+  --tb-out: #fb7185;
+  --tb-out-hover: rgba(244, 63, 94, 0.16);
+  --tb-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+}
+.tb-wrap { position: relative; }
+.tb-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px 6px 6px;
+  border: 1px solid var(--tb-pill-border);
+  border-radius: 999px;
+  background: var(--tb-pill-bg);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease;
+}
+.tb-pill:hover, .tb-pill[aria-expanded="true"] { background: var(--tb-pill-bg-hover); }
+.tb-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tb-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.25; }
+.tb-name, .tb-clinic {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tb-name { font-size: 14px; font-weight: 700; color: var(--tb-name); }
+.tb-clinic { font-size: 12.5px; color: var(--tb-clinic); }
+.tb-chevron { flex-shrink: 0; color: var(--tb-name); }
+.tb-pill[aria-expanded="true"] .tb-chevron { transform: rotate(180deg); }
+.tb-menu {
+  display: none;
+  position: absolute;
+  top: 52px;
+  right: 0;
+  width: 256px;
+  box-sizing: border-box;
+  padding: 6px;
+  background: var(--tb-menu-bg);
+  border: 1px solid var(--tb-menu-border);
+  border-radius: 16px;
+  box-shadow: var(--tb-shadow);
+}
+.tb-menu.open { display: block; }
+.tb-menu-head { padding: 8px 12px 6px; display: flex; flex-direction: column; gap: 2px; }
+.tb-menu-email {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tb-menu-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tb-menu-clinic {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tb-menu-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tb-menu-divider { border-bottom: 1px solid var(--tb-menu-border); margin: 4px 0; }
+.tb-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tb-menu-text);
+  border-radius: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.tb-menu-row svg { flex-shrink: 0; color: var(--tb-menu-muted); }
+.tb-menu-row:hover { background: var(--tb-row-hover); }
+.tb-menu-row.out { color: var(--tb-out); }
+.tb-menu-row.out svg { color: var(--tb-out); }
+.tb-menu-row.out:hover { background: var(--tb-out-hover); }
+
 
 .app-topbar {
   display: flex;
@@ -4572,7 +4603,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   gap: var(--space-2);
   background: var(--grey-100);
   padding: 6px 48px;
-  margin: -40px -48px 6px;
+  margin: -12px -48px 6px;
   font-size: var(--text-base);
   color: var(--grey-700);
   line-height: 1.4;
@@ -5505,8 +5536,18 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
    strip. */
 .mobile-topbar, .mobile-nav-backdrop { display: none; }
 
+@media (max-width: 420px) {
+  .tb-text { display: none; }
+  .tb-pill { gap: 6px; padding-right: 10px; }
+}
+
 @media (max-width: 720px) {
-  .app-shell { flex-direction: column; height: 100vh; }
+  .app-shell { display: flex; flex-direction: column; height: 100vh; position: relative; }
+
+  /* The pill rides in the right of the mobile top strip (hamburger and
+     brand sit on the left) instead of adding a second stacked bar. */
+  .global-topbar { position: absolute; top: 0; right: 0; height: 65px; padding: 0 12px; z-index: 50; }
+  .tb-name, .tb-clinic { max-width: 120px; }
 
   .mobile-topbar {
     display: flex;
