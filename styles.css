@@ -2966,6 +2966,10 @@ input[type="number"] { -moz-appearance: textfield; }
 /* ---------------- App shell (dashboard / reception / doctor) ---------------- */
 
 .app-shell {
+  /* The only top gap between the global bar and a page's first element.
+     Pages add none of their own; the closed-day banner reads this to pull
+     itself flush with the top. */
+  --main-pad-top: 4px;
   display: grid;
   grid-template-columns: 224px minmax(0, 1fr);
   grid-template-rows: 60px minmax(0, 1fr);
@@ -3109,7 +3113,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .app-main {
   flex: 1;
   background: var(--grey-100);
-  padding: 12px 48px 40px;
+  padding: var(--main-pad-top) 48px 40px;
   min-width: 0;
   overflow-y: auto;
 }
@@ -3258,16 +3262,13 @@ input[type="number"] { -moz-appearance: textfield; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 32px;
+  /* One title-to-content gap for every page. It was 32px by default with
+     a 16px inline override on some pages and a 14px id-scoped one on
+     Insights, so the first card sat at a different height page to page. */
+  margin-bottom: 16px;
   flex-wrap: wrap;
   gap: 12px;
 }
-/* Analytics only: the page has no subtitle/actions sharing this row with
-   the "Analytics" h1 the way most pages do, so the base 32px gap before
-   "Period" read as an oversized dead zone. Scoped by id rather than
-   shrinking .app-topbar itself, which every other page still relies on
-   at its default size. */
-#trendsTopbar { margin-bottom: 14px; }
 
 .app-topbar h1 {
   font-size: var(--text-2xl);
@@ -3398,11 +3399,6 @@ input[type="number"] { -moz-appearance: textfield; }
    throughout (.dash-*) rather than reusing .stat-card/.card-grid, which
    revenue.html/patient-directory.html/etc. still use in their original
    left-border form -- this redesign is scoped to the dashboard page only. */
-/* .app-main's sitewide padding (shared by every page) is intentionally
-   left alone -- this scoped selector only tightens the dashboard's own
-   top padding so the "Dashboard" eyebrow sits close to the top, per the
-   locked mockup, without affecting any other page. */
-.app-main.dash-main { padding-top: 20px; }
 .dash-header {
   position: relative;
   /* No overflow:hidden here -- it used to clip the holiday popover
@@ -4623,7 +4619,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   gap: var(--space-2);
   background: var(--grey-100);
   padding: 6px 48px;
-  margin: -12px -48px 6px;
+  margin: calc(-1 * var(--main-pad-top)) -48px 6px;
   font-size: var(--text-base);
   color: var(--grey-700);
   line-height: 1.4;
@@ -5614,8 +5610,9 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   }
   .mobile-nav-backdrop.show { opacity: 1; pointer-events: auto; }
 
-  .app-main { padding: 20px 20px 24px; }
-  .closed-day-banner { padding: 6px 20px; margin: -20px -20px 6px; }
+  .app-shell { --main-pad-top: 12px; }
+  .app-main { padding: var(--main-pad-top) 20px 24px; }
+  .closed-day-banner { padding: 6px 20px; margin: calc(-1 * var(--main-pad-top)) -20px 6px; }
 
   /* Finding 2: fixed-ratio inline column widths (reception's phoned-in/
      walk-in row, manage-medicines' modal fields, pharmacy's two-pane
