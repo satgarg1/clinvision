@@ -10,7 +10,7 @@
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
 <link rel="stylesheet" href="styles.css?v=394" />
 </head>
-<body class="display-body">
+<body class="display-body" style="visibility:hidden;">
   <button class="display-theme-toggle display-sound-toggle" id="displaySoundToggle" aria-label="Turn call sound on or off">
     <svg class="icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
     <svg class="icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none;"><path d="M11 5 6 9H2v6h4l5 4z"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>
@@ -228,6 +228,7 @@
         } catch (err) {
           document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#1e1b4b;background:#fbfbfe;font-family:sans-serif;font-size:20px;text-align:center;padding:20px;">' +
             (err.message || 'This QR code is no longer valid — please scan the one currently on screen.') + '</div>';
+          document.body.style.visibility = 'visible';
           return;
         }
       }
@@ -716,6 +717,7 @@
         document.getElementById('allClosedTitle').textContent = 'Your session has ended';
         document.getElementById('allClosedSub').textContent = 'Please scan the QR code on the display screen in the waiting room again.';
         localStorage.removeItem(SESSION_STORAGE_KEY);
+        document.body.style.visibility = 'visible';
       }
 
       async function refreshData() {
@@ -768,6 +770,11 @@
           document.getElementById('allClosedTitle').textContent = clinicClosedNow ? T.clinicClosedTitle : T.allClosedTitle;
           document.getElementById('allClosedSub').textContent = clinicClosedNow ? T.clinicClosedSub : T.allClosedSub;
         }
+        // Body starts hidden (see <body style="visibility:hidden">) so the
+        // Patients Waiting card and QR panel -- both visible by default in
+        // the static HTML -- can't flash on screen before this first fetch
+        // resolves and decides whether they should actually show.
+        document.body.style.visibility = 'visible';
 
         renderDoctorStrip(all);
         tickFadeCountdowns();
