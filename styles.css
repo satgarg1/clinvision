@@ -2970,6 +2970,7 @@ input[type="number"] { -moz-appearance: textfield; }
      Pages add none of their own; the closed-day banner reads this to pull
      itself flush with the top. */
   --main-pad-top: 0px;
+  --topbar-h: 54px;
   display: grid;
   grid-template-columns: 224px minmax(0, 1fr);
   grid-template-rows: 54px minmax(0, 1fr);
@@ -2977,7 +2978,9 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .app-shell > .app-sidebar { grid-column: 1; grid-row: 1 / 3; }
 .app-shell > .global-topbar { grid-column: 2; grid-row: 1; }
-.app-shell > .app-main { grid-column: 2; grid-row: 2; }
+/* .app-main spans both rows so the page scrolls underneath the floating pill;
+   its padding-top (below) reserves the bar's 54px so nothing starts hidden. */
+.app-shell > .app-main { grid-column: 2; grid-row: 1 / 3; }
 
 .app-sidebar {
   width: 224px;
@@ -3123,7 +3126,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .app-main {
   flex: 1;
   background: var(--grey-100);
-  padding: var(--main-pad-top) 48px 40px;
+  padding: calc(var(--topbar-h) + var(--main-pad-top)) 48px 40px;
   min-width: 0;
   overflow-y: auto;
 }
@@ -3134,7 +3137,8 @@ input[type="number"] { -moz-appearance: textfield; }
    the canvas and only the profile pill floats. Sits in the .app-shell grid
    above .app-main so it stays put while the page scrolls. */
 .global-topbar {
-  background: var(--grey-100);
+  background: transparent;
+  pointer-events: none;
   --tb-name: #1e1b4b;
   --tb-clinic: #4b6a9b;
   --tb-pill-bg: rgba(255, 255, 255, 0.8);
@@ -3174,7 +3178,7 @@ input[type="number"] { -moz-appearance: textfield; }
   --tb-out-hover: rgba(244, 63, 94, 0.16);
   --tb-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
 }
-.tb-wrap { position: relative; }
+.tb-wrap { position: relative; pointer-events: auto; }
 .tb-pill {
   display: flex;
   align-items: center;
@@ -5627,7 +5631,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   }
   .mobile-nav-backdrop.show { opacity: 1; pointer-events: auto; }
 
-  .app-shell { --main-pad-top: 8px; }
+  .app-shell { --main-pad-top: 8px; --topbar-h: 0px; }
   .app-main { padding: var(--main-pad-top) 20px 24px; }
   .closed-day-banner { padding: 6px 20px; margin: calc(-1 * var(--main-pad-top)) -20px 6px; }
 
@@ -6411,7 +6415,7 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
 .rx-row.collapsed .rc-actions svg { width: 15px; height: 15px; }
 
 /* --- Live print preview, right column --- */
-.rx-preview-wrap { position: sticky; top: 0; }
+.rx-preview-wrap { position: sticky; top: var(--topbar-h, 0px); }
 /* Doctor-chosen theme color drives the accent throughout the preview and
    the printed page — set inline as --rx-theme from the doctor's saved
    Settings preference (falls back to the site accent when unset). */
