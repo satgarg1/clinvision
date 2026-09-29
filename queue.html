@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=400" />
+<link rel="stylesheet" href="styles.css?v=402" />
 </head>
 <body>
   <div class="login-wrap">
@@ -92,7 +92,7 @@
             </div>
 
             <div class="queue-feedback-extra" id="feedbackExtra">
-              <textarea class="queue-feedback-textarea" id="feedbackTextInput"></textarea>
+              <textarea class="queue-feedback-textarea" id="feedbackTextInput" maxlength="2000"></textarea>
               <button type="button" class="btn-sm primary queue-feedback-send" id="feedbackSendBtn"></button>
             </div>
             <div class="queue-feedback-thanks" id="feedbackThanks">
@@ -151,7 +151,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=132"></script>
+  <script src="clinic-data.js?v=133"></script>
   <script>
     (async function () {
       const params = new URLSearchParams(window.location.search);
@@ -865,18 +865,26 @@
         if (routedToReview || !reviewLinkUrl) return;
         routedToReview = true;
         renderGoogleBlock();
+        // Opened first, synchronously, while the tap still counts as a
+        // user gesture -- Safari/iOS block a window.open that comes after
+        // an awaited network call, which would leave the button saying
+        // "Opened" with nothing opened.
+        window.open(reviewLinkUrl, '_blank', 'noopener');
+        // Passes the comment only if one is typed: leaving it out tells
+        // the RPC to keep whatever was already saved, instead of an empty
+        // box (not restored on reload) clearing it.
+        const typedComment = document.getElementById('feedbackTextInput').value.trim();
         try {
           await Qlinic.submitVisitFeedback({
             patientId,
             rating: feedbackPicked,
-            feedbackText: document.getElementById('feedbackTextInput').value,
+            feedbackText: typedComment || undefined,
             routedToReview: true,
           });
         } catch (err) {
-          // The review link still opens either way -- a failed save here
-          // shouldn't block the one thing the patient actually asked to do.
+          // The review link is already open -- a failed save here
+          // shouldn't undo the one thing the patient actually asked to do.
         }
-        window.open(reviewLinkUrl, '_blank', 'noopener');
       });
 
       if (!patientId) {

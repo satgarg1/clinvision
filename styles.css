@@ -3004,28 +3004,38 @@ input[type="number"] { -moz-appearance: textfield; }
   padding: 4px 10px 12px;
   margin-bottom: 12px;
   border-bottom: 1px solid var(--grey-300);
-  /* Icon mark beside the wordmark, text block (wordmark + gold bar +
-     tagline) centered as a column -- same split as .mkt-nav .brand. */
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
+  /* Two columns, icon then wordmark, with the tagline centered on its own
+     row underneath both. .brand-text is display:contents so its children
+     (wordmark block, tagline) are placed directly by this grid -- the icon
+     sits a fixed gap from the wordmark whatever width the tagline is,
+     instead of depending on how much slack the text happens to leave. */
+  display: grid;
+  grid-template-columns: auto auto;
   justify-content: center;
+  align-items: start;
+  column-gap: 7px;
   transition: transform 0.15s ease;
 }
 .app-sidebar .brand:hover { transform: scale(1.04); }
-.app-sidebar .brand .brand-text {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 0;
-}
+.app-sidebar .brand .brand-text { display: contents; }
 /* Pinned to the wordmark line plus the gold bar beneath it (measured live
-   at 26.6px here; the marketing nav's same rule is 29px at its larger
-   wordmark) so it never drops into the tagline's row. The negative margin
-   cancels the ~24px of slack on each side of the wordmark, which is
-   centered over the (wider) tagline, so the icon sits right beside
-   "ClinVision" and its gold bar instead of floating off to the side. */
-.app-sidebar .brand-icon { height: 27px; margin-right: -22.5px; }
+   at 26.6px) so it never drops into the tagline's row. */
+.app-sidebar .brand-icon { grid-column: 1; grid-row: 1; height: 27px; margin-right: 0; }
+.app-sidebar .brand .brand-top { grid-column: 2; grid-row: 1; }
+/* Zero-width and centered, with the text overflowing evenly on both sides:
+   a tagline wider than icon + wordmark would otherwise stretch the two
+   columns and push the icon back away from the wordmark. */
+.app-sidebar .brand .brand-tagline {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  justify-self: center;
+  width: 0;
+  display: flex;
+  justify-content: center;
+  overflow: visible;
+  max-width: none;
+  text-overflow: clip;
+}
 
 .app-sidebar nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 
@@ -5558,14 +5568,19 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 }
 
 @media (max-width: 720px) {
-  .app-shell { display: flex; flex-direction: column; height: 100vh; position: relative; }
+  .app-shell { --mobile-topbar-h: 65px; display: flex; flex-direction: column; height: 100vh; position: relative; }
 
   /* The pill rides in the right of the mobile top strip (hamburger and
-     brand sit on the left) instead of adding a second stacked bar. */
-  .global-topbar { position: absolute; top: 0; right: 0; height: 65px; padding: 0 12px; z-index: 50; }
+     brand sit on the left) instead of adding a second stacked bar. Both
+     use the same --mobile-topbar-h, so the pill stays centered on the
+     strip. Transparent, not the desktop bar's grey, so the white strip
+     shows through. */
+  .global-topbar { position: absolute; top: 0; right: 0; height: var(--mobile-topbar-h); padding: 0 12px; z-index: 50; background: transparent; }
   .tb-name, .tb-clinic { max-width: 120px; }
 
   .mobile-topbar {
+    box-sizing: border-box;
+    height: var(--mobile-topbar-h);
     display: flex;
     align-items: center;
     gap: 12px;

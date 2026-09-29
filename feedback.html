@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=400" />
+<link rel="stylesheet" href="styles.css?v=402" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -124,8 +124,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=132"></script>
-  <script src="app-topbar.js?v=1"></script>
+  <script src="clinic-data.js?v=133"></script>
+  <script src="app-topbar.js?v=2"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -177,17 +177,8 @@
         return `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>`;
       }
 
-      function initialsFor(name) {
-        const parts = (name || '').trim().split(/\s+/).filter(Boolean);
-        if (parts.length === 0) return '?';
-        if (parts.length === 1) return parts[0][0].toUpperCase();
-        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-      }
       function avatarColorFor(key) {
-        let hash = 0;
-        const s = String(key || '');
-        for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) | 0;
-        return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+        return AVATAR_COLORS[Qlinic.hashIndex(key, AVATAR_COLORS.length)];
       }
       function splitDateTime(iso) {
         const d = new Date(iso);
@@ -201,9 +192,13 @@
         const d = new Date(e.submittedAt);
         return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
       }
+      // Either bound may be left empty (open-ended: only From = that day
+      // onward, only To = up to that day); when both are set a reversed
+      // pair is swapped so it never breaks.
       function computeDateRange() {
-        if (!dateFrom || !dateTo) return null;
-        return dateFrom <= dateTo ? { start: dateFrom, end: dateTo } : { start: dateTo, end: dateFrom };
+        if (!dateFrom && !dateTo) return null;
+        if (dateFrom && dateTo && dateFrom > dateTo) return { start: dateTo, end: dateFrom };
+        return { start: dateFrom, end: dateTo };
       }
 
       function searchTerm() {
@@ -218,7 +213,11 @@
             (e.patientName || '').toLowerCase().includes(term) ||
             (e.patientPhone || '').toLowerCase().includes(term)
           )) return false;
-          if (range && !(entryDateStr(e) >= range.start && entryDateStr(e) <= range.end)) return false;
+          if (range) {
+            const day = entryDateStr(e);
+            if (range.start && day < range.start) return false;
+            if (range.end && day > range.end) return false;
+          }
           if (ratingFilter && String(e.rating) !== ratingFilter) return false;
           return true;
         });
@@ -284,7 +283,12 @@
         }
         const range = computeDateRange();
         if (range) {
-          chips.push({ key: 'date', label: `Date: ${Qlinic.formatDateLabel(range.start)} to ${Qlinic.formatDateLabel(range.end)}` });
+          const dateLabel = range.start && range.end
+            ? `${Qlinic.formatDateLabel(range.start)} to ${Qlinic.formatDateLabel(range.end)}`
+            : range.start
+            ? `from ${Qlinic.formatDateLabel(range.start)}`
+            : `up to ${Qlinic.formatDateLabel(range.end)}`;
+          chips.push({ key: 'date', label: `Date: ${dateLabel}` });
         }
         if (chips.length === 0) return '';
         return chips.map((c) => `<div class="filter-chip">${Qlinic.escapeHtml(c.label)}<button type="button" class="clear-filter-chip" data-key="${c.key}" aria-label="Clear filter">×</button></div>`).join('');
@@ -377,7 +381,7 @@
                 <tr>
                   <td class="qtable-wrap">
                     <div style="display:flex;align-items:center;gap:10px;">
-                      <div class="fb-avatar ${avatarColorFor(e.id)}">${Qlinic.escapeHtml(initialsFor(e.patientName))}</div>
+                      <div class="fb-avatar ${avatarColorFor(e.id)}">${Qlinic.escapeHtml(Qlinic.initialsFor(e.patientName))}</div>
                       <span style="font-weight:600;color:var(--black);">${e.patientName ? Qlinic.escapeHtml(e.patientName) : '—'}</span>
                     </div>
                   </td>

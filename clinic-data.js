@@ -1711,11 +1711,13 @@
   // Google" click -- the RPC only ever ORs that flag forward, so
   // calling this again later (e.g. to save a comment typed after
   // already sharing) can't un-mark it.
+  // feedbackText: leave it out (undefined) to keep whatever comment is
+  // already saved; pass a string, including '', to replace it ('' clears).
   async function submitVisitFeedback({ patientId, rating, feedbackText, routedToReview }) {
     const { data, error } = await sb.rpc('submit_visit_feedback', {
       p_patient_id: patientId,
       p_rating: rating,
-      p_feedback_text: feedbackText || null,
+      p_feedback_text: feedbackText === undefined ? null : feedbackText,
       p_routed_to_review: !!routedToReview,
     });
     if (error) throw error;
@@ -2243,6 +2245,48 @@
   async function getMyDoctorId() {
     const profile = await getMyProfile();
     return profile && profile.role === 'doctor' && profile.isActive ? profile.doctorId : null;
+  }
+
+  // Name shown for the signed-in user (top bar, dashboard greeting):
+  // "Dr. <name>" for a doctor, else their full name, else their email.
+  async function getMyDisplayName() {
+    const profile = await getMyProfile();
+    const email = await getCurrentUserEmail();
+    const withDr = (n) => (/^dr\.?\s/i.test(n) ? n : 'Dr. ' + n);
+    if (profile && profile.role === 'doctor' && profile.doctorId) {
+      let name = null;
+      try {
+        const doctor = await getDoctor(profile.doctorId);
+        name = (doctor && doctor.name) || null;
+      } catch (err) { }
+      name = name || (profile.fullName || '').trim() || null;
+      if (name) return { text: withDr(name), isEmail: false };
+    }
+    const fullName = profile && (profile.fullName || '').trim();
+    if (fullName) return { text: fullName, isEmail: false };
+    return { text: email || '', isEmail: true };
+  }
+
+  // Two-letter initials from a person's name, or from an email's local
+  // part ("satyam.test@x.in" -> "ST"). A leading "Dr." is ignored.
+  function initialsFor(text) {
+    const value = (text || '').trim();
+    const parts = value.includes('@')
+      ? value.split('@')[0].split(/[._-]+/).filter(Boolean)
+      : value.replace(/^dr\.?\s+/i, '').split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    const first = parts[0][0];
+    const second = parts.length > 1 ? parts[parts.length - 1][0] : parts[0][1] || '';
+    return (first + second).toUpperCase();
+  }
+
+  // Stable index in [0, count) for a string, so the same name always gets
+  // the same avatar colour.
+  function hashIndex(text, count) {
+    let h = 0;
+    const s = String(text || '');
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return h % count;
   }
 
   async function getTeam() {
@@ -3362,6 +3406,9 @@
     buildRxDetailPanelsHtml,
     buildDraftMedicineItem,
     hasUnsavedRxContent,
+    getMyDisplayName,
+    initialsFor,
+    hashIndex,
 
     onLiveChange,
   };

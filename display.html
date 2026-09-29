@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=400" />
+<link rel="stylesheet" href="styles.css?v=402" />
 </head>
 <body class="display-body" style="visibility:hidden;">
   <button class="display-theme-toggle display-sound-toggle" id="displaySoundToggle" aria-label="Turn call sound on or off">
@@ -185,7 +185,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=132"></script>
+  <script src="clinic-data.js?v=133"></script>
   <script>
     (async function () {
       const urlParams = new URLSearchParams(location.search);
@@ -811,7 +811,11 @@
         }
       }
 
-      refreshData();
+      // The body starts hidden and refreshData reveals it once it knows
+      // what to show. If that first fetch throws, reveal anyway so the
+      // TV shows the board's shell instead of staying blank until a later
+      // refresh happens to succeed.
+      refreshData().finally(() => { document.body.style.visibility = 'visible'; });
       setInterval(refreshData, REFRESH_MS);
       setInterval(tickFadeCountdowns, 1000);
       setInterval(rotatePage, ROTATE_MS);

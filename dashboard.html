@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=400" />
+<link rel="stylesheet" href="styles.css?v=402" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -116,8 +116,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=132"></script>
-  <script src="app-topbar.js?v=1"></script>
+  <script src="clinic-data.js?v=133"></script>
+  <script src="app-topbar.js?v=2"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -214,12 +214,6 @@
       }
       const ACCENT_HEX = { teal: '#0d9488', coral: '#f97316', sky: '#0284c7', blue: '#2563eb', purple: '#7c3aed', indigo: '#4f46e5', amber: '#f59e0b', pink: '#db2777', rose: '#be123c', cyan: '#0e7490', green: '#16a34a' };
 
-      function initialsFor(name) {
-        const parts = (name || '').trim().split(/\s+/).filter(Boolean);
-        if (parts.length === 0) return '?';
-        if (parts.length === 1) return parts[0][0].toUpperCase();
-        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-      }
       const AVATAR_ACCENTS = ['teal', 'coral', 'blue', 'purple', 'pink'];
       function avatarAccentFor(doctorId, doctors) {
         const idx = doctors.findIndex((d) => d.id === doctorId);
@@ -399,9 +393,7 @@
           Qlinic.getPatientsInRange(Qlinic.getTodayDate(), Qlinic.getTodayDate(), myDoctorId || undefined),
         ]);
         const doctors = amDoctor ? (doctorsRaw ? [doctorsRaw] : []) : doctorsRaw;
-        const greetingName = amDoctor
-          ? (doctorsRaw ? 'Dr. ' + doctorsRaw.name : 'Dr.')
-          : (myProfile.fullName || myProfile.email || '');
+        const greetingName = (await Qlinic.getMyDisplayName()).text;
         document.getElementById('greetingText').textContent = `${greeting.text}, ${greetingName}`;
         const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
         const queues = await Promise.all(doctors.map((d) => Qlinic.getQueueForDoctor(d.id, undefined, d)));
@@ -642,11 +634,13 @@
           </div>
         `).join('');
 
-        // Live Queue sidebar: In Consultation / Walk-in / Emergency, all
-        // computed from the same waiting-patient and queue data the KPI
-        // cards above already use -- not a separate fetch.
-        function renderLiveQueue(emergencyCount, walkinCount, inConsultCount) {
-          const total = emergencyCount + walkinCount + inConsultCount;
+        // Live Queue sidebar: the patients currently waiting, split by kind
+        // (priority = Emergency, else Walk-in or Appointment), so the three
+        // rows always add up to the "Patients in queue" total. Computed from
+        // the same waiting-patient data the KPI cards above already use --
+        // not a separate fetch.
+        function renderLiveQueue(emergencyCount, walkinCount, appointmentCount) {
+          const total = emergencyCount + walkinCount + appointmentCount;
           document.getElementById('liveQueueSummary').innerHTML = `
             <div>
               <div class="dash-sidebar-total">${total}</div>
@@ -655,7 +649,7 @@
             <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
               <div class="dash-sidebar-breakdown-row">
                 <span class="dash-sidebar-breakdown-label"><span class="dash-sidebar-breakdown-dot" style="background:#2563eb;"></span>Appointment</span>
-                <span class="dash-sidebar-breakdown-count">${inConsultCount}</span>
+                <span class="dash-sidebar-breakdown-count">${appointmentCount}</span>
               </div>
               <div class="dash-sidebar-breakdown-row">
                 <span class="dash-sidebar-breakdown-label"><span class="dash-sidebar-breakdown-dot" style="background:#0d9488;"></span>Walk-in</span>
@@ -671,8 +665,8 @@
         if (doctors.length > 0) {
           const emergencyWaitingCount = allWaiting.filter((p) => p.isPriority).length;
           const walkinWaitingCount = allWaiting.filter((p) => !p.isPriority && p.type === 'walkin').length;
-          const inConsultCount = queues.filter((q) => q.nowServing).length;
-          renderLiveQueue(emergencyWaitingCount, walkinWaitingCount, inConsultCount);
+          const appointmentWaitingCount = allWaiting.filter((p) => !p.isPriority && p.type !== 'walkin').length;
+          renderLiveQueue(emergencyWaitingCount, walkinWaitingCount, appointmentWaitingCount);
         } else {
           renderLiveQueue(0, 0, 0);
         }
@@ -737,7 +731,7 @@
                   <tr class="dash-doc-row${pill.key === 'on-break' || pill.key === 'emergency' ? ' row-' + pill.key : ''}">
                     <td>
                       <div style="display:flex;align-items:center;gap:10px;">
-                        <div class="dash-doc-avatar accent-${avatarAccentFor(d.id, doctors)}">${Qlinic.escapeHtml(initialsFor(d.name))}</div>
+                        <div class="dash-doc-avatar accent-${avatarAccentFor(d.id, doctors)}">${Qlinic.escapeHtml(Qlinic.initialsFor(d.name))}</div>
                         <div>
                           <div class="dash-doc-name">Dr. ${Qlinic.escapeHtml(d.name)}</div>
                           <div class="dash-doc-specialty">${Qlinic.escapeHtml(d.specialty)}</div>
