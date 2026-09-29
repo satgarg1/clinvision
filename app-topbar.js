@@ -11,6 +11,14 @@
   bar.className = 'global-topbar';
   shell.insertBefore(bar, main);
 
+  // The pill floats above the scrolling column, so a wheel or trackpad
+  // scroll that starts over it would otherwise do nothing. Hand it to the page.
+  bar.addEventListener('wheel', (e) => {
+    if (e.ctrlKey) return;
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? main.clientHeight : 1;
+    main.scrollBy(e.deltaX * unit, e.deltaY * unit);
+  }, { passive: true });
+
   const AVATAR_COLORS = ['#0f9d94', '#4f46e5', '#c2410c'];
   const PLATFORM_ADMIN_COLOR = '#1e1b4b';
 

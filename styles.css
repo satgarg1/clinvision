@@ -2971,13 +2971,23 @@ input[type="number"] { -moz-appearance: textfield; }
      itself flush with the top. */
   --main-pad-top: 0px;
   --topbar-h: 54px;
+  --sidebar-w: 224px;
   display: grid;
-  grid-template-columns: 224px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
   grid-template-rows: 54px minmax(0, 1fr);
   height: 100vh;
+  /* dvh tracks the visible area as a phone's address bar shows and hides;
+     plain vh (the fallback above) is the tallest case and would leave the
+     document a few pixels taller than the screen. */
+  height: 100dvh;
+}
+/* Only .app-main scrolls on these pages. Without this the document itself
+   can still scroll (a stray overflow, or a scroll chained on from the end
+   of .app-main) and drag the whole shell, sidebar and pill included. */
+@media screen {
+  body:has(.app-shell) { overflow: hidden; }
 }
 .app-shell > .app-sidebar { grid-column: 1; grid-row: 1 / 3; }
-.app-shell > .global-topbar { grid-column: 2; grid-row: 1; }
 /* .app-main spans both rows so the page scrolls underneath the floating pill;
    its padding-top (below) reserves the bar's 54px so nothing starts hidden. */
 .app-shell > .app-main { grid-column: 2; grid-row: 1 / 3; }
@@ -3129,6 +3139,7 @@ input[type="number"] { -moz-appearance: textfield; }
   padding: calc(var(--topbar-h) + var(--main-pad-top)) 48px 40px;
   min-width: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Global top bar: same 60px on every sidebar page, no bar of its own --
@@ -3159,7 +3170,13 @@ input[type="number"] { -moz-appearance: textfield; }
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  position: relative;
+  /* Fixed to the viewport, not laid out in the grid: nothing that scrolls
+     (the page's main column, or the document itself on a browser whose
+     100vh runs taller than the visible area) can carry the pill with it. */
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-w, 224px);
+  right: 0;
   z-index: 5;
 }
 :root[data-theme="dark"] .global-topbar {
@@ -5574,14 +5591,14 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 }
 
 @media (max-width: 720px) {
-  .app-shell { --mobile-topbar-h: 65px; display: flex; flex-direction: column; height: 100vh; position: relative; }
+  .app-shell { --mobile-topbar-h: 65px; display: flex; flex-direction: column; height: 100vh; height: 100dvh; position: relative; }
 
   /* The pill rides in the right of the mobile top strip (hamburger and
      brand sit on the left) instead of adding a second stacked bar. Both
      use the same --mobile-topbar-h, so the pill stays centered on the
      strip. Transparent, not the desktop bar's grey, so the white strip
      shows through. */
-  .global-topbar { position: absolute; top: 0; right: 0; height: var(--mobile-topbar-h); padding: 0 12px; z-index: 50; background: transparent; }
+  .global-topbar { position: fixed; top: 0; right: 0; left: auto; height: var(--mobile-topbar-h); padding: 0 12px; z-index: 50; background: transparent; }
   .tb-name, .tb-clinic { max-width: 120px; }
 
   .mobile-topbar {
