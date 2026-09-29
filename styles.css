@@ -3021,7 +3021,7 @@ input[type="number"] { -moz-appearance: textfield; }
    cancels the ~24px of slack on each side of the wordmark, which is
    centered over the (wider) tagline, so the icon sits right beside
    "ClinVision" and its gold bar instead of floating off to the side. */
-.app-sidebar .brand-icon { height: 27px; margin-right: -24px; }
+.app-sidebar .brand-icon { height: 27px; margin-right: -22.5px; }
 
 .app-sidebar nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 
