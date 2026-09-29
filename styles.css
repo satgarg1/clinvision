@@ -2969,10 +2969,10 @@ input[type="number"] { -moz-appearance: textfield; }
   /* The only top gap between the global bar and a page's first element.
      Pages add none of their own; the closed-day banner reads this to pull
      itself flush with the top. */
-  --main-pad-top: 4px;
+  --main-pad-top: 0px;
   display: grid;
   grid-template-columns: 224px minmax(0, 1fr);
-  grid-template-rows: 60px minmax(0, 1fr);
+  grid-template-rows: 54px minmax(0, 1fr);
   height: 100vh;
 }
 .app-shell > .app-sidebar { grid-column: 1; grid-row: 1 / 3; }
@@ -3139,7 +3139,7 @@ input[type="number"] { -moz-appearance: textfield; }
   --tb-out: #e11d48;
   --tb-out-hover: #fff1f2;
   --tb-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
-  height: 60px;
+  height: 54px;
   box-sizing: border-box;
   padding: 0 32px;
   display: flex;
@@ -3265,7 +3265,7 @@ input[type="number"] { -moz-appearance: textfield; }
   /* One title-to-content gap for every page. It was 32px by default with
      a 16px inline override on some pages and a 14px id-scoped one on
      Insights, so the first card sat at a different height page to page. */
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
   gap: 12px;
 }
@@ -3280,7 +3280,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .breadcrumb {
   font-size: 13px;
   color: var(--grey-500);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .breadcrumb a { color: var(--grey-500); text-decoration: none; }
 .breadcrumb a:hover { color: var(--accent); }
@@ -3409,7 +3409,7 @@ input[type="number"] { -moz-appearance: textfield; }
      wrapper instead. */
   border-radius: var(--radius-lg);
   padding: 18px 28px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   background: linear-gradient(90deg, rgba(239,246,255,0.9) 0%, rgba(238,242,255,0.45) 55%, rgba(240,253,250,0.6) 100%);
 }
 :root[data-theme="dark"] .dash-header {
@@ -3433,7 +3433,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 :root[data-theme="dark"] .dash-pill { background: rgba(28,28,30,0.85); }
 
-.dash-kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 16px; }
+.dash-kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 12px; }
 @media (max-width: 1300px) { .dash-kpi-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 700px) { .dash-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
 .dash-kpi-card {
@@ -5610,7 +5610,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   }
   .mobile-nav-backdrop.show { opacity: 1; pointer-events: auto; }
 
-  .app-shell { --main-pad-top: 12px; }
+  .app-shell { --main-pad-top: 8px; }
   .app-main { padding: var(--main-pad-top) 20px 24px; }
   .closed-day-banner { padding: 6px 20px; margin: calc(-1 * var(--main-pad-top)) -20px 6px; }
 
