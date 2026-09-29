@@ -152,8 +152,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=133"></script>
-  <script src="app-topbar.js?v=2"></script>
+  <script src="clinic-data.js?v=134"></script>
+  <script src="app-topbar.js?v=3"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -182,7 +182,7 @@
         document.getElementById('prescriptionsNavLink').style.display = 'none';
       }
       const roleHiddenIds = new Set();
-      if (!amAdmin) { roleHiddenIds.add('clinicSettingsPanel'); roleHiddenIds.add('billingAuditPanel'); roleHiddenIds.add('doctorsPanel'); roleHiddenIds.add('teamPanel'); roleHiddenIds.add('endOfDayPanel'); }
+      if (!amAdmin) { roleHiddenIds.add('clinicSettingsPanel'); roleHiddenIds.add('billingAuditPanel'); roleHiddenIds.add('doctorsPanel'); roleHiddenIds.add('teamPanel'); roleHiddenIds.add('endOfDayPanel'); roleHiddenIds.add('displayScreenPanel'); roleHiddenIds.add('patientFeedbackPanel'); }
       if (!canBillingAudit) roleHiddenIds.add('billingAuditPanel');
       if (!canPatientDirectory) roleHiddenIds.add('patientDirectoryPanel');
       if (amDoctor) { roleHiddenIds.add('patientDirectoryPanel'); roleHiddenIds.add('noShowsPanel'); roleHiddenIds.add('displayScreenPanel'); roleHiddenIds.add('medicinesPanel'); }

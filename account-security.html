@@ -147,8 +147,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=133"></script>
-  <script src="app-topbar.js?v=2"></script>
+  <script src="clinic-data.js?v=134"></script>
+  <script src="app-topbar.js?v=3"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -158,7 +158,15 @@
       Qlinic.attachPasswordReveal(document.getElementById('newPasswordInput'));
       Qlinic.attachPasswordReveal(document.getElementById('confirmPasswordInput'));
 
-      if (await Qlinic.isPharmacist()) { window.location.href = 'pharmacy.html'; return; }
+      // A pharmacist used to be redirected away from here, which made the
+      // top bar's "Account & security" link bounce straight back and left
+      // them unable to change their own password. They stay on the page
+      // instead, with a sidebar that only leads back to the pharmacy.
+      const amPharmacist = await Qlinic.isPharmacist();
+      if (amPharmacist) {
+        document.querySelector('.app-sidebar nav').innerHTML =
+          '<a href="pharmacy.html" class="nav-link"><span>Pharmacy</span></a>';
+      }
 
       document.querySelector('a.brand').addEventListener('click', async (e) => {
         e.preventDefault();
@@ -172,17 +180,19 @@
         document.getElementById('phonePanel').style.display = 'none';
         document.getElementById('phoneDivider').style.display = 'none';
       }
-      if (amDoctor) {
-        document.getElementById('receptionNavLink').style.display = 'none';
-        document.getElementById('billingNavLink').style.display = 'none';
-        document.getElementById('displayNavLink').style.display = 'none';
-      }
-      if (!admin) {
-        document.getElementById('revenueNavLink').style.display = 'none';
-      }
-      if (!admin && !amDoctor) {
-        document.getElementById('trendsNavLink').style.display = 'none';
-        document.getElementById('prescriptionsNavLink').style.display = 'none';
+      if (!amPharmacist) {
+        if (amDoctor) {
+          document.getElementById('receptionNavLink').style.display = 'none';
+          document.getElementById('billingNavLink').style.display = 'none';
+          document.getElementById('displayNavLink').style.display = 'none';
+        }
+        if (!admin) {
+          document.getElementById('revenueNavLink').style.display = 'none';
+        }
+        if (!admin && !amDoctor) {
+          document.getElementById('trendsNavLink').style.display = 'none';
+          document.getElementById('prescriptionsNavLink').style.display = 'none';
+        }
       }
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';

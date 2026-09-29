@@ -306,8 +306,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=133"></script>
-  <script src="app-topbar.js?v=2"></script>
+  <script src="clinic-data.js?v=134"></script>
+  <script src="app-topbar.js?v=3"></script>
   <script>
     (async function () {
       if (!(await Qlinic.isLoggedIn())) {
@@ -644,7 +644,18 @@
       function todayStr() { const d = new Date(); return toISO(new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))); }
       function parseISO(dateStr) { const [y, m, day] = dateStr.split('-').map(Number); return new Date(Date.UTC(y, m - 1, day)); }
       function toISO(date) { return date.toISOString().slice(0, 10); }
-      function addMonths(dateStr, n) { const d = parseISO(dateStr); d.setUTCMonth(d.getUTCMonth() + n); return toISO(d); }
+      // Clamps to the last day of the target month: a plain setUTCMonth
+      // from 31 Jan gives 3 Mar, not 28 Feb, which gave a 1-month
+      // subscription about three free days.
+      function addMonths(dateStr, n) {
+        const d = parseISO(dateStr);
+        const day = d.getUTCDate();
+        d.setUTCDate(1);
+        d.setUTCMonth(d.getUTCMonth() + n);
+        const lastDay = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+        d.setUTCDate(Math.min(day, lastDay));
+        return toISO(d);
+      }
       function addDays(dateStr, n) { const d = parseISO(dateStr); d.setUTCDate(d.getUTCDate() + n); return toISO(d); }
       function formatNice(dateStr) { return parseISO(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }); }
       const VOLUME_PRESETS = [
@@ -825,13 +836,23 @@
         trialToInput.value = c.trialEndsAt ? c.trialEndsAt.slice(0, 10) : '';
         enforceRange(trialFromInput, trialToInput, trialDateError, 'Trial');
 
-        const flags = await Qlinic.adminGetClinicFeatures(id);
+        let flags;
+        try {
+          flags = await Qlinic.adminGetClinicFeatures(id);
+        } catch (err) {
+          showToast(err.message || 'Could not load this clinic\'s settings.');
+          return;
+        }
+        // Another clinic was clicked while this one was loading: leave the
+        // newer one's fields alone.
+        if (manageClinicId !== id) return;
         Object.entries(FEATURE_CHECKBOX_IDS).forEach(([key, checkboxId]) => {
           document.getElementById(checkboxId).checked = flags[key] !== false;
         });
 
         document.getElementById('manageClinicVolumePeriod').value = 'currentmonth';
         await Promise.all([loadClinicTeam(id), loadClinicVolume(id, 'currentmonth')]);
+        if (manageClinicId !== id) return;
 
         manageModal.style.display = 'flex';
       }
@@ -907,6 +928,10 @@
           await Qlinic.adminSetClinicFeatures(manageClinicId, flags);
         } catch (err) {
           showToast(err.message || 'Could not save changes.');
+          // The subscription and the feature flags are two separate saves:
+          // if the second failed the first is already stored, so refresh
+          // the list to show what is actually saved.
+          loadClinics();
           return;
         }
         manageModal.style.display = 'none';
@@ -969,7 +994,7 @@
         backdrop.innerHTML = `
           <div class="modal-card">
             <h2 class="modal-title">Edit admin</h2>
-            <div class="doctor-form-field"><label>Full name</label><input id="editAdminName" value="${admin.fullName.replace(/"/g, '&quot;')}" /></div>
+            <div class="doctor-form-field"><label>Full name</label><input id="editAdminName" value="${(admin.fullName || '').replace(/"/g, '&quot;')}" /></div>
             <div class="doctor-form-field">
               <label>Phone</label>
               <div style="display:flex;gap:8px;">

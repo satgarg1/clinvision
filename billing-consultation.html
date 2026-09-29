@@ -196,8 +196,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=133"></script>
-  <script src="app-topbar.js?v=2"></script>
+  <script src="clinic-data.js?v=134"></script>
+  <script src="app-topbar.js?v=3"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -454,28 +454,46 @@
         }
         let invoiceDate = document.getElementById('bDate').value || Qlinic.getTodayDate();
 
-        const freshMatch = await Qlinic.getBillingPatientLookup(phone, invoiceDate);
-        currentPatientId = (freshMatch && freshMatch.todayPatientId) || null;
-        currentInvoiceId = (freshMatch && freshMatch.todayInvoiceId) || null;
-        if (freshMatch && freshMatch.todayVisitDate) {
-          invoiceDate = freshMatch.todayVisitDate;
-          document.getElementById('bDate').value = invoiceDate;
-        }
-
-        const hasAppointment = await Qlinic.hasAppointmentOnDate(phone, invoiceDate);
-        if (!hasAppointment) {
-          const proceed = await Qlinic.confirmDialog({
-            title: 'No appointment found',
-            message: `No appointment or walk-in was found for this phone number on ${Qlinic.formatDateLabel(invoiceDate)}.`,
-            confirmLabel: 'Bill anyway',
-            cancelLabel: 'Cancel',
-            danger: true,
-          });
-          if (!proceed) return;
-        }
-
+        // Locked before the first await: the two lookups below are network
+        // round trips, and a double-click in that gap used to run two full
+        // submits (two invoices when the patient isn't linked).
         const btn = document.getElementById('billingSubmitBtn');
+        if (btn.disabled) return;
         btn.disabled = true;
+
+        try {
+          // strict: a failed lookup must stop here, not fall through as "no
+          // visit, no invoice" and create a duplicate bill for a visit that
+          // is already billed. The typed name picks the right person when
+          // family members share one phone number.
+          const freshMatch = await Qlinic.getBillingPatientLookup(phone, invoiceDate, {
+            strict: true,
+            name: document.getElementById('bName').value,
+          });
+          currentPatientId = (freshMatch && freshMatch.todayPatientId) || null;
+          currentInvoiceId = (freshMatch && freshMatch.todayInvoiceId) || null;
+          if (freshMatch && freshMatch.todayVisitDate) {
+            invoiceDate = freshMatch.todayVisitDate;
+            document.getElementById('bDate').value = invoiceDate;
+          }
+
+          const hasAppointment = await Qlinic.hasAppointmentOnDate(phone, invoiceDate);
+          if (!hasAppointment) {
+            const proceed = await Qlinic.confirmDialog({
+              title: 'No appointment found',
+              message: `No appointment or walk-in was found for this phone number on ${Qlinic.formatDateLabel(invoiceDate)}.`,
+              confirmLabel: 'Bill anyway',
+              cancelLabel: 'Cancel',
+              danger: true,
+            });
+            if (!proceed) { updateSubmitEnabled(); return; }
+          }
+        } catch (err) {
+          showToast('Could not check this patient right now. Please try again.');
+          updateSubmitEnabled();
+          return;
+        }
+
         btn.textContent = 'Printing…';
         try {
           const invoice = currentInvoiceId

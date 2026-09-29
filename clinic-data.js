@@ -431,7 +431,10 @@
         btn.type = 'button';
         btn.className = 'qdp-grid-cell' + (y === currentYear ? ' selected' : '');
         btn.textContent = y;
-        btn.addEventListener('click', () => { viewDate.setFullYear(y); showMonthView(); });
+        // setDate(1) first: the view only tracks year and month, and keeping
+        // a day like the 31st (or Feb 29) makes setFullYear/setMonth overflow
+        // into the next month.
+        btn.addEventListener('click', () => { viewDate.setDate(1); viewDate.setFullYear(y); showMonthView(); });
         el.appendChild(btn);
       }
     }
@@ -443,7 +446,7 @@
         btn.type = 'button';
         btn.className = 'qdp-grid-cell' + (i === currentMonth ? ' selected' : '');
         btn.textContent = name.slice(0, 3);
-        btn.addEventListener('click', () => { viewDate.setMonth(i); showDayView(); });
+        btn.addEventListener('click', () => { viewDate.setDate(1); viewDate.setMonth(i); showDayView(); });
         el.appendChild(btn);
       });
     }
@@ -561,7 +564,7 @@
       function close() { pop.classList.remove('open'); triggerEl.classList.remove('open'); }
       closeAll = close;
       triggerEl.addEventListener('click', (e) => { e.stopPropagation(); pop.classList.contains('open') ? close() : open(); });
-      pop.querySelectorAll('[data-nav]').forEach((btn) => btn.addEventListener('click', (e) => { e.stopPropagation(); viewDate.setMonth(viewDate.getMonth() + Number(btn.dataset.nav)); buildCalendarGrid(grid, monthLabel); }));
+      pop.querySelectorAll('[data-nav]').forEach((btn) => btn.addEventListener('click', (e) => { e.stopPropagation(); viewDate.setDate(1); viewDate.setMonth(viewDate.getMonth() + Number(btn.dataset.nav)); buildCalendarGrid(grid, monthLabel); }));
       pop.querySelectorAll('[data-quick]').forEach((btn) => btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const d = startOfDay(new Date()); d.setDate(d.getDate() + Number(btn.dataset.quick));
@@ -860,9 +863,20 @@
     if (fields.gstin !== undefined) payload.gstin = fields.gstin || null;
     if (fields.hfrId !== undefined) payload.hfr_id = fields.hfrId || null;
     if (fields.logoUrl !== undefined) payload.logo_url = fields.logoUrl;
-    if (fields.reviewLinkUrl !== undefined) payload.review_link_url = fields.reviewLinkUrl || null;
-    const { error } = await sb.from('clinics').update(payload).eq('id', clinicId);
+    if (fields.reviewLinkUrl !== undefined) {
+      // Patients are sent to this URL, so only a real web link is accepted
+      // (a javascript: or data: value must never be stored or opened).
+      const reviewUrl = (fields.reviewLinkUrl || '').trim();
+      if (reviewUrl && !/^https?:\/\//i.test(reviewUrl)) {
+        throw new Error('The review link must start with http:// or https://');
+      }
+      payload.review_link_url = reviewUrl || null;
+    }
+    // .select('id') so a write the row-level policy silently filtered out
+    // (a non-admin login) is reported instead of looking like a success.
+    const { data, error } = await sb.from('clinics').update(payload).eq('id', clinicId).select('id');
     if (error) throw error;
+    if (!data || !data.length) throw new Error('Only a clinic admin can change these settings.');
     currentClinic = null;
   }
 
@@ -1195,14 +1209,25 @@
     if (error) throw error;
   }
 
+  // The status guards make these compare-and-set: a stale row behind an
+  // open confirm dialog, or a second receptionist, can no longer push a
+  // patient who is already in consultation or done back to waiting/no_show.
   async function markArrived(patientId) {
-    const { error } = await sb.from('patients').update({ status: 'waiting', arrived_at: new Date().toISOString() }).eq('id', patientId);
+    const { data, error } = await sb.from('patients')
+      .update({ status: 'waiting', arrived_at: new Date().toISOString() })
+      .eq('id', patientId).in('status', ['booked', 'no_show'])
+      .select('id');
     if (error) throw error;
+    if (!data || !data.length) throw new Error('This patient was already updated by someone else. Refresh to see the latest.');
   }
 
   async function markNoShow(patientId) {
-    const { error } = await sb.from('patients').update({ status: 'no_show' }).eq('id', patientId);
+    const { data, error } = await sb.from('patients')
+      .update({ status: 'no_show' })
+      .eq('id', patientId).in('status', ['booked', 'waiting'])
+      .select('id');
     if (error) throw error;
+    if (!data || !data.length) throw new Error('This patient was already updated by someone else. Refresh to see the latest.');
   }
 
   async function addWalkIn(info) {
@@ -1213,7 +1238,7 @@
       name: info.name,
       phone: info.phone,
       address: info.address || '',
-      age: info.age || null,
+      age: (info.age === undefined || info.age === '') ? null : info.age,
       gender: info.gender || 'other',
       type: 'walkin',
       status: 'waiting',
@@ -1239,7 +1264,7 @@
       name: info.name,
       phone: info.phone,
       address: info.address || '',
-      age: info.age || null,
+      age: (info.age === undefined || info.age === '') ? null : info.age,
       gender: info.gender || 'other',
       type: 'appointment',
       booked_date: info.bookedDate,
@@ -1376,7 +1401,15 @@
     };
   }
 
-  async function getBillingPatientLookup(phone, dateStr) {
+  // opts.strict: the "which visit / which invoice is this" part rethrows
+  // its errors instead of swallowing them -- the submit path must not
+  // silently fall back to "no visit, no invoice" and create a duplicate
+  // bill. The typing-time autofill leaves it off (a failed lookup there
+  // just means nothing gets prefilled). opts.name: when several patients
+  // share one phone on that day (family), prefer the one with this name.
+  async function getBillingPatientLookup(phone, dateStr, opts) {
+    const strict = !!(opts && opts.strict);
+    const wantedName = ((opts && opts.name) || '').trim().toLowerCase();
     const clinicId = await ensureClinicContext();
     const cleanPhone = (phone || '').trim();
     if (!clinicId || !cleanPhone) return null;
@@ -1411,11 +1444,14 @@
     let mostRecentVisitDate = null;
     try {
       const targetDateStr = dateStr || todayDateStr();
-      const { data: todayPatient, error: patientErr } = await sb.from('patients')
-        .select('id, doctor_id')
+      const { data: todayRows, error: patientErr } = await sb.from('patients')
+        .select('id, doctor_id, name')
         .eq('clinic_id', clinicId).eq('phone', cleanPhone).eq('token_date', targetDateStr)
-        .order('created_at', { ascending: false }).limit(1).maybeSingle();
+        .order('created_at', { ascending: false }).limit(10);
       if (patientErr) throw patientErr;
+      const todayPatient = (todayRows || []).find((r) => wantedName && (r.name || '').trim().toLowerCase() === wantedName)
+        || (todayRows && todayRows[0])
+        || null;
       if (todayPatient) {
         todayDoctorId = todayPatient.doctor_id;
         todayPatientId = todayPatient.id;
@@ -1449,7 +1485,7 @@
             const billedIds = new Set((existingInvoices || []).map((i) => i.patient_id));
             unbilledVisit = candidates.find((c) => !billedIds.has(c.id)) || null;
           }
-        } catch (e) { }
+        } catch (e) { if (strict) throw e; }
 
         if (unbilledVisit) {
           todayDoctorId = unbilledVisit.doctor_id;
@@ -1473,14 +1509,15 @@
           }
         }
       }
-    } catch (e) { }
+    } catch (e) { if (strict) throw e; }
 
     if (!patient && !invoice && !todayDoctorId && !mostRecentDoctorId) return null;
     return {
       name: (patient && patient.name) || (invoice && invoice.patient_name) || '',
       address: (patient && patient.address) || (invoice && invoice.patient_address) || '',
       gender: (patient && patient.gender) || (invoice && invoice.patient_gender) || '',
-      age: (patient && patient.age) || (invoice && invoice.patient_age) || null,
+      // ?? not ||, so an infant aged 0 isn't treated as "no age".
+      age: (patient ? patient.age : null) ?? (invoice ? invoice.patient_age : null) ?? null,
       mostRecentDoctorId,
       mostRecentFeeType,
       mostRecentVisitDate,
@@ -1534,7 +1571,7 @@
       p_patient_name: patientName,
       p_patient_phone: patientPhone || '',
       p_patient_address: patientAddress || '',
-      p_patient_age: patientAge || null,
+      p_patient_age: (patientAge === undefined || patientAge === '') ? null : patientAge,
       p_patient_gender: patientGender || '',
       p_payment_mode: paymentMode || 'cash',
       p_amount_received: amountReceived == null ? null : Number(amountReceived),
@@ -1553,6 +1590,7 @@
       .eq('invoice_date', dateStr)
       .eq('invoice_type', 'consultation')
       .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
       .range(from, to));
     return data.map(normalizeInvoice);
   }
@@ -1570,6 +1608,7 @@
       .lte('invoice_date', endDateStr)
       .eq('invoice_type', 'consultation')
       .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
       .range(from, to));
     return data.map(normalizeInvoice);
   }
@@ -1813,15 +1852,33 @@
     ).length;
   }
 
+  // The doctor's day is read once and counted in memory (this used to be one
+  // query per bucket, up to 48 in a row). Stops at closing time / midnight,
+  // so it never suggests an out-of-hours slot or wraps past 23:59 back to
+  // "00:00"; returns null when nothing later that day has room.
   async function findNextAvailableSlot(doctorId, dateStr, fromTimeStr) {
+    const clinicId = await ensureClinicContext();
     const clinic = await getClinic();
-    let bucket = bucketStartMinutes(fromTimeStr, clinic.slot_interval_mins);
-    for (let i = 0; i < 48; i++) {
-      const count = await countActiveAtSlot(doctorId, dateStr, formatHHMM(bucket));
-      if (count < clinic.slot_capacity) return formatHHMM(bucket);
-      bucket += clinic.slot_interval_mins;
+    const interval = clinic.slot_interval_mins;
+    const { data, error } = await sb
+      .from('patients')
+      .select('booked_time')
+      .eq('clinic_id', clinicId)
+      .eq('doctor_id', doctorId)
+      .eq('booked_date', dateStr)
+      .not('booked_time', 'is', null)
+      .in('status', ['booked', 'waiting', 'in_consult']);
+    if (error) throw error;
+    const counts = {};
+    data.forEach((p) => {
+      const b = bucketStartMinutes(p.booked_time.slice(0, 5), interval);
+      counts[b] = (counts[b] || 0) + 1;
+    });
+    const endMinutes = clinic.closing_time ? parseTime(clinic.closing_time.slice(0, 5)) : 24 * 60;
+    for (let bucket = bucketStartMinutes(fromTimeStr, interval); bucket < endMinutes; bucket += interval) {
+      if ((counts[bucket] || 0) < clinic.slot_capacity) return formatHHMM(bucket);
     }
-    return formatHHMM(bucket);
+    return null;
   }
 
   async function getSlotAvailability(doctorId, dateStr, timeStr) {
@@ -1861,12 +1918,18 @@
         buckets.push({ start, end: Math.min(start + intervalMins, closeMin), count: 0 });
       }
       let noTimeCount = 0;
+      let outsideHoursCount = 0;
       rows.forEach((r) => {
         if (!r.booked_time) { noTimeCount += 1; return; }
         const mins = parseTime(r.booked_time.slice(0, 5));
-        const bucket = buckets.find((b) => mins >= b.start && mins < b.end) || buckets[buckets.length - 1];
-        if (bucket) bucket.count += 1;
+        // A booking before opening or after closing has no row in the grid;
+        // it used to be added to the LAST bucket, inflating that hour.
+        const bucket = buckets.find((b) => mins >= b.start && mins < b.end);
+        if (bucket) bucket.count += 1; else outsideHoursCount += 1;
       });
+      const outsideHoursHtml = outsideHoursCount > 0
+        ? `<p class="panel-note" style="margin:4px 0 14px;">+ ${outsideHoursCount} booking${outsideHoursCount === 1 ? '' : 's'} outside clinic hours, not shown in the grid below.</p>`
+        : '';
       const rowsHtml = buckets.map((b, i) => {
         const isPast = nowMin != null && b.end <= nowMin;
         const isCurrent = nowMin != null && nowMin >= b.start && nowMin < b.end;
@@ -1888,6 +1951,7 @@
         <div class="modal-card" role="dialog" aria-modal="true">
           <h2 class="modal-title">${escapeHtml(doctorName)}'s schedule — ${escapeHtml(dateLabel)}</h2>
           ${noTimeHtml}
+          ${outsideHoursHtml}
           <div id="scheduleGridScroll" style="max-height:45vh;overflow-y:auto;">
             <table class="qtable">
               <thead><tr><th>Time</th><th style="text-align:center;">Count</th></tr></thead>
@@ -2131,6 +2195,10 @@
     await sb.auth.signOut();
     currentClinicId = null;
     currentClinic = null;
+    // Per-user caches: the next login on this page must not see the last
+    // user's profile or feature flags.
+    myProfilePromise = null;
+    Object.keys(featureCache).forEach((key) => { delete featureCache[key]; });
   }
 
   async function isLoggedIn() {
@@ -2206,13 +2274,18 @@
   let myProfilePromise = null;
   async function getMyProfile() {
     if (!myProfilePromise) {
-      myProfilePromise = (async () => {
+      const attempt = (async () => {
         const { data: { session } } = await sb.auth.getSession();
         if (!session) return null;
         const { data, error } = await sb.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
         if (error) throw error;
         return data ? normalizeProfile(data) : null;
       })();
+      myProfilePromise = attempt;
+      // Only a real profile stays cached. A failed fetch, or "no session yet",
+      // is forgotten so the next call asks again instead of every isAdmin()
+      // / requireLogin on the page reusing that one bad result until reload.
+      attempt.then((value) => { if (value === null) myProfilePromise = null; }, () => { myProfilePromise = null; });
     }
     return myProfilePromise;
   }
@@ -2301,17 +2374,36 @@
     const tempClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data, error } = await tempClient.auth.signUp({ email, password });
-    if (error) throw error;
+    let userId;
+    const signUpResult = await tempClient.auth.signUp({ email, password });
+    if (signUpResult.error) {
+      // The sign-up is two steps (create the login, then the clinic profile).
+      // If an earlier attempt created the login but the profile step failed
+      // (a phone already in use, a doctor already linked), the email is now
+      // "already registered" and retrying could never finish. Signing in
+      // with the same password recovers that half-made login instead of
+      // leaving the email permanently burned.
+      if (/already registered/i.test(signUpResult.error.message || '')) {
+        const signInResult = await tempClient.auth.signInWithPassword({ email, password });
+        if (signInResult.error) throw signUpResult.error;
+        userId = signInResult.data.user.id;
+      } else {
+        throw signUpResult.error;
+      }
+    } else {
+      userId = signUpResult.data.user.id;
+    }
     const { error: linkError } = await sb.rpc('create_staff_profile', {
-      new_user_id: data.user.id,
+      new_user_id: userId,
       staff_email: email,
       staff_full_name: fullName,
       staff_role: role,
       staff_doctor_id: role === 'doctor' ? (doctorId || null) : null,
       staff_phone: phone || null,
     });
-    if (linkError) throw linkError;
+    if (linkError) {
+      throw new Error(`${linkError.message || 'Could not finish setting up this person.'} Their login was created, so fix that and press Add again with the same email and password.`);
+    }
   }
 
   async function setStaffActive(profileId, isActive) {
@@ -2446,6 +2538,8 @@
         if (error) throw error;
         return !!data;
       })();
+      // A failed lookup isn't remembered; the next call retries.
+      featureCache[key].catch(() => { delete featureCache[key]; });
     }
     return featureCache[key];
   }
@@ -2459,10 +2553,17 @@
     billingAuditPanel: 'billing_audit',
   };
   async function applyFeatureNavGating() {
-    for (const [id, key] of Object.entries(FEATURE_NAV_MAP)) {
-      const el = document.getElementById(id);
-      if (el && !(await hasFeature(key))) el.style.display = 'none';
-    }
+    // The distinct flags on this page are looked up together (they used to
+    // be awaited one after another before first paint), and one failed
+    // lookup leaves that item visible rather than aborting the rest -- the
+    // server enforces the flag either way, this only hides links.
+    const present = Object.entries(FEATURE_NAV_MAP).filter(([id]) => document.getElementById(id));
+    const keys = [...new Set(present.map(([, key]) => key))];
+    const results = await Promise.all(keys.map((key) => hasFeature(key).then((on) => [key, on], () => [key, true])));
+    const enabled = Object.fromEntries(results);
+    present.forEach(([id, key]) => {
+      if (!enabled[key]) document.getElementById(id).style.display = 'none';
+    });
   }
 
   async function adminGetClinicFeatures(clinicId) {
@@ -3206,12 +3307,24 @@
   }
 
   async function createPharmacyInvoice({ patientId, patientName, patientPhone, paymentMode, amountReceived, items }) {
+    // Read the typed amount strictly. Number('') is 0 (a cleared box
+    // recorded "nothing received") and Number('1,200') is NaN, which JSON
+    // turns into null, which the RPC treats as "paid in full" -- both
+    // silently wrong. Anything that isn't a plain amount is refused.
+    let receivedAmount = null;
+    if (amountReceived !== null && amountReceived !== undefined) {
+      const cleaned = String(amountReceived).replace(/[₹,\s]/g, '');
+      receivedAmount = cleaned === '' ? NaN : Number(cleaned);
+      if (!Number.isFinite(receivedAmount) || receivedAmount < 0) {
+        throw new Error('Enter the amount received as a number, like 250 or 249.50 (0 if nothing was paid).');
+      }
+    }
     const { data, error } = await sb.rpc('create_pharmacy_invoice', {
       p_patient_id: patientId || null,
       p_patient_name: patientName || '',
       p_patient_phone: patientPhone || '',
       p_payment_mode: paymentMode || 'cash',
-      p_amount_received: amountReceived == null ? null : Number(amountReceived),
+      p_amount_received: receivedAmount,
       p_items: items.map((i) => ({ medicine_id: i.medicineId, quantity: Number(i.quantity) })),
     });
     if (error) throw error;

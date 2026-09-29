@@ -49,6 +49,13 @@
         '</div>' +
       '</div>';
 
+    // The platform admin has no clinic profile, so account-security.html
+    // (which requires one) would call them deactivated. Log out only.
+    if (onAdminPage) {
+      bar.querySelector('a[href="account-security.html"]').remove();
+      bar.querySelectorAll('.tb-menu-divider')[1].remove();
+    }
+
     const avatar = bar.querySelector('.tb-avatar');
     avatar.textContent = Qlinic.initialsFor(who.text);
     avatar.style.background = onAdminPage ? PLATFORM_ADMIN_COLOR : AVATAR_COLORS[Qlinic.hashIndex(who.text, AVATAR_COLORS.length)];

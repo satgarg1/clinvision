@@ -189,8 +189,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=133"></script>
-  <script src="app-topbar.js?v=2"></script>
+  <script src="clinic-data.js?v=134"></script>
+  <script src="app-topbar.js?v=3"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -755,12 +755,16 @@
         const windowLabel = `${Qlinic.formatTime(Qlinic.parseTime(avail.windowStart))}–${Qlinic.formatTime(Qlinic.parseTime(avail.windowEnd))}`;
         if (avail.isFull) {
           hint.className = 'slot-hint warn';
-          hint.innerHTML = `⚠ ${avail.count} patients already booked between <strong>${windowLabel}</strong> (max ${avail.capacity} per slot). Next open slot: <strong>${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}</strong> <button type="button" class="btn-sm" id="useSuggestedTimeBtn">Use this time</button>`;
-          document.getElementById('useSuggestedTimeBtn').addEventListener('click', () => {
-            const label = Qlinic.formatTime(Qlinic.parseTime(avail.suggestion));
-            if (isAppt) selectTime(avail.suggestion, label);
-            else selectWalkinTime(avail.suggestion, label);
-          });
+          if (avail.suggestion) {
+            hint.innerHTML = `⚠ ${avail.count} patients already booked between <strong>${windowLabel}</strong> (max ${avail.capacity} per slot). Next open slot: <strong>${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}</strong> <button type="button" class="btn-sm" id="useSuggestedTimeBtn">Use this time</button>`;
+            document.getElementById('useSuggestedTimeBtn').addEventListener('click', () => {
+              const label = Qlinic.formatTime(Qlinic.parseTime(avail.suggestion));
+              if (isAppt) selectTime(avail.suggestion, label);
+              else selectWalkinTime(avail.suggestion, label);
+            });
+          } else {
+            hint.innerHTML = `⚠ ${avail.count} patients already booked between <strong>${windowLabel}</strong> (max ${avail.capacity} per slot), and no later slot that day has room.`;
+          }
         } else {
           hint.className = 'slot-hint ok';
           hint.innerHTML = `✓ ${avail.count}/${avail.capacity} booked between ${windowLabel}, room to add.`;
@@ -975,17 +979,28 @@
 
           const timeInput = backdrop.querySelector('#editPatientTime');
           const bookedTime = timeInput.value;
-          if (!bookedTime) { showError('Pick a time.'); return; }
           const bookedDate = dateInput ? dateInput.value : Qlinic.getTodayDate();
-          if (dateInput && !bookedDate) { showError('Appointment date is required.'); return; }
-          const bookedDateReason = dateInput ? closureReason(bookedDate, doctorId) : null;
-          if (bookedDateReason) { showError(`${bookedDateReason} — choose a different date.`); return; }
-          if (Qlinic.isPastRealDateTime(bookedDate, bookedTime)) {
-            showError('That time has already passed — pick a later one.');
-            return;
+          // The schedule is only validated and written when it was actually
+          // changed. Otherwise fixing a typo in a name or phone was blocked
+          // for walk-ins with no time ("Pick a time"), and for a waiting
+          // patient whose slot has already passed ("time has already
+          // passed") -- and forcing a time onto a walk-in would also move
+          // them in the queue order.
+          const scheduleChanged = (bookedTime !== (p.bookedTime || ''))
+            || (!!dateInput && bookedDate !== (p.bookedDate || ''));
+          if (p.status === 'booked' && !bookedTime) { showError('Pick a time.'); return; }
+          if (scheduleChanged) {
+            if (dateInput && !bookedDate) { showError('Appointment date is required.'); return; }
+            if (!bookedTime) { showError('Pick a time.'); return; }
+            const bookedDateReason = dateInput ? closureReason(bookedDate, doctorId) : null;
+            if (bookedDateReason) { showError(`${bookedDateReason} — choose a different date.`); return; }
+            if (Qlinic.isPastRealDateTime(bookedDate, bookedTime)) {
+              showError('That time has already passed — pick a later one.');
+              return;
+            }
+            update.bookedDate = bookedDate;
+            update.bookedTime = bookedTime;
           }
-          update.bookedDate = bookedDate;
-          update.bookedTime = bookedTime;
 
           const feeTypeSelect = backdrop.querySelector('#editPatientFeeType');
           try {
@@ -1261,7 +1276,7 @@
         this.value = this.value.replace(/[0-9]/g, '');
       });
 
-      document.getElementById('patientForm').addEventListener('submit', async (e) => {
+      async function submitPatientForm(e) {
         e.preventDefault();
         const name = document.getElementById('pName').value;
         const phone = document.getElementById('pPhone').value;
@@ -1380,7 +1395,7 @@
           }
           const avail = await Qlinic.getSlotAvailability(doctorId, date, time);
           if (avail && avail.isFull && !(await Qlinic.confirmDialog({
-            message: `The ${Qlinic.formatTime(Qlinic.parseTime(avail.windowStart))}–${Qlinic.formatTime(Qlinic.parseTime(avail.windowEnd))} slot already has ${avail.count} patients booked (max ${avail.capacity}). The next open slot is ${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}.`,
+            message: `The ${Qlinic.formatTime(Qlinic.parseTime(avail.windowStart))}–${Qlinic.formatTime(Qlinic.parseTime(avail.windowEnd))} slot already has ${avail.count} patients booked (max ${avail.capacity}). ${avail.suggestion ? `The next open slot is ${Qlinic.formatTime(Qlinic.parseTime(avail.suggestion))}.` : 'No later slot that day has room.'}`,
             confirmLabel: 'Add at requested time',
             cancelLabel: 'Cancel',
           }))) {
@@ -1422,6 +1437,26 @@
         updateClosedDayHint();
         updateDoctorClosedHint();
         renderQueues();
+      }
+
+      // One submission at a time: the handler awaits several network calls
+      // (fresh clinic row, slot availability, confirm dialogs) before it
+      // inserts, so a double-click or held Enter used to run it twice and
+      // create two patients and two tokens.
+      let patientFormBusy = false;
+      document.getElementById('patientForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (patientFormBusy) return;
+        patientFormBusy = true;
+        const submitBtn = document.getElementById('patientSubmitBtn');
+        const wasDisabled = submitBtn ? submitBtn.disabled : false;
+        if (submitBtn) submitBtn.disabled = true;
+        try {
+          await submitPatientForm(e);
+        } finally {
+          patientFormBusy = false;
+          if (submitBtn) submitBtn.disabled = wasDisabled;
+        }
       });
 
       document.getElementById('pDoctor').addEventListener('change', () => {
@@ -1574,7 +1609,20 @@
       clinicClosureByDate = Object.fromEntries(closures.map((c) => [c.date, c.note]));
       doctorHolidayByKey = Object.fromEntries(doctorHolidays.map((h) => [`${h.doctorId}::${h.date}`, h.note]));
       document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
+      // A reception PC left on overnight otherwise keeps showing yesterday:
+      // the queue view date and the booking date are set once at load. When
+      // the day changes, move whatever was on "today" forward to the new one.
+      let knownToday = Qlinic.getTodayDate();
       setInterval(() => {
+        const today = Qlinic.getTodayDate();
+        if (today !== knownToday) {
+          const bookingDate = document.getElementById('pDate');
+          if (queueViewDate === knownToday) queueViewDate = today;
+          bookingDate.min = today;
+          if (!bookingDate.value || bookingDate.value < today) bookingDate.value = today;
+          knownToday = today;
+          updateClosedDayHint();
+        }
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
         renderClosedDayBanner();
         updateDoctorClosedHint();

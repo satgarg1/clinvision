@@ -309,8 +309,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=133"></script>
-  <script src="app-topbar.js?v=2"></script>
+  <script src="clinic-data.js?v=134"></script>
+  <script src="app-topbar.js?v=3"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -1272,7 +1272,15 @@
         }
       });
 
+      // One queue action at a time: calling the next patient is a
+      // read-then-write on the server side, so a double-tap could see the
+      // patient it had just called as "in consultation", mark them done
+      // unseen, and call the one after. render() only re-disables these
+      // buttons after the round trip, which is too late.
+      let queueActionBusy = false;
       document.getElementById('callNextBtn').addEventListener('click', async () => {
+        if (queueActionBusy) return;
+        queueActionBusy = true;
         try {
           const result = await Qlinic.callNextPatient(currentDoctorId());
           render();
@@ -1280,16 +1288,22 @@
           else showToast('No one is waiting in the queue');
         } catch (err) {
           showToast(err.message || 'Could not update the queue');
+        } finally {
+          queueActionBusy = false;
         }
       });
 
       document.getElementById('finishCurrentBtn').addEventListener('click', async () => {
+        if (queueActionBusy) return;
+        queueActionBusy = true;
         try {
           await Qlinic.finishCurrentPatient(currentDoctorId());
           render();
           showToast('Visit marked as done');
         } catch (err) {
           showToast(err.message || 'Could not update the queue');
+        } finally {
+          queueActionBusy = false;
         }
       });
 
@@ -1857,7 +1871,11 @@
       // patched, the whole thing is just regenerated fresh each time, so
       // writing it to two places at once creates no duplicate-id problem.
       function buildRxHtml() {
-        const patient = currentQueue && currentQueue.nowServing;
+        // The patient this prescription is being written for (pinned when
+        // the modal opened), not whoever is in consultation right now: the
+        // queue can advance while the modal is open, and the printed Rx
+        // must still match the patient it is saved under.
+        const patient = rxPinnedPatient || (currentQueue && currentQueue.nowServing);
         const doctor = currentDoctor;
 
         const logoHtml = (clinic && clinic.logo_url)
@@ -2012,6 +2030,9 @@
         try {
           list = await Qlinic.getPatientPrescriptions(patient.id);
         } catch (err) {
+          // Forget the patient so the next render() retries, instead of
+          // treating this patient as already loaded with the button stuck off.
+          rxHistoryPatientId = null;
           return;
         }
         if (rxHistoryPatientId !== patient.id) return; // patient changed while this was in flight
@@ -2269,6 +2290,11 @@
           });
           saved = true;
           showToast('Prescription saved');
+          // Reload this patient's history so "View history" includes the
+          // prescription just written (it only refetched when the patient
+          // changed).
+          rxHistoryPatientId = null;
+          updateRxHistoryChip(patient);
           // #printRx is already populated — updateRxPreview() writes to it
           // on every change, the same way billing-consultation.html's
           // #printReceipt is always kept populated rather than filled in
@@ -2296,6 +2322,11 @@
             document.getElementById('rxModalBackdrop').style.display = 'none';
             rxPinnedPatient = null;
             rxSaving = false;
+            // The modal is closed, so nothing can double-submit now; turn
+            // the buttons back on for the next prescription (nothing else
+            // resets them when the composer is opened again).
+            document.getElementById('rxSavePrintBtn').disabled = false;
+            document.getElementById('rxSaveOnlyBtn').disabled = false;
           }
         } catch (err) {
           console.error('Save prescription failed:', err);

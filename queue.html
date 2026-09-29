@@ -151,7 +151,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=133"></script>
+  <script src="clinic-data.js?v=134"></script>
   <script>
     (async function () {
       const params = new URLSearchParams(window.location.search);
@@ -538,9 +538,14 @@
           document.getElementById('feedbackThanksText').textContent = T.feedbackThanks;
           document.getElementById('googleHeading').textContent = T.googleHeading;
           document.getElementById('googleSub').textContent = T.googleSub;
-          reviewLinkUrl = data.reviewLinkUrl || null;
+          // Only a real web link is ever offered (defence in depth: the
+          // clinic settings form and the database reject anything else).
+          reviewLinkUrl = (data.reviewLinkUrl && /^https?:\/\//i.test(data.reviewLinkUrl)) ? data.reviewLinkUrl : null;
           routedToReview = !!data.visitFeedbackRoutedToReview;
-          feedbackPicked = data.visitFeedbackRating || 0;
+          // A star the patient has picked but not sent yet (then toggled the
+          // language, which re-renders this block) must not be reset to the
+          // saved rating.
+          if (!feedbackTouched) feedbackPicked = data.visitFeedbackRating || 0;
           feedbackBlock.classList.toggle('submitted', !!data.visitFeedbackSubmitted);
           paintFeedbackStars(feedbackPicked);
           renderGoogleBlock();
@@ -616,6 +621,9 @@
         loadingEl.style.display = 'none';
         errorEl.style.display = 'none';
         closedEl.style.display = 'none';
+        // Left on screen from an earlier "not active yet" render, it would
+        // sit above the live status once the appointment day arrives.
+        notYetEl.style.display = 'none';
         statusEl.style.display = 'block';
         footerEl.style.display = 'block';
 
@@ -814,6 +822,7 @@
       // just call the same upserting RPC with whatever they know at
       // that moment.
       let feedbackPicked = 0;
+      let feedbackTouched = false;
       let reviewLinkUrl = null;
       let routedToReview = false;
       function paintFeedbackStars(n) {
@@ -840,6 +849,7 @@
         star.addEventListener('mouseleave', () => paintFeedbackStars(feedbackPicked));
         star.addEventListener('click', () => {
           feedbackPicked = parseInt(star.dataset.val, 10);
+          feedbackTouched = true;
           paintFeedbackStars(feedbackPicked);
           document.getElementById('feedbackExtra').classList.add('open');
           document.getElementById('feedbackBlock').classList.remove('submitted');
@@ -857,6 +867,10 @@
             feedbackText: document.getElementById('feedbackTextInput').value,
           });
           document.getElementById('feedbackBlock').classList.add('submitted');
+          // Re-enabled on success too: tapping a star reopens the box so the
+          // patient can change the rating and send again, and a button left
+          // disabled would silently ignore that second send.
+          btn.disabled = false;
         } catch (err) {
           btn.disabled = false;
         }
@@ -895,8 +909,12 @@
       try {
         await render();
       } catch (err) {
-        showError();
-        return;
+        // A network or server error is not "no booking for this link" (that
+        // is render()'s own data.error branch). Keep the loading state and
+        // retry shortly instead of showing a dead-end error a patient on a
+        // flaky connection could never get out of.
+        handleRefreshError(err);
+        setTimeout(() => { render().catch(handleRefreshError); }, 5000);
       }
 
       if (doneEl.style.display !== 'block') {

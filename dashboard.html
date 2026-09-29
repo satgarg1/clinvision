@@ -116,8 +116,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=133"></script>
-  <script src="app-topbar.js?v=2"></script>
+  <script src="clinic-data.js?v=134"></script>
+  <script src="app-topbar.js?v=3"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -401,9 +401,12 @@
         const today = Qlinic.getTodayDate();
         // Fetched for reception too, not just admin -- the "Doctors away"
         // stat below needs to know a doctor is out on holiday today
-        // regardless of who's viewing the dashboard. Skipped for a lone
-        // doctor's own view, where that card never renders anyway.
-        const allDoctorHolidays = doctors.length > 1 ? await Qlinic.getDoctorHolidays() : [];
+        // regardless of who's viewing the dashboard. Skipped only for a
+        // doctor's own view, where that card never renders anyway -- not
+        // for a clinic that happens to have one doctor (that's what
+        // `doctors.length > 1` used to skip too), whose admin and
+        // reception still need to see that doctor is on holiday.
+        const allDoctorHolidays = !amDoctor ? await Qlinic.getDoctorHolidays() : [];
         const doctorIdsOnHolidayToday = new Set(
           allDoctorHolidays.filter((h) => h.date === today).map((h) => h.doctorId)
         );
@@ -762,9 +765,29 @@
         `;
       }
 
-      render();
+      // render() makes a run of sequential fetches and writes different
+      // sections at different points. Realtime events can fire it again
+      // mid-run, and a slow earlier run finishing last would overwrite the
+      // newer numbers. So only one run at a time: a change that arrives
+      // meanwhile queues exactly one more run, which then reads fresh data.
+      let renderRunning = false;
+      let renderQueued = false;
+      async function scheduleRender() {
+        if (renderRunning) { renderQueued = true; return; }
+        renderRunning = true;
+        try {
+          await render();
+        } catch (err) {
+          console.error('Dashboard render failed:', err);
+        } finally {
+          renderRunning = false;
+          if (renderQueued) { renderQueued = false; scheduleRender(); }
+        }
+      }
+
+      scheduleRender();
       setInterval(updateDateTimeLabel, 30000);
-      Qlinic.onLiveChange(render);
+      Qlinic.onLiveChange(scheduleRender);
 
       // Chrome/Safari restore this exact page (including its old scroll
       // position) from bfcache on Back/forward instead of reloading it, so

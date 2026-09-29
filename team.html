@@ -120,8 +120,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=133"></script>
-  <script src="app-topbar.js?v=2"></script>
+  <script src="clinic-data.js?v=134"></script>
+  <script src="app-topbar.js?v=3"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -324,6 +324,10 @@
           const phone = backdrop.querySelector('#editStaffPhone').value;
           const role = backdrop.querySelector('#editStaffRole').value;
           const doctorId = role === 'doctor' ? backdrop.querySelector('#editStaffDoctorId').value : '';
+          if (phone && !/^\d{10}$/.test(phone)) {
+            showToast('Enter a 10-digit phone number, or leave it blank.');
+            return;
+          }
           try {
             if (fullName !== (person.fullName || '')) await Qlinic.updateStaffName(person.id, fullName);
             if (phone !== (person.phone || '')) await Qlinic.updateStaffPhone(person.id, phone);
@@ -331,6 +335,9 @@
             if (role === 'doctor' && doctorId !== (person.doctorId || '')) await Qlinic.updateStaffDoctorLink(person.id, doctorId);
           } catch (err) {
             showToast(err.message || 'Could not update this person — please try again.');
+            // These are separate writes, so an earlier one may already have
+            // saved: refresh the table so it shows what is actually stored.
+            loadTeam();
             return;
           }
           cleanup();
@@ -394,6 +401,11 @@
         if (password !== confirmPassword) {
           note.style.display = 'block';
           note.textContent = "The two passwords do not match. Please type them again.";
+          return;
+        }
+        if (phone && !/^\d{10}$/.test(phone)) {
+          note.style.display = 'block';
+          note.textContent = 'Enter a 10-digit phone number, or leave it blank.';
           return;
         }
         try {

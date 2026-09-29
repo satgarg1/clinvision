@@ -185,7 +185,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=133"></script>
+  <script src="clinic-data.js?v=134"></script>
   <script>
     (async function () {
       const urlParams = new URLSearchParams(location.search);
@@ -732,11 +732,16 @@
             clinic = result.clinic;
             allQueues = result.allQueues;
           } catch (err) {
-            showExpiredLinkMessage();
+            // Only a genuinely ended session clears the stored id. A network
+            // blip or server error keeps it, so the next poll can recover
+            // instead of telling the patient to rescan.
+            if (err && err.code === 'DISPLAY_SESSION_EXPIRED') showExpiredLinkMessage();
             return;
           }
         } else {
-          clinic = await Qlinic.getClinic();
+          // Forced fresh every poll: the cached clinic row would otherwise
+          // hide a close-for-the-day or a language change made elsewhere.
+          clinic = await Qlinic.getClinic(true);
           allQueues = await Qlinic.getAllQueues();
         }
         T = STRINGS[clinic && clinic.display_language] || STRINGS.en;
