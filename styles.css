@@ -3489,6 +3489,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .dash-table-header-row h2 { margin: 0; font-size: 16px; }
 .dash-view-all-link { font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
 .dash-view-all-link:hover { text-decoration: underline; }
+.dash-sidebar-title-row .dash-view-all-link { margin-left: auto; }
 table.dash-table { width: 100%; border-collapse: collapse; }
 table.dash-table th {
   text-align: left; padding: 0 8px 10px; border-bottom: 1px solid var(--grey-300);
