@@ -7738,3 +7738,36 @@ select.cc-input { padding-right: 8px; }
   .settings-card-grid .panel.tm-card { flex-direction: column; gap: 28px; padding: 24px; }
   .tm-overview { width: 100%; }
 }
+
+/* Team page: Add a staff member and Everyone with access (reuses the Doctors page .dd-* and .qr-* pieces) */
+.tm-badge-blue { background: var(--pm-blue-bg); color: var(--pm-blue); }
+.tm-form { row-gap: 16px; column-gap: 16px; align-items: flex-start; }
+.tm-break { flex-basis: 100%; height: 0; }
+.tm-fld { position: relative; flex: 1; min-width: 0; }
+.tm-fld > svg { position: absolute; left: 14px; top: 13px; color: var(--pm-sub); pointer-events: none; z-index: 1; }
+.tm-fld .dd-input { padding-left: 42px; }
+.tm-fld .pw-reveal-wrap .dd-input { padding-right: 44px; }
+.tm-fld .pw-reveal-btn { color: var(--pm-sub); }
+.tm-phone { display: flex; gap: 8px; }
+.dd-input.tm-cc { flex: none; width: 64px; padding: 0; text-align: center; background: var(--qr-panel-bg); color: var(--pm-sub); font-weight: 500; }
+.tm-add-col { flex: none; min-width: 0; }
+.tm-result { margin: 0; font-size: 13px; line-height: 1.45; color: var(--pm-body); }
+.dd-count:has(#teamCountNote:empty) { display: none; }
+.tm-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tm-you { font-weight: 400; color: var(--qr-hint); }
+.tm-none { color: var(--qr-hint); }
+.tm-role { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #dbeafe; color: #1d4ed8; }
+.tm-role.reception { background: #ede9fe; color: #6d28d9; }
+.tm-role.doctor { background: #ccfbf1; color: #0f766e; }
+.tm-role.pharmacist { background: #ffedd5; color: #c2410c; }
+:root[data-theme="dark"] .tm-role { background: rgba(59, 130, 246, 0.22); color: #93c5fd; }
+:root[data-theme="dark"] .tm-role.reception { background: rgba(167, 139, 250, 0.22); color: #c4b5fd; }
+:root[data-theme="dark"] .tm-role.doctor { background: rgba(45, 212, 191, 0.2); color: #5eead4; }
+:root[data-theme="dark"] .tm-role.pharmacist { background: rgba(251, 146, 60, 0.2); color: #fdba74; }
+@media (min-width: 901px) {
+  .dd-row.tm-cols { grid-template-columns: 1.9fr 2.3fr 1.3fr 1.1fr 1.4fr 1.2fr 1fr; }
+}
+@media (max-width: 900px) {
+  .tm-add-col { flex: 1 1 100%; }
+  .tm-add-col .qr-label { display: none; }
+}
