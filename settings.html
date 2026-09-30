@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=418" />
+<link rel="stylesheet" href="styles.css?v=419" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -115,33 +115,130 @@
         <a href="team.html" class="btn-sm primary" style="display:inline-block;text-decoration:none;">Manage team</a>
       </div>
 
-      <div class="panel" id="displayScreenPanel" data-group="preferences">
-        <div class="panel-header"><h2>Display screen</h2></div>
-        <p class="panel-note">
-          Language shown on the waiting-room TV board (queue positions, "now serving," etc). Applies to that shared
-          screen for everyone in the waiting room, not just this device.
-        </p>
-        <form id="displayLanguageForm" class="inline-form">
-          <div class="field" style="max-width:200px;">
-            <label>Language</label>
-            <select id="displayLanguageInput" class="pill-select" style="width:100%;">
-              <option value="en">English</option>
-              <option value="hi">हिन्दी (Hindi)</option>
-            </select>
+      <div class="panel pm-card qr-card pf-card" id="displayScreenPanel" data-group="preferences">
+        <div class="pf-head">
+          <div class="qr-badge">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           </div>
-          <div class="field" style="flex:0;">
-            <label>&nbsp;</label>
-            <button type="submit" class="btn-sm primary">Save</button>
+          <div>
+            <h2 class="qr-title">Display screen</h2>
+            <p class="qr-sub pf-desc">Language shown on the waiting room TV board (queue positions, "now serving," etc). Applies to that shared screen for everyone in the waiting room.</p>
+          </div>
+        </div>
+
+        <form id="displayLanguageForm" class="pf-form">
+          <div>
+            <label class="qr-label" for="displayLanguageInput">Language</label>
+            <div class="pf-select-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <select id="displayLanguageInput" class="pf-select">
+                <option value="en">English</option>
+                <option value="hi">हिन्दी (Hindi)</option>
+              </select>
+            </div>
+            <div class="pf-hint">This will change the language on the waiting room display screen.</div>
+          </div>
+
+          <div class="pf-tv-panel">
+            <div class="pf-tv-art" aria-hidden="true">
+              <svg class="pf-plant" width="42" height="76" viewBox="0 0 42 76"><path d="M21 52c-14-4-16-22-9-34 9 4 14 14 9 34z" fill="#22a06b"/><path d="M21 52c8-6 14-16 10-28-9 6-12 16-10 28z" fill="#34c38f"/><path d="M21 52c-2-10 0-22 0-30" stroke="#178a5a" stroke-width="2" fill="none"/><path d="M8 56h26l-3 18H11z" fill="#a5b4fc"/><rect x="6" y="52" width="30" height="6" rx="2" fill="#818cf8"/></svg>
+              <div class="pf-tv">
+                <div class="pf-tv-screen">
+                  <div class="pf-tv-now">
+                    <span class="pf-tv-label" id="pfNowLabel">Now serving</span>
+                    <span class="pf-tv-token">#12</span>
+                    <span class="pf-tv-bar"></span>
+                  </div>
+                  <span class="pf-tv-split"></span>
+                  <div class="pf-tv-next">
+                    <span class="pf-tv-next-label" id="pfNextLabel">Next</span>
+                    <span class="pf-tv-chip">#13</span>
+                    <span class="pf-tv-chip">#14</span>
+                    <span class="pf-tv-chip">#15</span>
+                  </div>
+                </div>
+              </div>
+              <span class="pf-tv-stand"></span>
+            </div>
+            <div class="pf-tv-divider"></div>
+            <div>
+              <div class="pf-how-title">How it looks for patients</div>
+              <div class="pf-how-text">The selected language will be used on the waiting room screen for all patients.</div>
+            </div>
+          </div>
+
+          <div class="pf-actions">
+            <button type="submit" class="qr-save pf-save" id="displayLanguageSaveBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <span>Save</span>
+            </button>
           </div>
         </form>
       </div>
 
-      <div class="panel" data-group="preferences">
-        <div class="panel-header"><h2>Appearance</h2></div>
-        <p class="panel-note">Applies on this device, for the ClinVision app screens (not the waiting-room display).</p>
-        <div class="mode-toggle" role="tablist" aria-label="Day or night theme" style="margin-bottom:0;">
-          <button type="button" class="mode-btn theme-toggle-btn" data-theme-choice="light">☀️ Day</button>
-          <button type="button" class="mode-btn theme-toggle-btn" data-theme-choice="dark">🌙 Night</button>
+      <div class="panel pm-card qr-card pf-card" data-group="preferences">
+        <div class="pf-head">
+          <div class="qr-badge pf-badge-orange">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 1 1 10-10c0 2.8-2.2 3.5-4 3.5h-1.6a1.9 1.9 0 0 0-1.4 3.1c.4.5.6 1 .6 1.6 0 1.1-1.6 1.8-3.6 1.8z"/><circle cx="7.5" cy="11" r="1.2" fill="currentColor"/><circle cx="10.5" cy="7" r="1.2" fill="currentColor"/><circle cx="15.5" cy="7.5" r="1.2" fill="currentColor"/></svg>
+          </div>
+          <div>
+            <h2 class="qr-title">Appearance</h2>
+            <p class="qr-sub pf-desc">Applies on this device, for the ClinVision app screens (not the waiting room display).</p>
+          </div>
+        </div>
+
+        <div class="pf-themes" role="radiogroup" aria-label="Day or night theme">
+          <button type="button" class="pf-theme" role="radio" aria-checked="false" data-theme-choice="light">
+            <div class="pf-shot day">
+              <div class="pf-shot-top"><span class="pf-mark"></span><span class="pf-brand">ClinVision</span><span class="pf-line" style="flex:1;height:10px;margin-left:8px;"></span></div>
+              <div class="pf-shot-body">
+                <div class="pf-shot-side">
+                  <span class="pf-active-row"><span class="pf-sq"></span></span>
+                  <span class="pf-line" style="width:70%;"></span><span class="pf-line" style="width:55%;"></span><span class="pf-line" style="width:65%;"></span>
+                </div>
+                <div class="pf-shot-main">
+                  <span class="pf-line" style="width:45%;height:8px;"></span>
+                  <div class="pf-tiles"><span class="pf-tile a"></span><span class="pf-tile b"></span></div>
+                  <span class="pf-line t1"></span><span class="pf-line t2" style="width:80%;"></span><span class="pf-line t3" style="width:60%;"></span>
+                </div>
+              </div>
+            </div>
+            <div class="pf-theme-row">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="#fbbf24"/><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.6" y1="4.6" x2="6.4" y2="6.4"/><line x1="17.6" y1="17.6" x2="19.4" y2="19.4"/><line x1="4.6" y1="19.4" x2="6.4" y2="17.6"/><line x1="17.6" y1="6.4" x2="19.4" y2="4.6"/></svg>
+              <span class="pf-theme-name">Day</span>
+              <span class="pf-radio"><span class="pf-radio-dot"></span></span>
+            </div>
+          </button>
+
+          <button type="button" class="pf-theme" role="radio" aria-checked="false" data-theme-choice="dark">
+            <div class="pf-shot night">
+              <div class="pf-shot-top"><span class="pf-mark"></span><span class="pf-brand">ClinVision</span><span class="pf-line" style="flex:1;height:10px;margin-left:8px;"></span></div>
+              <div class="pf-shot-body">
+                <div class="pf-shot-side">
+                  <span class="pf-active-row"><span class="pf-sq"></span></span>
+                  <span class="pf-line" style="width:70%;"></span><span class="pf-line" style="width:55%;"></span><span class="pf-line" style="width:65%;"></span>
+                </div>
+                <div class="pf-shot-main">
+                  <span class="pf-line" style="width:45%;height:8px;"></span>
+                  <div class="pf-tiles"><span class="pf-tile a"></span><span class="pf-tile b"></span></div>
+                  <span class="pf-line t1"></span><span class="pf-line t2" style="width:80%;"></span><span class="pf-line t3" style="width:60%;"></span>
+                </div>
+              </div>
+            </div>
+            <div class="pf-theme-row">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+              <span class="pf-theme-name">Night</span>
+              <span class="pf-radio"><span class="pf-radio-dot"></span></span>
+            </div>
+          </button>
+        </div>
+
+        <div class="pm-alert blue pf-note">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><line x1="12" y1="11" x2="12" y2="17" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1.3" fill="#ffffff"/></svg>
+          <div>
+            <div class="pm-alert-title">Appearance setting is specific to this device</div>
+            <div class="pm-alert-text">This applies to your current device only. It does not affect the waiting room display screen.</div>
+          </div>
         </div>
       </div>
       </div>
@@ -195,10 +292,10 @@
         : 'Add the days you\'re away.';
 
       const SETTINGS_GROUPS = [
-        { slug: 'clinic-setup', label: 'Clinic Setup' },
-        { slug: 'records', label: 'Records' },
-        { slug: 'team-access', label: 'Team & Access' },
-        { slug: 'preferences', label: 'Preferences' },
+        { slug: 'clinic-setup', label: 'Clinic Setup', icon: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>' },
+        { slug: 'records', label: 'Records', icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>' },
+        { slug: 'team-access', label: 'Team & Access', icon: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' },
+        { slug: 'preferences', label: 'Preferences', icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
       ];
       const SETTINGS_GROUP_KEY = 'clinvision_settings_active_group';
       let activeSettingsGroup = sessionStorage.getItem(SETTINGS_GROUP_KEY);
@@ -210,7 +307,7 @@
           activeSettingsGroup = groupsWithPanels.length ? groupsWithPanels[0].slug : null;
         }
         document.getElementById('settingsGroupTabs').innerHTML = groupsWithPanels.map((g) =>
-          `<button type="button" class="period-pill${g.slug === activeSettingsGroup ? ' active' : ''}" data-group-tab="${g.slug}">${g.label}</button>`
+          `<button type="button" class="period-pill${g.slug === activeSettingsGroup ? ' active' : ''}" data-group-tab="${g.slug}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${g.icon}</svg><span>${g.label}</span></button>`
         ).join('');
         document.querySelectorAll('#settingsGroupTabs [data-group-tab]').forEach((btn) => {
           btn.addEventListener('click', () => {
@@ -223,6 +320,7 @@
           const roleVisible = !roleHiddenIds.has(p.id);
           p.style.display = (roleVisible && p.dataset.group === activeSettingsGroup) ? '' : 'none';
         });
+        document.getElementById('settingsCardGrid').classList.toggle('prefs-grid', activeSettingsGroup === 'preferences');
       }
       applySettingsGrouping();
       await Qlinic.applyFeatureNavGating();
@@ -254,7 +352,21 @@
         const clinic = await Qlinic.getClinic();
         if (!clinic) return;
         document.getElementById('displayLanguageInput').value = clinic.display_language;
+        renderDisplayPreview();
       }
+
+      // Live preview of the waiting room TV in the chosen language (same labels as display.html)
+      const DISPLAY_PREVIEW_LABELS = {
+        en: { now: 'Now serving', next: 'Next' },
+        hi: { now: 'अभी देखा जा रहा है', next: 'अगले' },
+      };
+      function renderDisplayPreview() {
+        const lang = document.getElementById('displayLanguageInput').value;
+        const L = DISPLAY_PREVIEW_LABELS[lang] || DISPLAY_PREVIEW_LABELS.en;
+        document.getElementById('pfNowLabel').textContent = L.now;
+        document.getElementById('pfNextLabel').textContent = L.next;
+      }
+      document.getElementById('displayLanguageInput').addEventListener('change', renderDisplayPreview);
 
       document.getElementById('displayLanguageForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -270,7 +382,9 @@
       function applyTheme(theme) {
         Qlinic.setTheme(theme);
         document.querySelectorAll('[data-theme-choice]').forEach((btn) => {
-          btn.classList.toggle('active', btn.getAttribute('data-theme-choice') === theme);
+          const on = btn.getAttribute('data-theme-choice') === theme;
+          btn.classList.toggle('active', on);
+          btn.setAttribute('aria-checked', on ? 'true' : 'false');
         });
       }
       document.querySelectorAll('[data-theme-choice]').forEach((btn) => {
