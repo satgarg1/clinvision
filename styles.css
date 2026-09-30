@@ -2966,15 +2966,14 @@ input[type="number"] { -moz-appearance: textfield; }
 /* ---------------- App shell (dashboard / reception / doctor) ---------------- */
 
 .app-shell {
-  /* The only top gap between the global bar and a page's first element.
+  /* The only top gap between the profile strip and a page's first element.
      Pages add none of their own; the closed-day banner reads this to pull
      itself flush with the top. */
   --main-pad-top: 0px;
-  --topbar-h: 54px;
   --sidebar-w: 224px;
   display: grid;
   grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
-  grid-template-rows: 54px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   height: 100vh;
   /* dvh tracks the visible area as a phone's address bar shows and hides;
      plain vh (the fallback above) is the tallest case and would leave the
@@ -2983,14 +2982,12 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 /* Only .app-main scrolls on these pages. Without this the document itself
    can still scroll (a stray overflow, or a scroll chained on from the end
-   of .app-main) and drag the whole shell, sidebar and pill included. */
+   of .app-main) and drag the whole shell, sidebar included. */
 @media screen {
   body:has(.app-shell) { overflow: hidden; }
 }
-.app-shell > .app-sidebar { grid-column: 1; grid-row: 1 / 3; }
-/* .app-main spans both rows so the page scrolls underneath the floating pill;
-   its padding-top (below) reserves the bar's 54px so nothing starts hidden. */
-.app-shell > .app-main { grid-column: 2; grid-row: 1 / 3; }
+.app-shell > .app-sidebar { grid-column: 1; grid-row: 1; }
+.app-shell > .app-main { grid-column: 2; grid-row: 1; }
 
 .app-sidebar {
   width: 224px;
@@ -3136,20 +3133,19 @@ input[type="number"] { -moz-appearance: textfield; }
 .app-main {
   flex: 1;
   background: var(--grey-100);
-  padding: calc(var(--topbar-h) + var(--main-pad-top)) 48px 40px;
+  padding: var(--main-pad-top) 48px 40px;
   min-width: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
-/* Global top bar: same 60px on every sidebar page, no bar of its own --
-   it takes .app-main's background (not transparent: the .app-shell behind
-   it is the white page, which read as a white banner) so it blends into
-   the canvas and only the profile pill floats. Sits in the .app-shell grid
-   above .app-main so it stays put while the page scrolls. */
+/* Global top bar: the same 54px strip at the top of every sidebar page, no
+   background of its own so only the profile pill shows. It is the first
+   thing inside .app-main, so it is part of the page, not floating over it:
+   it stays at the very top and scrolls away with the page, and the pill is
+   found again by scrolling back up. app-topbar.js puts it there. */
 .global-topbar {
   background: transparent;
-  pointer-events: none;
   --tb-name: #1e1b4b;
   --tb-clinic: #4b6a9b;
   --tb-pill-bg: rgba(255, 255, 255, 0.8);
@@ -3166,17 +3162,16 @@ input[type="number"] { -moz-appearance: textfield; }
   --tb-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
   height: 54px;
   box-sizing: border-box;
-  padding: 0 32px;
+  /* Spans .app-main's full width by cancelling its 48px side padding. The
+     right padding gives back the scrollbar's width (app-topbar.js sets
+     --sbw), so the pill sits 32px from the window edge whether or not the
+     page scrolls. */
+  margin: 0 -48px;
+  padding: 0 calc(32px - var(--sbw, 0px)) 0 32px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  /* Fixed to the viewport, not laid out in the grid: nothing that scrolls
-     (the page's main column, or the document itself on a browser whose
-     100vh runs taller than the visible area) can carry the pill with it. */
-  position: fixed;
-  top: 0;
-  left: var(--sidebar-w, 224px);
-  right: 0;
+  position: relative;
   z-index: 5;
 }
 :root[data-theme="dark"] .global-topbar {
@@ -3195,7 +3190,7 @@ input[type="number"] { -moz-appearance: textfield; }
   --tb-out-hover: rgba(244, 63, 94, 0.16);
   --tb-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
 }
-.tb-wrap { position: relative; pointer-events: auto; }
+.tb-wrap { position: relative; }
 .tb-pill {
   display: flex;
   align-items: center;
@@ -5598,7 +5593,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
      use the same --mobile-topbar-h, so the pill stays centered on the
      strip. Transparent, not the desktop bar's grey, so the white strip
      shows through. */
-  .global-topbar { position: fixed; top: 0; right: 0; left: auto; height: var(--mobile-topbar-h); padding: 0 12px; z-index: 50; background: transparent; }
+  .global-topbar { position: fixed; top: 0; right: 0; left: auto; height: var(--mobile-topbar-h); margin: 0; padding: 0 12px; z-index: 50; background: transparent; }
   .tb-name, .tb-clinic { max-width: 120px; }
 
   .mobile-topbar {
@@ -5648,7 +5643,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   }
   .mobile-nav-backdrop.show { opacity: 1; pointer-events: auto; }
 
-  .app-shell { --main-pad-top: 8px; --topbar-h: 0px; }
+  .app-shell { --main-pad-top: 8px; }
   .app-main { padding: var(--main-pad-top) 20px 24px; }
   .closed-day-banner { padding: 6px 20px; margin: calc(-1 * var(--main-pad-top)) -20px 6px; }
 
@@ -6432,7 +6427,7 @@ table.qtable tbody tr.just-arrived-flash { animation: just-arrived-flash 2.4s ea
 .rx-row.collapsed .rc-actions svg { width: 15px; height: 15px; }
 
 /* --- Live print preview, right column --- */
-.rx-preview-wrap { position: sticky; top: var(--topbar-h, 0px); }
+.rx-preview-wrap { position: sticky; top: 0; }
 /* Doctor-chosen theme color drives the accent throughout the preview and
    the printed page — set inline as --rx-theme from the doctor's saved
    Settings preference (falls back to the site accent when unset). */

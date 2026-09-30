@@ -9,15 +9,20 @@
 
   const bar = document.createElement('div');
   bar.className = 'global-topbar';
-  shell.insertBefore(bar, main);
+  // First thing inside the page column, so the pill is part of the page: it
+  // sits at the very top, scrolls away with the page, and is found again by
+  // scrolling back up. (Mobile pins it over the header strip instead.)
+  main.insertBefore(bar, main.firstChild);
 
-  // The pill floats above the scrolling column, so a wheel or trackpad
-  // scroll that starts over it would otherwise do nothing. Hand it to the page.
-  bar.addEventListener('wheel', (e) => {
-    if (e.ctrlKey) return;
-    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? main.clientHeight : 1;
-    main.scrollBy(e.deltaX * unit, e.deltaY * unit);
-  }, { passive: true });
+  // A classic scrollbar takes width from the page column, so hand its width
+  // to the CSS to keep the pill 32px from the window edge on every page,
+  // whether or not that page scrolls.
+  function fitScrollbar() {
+    shell.style.setProperty('--sbw', (main.offsetWidth - main.clientWidth) + 'px');
+  }
+  fitScrollbar();
+  if (window.ResizeObserver) new ResizeObserver(fitScrollbar).observe(main);
+  else window.addEventListener('resize', fitScrollbar);
 
   const AVATAR_COLORS = ['#0f9d94', '#4f46e5', '#c2410c'];
   const PLATFORM_ADMIN_COLOR = '#1e1b4b';
