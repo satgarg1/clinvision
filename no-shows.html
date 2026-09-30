@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=426" />
+<link rel="stylesheet" href="styles.css?v=428" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -44,47 +44,115 @@
         <div>
           <div class="breadcrumb"><a href="settings.html">Settings</a> <span>/</span> No-shows</div>
           <h1>No-shows</h1>
+          <p class="fb-page-sub">Patients who booked but never arrived, so you can spot patterns and follow up.</p>
         </div>
       </div>
 
-      <input type="text" id="noShowSearch" placeholder="Search by patient name, phone, or address..." />
-
-      <div style="display:flex;align-items:flex-end;flex-wrap:wrap;gap:16px 24px;margin-bottom:10px;">
-        <div class="period-pills" id="viewModeToggle" style="margin-bottom:0;">
-          <button type="button" class="period-pill active" data-mode="single">Single day</button>
-          <button type="button" class="period-pill" data-mode="range">Range</button>
-        </div>
-
-        <div style="display:flex;gap:16px 24px;flex-wrap:nowrap;" id="singleDayFilters">
-          <input type="date" lang="en-GB" id="dateFilter" class="pill-input" aria-label="Date" />
-          <button type="button" class="pill-btn" id="todayBtn">Today</button>
-        </div>
-
-        <div style="display:none;" id="rangePresetField">
-          <select id="rangePresetSelect" class="pill-select" aria-label="Period"></select>
-        </div>
-
-        <div style="display:none;gap:16px 24px;flex-wrap:nowrap;" id="customRangeFilters">
-          <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
-            <label class="pill-label">From</label>
-            <input type="date" lang="en-GB" id="rangeStartDate" class="pill-input" />
+      <div class="ns-kpi-grid">
+        <div class="ns-kpi ns-kpi-red">
+          <div class="ns-kpi-icon red">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="10" y1="14" x2="14" y2="18"/><line x1="14" y1="14" x2="10" y2="18"/></svg>
           </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
-            <label class="pill-label">To</label>
-            <input type="date" lang="en-GB" id="rangeEndDate" class="pill-input" />
+          <div class="ns-kpi-main">
+            <div class="ns-kpi-value" id="nsCount">—</div>
+            <div class="ns-kpi-label">No-shows</div>
+            <div class="ns-kpi-sub">in last 30 days</div>
+          </div>
+          <div class="ns-kpi-trend" id="nsCountTrend"></div>
+        </div>
+        <div class="ns-kpi">
+          <div class="ns-kpi-icon blue">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="ns-kpi-main">
+            <div class="ns-kpi-value" id="nsUnique">—</div>
+            <div class="ns-kpi-label">Unique patients</div>
+            <div class="ns-kpi-sub">missed appointments</div>
           </div>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-header">
-          <h2 id="noShowSummary">Loading…</h2>
-          <button type="button" class="btn-sm primary" id="exportCsvBtn">Export CSV</button>
-          <div id="activeFilterChipsRow" class="active-filter-chips" style="margin-bottom:0;"></div>
-          <button type="button" class="btn-sm primary" id="resetFiltersBtn" style="margin-left:auto;">Reset filters</button>
+      <div class="ns-tabs" id="viewModeToggle" role="tablist">
+        <button type="button" role="tab" class="ns-tab active" data-mode="single" aria-selected="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>Single day</span>
+        </button>
+        <button type="button" role="tab" class="ns-tab" data-mode="range" aria-selected="false">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="7" y1="15" x2="17" y2="15"/><polyline points="14 12 17 15 14 18"/></svg>
+          <span>Range</span>
+        </button>
+      </div>
+
+      <div class="panel pm-card qr-card pd-card">
+        <div class="pd-filters">
+          <div class="pd-search-col">
+            <label class="qr-label" for="noShowSearch">Search</label>
+            <div class="tm-fld">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="search" id="noShowSearch" class="dd-input" aria-label="Search no-shows" placeholder="Search by patient name, phone, or address" />
+            </div>
+          </div>
+          <div class="ns-field" id="singleDayFilters">
+            <div class="ns-date-col">
+              <label class="qr-label" for="dateFilter">Date</label>
+              <input type="date" lang="en-GB" id="dateFilter" />
+            </div>
+            <button type="button" class="ns-today" id="todayBtn">Today</button>
+          </div>
+          <div class="pd-period-col" id="rangePresetField" style="display:none;">
+            <label class="qr-label" for="rangePresetSelect">Period</label>
+            <div class="tm-fld">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <select id="rangePresetSelect" class="dd-input" aria-label="Period"></select>
+            </div>
+          </div>
+          <div class="fb-export">
+            <button type="button" class="fb-export-btn pd-export-btn" id="noShowExportBtn" aria-haspopup="menu" aria-expanded="false">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Export</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="fb-menu" id="noShowExportMenu" role="menu" hidden>
+              <button type="button" role="menuitem" class="fb-menu-item" data-export="csv">CSV file</button>
+              <button type="button" role="menuitem" class="fb-menu-item" data-export="xlsx">Excel file</button>
+              <div class="fb-menu-note">Exports what the filters show.</div>
+            </div>
+          </div>
         </div>
-        <div id="noShowTableWrap"></div>
-        <div class="pager" id="noShowPager"></div>
+
+        <div class="pd-custom" id="customRangeFilters" style="display:none;">
+          <div>
+            <label class="qr-label" for="rangeStartDate">From</label>
+            <input type="date" lang="en-GB" id="rangeStartDate" />
+          </div>
+          <div>
+            <label class="qr-label" for="rangeEndDate">To</label>
+            <input type="date" lang="en-GB" id="rangeEndDate" />
+          </div>
+        </div>
+
+        <div id="activeFilterChipsRow" class="pd-chips"></div>
+
+        <div class="pd-list-head">
+          <h2 class="pd-list-title" id="noShowSummary">Loading…</h2>
+          <span class="pd-showing" id="noShowShowing"></span>
+        </div>
+
+        <div id="noShowTableWrap" class="fb-table-wrap"></div>
+
+        <div class="pd-foot">
+          <div class="pd-per">
+            <label for="noShowPerPage">Show</label>
+            <select id="noShowPerPage" class="pd-select">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span>per page</span>
+          </div>
+          <div class="pd-pager" id="noShowPager"></div>
+        </div>
       </div>
     </main>
   </div>
@@ -120,9 +188,9 @@
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
-      const PAGE_SIZE = 25;
+      let pageSize = 25;
       const GENDER_LABELS = { male: 'Male', female: 'Female', other: 'Other' };
-      const TYPE_LABELS = { appointment: 'Appointment', walkin: 'Walk-in' };
+      const TYPE_LABELS = { appointment: 'Appointment', walkin: 'Walk in' };
       function genderKey(g) { return g || '__unspecified__'; }
       function genderLabel(g) { return g ? (GENDER_LABELS[g] || g) : 'Not specified'; }
 
@@ -326,11 +394,12 @@
         doctorFilterIds.clear();
         genderFilterValues.clear();
         typeFilterValues.clear();
+        document.getElementById('noShowSearch').value = '';
         onNoShowFilterChange();
       }
       document.addEventListener('click', () => closeColumnFilter());
 
-      function activeFilterChipsHtml() {
+      function activeChips() {
         const chips = [];
         if (doctorFilterIds.size > 0) {
           const labels = Object.values(doctorById).filter((d) => doctorFilterIds.has(d.id)).map((d) => d.name);
@@ -344,8 +413,14 @@
           const labels = [...typeFilterValues].map((v) => TYPE_LABELS[v] || v);
           chips.push({ key: 'type', label: `Type: ${labels.join(', ')}` });
         }
-        if (chips.length === 0) return '';
-        return `<div class="active-filter-chips">${chips.map((c) => `<div class="filter-chip">${Qlinic.escapeHtml(c.label)}<button type="button" class="clear-filter-chip" data-key="${c.key}" aria-label="Clear filter">×</button></div>`).join('')}</div>`;
+        return chips;
+      }
+      const RESET_ICON_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
+      function activeFilterChipsHtml() {
+        const chips = activeChips();
+        if (chips.length === 0 && !searchTerm()) return '';
+        return chips.map((c) => `<div class="filter-chip">${Qlinic.escapeHtml(c.label)}<button type="button" class="clear-filter-chip" data-key="${c.key}" aria-label="Clear filter">×</button></div>`).join('')
+          + `<button type="button" class="pd-reset" id="resetFiltersBtn">${RESET_ICON_SVG}Reset filters</button>`;
       }
       function clearFilterByKey(key) {
         if (key === 'doctor') doctorFilterIds.clear();
@@ -362,19 +437,85 @@
         return `<svg class="th-filter-icon active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"${rotated}><path d="M12 5v14M6 11l6-6 6 6"/></svg>`;
       }
 
-      function renderPager(total) {
-        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-        if (currentPage > totalPages) currentPage = totalPages;
-        const start = (currentPage - 1) * PAGE_SIZE;
-        const end = Math.min(start + PAGE_SIZE, total);
-        const summary = `<span class="pager-summary">Showing ${total === 0 ? 0 : start + 1}-${end} of ${total}</span>`;
-        const pager = document.getElementById('noShowPager');
-        pager.innerHTML = `${summary}${Qlinic.pagerHtml(currentPage, totalPages)}`;
-        Qlinic.wirePager(pager, currentPage, totalPages, (p) => {
-          currentPage = p;
-          renderTable();
-          document.getElementById('noShowTableWrap').scrollIntoView({ block: 'start', behavior: 'smooth' });
+      // Top cards: last 30 days against the 30 days before, whatever the table below is showing.
+      function daysAgoStr(n) {
+        const d = new Date(`${Qlinic.getTodayDate()}T00:00:00`);
+        d.setDate(d.getDate() - n);
+        return toDateStr(d);
+      }
+      async function loadKpis() {
+        const windowStart = daysAgoStr(29);
+        const prevStart = daysAgoStr(59);
+        let rows = [];
+        try {
+          rows = await Qlinic.getNoShowsForDateRange(prevStart, Qlinic.getTodayDate());
+        } catch (err) {
+          return;
+        }
+        const now = rows.filter((p) => p.tokenDate >= windowStart);
+        const prev = rows.filter((p) => p.tokenDate < windowStart);
+        const unique = new Set(now.map((p) => p.phone || `name:${(p.name || '').toLowerCase()}`)).size;
+        document.getElementById('nsCount').textContent = String(now.length);
+        document.getElementById('nsUnique').textContent = String(unique);
+        let cls = 'bad';
+        let text = '0%';
+        let arrow = '';
+        if (prev.length === 0 && now.length > 0) { cls = 'new'; text = 'New'; }
+        else if (prev.length > 0) {
+          const pct = Math.round(((now.length - prev.length) / prev.length) * 100);
+          cls = pct > 0 ? 'bad' : pct < 0 ? 'good' : 'flat';
+          text = `${Math.abs(pct)}%`;
+          arrow = pct > 0 ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>'
+            : pct < 0 ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>' : '';
+        }
+        document.getElementById('nsCountTrend').innerHTML = `<span class="ns-trend ${cls}">${arrow}${text}</span><span class="ns-trend-note">vs previous 30 days</span>`;
+      }
+
+      function pageList(current, totalPages) {
+        if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+        const set = new Set([1, totalPages, current, current - 1, current + 1]);
+        if (current <= 3) { set.add(2); set.add(3); set.add(4); set.add(5); }
+        if (current >= totalPages - 2) { [2, 3, 4].forEach((k) => set.add(totalPages - k)); }
+        const pages = [...set].filter((p) => p >= 1 && p <= totalPages).sort((a, b) => a - b);
+        const out = [];
+        pages.forEach((p, i) => {
+          if (i > 0 && p - pages[i - 1] > 1) out.push('…');
+          out.push(p);
         });
+        return out;
+      }
+      function renderPager(total) {
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * pageSize;
+        const end = Math.min(start + pageSize, total);
+        document.getElementById('noShowShowing').textContent = `Showing ${total === 0 ? 0 : start + 1} to ${end} of ${total}`;
+        const pager = document.getElementById('noShowPager');
+        if (totalPages <= 1) { pager.innerHTML = ''; return; }
+        pager.innerHTML = `
+          <button type="button" class="pd-pg" data-page="${currentPage - 1}" aria-label="Previous page" ${currentPage === 1 ? 'disabled' : ''}>&lsaquo;</button>
+          ${pageList(currentPage, totalPages).map((p) => p === '…'
+            ? '<span class="pd-pg-gap">…</span>'
+            : `<button type="button" class="pd-pg${p === currentPage ? ' active' : ''}" data-page="${p}" ${p === currentPage ? 'aria-current="page"' : ''}>${p}</button>`).join('')}
+          <button type="button" class="pd-pg" data-page="${currentPage + 1}" aria-label="Next page" ${currentPage === totalPages ? 'disabled' : ''}>&rsaquo;</button>
+        `;
+        pager.querySelectorAll('[data-page]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            currentPage = Number(btn.dataset.page);
+            renderTable();
+            document.getElementById('noShowTableWrap').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          });
+        });
+      }
+
+      const PHONE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--pm-sub)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>';
+      const CAL_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--pm-sub)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+
+      function summaryTitle(filteredCount) {
+        const noun = filteredCount === 1 ? 'no-show' : 'no-shows';
+        if (viewMode === 'range') return `${filteredCount} ${noun} in this period`;
+        const day = document.getElementById('dateFilter').value;
+        return day === Qlinic.getTodayDate() ? `${filteredCount} ${noun} today` : `${filteredCount} ${noun} on ${Qlinic.formatDateLabel(day)}`;
       }
 
       function renderTable() {
@@ -384,87 +525,163 @@
         const isFiltered = filtered.length !== allNoShows.length;
         document.getElementById('noShowSummary').textContent = isFiltered
           ? `${filtered.length} of ${allNoShows.length} no-shows`
-          : `${allNoShows.length} no-show${allNoShows.length === 1 ? '' : 's'} for this ${viewMode === 'range' ? 'period' : 'date'}`;
+          : summaryTitle(allNoShows.length);
 
-        document.getElementById('activeFilterChipsRow').innerHTML = activeFilterChipsHtml();
-        document.querySelectorAll('#activeFilterChipsRow .clear-filter-chip').forEach((btn) => {
+        const chipsRow = document.getElementById('activeFilterChipsRow');
+        chipsRow.innerHTML = activeFilterChipsHtml();
+        chipsRow.querySelectorAll('.clear-filter-chip').forEach((btn) => {
           btn.addEventListener('click', () => clearFilterByKey(btn.dataset.key));
         });
+        const resetBtn = document.getElementById('resetFiltersBtn');
+        if (resetBtn) resetBtn.addEventListener('click', resetAllFilters);
 
         if (allNoShows.length === 0) {
           wrap.innerHTML = `<div class="empty-state">No no-shows for this ${viewMode === 'range' ? 'period' : 'date'}.</div>`;
           document.getElementById('noShowPager').innerHTML = '';
+          document.getElementById('noShowShowing').textContent = '';
           return;
         }
         if (filtered.length === 0) {
           wrap.innerHTML = '<div class="empty-state">No no-shows match these filters.</div>';
           document.getElementById('noShowPager').innerHTML = '';
+          document.getElementById('noShowShowing').textContent = '';
           return;
         }
 
-        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+        const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
         if (currentPage > totalPages) currentPage = totalPages;
-        const start = (currentPage - 1) * PAGE_SIZE;
-        const pageItems = filtered.slice(start, start + PAGE_SIZE);
+        const start = (currentPage - 1) * pageSize;
+        const pageItems = filtered.slice(start, start + pageSize);
 
         const doctorIconClass = doctorFilterIds.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
         const genderIconClass = genderFilterValues.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
         const typeIconClass = typeFilterValues.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
 
         wrap.innerHTML = `
-          <table class="qtable qtable-fixed">
-            <colgroup>
-              <col style="width:20%;"><col style="width:12%;"><col style="width:14%;">
-              <col style="width:14%;"><col style="width:15%;"><col style="width:11%;"><col style="width:14%;">
-            </colgroup>
-            <thead><tr>
-              <th>Patient</th><th>Phone</th>
-              <th class="th-filterable"><span class="th-filter-trigger" id="dateSortTrigger">Appointment date ${SORT_ARROW_SVG()}</span></th>
-              <th>Scheduled time</th>
-              <th class="th-filterable"><span class="th-filter-trigger" id="doctorFilterTrigger" title="Click to filter by Doctor">Doctor ${FILTER_ICON_SVG(doctorIconClass)}</span></th>
-              <th class="th-filterable"><span class="th-filter-trigger" id="genderFilterTrigger" title="Click to filter by Gender">Gender ${FILTER_ICON_SVG(genderIconClass)}</span></th>
-              <th class="th-filterable"><span class="th-filter-trigger" id="typeFilterTrigger" title="Click to filter by Type">Type ${FILTER_ICON_SVG(typeIconClass)}</span></th>
-            </tr></thead>
-            <tbody>
-              ${pageItems.map((p) => {
-                const doctor = doctorById[p.doctorId];
-                const subInfo = [p.age ? `${p.age} yrs` : '', p.address ? Qlinic.escapeHtml(p.address) : ''].filter(Boolean).join(' · ');
-                return `
-                <tr>
-                  <td class="qtable-wrap">
-                    <div>${Qlinic.escapeHtml(p.name)}</div>
-                    ${subInfo ? `<div class="sub-line">${subInfo}</div>` : ''}
-                  </td>
-                  <td>${Qlinic.escapeHtml(p.phone || '—')}</td>
-                  <td>${Qlinic.formatDateLabel(p.tokenDate)}</td>
-                  <td>${p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '—'}</td>
-                  <td class="qtable-wrap">${doctor ? Qlinic.escapeHtml(doctor.name) : '—'}</td>
-                  <td>${genderLabel(p.gender)}</td>
-                  <td>${TYPE_LABELS[p.type] || p.type}</td>
-                </tr>
-              `;
-              }).join('')}
-            </tbody>
-          </table>
+          <div class="dd-table fb-table ns-table" role="table" aria-label="No-shows">
+            <div class="dd-row dd-head ns-cols" role="row">
+              <span role="columnheader">Patient</span>
+              <span role="columnheader">Phone</span>
+              <span role="columnheader"><span class="th-filter-trigger fb-th-filter" id="dateSortTrigger" tabindex="0" role="button" aria-label="Sort by appointment date">Appointment date ${SORT_ARROW_SVG()}</span></span>
+              <span role="columnheader">Scheduled time</span>
+              <span role="columnheader"><span class="th-filter-trigger fb-th-filter" id="doctorFilterTrigger" tabindex="0" role="button" aria-label="Filter by doctor">Doctor ${FILTER_ICON_SVG(doctorIconClass)}</span></span>
+              <span role="columnheader"><span class="th-filter-trigger fb-th-filter" id="genderFilterTrigger" tabindex="0" role="button" aria-label="Filter by gender">Gender ${FILTER_ICON_SVG(genderIconClass)}</span></span>
+              <span role="columnheader"><span class="th-filter-trigger fb-th-filter" id="typeFilterTrigger" tabindex="0" role="button" aria-label="Filter by type">Type ${FILTER_ICON_SVG(typeIconClass)}</span></span>
+            </div>
+            ${pageItems.map((p) => {
+              const doctor = doctorById[p.doctorId];
+              const subInfo = [p.age ? `${p.age} yrs` : '', p.address ? Qlinic.escapeHtml(p.address) : ''].filter(Boolean).join(' · ');
+              return `
+              <div class="dd-row dd-body ns-cols" role="row">
+                <div role="cell">
+                  <div class="dd-name-text">${Qlinic.escapeHtml(p.name)}</div>
+                  ${subInfo ? `<div class="ns-sub">${subInfo}</div>` : ''}
+                </div>
+                <div role="cell" class="pd-phone">${p.phone ? PHONE_SVG + Qlinic.escapeHtml(p.phone) : '<span class="tm-none">Not added</span>'}</div>
+                <div role="cell" class="pd-phone">${CAL_SVG}${Qlinic.formatDateLabel(p.tokenDate)}</div>
+                <div role="cell">${p.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(p.bookedTime)) : '<span class="tm-none">Not set</span>'}</div>
+                <div role="cell">${doctor ? `<span class="pd-doc-pill">Dr. ${Qlinic.escapeHtml(doctor.name)}</span>` : '<span class="tm-none">Not recorded</span>'}</div>
+                <div role="cell">${p.gender ? `<span class="pd-gender ${Qlinic.escapeHtml(p.gender)}">${Qlinic.escapeHtml(genderLabel(p.gender))}</span>` : '<span class="tm-none">Not specified</span>'}</div>
+                <div role="cell"><span class="ns-type ${Qlinic.escapeHtml(p.type)}">${Qlinic.escapeHtml(TYPE_LABELS[p.type] || p.type)}</span></div>
+              </div>`;
+            }).join('')}
+          </div>
         `;
-        document.getElementById('dateSortTrigger').addEventListener('click', () => {
-          sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-          renderTable();
-        });
-        document.getElementById('doctorFilterTrigger').addEventListener('click', (e) => {
-          e.stopPropagation();
-          openColumnFilter('doctor', e.currentTarget.closest('th'), doctorFilterOptions(), doctorFilterIds, onNoShowFilterChange);
-        });
-        document.getElementById('genderFilterTrigger').addEventListener('click', (e) => {
-          e.stopPropagation();
-          openColumnFilter('gender', e.currentTarget.closest('th'), genderFilterOptions(), genderFilterValues, onNoShowFilterChange);
-        });
-        document.getElementById('typeFilterTrigger').addEventListener('click', (e) => {
-          e.stopPropagation();
-          openColumnFilter('type', e.currentTarget.closest('th'), typeFilterOptions(), typeFilterValues, onNoShowFilterChange);
-        });
+        const bindFilter = (id, column, optionsFn, selectedSet) => {
+          const trigger = document.getElementById(id);
+          const open = (e) => {
+            e.stopPropagation();
+            closeExportMenu();
+            openColumnFilter(column, e.currentTarget.closest('[role="columnheader"]'), optionsFn(), selectedSet, onNoShowFilterChange);
+          };
+          trigger.addEventListener('click', open);
+          trigger.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e); } });
+        };
+        bindFilter('doctorFilterTrigger', 'doctor', doctorFilterOptions, doctorFilterIds);
+        bindFilter('genderFilterTrigger', 'gender', genderFilterOptions, genderFilterValues);
+        bindFilter('typeFilterTrigger', 'type', typeFilterOptions, typeFilterValues);
+        const sortTrigger = document.getElementById('dateSortTrigger');
+        const flipSort = () => { sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'; renderTable(); };
+        sortTrigger.addEventListener('click', flipSort);
+        sortTrigger.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flipSort(); } });
         renderPager(filtered.length);
       }
+
+      document.getElementById('noShowPerPage').addEventListener('change', (e) => {
+        pageSize = Number(e.target.value);
+        currentPage = 1;
+        renderTable();
+      });
+
+      // Export what the filters currently show (CSV, or a real Excel file).
+      function exportRows() {
+        return filteredNoShows().map((p) => {
+          const doctor = doctorById[p.doctorId];
+          return [p.name, p.phone || '', p.age || '', p.gender || '', p.address || '', p.tokenDate || '', p.bookedTime || '', doctor ? doctor.name : '', TYPE_LABELS[p.type] || p.type];
+        });
+      }
+      const EXPORT_HEAD = ['Name', 'Phone', 'Age', 'Gender', 'Address', 'Appointment date', 'Scheduled time', 'Doctor', 'Type'];
+      function exportLabel() {
+        if (viewMode === 'range') {
+          const range = currentRange();
+          return range ? `${range.start}_to_${range.end}` : 'range';
+        }
+        return document.getElementById('dateFilter').value;
+      }
+      function loadXlsxLibrary() {
+        if (window.XLSX) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+          s.integrity = 'sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw';
+          s.crossOrigin = 'anonymous';
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      async function doExport(kind) {
+        const rows = exportRows();
+        if (rows.length === 0) { showToast('Nothing to export'); return; }
+        const base = `no-shows-${exportLabel()}`;
+        if (kind === 'csv') {
+          const csv = [EXPORT_HEAD].concat(rows).map((r) => r.map(csvCell).join(',')).join('\r\n');
+          downloadCsv(`${base}.csv`, '﻿' + csv);
+          return;
+        }
+        try {
+          await loadXlsxLibrary();
+          const ws = XLSX.utils.aoa_to_sheet([EXPORT_HEAD].concat(rows));
+          ws['!cols'] = [22, 14, 6, 10, 26, 16, 14, 20, 12].map((w) => ({ wch: w }));
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, 'No-shows');
+          XLSX.writeFile(wb, `${base}.xlsx`);
+        } catch (err) {
+          showToast('Could not make the Excel file, try CSV instead');
+        }
+      }
+      const exportBtn = document.getElementById('noShowExportBtn');
+      const exportMenu = document.getElementById('noShowExportMenu');
+      function closeExportMenu() {
+        exportMenu.hidden = true;
+        exportBtn.setAttribute('aria-expanded', 'false');
+      }
+      exportBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const willOpen = exportMenu.hidden;
+        closeColumnFilter();
+        exportMenu.hidden = !willOpen;
+        exportBtn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      });
+      exportMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const item = e.target.closest('[data-export]');
+        if (!item) return;
+        closeExportMenu();
+        doExport(item.dataset.export);
+      });
+      document.addEventListener('click', () => closeExportMenu());
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeExportMenu(); closeColumnFilter(); } });
 
       function currentRange() {
         if (viewMode !== 'range') return null;
@@ -506,10 +723,13 @@
         loadNoShows();
       });
       document.getElementById('viewModeToggle').addEventListener('click', (e) => {
-        const btn = e.target.closest('.period-pill');
+        const btn = e.target.closest('.ns-tab');
         if (!btn) return;
         viewMode = btn.dataset.mode;
-        document.querySelectorAll('#viewModeToggle .period-pill').forEach((p) => p.classList.toggle('active', p === btn));
+        document.querySelectorAll('#viewModeToggle .ns-tab').forEach((p) => {
+          p.classList.toggle('active', p === btn);
+          p.setAttribute('aria-selected', p === btn ? 'true' : 'false');
+        });
         document.getElementById('singleDayFilters').style.display = viewMode === 'single' ? 'flex' : 'none';
         document.getElementById('rangePresetField').style.display = viewMode === 'range' ? 'flex' : 'none';
         document.getElementById('customRangeFilters').style.display = (viewMode === 'range' && rangePreset === 'custom') ? 'flex' : 'none';
@@ -519,19 +739,6 @@
         currentPage = 1;
         renderTable();
       });
-      document.getElementById('resetFiltersBtn').addEventListener('click', resetAllFilters);
-      document.getElementById('exportCsvBtn').addEventListener('click', () => {
-        const csv = buildNoShowCsv(filteredNoShows());
-        let label;
-        if (viewMode === 'range') {
-          const range = currentRange();
-          label = range ? `${range.start}_to_${range.end}` : 'range';
-        } else {
-          label = document.getElementById('dateFilter').value;
-        }
-        downloadCsv(`no-shows-${label}.csv`, csv);
-      });
-
       Qlinic.attachDatePicker(document.getElementById('dateFilter'));
       document.getElementById('dateFilter').max = Qlinic.getTodayDate();
       document.getElementById('dateFilter').value = Qlinic.getTodayDate();
@@ -543,7 +750,8 @@
 
       await loadDoctorFilterOptions();
       await loadNoShows();
-      Qlinic.onLiveChange(loadNoShows);
+      loadKpis();
+      Qlinic.onLiveChange(() => { loadNoShows(); loadKpis(); });
     })();
   </script>
 

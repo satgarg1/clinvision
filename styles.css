@@ -4240,7 +4240,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
    search bar is the primary, first-touched control on these pages, so
    it gets a distinct, more confident shape than a regular text field,
    closer to a familiar rounded search-bar treatment. */
-#searchBox, #patientSearch, #noShowSearch {
+#searchBox, #patientSearch {
   display: block;
   width: 100%;
   box-sizing: border-box;
@@ -4255,7 +4255,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   color: var(--black);
   margin-bottom: 10px;
 }
-#searchBox:focus, #patientSearch:focus, #noShowSearch:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+#searchBox:focus, #patientSearch:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 
 /* Prescriptions header: doctor dropdown + search box, side by side —
    same reception-style search-bar pill (shape and height) as the rule
@@ -7918,3 +7918,70 @@ select.cc-input { padding-right: 8px; }
 .pd-pg-gap { padding: 0 4px; color: var(--pm-sub); }
 @media (max-width: 1200px) { .pd-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .pd-kpi-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* No-shows page (reuses the Patient Directory card, filters, table and pager pieces) */
+.ns-kpi-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+.ns-kpi {
+  --pm-text: #0f172a; --pm-sub: #64748b; --pm-body: #475569; --pm-soft-line: #f1f5f9; --pm-white: #ffffff;
+  --ns-glow: rgba(254, 202, 202, 0.45); --ns-bad-bg: #fee2e2; --ns-bad: #b91c1c; --ns-good-bg: #dcfce7; --ns-good: #15803d; --ns-new-bg: #dbeafe; --ns-new: #1d4ed8;
+  position: relative; overflow: hidden; box-sizing: border-box; display: flex; align-items: flex-start; gap: 16px; padding: 20px 22px; min-height: 96px;
+  background: var(--pm-white); border: 1px solid var(--pm-soft-line); border-radius: 16px; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+:root[data-theme="dark"] .ns-kpi { --pm-text: #f2f2f4; --pm-sub: #98989d; --pm-body: #c7c7cc; --pm-soft-line: #38383a; --pm-white: #2c2c2e; --ns-glow: rgba(239, 68, 68, 0.14); --ns-bad-bg: rgba(239, 68, 68, 0.2); --ns-bad: #fca5a5; --ns-good-bg: rgba(34, 197, 94, 0.2); --ns-good: #86efac; --ns-new-bg: rgba(59, 130, 246, 0.22); --ns-new: #93c5fd; }
+.ns-kpi-red::before { content: ""; position: absolute; left: -40px; top: -40px; width: 200px; height: 140px; background: radial-gradient(closest-side, var(--ns-glow), rgba(254, 202, 202, 0)); pointer-events: none; }
+.ns-kpi-icon { position: relative; width: 56px; height: 56px; flex: none; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+.ns-kpi-icon.red { background: #fee2e2; color: #dc2626; }
+.ns-kpi-icon.blue { background: #dbeafe; color: #2563eb; }
+:root[data-theme="dark"] .ns-kpi-icon.red { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+:root[data-theme="dark"] .ns-kpi-icon.blue { background: rgba(59, 130, 246, 0.22); color: #93c5fd; }
+.ns-kpi-main { position: relative; flex: 1; min-width: 0; }
+.ns-kpi-value { font-size: 26px; font-weight: 700; line-height: 1.1; color: var(--pm-text); }
+.ns-kpi-label { margin-top: 4px; font-size: 14px; color: var(--pm-body); }
+.ns-kpi-sub { margin-top: 1px; font-size: 12px; color: #94a3b8; }
+.ns-kpi-trend { position: relative; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.ns-trend { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--ns-bad-bg); color: var(--ns-bad); }
+.ns-trend.good { background: var(--ns-good-bg); color: var(--ns-good); }
+.ns-trend.flat { background: var(--pm-soft-line); color: var(--pm-sub); }
+.ns-trend.new { background: var(--ns-new-bg); color: var(--ns-new); }
+.ns-trend-note { font-size: 12px; color: var(--pm-sub); white-space: nowrap; }
+
+.ns-tabs {
+  display: inline-flex; align-items: center; gap: 4px; padding: 6px; margin-bottom: 18px; width: fit-content; max-width: 100%;
+  background: #ffffff; border: 1px solid #f1f5f9; border-radius: 999px; box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+}
+.ns-tab {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-width: 150px; height: 42px; padding: 0 24px; border: none; border-radius: 999px;
+  background: transparent; color: #334155; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.ns-tab:hover { background: #f1f5f9; }
+.ns-tab.active { background: #dbeafe; color: #1d4ed8; }
+:root[data-theme="dark"] .ns-tabs { background: #2c2c2e; border-color: #48484a; box-shadow: none; }
+:root[data-theme="dark"] .ns-tab { color: #c7c7cc; }
+:root[data-theme="dark"] .ns-tab:hover { background: rgba(255, 255, 255, 0.06); }
+:root[data-theme="dark"] .ns-tab.active { background: rgba(59, 130, 246, 0.24); color: #93c5fd; }
+
+.ns-field { display: flex; align-items: flex-end; gap: 12px; }
+.ns-date-col { width: 200px; }
+.ns-date-col .qdp, .ns-date-col .qdp-trigger { width: 200px; }
+.ns-date-col .qdp-trigger, .pd-custom .qdp-trigger { height: 44px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--qr-field-line); border-radius: 12px; background: var(--pm-white); color: var(--pm-strong); font-size: 14px; box-shadow: 0 1px 1px rgba(15, 23, 42, 0.04); }
+.ns-today { height: 44px; padding: 0 20px; border: 1px solid var(--qr-field-line); border-radius: 12px; background: var(--pm-white); color: #2563eb; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 1px rgba(15, 23, 42, 0.04); }
+.ns-today:hover { background: var(--qr-panel-bg); }
+:root[data-theme="dark"] .ns-today { color: #93c5fd; }
+
+.fb-table.ns-table { min-width: 980px; }
+.dd-row.ns-cols { grid-template-columns: 2fr 1.4fr 1.6fr 1.2fr 1.6fr 1fr 1.2fr; gap: 12px; }
+.ns-table .dd-body { padding-top: 12px; padding-bottom: 12px; }
+.ns-sub { margin-top: 2px; font-size: 12px; color: var(--qr-hint); font-weight: 400; }
+.ns-type { display: inline-flex; padding: 3px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; background: #dbeafe; color: #1d4ed8; }
+.ns-type.walkin { background: #ffedd5; color: #c2410c; }
+:root[data-theme="dark"] .ns-type { background: rgba(59, 130, 246, 0.22); color: #93c5fd; }
+:root[data-theme="dark"] .ns-type.walkin { background: rgba(251, 146, 60, 0.2); color: #fdba74; }
+@media (max-width: 700px) { .ns-kpi-grid { grid-template-columns: minmax(0, 1fr); } .ns-tab { min-width: 0; flex: 1; padding: 0 14px; } }
+/* beat the older id scoped pill shape on the date pickers used by Revenue and the old No-shows and Directory filters */
+#singleDayFilters .ns-date-col .qdp-trigger,
+#customRangeFilters.pd-custom .qdp-trigger,
+#customPeriodFilters.pd-custom .qdp-trigger {
+  height: 44px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--qr-field-line); border-radius: 12px;
+  background: var(--pm-white); color: var(--pm-strong); font-size: 14px; box-shadow: 0 1px 1px rgba(15, 23, 42, 0.04);
+}
+#rangePresetField { flex-direction: column; }
