@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=408" />
+<link rel="stylesheet" href="styles.css?v=409" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -168,20 +168,70 @@
         </form>
       </div>
 
-      <div class="panel">
-        <div class="panel-header"><h2>Patient reviews</h2></div>
-        <p class="panel-note">Happy patients get a one tap prompt to post this as a public review, right from their queue link.</p>
-        <form id="reviewLinkForm" class="inline-form">
-          <div class="field" style="min-width:320px;flex:1;">
-            <label>Review link <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
-            <input type="url" id="reviewLinkInput" placeholder="e.g., https://g.page/r/.../review" />
-            <span class="field-hint">Your Google Business Profile's "get more reviews" link, not your regular Maps link.</span>
+      <div class="panel pm-card pr-card">
+        <div class="pr-head">
+          <div class="pm-head-left">
+            <div class="pm-head-icon pr-star">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div>
+              <h2 class="pm-title pr-title">Patient reviews</h2>
+              <div class="pm-sub pr-sub">Happy patients get a one tap prompt to post this as a public review, right from their queue link.</div>
+            </div>
           </div>
-          <div class="field" style="flex:0;">
-            <label>&nbsp;</label>
-            <button type="submit" class="btn-sm primary">Save</button>
+          <a class="pr-pill" href="https://support.google.com/business/answer/3474122" target="_blank" rel="noopener noreferrer">
+            <span class="pr-pill-g"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span>
+            <span>Boost your clinic's online reputation</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="8 7 17 7 17 16"/></svg>
+          </a>
+        </div>
+
+        <form id="reviewLinkForm" class="pr-form">
+          <div class="pr-label-row">
+            <label for="reviewLinkInput" class="pr-label">Google review link</label>
+            <span class="pr-optional">Optional</span>
+          </div>
+          <div class="pr-bar-row">
+            <div class="pr-bar">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="pr-bar-icon"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              <input type="url" id="reviewLinkInput" class="pr-input" placeholder="https://g.page/r/.../review" />
+              <span class="pr-bar-divider"></span>
+              <button type="button" class="pr-copy" id="reviewLinkCopyBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span id="reviewLinkCopyLabel">Copy</span>
+              </button>
+            </div>
+            <button type="submit" class="pr-save" id="reviewLinkSaveBtn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <span>Save</span>
+            </button>
           </div>
         </form>
+
+        <div class="pm-alert blue pr-callout">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><line x1="12" y1="11" x2="12" y2="17" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1.3" fill="#ffffff"/></svg>
+          <div>
+            <div class="pm-alert-title">Use the Google Business Profile "Get more reviews" link, not your regular Maps link.</div>
+            <div class="pm-alert-text">This link opens the review page in a new tab, so patients can leave a review easily.</div>
+          </div>
+        </div>
+
+        <div class="pr-preview">
+          <div class="pr-mini">
+            <svg width="30" height="30" viewBox="0 0 48 48" aria-hidden="true" style="flex:none"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            <div class="pr-mini-body">
+              <div class="pr-mini-stars" aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <div class="pr-mini-line a"></div>
+              <div class="pr-mini-line b"></div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;color:var(--pm-sub)"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="pr-preview-divider"></div>
+          <div>
+            <div class="pr-preview-title">How it appears to patients</div>
+            <div class="pr-preview-text">After their consultation is finished, patients will see a simple prompt to leave a review on Google right from their live queue page.</div>
+          </div>
+        </div>
       </div>
 
       <div class="panel pm-card">
@@ -628,15 +678,34 @@
 
       document.getElementById('reviewLinkForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const saveBtn = document.getElementById('reviewLinkSaveBtn');
+        const saveLabel = saveBtn.querySelector('span');
+        saveBtn.disabled = true;
         try {
           await Qlinic.updateClinic({
             reviewLinkUrl: document.getElementById('reviewLinkInput').value.trim(),
           });
         } catch (err) {
           showToast(err.message || 'Could not update the review link — please try again.');
+          saveBtn.disabled = false;
           return;
         }
         showToast('Review link updated');
+        saveBtn.disabled = false;
+        saveBtn.classList.add('saved');
+        saveLabel.textContent = 'Saved';
+        setTimeout(() => { saveBtn.classList.remove('saved'); saveLabel.textContent = 'Save'; }, 2000);
+      });
+
+      document.getElementById('reviewLinkCopyBtn').addEventListener('click', async () => {
+        const link = document.getElementById('reviewLinkInput').value.trim();
+        if (!link) { showToast('There is no link to copy yet.'); return; }
+        const ok = await Qlinic.copyToClipboard(link);
+        const btn = document.getElementById('reviewLinkCopyBtn');
+        const label = document.getElementById('reviewLinkCopyLabel');
+        btn.classList.toggle('copied', ok);
+        label.textContent = ok ? 'Copied!' : 'Could not copy';
+        setTimeout(() => { btn.classList.remove('copied'); label.textContent = 'Copy'; }, 2000);
       });
 
       // Patient messages card: the switch only stages a change, Save writes it.
