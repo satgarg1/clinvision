@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=432" />
+<link rel="stylesheet" href="styles.css?v=433" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -64,36 +64,36 @@
           </div>
         </div>
 
-        <form id="addDoctorForm" class="dd-form">
-          <div class="dd-field" style="--g:1.3;">
+        <form id="addDoctorForm" class="dd-form dd-nowrap">
+          <div class="dd-field" style="--g:1.2;min-width:140px;">
             <label for="newDoctorName" class="qr-label">Name</label>
             <input type="text" id="newDoctorName" class="dd-input" placeholder="Dr. Jane Doe" required />
           </div>
-          <div class="dd-field" style="--g:1.3;">
+          <div class="dd-field" style="--g:1.5;min-width:190px;">
             <label for="newDoctorSpecialty" class="qr-label">Specialty</label>
             <select id="newDoctorSpecialty" class="dd-input"></select>
           </div>
-          <div class="dd-field" id="newDoctorSpecialtyOtherField" style="--g:1.3;display:none;">
+          <div class="dd-field" id="newDoctorSpecialtyOtherField" style="--g:1.3;min-width:160px;display:none;">
             <label for="newDoctorSpecialtyOther" class="qr-label">Specify specialty</label>
             <input type="text" id="newDoctorSpecialtyOther" class="dd-input" placeholder="e.g. Podiatrist" />
           </div>
-          <div class="dd-field" style="--g:1;">
+          <div class="dd-field" style="--g:1;min-width:136px;">
             <label for="newDoctorFeeNormal" class="qr-label">Consultation fee (&#8377;)</label>
             <input type="number" id="newDoctorFeeNormal" class="dd-input" min="0" step="1" />
           </div>
-          <div class="dd-field" style="--g:1;">
+          <div class="dd-field" style="--g:1;min-width:124px;">
             <label for="newDoctorFeeEmergency" class="qr-label">Emergency fee (&#8377;)</label>
             <input type="number" id="newDoctorFeeEmergency" class="dd-input" min="0" step="1" />
           </div>
-          <div class="dd-field" style="--g:1.2;">
+          <div class="dd-field" style="--g:1.2;min-width:128px;">
             <label for="newDoctorHprId" class="qr-label">HPR ID <span class="cp-optional">(optional)</span></label>
             <input type="text" id="newDoctorHprId" class="dd-input cp-upper" placeholder="e.g., 12-3456-7890-1234" />
           </div>
-          <div class="dd-field" style="--g:1.2;">
+          <div class="dd-field" style="--g:1.2;min-width:146px;">
             <label for="newDoctorQualification" class="qr-label">Qualification <span class="cp-optional">(optional)</span></label>
             <input type="text" id="newDoctorQualification" class="dd-input" placeholder="e.g. MBBS, MD" />
           </div>
-          <div class="dd-field" style="--g:1.2;">
+          <div class="dd-field" style="--g:1.2;min-width:172px;">
             <label for="newDoctorRegistrationNumber" class="qr-label">Registration no. <span class="cp-optional">(optional)</span></label>
             <input type="text" id="newDoctorRegistrationNumber" class="dd-input" placeholder="e.g. 41893" />
           </div>
