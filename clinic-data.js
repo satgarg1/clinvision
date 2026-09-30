@@ -87,8 +87,21 @@
     `;
   }
 
-  function wirePager(containerEl, page, totalPages, onChange) {
+  // The app's pages scroll inside .app-main (the body itself never scrolls),
+  // so "back to the top" has to move that container, not the window.
+  function scrollToTop() {
+    const main = document.querySelector('.app-main');
+    if (main && main.scrollTo) main.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function wirePager(containerEl, page, totalPages, pageChanged) {
     if (!containerEl) return;
+    // Going to a different page always brings the reader back to the top.
+    const onChange = (p) => {
+      pageChanged(p);
+      if (p !== page) scrollToTop();
+    };
     const first = containerEl.querySelector('[data-pager-action="first"]');
     const prev = containerEl.querySelector('[data-pager-action="prev"]');
     const next = containerEl.querySelector('[data-pager-action="next"]');
@@ -3538,6 +3551,7 @@
     escapeHtml,
     pagerHtml,
     wirePager,
+    scrollToTop,
     confirmDialog,
     openAdjustBillingModal,
     attachDatePicker,
