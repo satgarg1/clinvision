@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=413" />
+<link rel="stylesheet" href="styles.css?v=414" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -93,10 +93,14 @@
               <input type="text" id="cityInput" class="cc-input" placeholder="From pincode" />
             </div>
             <div class="cc-field">
-              <label class="qr-label" for="stateInput">State</label>
-              <select id="stateInput" class="cc-input">
-                <option value="">From pincode</option>
-              </select>
+              <div class="qr-label" id="stateLabel">State</div>
+              <div class="time-picker" id="statePicker">
+                <button type="button" class="time-picker-trigger" id="stateTrigger" aria-labelledby="stateLabel">
+                  <span id="stateTriggerText">From pincode</span><span class="time-picker-caret">▾</span>
+                </button>
+                <input type="hidden" id="stateInput" />
+                <div class="time-picker-panel" id="statePanel" style="display:none;"></div>
+              </div>
             </div>
             <div class="cc-field">
               <label class="qr-label" for="gstinInput">GSTIN <span class="cp-optional">(optional)</span></label>
@@ -363,7 +367,7 @@
           </div>
           <div>
             <div class="pm-hero-title">Send booking confirmation on WhatsApp</div>
-            <p class="pm-hero-text">After you book an appointment or add a walk in, a Send on WhatsApp button appears. It opens your clinic's own WhatsApp in a new tab with the message ready, and you press Send.</p>
+            <p class="pm-hero-text"><span class="pm-hero-line">After you book an appointment or add a walk in, a Send on WhatsApp button appears.</span><span class="pm-hero-line">It opens your clinic's own WhatsApp in a new tab with the message ready, and you press Send.</span></p>
           </div>
         </div>
 
@@ -586,12 +590,18 @@
         function open() {
           render();
           const panel = document.getElementById(panelId);
+          panel.style.maxHeight = '';
           panel.style.display = 'block';
           // Flip above the trigger when there isn't room below and there's
           // more room above.
           const trigger = document.getElementById(triggerId);
           const rect = trigger.getBoundingClientRect();
-          panel.classList.toggle('flip-up', Qlinic.shouldFlipUp(rect, panel.offsetHeight));
+          const flipUp = Qlinic.shouldFlipUp(rect, panel.offsetHeight);
+          panel.classList.toggle('flip-up', flipUp);
+          // Never taller than the room on the side it opens toward, so a long
+          // list scrolls inside the panel instead of running off the screen.
+          const room = (flipUp ? rect.top : window.innerHeight - rect.bottom) - 14;
+          panel.style.maxHeight = Math.max(120, Math.min(260, room)) + 'px';
           const target = panel.querySelector('.selected') || panel.querySelector('.time-picker-option');
           if (target) target.scrollIntoView({ block: 'nearest' });
         }
@@ -735,19 +745,21 @@
       document.getElementById('openingTimeInput').addEventListener('change', renderClinicSchedule);
       document.getElementById('closingTimeInput').addEventListener('change', renderClinicSchedule);
 
-      document.getElementById('stateInput').innerHTML = '<option value="">Select state</option>' +
-        Qlinic.INDIA_STATES_AND_UTS.map((s) => `<option value="${s}">${s}</option>`).join('');
+      // The same dropdown the other settings use, so a long list opens below
+      // or above the field and scrolls inside its own panel instead of being
+      // cut off by the browser's native list.
+      const statePicker = setupDropdownPicker({
+        pickerId: 'statePicker', triggerId: 'stateTrigger', triggerTextId: 'stateTriggerText',
+        hiddenId: 'stateInput', panelId: 'statePanel',
+        options: Qlinic.INDIA_STATES_AND_UTS.map((s) => ({ value: s, label: s })),
+        fallbackLabel: (v) => v || 'From pincode',
+      });
 
-      function setStateValue(selectEl, state) {
+      document.getElementById('stateInput').addEventListener('change', () => renderClinicPreviews());
+
+      function setStateValue(_unused, state) {
         if (!state) return;
-        const hasMatch = Array.from(selectEl.options).some((o) => o.value === state);
-        if (!hasMatch) {
-          const opt = document.createElement('option');
-          opt.value = state;
-          opt.textContent = state;
-          selectEl.appendChild(opt);
-        }
-        selectEl.value = state;
+        statePicker.setValue(state);
       }
 
       async function loadClinic() {

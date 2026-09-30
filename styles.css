@@ -7165,7 +7165,7 @@ body.tool-blue .tool-btn { border-radius: 12px; }
 
 .pm-hero { display: flex; align-items: center; gap: 28px; padding: 22px 28px; background: var(--pm-hero-bg); border: 1px solid var(--pm-hero-line); border-radius: 12px; }
 .pm-hero-title { font-size: 18px; font-weight: 600; color: var(--pm-text); margin-bottom: 6px; }
-.pm-hero-text { margin: 0; max-width: 640px; font-size: 14.5px; line-height: 1.55; color: var(--pm-body); }
+.pm-hero-text { margin: 0; font-size: 14.5px; line-height: 1.55; color: var(--pm-body); }
 .pm-phone { position: relative; width: 118px; height: 112px; flex: none; }
 .pm-phone-screen { position: absolute; left: 12px; top: 6px; width: 78px; height: 104px; box-sizing: border-box; border-radius: 16px; background: var(--pm-white); border: 3px solid var(--pm-teal); box-shadow: 0 4px 10px rgba(13, 148, 136, 0.18); }
 .pm-phone-badge { margin: 10px auto 0; width: 36px; height: 36px; border-radius: 50%; background: var(--pm-green); display: flex; align-items: center; justify-content: center; }
@@ -7267,7 +7267,8 @@ body.tool-blue .tool-btn { border-radius: 12px; }
 .pr-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
 .pr-star { background: var(--pr-star-bg); color: var(--pr-star); }
 .pr-title { font-size: 20px; }
-.pr-sub { max-width: 520px; line-height: 1.5; margin-top: 2px; }
+.pr-sub { line-height: 1.5; margin-top: 2px; }
+.pm-hero-line { display: block; }
 .pr-pill {
   flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 8px;
   border-radius: 999px; background: var(--pr-pill-bg); border: 1px solid var(--pr-pill-line);
