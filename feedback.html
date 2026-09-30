@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=421" />
+<link rel="stylesheet" href="styles.css?v=422" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -44,77 +44,113 @@
         <div>
           <div class="breadcrumb"><a href="settings.html">Settings</a> <span>/</span> Patient Feedback</div>
           <h1>Patient Feedback</h1>
+          <p class="fb-page-sub">View and manage patient feedback, ratings and Google reviews.</p>
         </div>
       </div>
 
       <div class="fb-kpi-grid">
-        <div class="fb-kpi-card">
+        <div class="fb-kpi-card amber">
+          <svg class="fb-wave" width="100%" height="46" viewBox="0 0 400 46" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30 C60 10 110 40 190 28 C270 16 330 38 400 18 L400 46 L0 46 Z" fill="currentColor"/></svg>
           <div class="fb-kpi-icon amber">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           </div>
-          <div>
+          <div class="fb-kpi-main">
             <div class="fb-kpi-value" id="summaryAvg">—</div>
             <div class="fb-kpi-label">Average rating</div>
           </div>
+          <div class="fb-kpi-trend" id="summaryAvgTrend"></div>
         </div>
-        <div class="fb-kpi-card">
+        <div class="fb-kpi-card blue">
+          <svg class="fb-wave" width="100%" height="46" viewBox="0 0 400 46" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30 C60 10 110 40 190 28 C270 16 330 38 400 18 L400 46 L0 46 Z" fill="currentColor"/></svg>
           <div class="fb-kpi-icon blue">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="#2563eb"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><rect x="7" y="8" width="10" height="1.6" rx="0.8" fill="#dbeafe"/><rect x="7" y="11.4" width="7" height="1.6" rx="0.8" fill="#dbeafe"/></svg>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="#2563eb" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><rect x="7" y="8" width="10" height="1.6" rx="0.8" fill="#dbeafe"/><rect x="7" y="11.4" width="7" height="1.6" rx="0.8" fill="#dbeafe"/></svg>
           </div>
-          <div>
+          <div class="fb-kpi-main">
             <div class="fb-kpi-value" id="summaryCount">—</div>
             <div class="fb-kpi-label">Total responses</div>
           </div>
+          <div class="fb-kpi-trend" id="summaryCountTrend"></div>
         </div>
-        <div class="fb-kpi-card">
-          <div class="fb-kpi-icon purple">
-            <svg width="22" height="22" viewBox="0 0 48 48">
+        <div class="fb-kpi-card green">
+          <svg class="fb-wave" width="100%" height="46" viewBox="0 0 400 46" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30 C60 10 110 40 190 28 C270 16 330 38 400 18 L400 46 L0 46 Z" fill="currentColor"/></svg>
+          <div class="fb-kpi-icon green">
+            <svg width="30" height="30" viewBox="0 0 48 48" aria-hidden="true">
               <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
               <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
               <path fill="#FBBC05" d="M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/>
               <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
             </svg>
           </div>
-          <div>
+          <div class="fb-kpi-main">
             <div class="fb-kpi-value" id="summaryRouted">—</div>
             <div class="fb-kpi-label">Shared to Google</div>
           </div>
+          <div class="fb-kpi-trend" id="summaryRoutedTrend"></div>
         </div>
       </div>
 
-      <div class="panel" id="feedbackPanel">
-        <div class="fb-filters-row">
-          <div style="flex:1;min-width:220px;">
-            <label class="pill-label" for="feedbackSearch">Search</label>
-            <input type="text" id="feedbackSearch" placeholder="Search by patient name or phone number..." style="width:100%;box-sizing:border-box;margin-bottom:0;" />
+      <div class="panel pm-card qr-card" id="feedbackPanel">
+        <div class="qr-head">
+          <div class="qr-head-left">
+            <div class="qr-badge tm-badge-blue">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="13" y2="13"/></svg>
+            </div>
+            <div>
+              <div class="qr-title">Patient Feedback</div>
+              <p class="qr-sub">Review what your patients are saying about their experience.</p>
+            </div>
           </div>
-          <div class="fb-filters-right">
-            <div>
-              <label class="pill-label" for="feedbackDateFrom">From</label>
-              <input type="date" lang="en-GB" id="feedbackDateFrom" />
-            </div>
-            <div>
-              <label class="pill-label" for="feedbackDateTo">To</label>
-              <input type="date" lang="en-GB" id="feedbackDateTo" />
-            </div>
-            <div>
-              <label class="pill-label" for="feedbackRatingFilter">Rating</label>
-              <select id="feedbackRatingFilter">
-                <option value="">All Ratings</option>
-                <option value="5">5 stars</option>
-                <option value="4">4 stars</option>
-                <option value="3">3 stars</option>
-                <option value="2">2 stars</option>
-                <option value="1">1 star</option>
-              </select>
+          <div class="fb-export">
+            <button type="button" class="fb-export-btn" id="feedbackExportBtn" aria-haspopup="menu" aria-expanded="false">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Export</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="fb-menu" id="feedbackExportMenu" role="menu" hidden>
+              <button type="button" role="menuitem" class="fb-menu-item" data-export="csv">CSV file</button>
+              <button type="button" role="menuitem" class="fb-menu-item" data-export="xlsx">Excel file</button>
+              <div class="fb-menu-note">Exports what the filters show.</div>
             </div>
           </div>
         </div>
 
-        <div id="activeFilterChipsRow" class="active-filter-chips" style="margin-bottom:12px;"></div>
+        <div class="fb-filters-row">
+          <div class="fb-search-col">
+            <div class="tm-fld">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="search" id="feedbackSearch" class="dd-input" aria-label="Search feedback" placeholder="Search by patient name or phone number" />
+            </div>
+          </div>
+          <div class="fb-filters-right">
+            <div>
+              <label class="qr-label" for="feedbackDateFrom">From</label>
+              <input type="date" lang="en-GB" id="feedbackDateFrom" />
+            </div>
+            <div>
+              <label class="qr-label" for="feedbackDateTo">To</label>
+              <input type="date" lang="en-GB" id="feedbackDateTo" />
+            </div>
+            <div>
+              <label class="qr-label" for="feedbackRatingFilter">Rating</label>
+              <div class="tm-fld fb-rating-fld">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                <select id="feedbackRatingFilter" class="dd-input">
+                  <option value="">All Ratings</option>
+                  <option value="5">5 stars</option>
+                  <option value="4">4 stars</option>
+                  <option value="3">3 stars</option>
+                  <option value="2">2 stars</option>
+                  <option value="1">1 star</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="activeFilterChipsRow" class="active-filter-chips"></div>
         <h2 id="feedbackListSummary" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Loading…</h2>
 
-        <div id="feedbackTableWrap"></div>
+        <div id="feedbackTableWrap" class="fb-table-wrap"></div>
         <div class="pager" id="feedbackPager"></div>
       </div>
     </main>
@@ -308,7 +344,152 @@
         onFeedbackFilterChange();
       }
 
+      // Month on month badge under each top card: this calendar month so far
+      // against the whole of last month.
+      function trendHtml(cur, prev, isAverage) {
+        let cls = 'up';
+        let text = '0%';
+        if (prev === 0 && cur > 0) { cls = 'new'; text = 'New'; }
+        else if (prev > 0 && !(isAverage && cur === 0)) {
+          const pct = Math.round(((cur - prev) / prev) * 100);
+          cls = pct < 0 ? 'down' : 'up';
+          text = `${Math.abs(pct)}%`;
+        }
+        const arrow = cls === 'new' ? '' : cls === 'down'
+          ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>'
+          : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>';
+        return `<span class="fb-trend ${cls}">${arrow}${text}</span><span class="fb-trend-note">vs last month</span>`;
+      }
+      function renderTrends() {
+        const now = new Date();
+        const thisStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const inThis = allEntries.filter((e) => new Date(e.submittedAt) >= thisStart);
+        const inLast = allEntries.filter((e) => { const d = new Date(e.submittedAt); return d >= lastStart && d < thisStart; });
+        const avg = (list) => (list.length ? list.reduce((s, e) => s + e.rating, 0) / list.length : 0);
+        const shared = (list) => list.filter((e) => e.routedToReview).length;
+        document.getElementById('summaryAvgTrend').innerHTML = trendHtml(avg(inThis), avg(inLast), true);
+        document.getElementById('summaryCountTrend').innerHTML = trendHtml(inThis.length, inLast.length, false);
+        document.getElementById('summaryRoutedTrend').innerHTML = trendHtml(shared(inThis), shared(inLast), false);
+      }
+
+      // Row menu (copy phone / copy comment), drawn fixed so the table never clips it.
+      let openRowMenuId = null;
+      function closeRowMenu() {
+        openRowMenuId = null;
+        document.querySelectorAll('.fb-row-menu').forEach((el) => el.remove());
+      }
+      function copyText(text, doneMsg) {
+        if (!navigator.clipboard) { showToast('Could not copy'); return; }
+        navigator.clipboard.writeText(text).then(() => showToast(doneMsg), () => showToast('Could not copy'));
+      }
+      function openRowMenu(id, btn) {
+        if (openRowMenuId === id) { closeRowMenu(); return; }
+        closeRowMenu();
+        closeColumnFilter();
+        closeExportMenu();
+        const entry = allEntries.find((x) => String(x.id) === String(id));
+        if (!entry) return;
+        openRowMenuId = id;
+        const menu = document.createElement('div');
+        menu.className = 'fb-menu fb-row-menu';
+        menu.setAttribute('role', 'menu');
+        menu.innerHTML = `${entry.patientPhone ? '<button type="button" role="menuitem" class="fb-menu-item" data-act="phone">Copy phone number</button>' : ''}${entry.feedbackText ? '<button type="button" role="menuitem" class="fb-menu-item" data-act="comment">Copy comment</button>' : ''}`;
+        menu.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          const act = ev.target.closest('[data-act]');
+          if (!act) return;
+          if (act.dataset.act === 'phone') copyText(entry.patientPhone, 'Phone number copied');
+          else copyText(entry.feedbackText, 'Comment copied');
+          closeRowMenu();
+        });
+        const r = btn.getBoundingClientRect();
+        menu.style.top = (r.bottom + 6) + 'px';
+        menu.style.left = Math.max(8, Math.min(r.right - 200, window.innerWidth - 208)) + 'px';
+        document.body.appendChild(menu);
+      }
+
+      // Export what the filters currently show.
+      const EXPORT_HEAD = ['Patient', 'Phone', 'Rating', 'Comment', 'Doctor', 'Specialty', 'Shared to Google', 'Date', 'Time'];
+      function exportRows() {
+        return filteredEntries().map((e) => {
+          const d = e.doctorId ? doctorById[e.doctorId] : null;
+          const { dateLabel, timeLabel } = splitDateTime(e.submittedAt);
+          return [e.patientName || '', e.patientPhone || '', e.rating, e.feedbackText || '', d ? `Dr. ${d.name}` : '', d && d.specialty ? d.specialty : '', e.routedToReview ? 'Yes' : 'No', dateLabel, timeLabel];
+        });
+      }
+      function csvCell(value) {
+        const s = String(value == null ? '' : value);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }
+      function downloadBlob(filename, blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+      function loadXlsxLibrary() {
+        if (window.XLSX) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+          s.integrity = 'sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw';
+          s.crossOrigin = 'anonymous';
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      async function doExport(kind) {
+        const rows = exportRows();
+        if (rows.length === 0) { showToast('Nothing to export'); return; }
+        const base = `patient-feedback-${Qlinic.getTodayDate()}`;
+        if (kind === 'csv') {
+          const csv = [EXPORT_HEAD].concat(rows).map((r) => r.map(csvCell).join(',')).join('\r\n');
+          downloadBlob(`${base}.csv`, new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }));
+          return;
+        }
+        try {
+          await loadXlsxLibrary();
+          const ws = XLSX.utils.aoa_to_sheet([EXPORT_HEAD].concat(rows));
+          ws['!cols'] = [18, 14, 8, 44, 22, 18, 16, 16, 10].map((w) => ({ wch: w }));
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, 'Patient feedback');
+          XLSX.writeFile(wb, `${base}.xlsx`);
+        } catch (err) {
+          showToast('Could not make the Excel file, try CSV instead');
+        }
+      }
+      const exportBtn = document.getElementById('feedbackExportBtn');
+      const exportMenu = document.getElementById('feedbackExportMenu');
+      function closeExportMenu() {
+        exportMenu.hidden = true;
+        exportBtn.setAttribute('aria-expanded', 'false');
+      }
+      exportBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const willOpen = exportMenu.hidden;
+        closeColumnFilter();
+        closeRowMenu();
+        exportMenu.hidden = !willOpen;
+        exportBtn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      });
+      exportMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const item = e.target.closest('[data-export]');
+        if (!item) return;
+        closeExportMenu();
+        doExport(item.dataset.export);
+      });
+      document.addEventListener('click', () => { closeRowMenu(); closeExportMenu(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeRowMenu(); closeExportMenu(); closeColumnFilter(); } });
+
       function renderSummary() {
+        renderTrends();
         if (!allEntries.length) {
           document.getElementById('summaryAvg').textContent = '—';
           document.getElementById('summaryCount').textContent = '0';
@@ -326,7 +507,7 @@
         if (currentPage > totalPages) currentPage = totalPages;
         const start = (currentPage - 1) * PAGE_SIZE;
         const end = Math.min(start + PAGE_SIZE, total);
-        const summary = `<span class="pager-summary">Showing ${total === 0 ? 0 : start + 1}-${end} of ${total}</span>`;
+        const summary = `<span class="pager-summary">Showing ${total === 0 ? 0 : start + 1} to ${end} of ${total}</span>`;
         const pager = document.getElementById('feedbackPager');
         pager.innerHTML = `${summary}${Qlinic.pagerHtml(currentPage, totalPages)}`;
         Qlinic.wirePager(pager, currentPage, totalPages, (p) => { currentPage = p; renderTable(); });
@@ -363,56 +544,56 @@
 
         const doctorIconClass = doctorFilterIds.size > 0 ? 'th-filter-icon active' : 'th-filter-icon';
         wrap.innerHTML = `
-          <table class="qtable qtable-fixed">
-            <colgroup>
-              <col style="width:15%;"><col style="width:13%;"><col style="width:15%;">
-              <col style="width:18%;"><col style="width:14%;"><col style="width:11%;"><col style="width:14%;">
-            </colgroup>
-            <thead><tr>
-              <th>Patient</th><th>Phone</th><th>Rating</th><th>Comment</th>
-              <th class="th-filterable"><span class="th-filter-trigger" id="doctorFilterTrigger">Doctor ${FILTER_ICON_SVG(doctorIconClass)}</span></th>
-              <th>To Google</th><th>Date</th>
-            </tr></thead>
-            <tbody>
-              ${pageItems.map((e) => {
-                const doctor = e.doctorId ? doctorById[e.doctorId] : null;
-                const { dateLabel, timeLabel } = splitDateTime(e.submittedAt);
-                return `
-                <tr>
-                  <td class="qtable-wrap">
-                    <div style="display:flex;align-items:center;gap:10px;">
-                      <div class="fb-avatar ${avatarColorFor(e.id)}">${Qlinic.escapeHtml(Qlinic.initialsFor(e.patientName))}</div>
-                      <span style="font-weight:600;color:var(--black);">${e.patientName ? Qlinic.escapeHtml(e.patientName) : '—'}</span>
-                    </div>
-                  </td>
-                  <td><div class="fb-phone-cell">${e.patientPhone ? PHONE_ICON_SVG + Qlinic.escapeHtml(e.patientPhone) : '—'}</div></td>
-                  <td>
-                    <div style="display:flex;align-items:center;gap:6px;">
-                      ${starsHtml(e.rating)}
-                      <span style="font-size:var(--text-sm);font-weight:600;color:var(--grey-700);">${e.rating.toFixed(1)}</span>
-                    </div>
-                  </td>
-                  <td class="qtable-wrap">
-                    ${e.feedbackText
-                      ? `<div class="fb-comment-cell"><span class="fb-comment-quote">&ldquo;</span><span class="fb-comment-text">${Qlinic.escapeHtml(e.feedbackText)}</span></div>`
-                      : '<span style="color:var(--grey-500);">No comment</span>'}
-                  </td>
-                  <td class="qtable-wrap">
-                    ${doctor
-                      ? `<div><div style="font-size:var(--text-sm);font-weight:600;color:var(--black);">Dr. ${Qlinic.escapeHtml(doctor.name)}</div>${doctor.specialty ? `<div style="font-size:var(--text-xs);color:var(--grey-500);">${Qlinic.escapeHtml(doctor.specialty)}</div>` : ''}</div>`
-                      : '—'}
-                  </td>
-                  <td>${e.routedToReview ? `<span class="fb-google-pill">${GOOGLE_G_SVG}Yes</span>` : '—'}</td>
-                  <td><div class="fb-date-cell">${CALENDAR_ICON_SVG}<div><div style="font-size:var(--text-sm);color:var(--black);">${dateLabel},</div><div style="font-size:var(--text-xs);color:var(--grey-500);">${timeLabel}</div></div></div></td>
-                </tr>
-              `;
-              }).join('')}
-            </tbody>
-          </table>
+          <div class="dd-table fb-table" role="table" aria-label="Patient feedback">
+            <div class="dd-row dd-head fb-cols" role="row">
+              <span role="columnheader">Patient</span>
+              <span role="columnheader">Phone</span>
+              <span role="columnheader">Rating</span>
+              <span role="columnheader">Comment</span>
+              <span role="columnheader"><span class="th-filter-trigger fb-th-filter" id="doctorFilterTrigger" tabindex="0" role="button" aria-label="Filter by doctor">Doctor ${FILTER_ICON_SVG(doctorIconClass)}</span></span>
+              <span role="columnheader">To Google</span>
+              <span role="columnheader">Date</span>
+              <span role="columnheader"></span>
+            </div>
+            ${pageItems.map((e) => {
+              const doctor = e.doctorId ? doctorById[e.doctorId] : null;
+              const { dateLabel, timeLabel } = splitDateTime(e.submittedAt);
+              const canMenu = !!(e.patientPhone || e.feedbackText);
+              return `
+              <div class="dd-row dd-body fb-cols" role="row">
+                <div role="cell" class="dd-name">
+                  <div class="fb-avatar ${avatarColorFor(e.id)}">${Qlinic.escapeHtml(Qlinic.initialsFor(e.patientName))}</div>
+                  <span class="dd-name-text">${e.patientName ? Qlinic.escapeHtml(e.patientName) : '<span class="tm-none">Not given</span>'}</span>
+                </div>
+                <div role="cell" class="fb-phone-cell">${e.patientPhone ? PHONE_ICON_SVG + Qlinic.escapeHtml(e.patientPhone) : '<span class="tm-none">Not added</span>'}</div>
+                <div role="cell" class="fb-rating-cell">${starsHtml(e.rating)}<span class="fb-rating-num">${e.rating.toFixed(1)}</span></div>
+                <div role="cell">
+                  ${e.feedbackText
+                    ? `<div class="fb-comment-cell"><span class="fb-comment-quote">&ldquo;</span><span class="fb-comment-text">${Qlinic.escapeHtml(e.feedbackText)}</span></div>`
+                    : '<span class="tm-none">No comment</span>'}
+                </div>
+                <div role="cell">
+                  ${doctor
+                    ? `<div class="fb-doc-name">Dr. ${Qlinic.escapeHtml(doctor.name)}</div>${doctor.specialty ? `<div class="fb-doc-spec">${Qlinic.escapeHtml(doctor.specialty)}</div>` : ''}`
+                    : '<span class="tm-none">Not recorded</span>'}
+                </div>
+                <div role="cell">${e.routedToReview ? `<span class="fb-google-pill">${GOOGLE_G_SVG}Yes</span>` : '<span class="tm-none">No</span>'}</div>
+                <div role="cell"><div class="fb-date-cell">${CALENDAR_ICON_SVG}<div><div class="fb-date-day">${dateLabel},</div><div class="fb-date-time">${timeLabel}</div></div></div></div>
+                <div role="cell" class="fb-kebab-cell">${canMenu ? `<button type="button" class="fb-kebab" data-id="${e.id}" aria-label="More actions" aria-haspopup="menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></button>` : ''}</div>
+              </div>`;
+            }).join('')}
+          </div>
         `;
-        document.getElementById('doctorFilterTrigger').addEventListener('click', (e) => {
+        const docTrigger = document.getElementById('doctorFilterTrigger');
+        const openDoctorFilter = (e) => {
           e.stopPropagation();
-          openColumnFilter('doctor', e.currentTarget.closest('th'), doctorFilterOptions(), doctorFilterIds, onFeedbackFilterChange);
+          closeRowMenu();
+          openColumnFilter('doctor', e.currentTarget.closest('[role="columnheader"]'), doctorFilterOptions(), doctorFilterIds, onFeedbackFilterChange);
+        };
+        docTrigger.addEventListener('click', openDoctorFilter);
+        docTrigger.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDoctorFilter(e); } });
+        wrap.querySelectorAll('.fb-kebab').forEach((btn) => {
+          btn.addEventListener('click', (e) => { e.stopPropagation(); openRowMenu(btn.dataset.id, btn); });
         });
         renderPager(filtered.length);
       }

@@ -2429,56 +2429,7 @@ a { color: inherit; }
 }
 .fb-filters-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
 .fb-filters-right { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
-/* The plain search input has no visible label, but its sibling From/To/
-   Rating fields do -- a hidden (visibility:hidden, not display:none, so
-   it still takes up its own layout space) matching label keeps its
-   height equal to theirs, so flex-end doesn't leave a bare gap floating
-   above just the search box. Same fix as team.html's "Add a staff
-   member" Save button vs. its labeled neighbors. */
-#feedbackPanel { padding-top: 20px; }
 
-/* Search + From/To + Rating all sit in one row, so they need pixel-equal
-   boxes to actually look aligned -- padding-derived height alone drifts
-   a px or two between a native <select>, Qlinic.attachDatePicker's own
-   .qdp-trigger button, and a plain text input (same root cause already
-   documented above for #rxDoctorFilter/#rxSearchInput). Explicit height
-   plus the identical pill shape as that reception/prescriptions search
-   family, reused directly instead of the shorter, non-pill
-   .pill-input/.pill-select tier those two-date-field rows elsewhere use
-   alone.
-   Note: attachDatePicker hides the underlying <input type="date"> itself
-   (display:none) and renders its own .qdp-trigger button next to it, so
-   styling #feedbackDateFrom/#feedbackDateTo directly has no visible
-   effect once the picker attaches -- the real target is .qdp-trigger,
-   scoped to .fb-filters-right so it doesn't affect every date picker
-   app-wide. */
-#feedbackSearch, #feedbackRatingFilter {
-  height: 42px; box-sizing: border-box; padding: 0 18px;
-  font-size: 14.5px; font-weight: 500; font-family: var(--font);
-  border: 1px solid var(--grey-300); border-radius: var(--radius-pill);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  background-color: var(--white); color: var(--black);
-}
-.fb-filters-right .qdp-trigger {
-  height: 42px; box-sizing: border-box; padding: 0 16px;
-  font-size: 14.5px; font-weight: 500; font-family: var(--font);
-  border: 1px solid var(--grey-300); border-radius: var(--radius-pill);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  width: 160px;
-}
-.fb-filters-right .qdp { width: 160px; }
-#feedbackSearch:focus, #feedbackRatingFilter:focus {
-  outline: 2px solid var(--accent); border-color: var(--accent);
-}
-#feedbackRatingFilter {
-  appearance: none; -webkit-appearance: none; -moz-appearance: none;
-  cursor: pointer; width: 150px; padding-right: 38px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234a4a4c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 16px center; background-size: 12px;
-}
-:root[data-theme="dark"] #feedbackRatingFilter {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c7c7cc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-}
 
 /* Registration has 10 fields (address split into 3 rows) where every
    other login-card page has 1-4, so it alone gets a denser tier on top
@@ -7770,4 +7721,84 @@ select.cc-input { padding-right: 8px; }
 @media (max-width: 900px) {
   .tm-add-col { flex: 1 1 100%; }
   .tm-add-col .qr-label { display: none; }
+}
+
+/* Patient Feedback page: top cards, filters, table (reuses the Doctors/Team .dd-* and .qr-* pieces) */
+.fb-page-sub { margin: 4px 0 0; font-size: 14px; color: var(--pm-sub); }
+.fb-kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-bottom: 18px; }
+.fb-kpi-card {
+  position: relative; overflow: hidden; box-sizing: border-box; min-height: 118px; padding: 22px 24px; gap: 18px;
+  background: var(--pm-white); border: 1px solid var(--pm-soft-line); border-radius: 16px; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --fb-wave: #fef3c7; --fb-icon-amber: #ffedd5; --fb-icon-blue: #dbeafe; --fb-icon-green: #dcfce7;
+  --fb-up-bg: #dcfce7; --fb-up: #15803d; --fb-down-bg: #fee2e2; --fb-down: #b91c1c; --fb-new-bg: #dbeafe; --fb-new: #1d4ed8;
+}
+.fb-kpi-card.amber { --fb-wave: #fef3c7; }
+.fb-kpi-card.blue { --fb-wave: #dbeafe; }
+.fb-kpi-card.green { --fb-wave: #dcfce7; }
+:root[data-theme="dark"] .fb-kpi-card { --fb-icon-amber: rgba(251, 146, 60, 0.2); --fb-icon-blue: rgba(59, 130, 246, 0.22); --fb-icon-green: rgba(34, 197, 94, 0.2); --fb-up-bg: rgba(34, 197, 94, 0.2); --fb-up: #86efac; --fb-down-bg: rgba(239, 68, 68, 0.2); --fb-down: #fca5a5; --fb-new-bg: rgba(59, 130, 246, 0.22); --fb-new: #93c5fd; }
+:root[data-theme="dark"] .fb-kpi-card.amber { --fb-wave: rgba(251, 191, 36, 0.12); }
+:root[data-theme="dark"] .fb-kpi-card.blue { --fb-wave: rgba(59, 130, 246, 0.14); }
+:root[data-theme="dark"] .fb-kpi-card.green { --fb-wave: rgba(34, 197, 94, 0.12); }
+.fb-wave { position: absolute; left: 0; right: 0; bottom: 0; color: var(--fb-wave); opacity: 0.75; pointer-events: none; }
+.fb-kpi-icon { position: relative; width: 64px; height: 64px; border-radius: 16px; }
+.fb-kpi-icon.amber { background: var(--fb-icon-amber); }
+.fb-kpi-icon.blue { background: var(--fb-icon-blue); }
+.fb-kpi-icon.green { background: var(--fb-icon-green); }
+.fb-kpi-main { position: relative; flex: 1; min-width: 0; }
+.fb-kpi-value { font-size: 28px; line-height: 1.1; color: var(--pm-text); }
+.fb-kpi-label { margin-top: 6px; font-size: 14px; color: var(--pm-body); }
+.fb-kpi-trend { position: relative; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.fb-trend { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--fb-up-bg); color: var(--fb-up); }
+.fb-trend.down { background: var(--fb-down-bg); color: var(--fb-down); }
+.fb-trend.new { background: var(--fb-new-bg); color: var(--fb-new); }
+.fb-trend-note { font-size: 12px; color: var(--pm-sub); }
+
+#feedbackPanel { padding: 24px; }
+.fb-export { position: relative; flex: none; }
+.fb-export-btn { height: 42px; padding: 0 16px; border: 1px solid var(--qr-field-line); border-radius: 12px; background: var(--pm-white); color: var(--pm-strong); font-family: inherit; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; box-shadow: 0 1px 1px rgba(15, 23, 42, 0.04); }
+.fb-export-btn:hover { background: var(--qr-panel-bg); }
+.fb-menu { position: absolute; right: 0; top: 48px; z-index: 30; width: 210px; padding: 6px; border: 1px solid var(--qr-field-line); border-radius: 12px; background: var(--pm-white); box-shadow: 0 10px 30px rgba(15, 23, 42, 0.14); }
+.fb-menu[hidden] { display: none; }
+.fb-row-menu { position: fixed; right: auto; width: 200px; }
+.fb-menu-item { display: block; width: 100%; padding: 9px 12px; border: none; border-radius: 8px; background: transparent; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--pm-strong); text-align: left; cursor: pointer; }
+.fb-menu-item:hover { background: var(--qr-panel-bg); }
+.fb-menu-note { padding: 6px 12px 4px; font-size: 11px; color: var(--qr-hint); }
+
+.fb-filters-row { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin: 0; }
+.fb-search-col { flex: 1 1 280px; min-width: 0; }
+.fb-filters-right { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.fb-filters-right .qdp { width: 190px; }
+.fb-filters-right .qdp-trigger {
+  width: 190px; height: 44px; box-sizing: border-box; padding: 0 14px; flex-direction: row-reverse; justify-content: flex-end; gap: 10px;
+  border: 1px solid var(--qr-field-line); border-radius: 12px; background: var(--pm-white); color: var(--pm-strong);
+  font-size: 14px; font-weight: 400; box-shadow: 0 1px 1px rgba(15, 23, 42, 0.04);
+}
+.fb-filters-right .qdp-trigger svg { color: var(--pm-sub); }
+.fb-filters-right .qdp-trigger-label.qdp-placeholder { color: var(--qr-hint); font-weight: 400; }
+.fb-rating-fld { width: 180px; flex: none; }
+#feedbackPanel .active-filter-chips:empty { display: none; }
+
+.fb-table-wrap { overflow-x: auto; }
+.fb-table { min-width: 1040px; gap: 0; }
+.dd-row.fb-cols { grid-template-columns: 1.75fr 1.4fr 1.6fr 2fr 1.5fr 1fr 1.3fr 36px; gap: 12px; }
+.fb-table .dd-head { margin-bottom: 4px; }
+.fb-table .dd-body { border: none; border-bottom: 1px solid var(--pm-soft-line); border-radius: 0; box-shadow: none; padding-top: 14px; padding-bottom: 14px; background: transparent; }
+.fb-th-filter { color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; }
+.fb-th-filter:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; border-radius: 4px; }
+.fb-avatar { width: 40px; height: 40px; }
+.fb-rating-cell { display: flex; align-items: center; gap: 8px; }
+.fb-rating-num { font-size: 14px; font-weight: 600; color: var(--pm-body); }
+.fb-doc-name { font-size: 14px; font-weight: 600; color: var(--pm-text); }
+.fb-doc-spec { margin-top: 1px; font-size: 12px; color: var(--qr-hint); }
+.fb-date-day { font-size: 14px; color: var(--pm-text); }
+.fb-date-time { margin-top: 1px; font-size: 12px; color: var(--qr-hint); }
+.fb-kebab-cell { display: flex; justify-content: flex-end; }
+.fb-kebab { width: 32px; height: 32px; padding: 0; border: none; border-radius: 8px; background: transparent; color: var(--pm-sub); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.fb-kebab:hover { background: var(--qr-panel-bg); }
+.fb-google-pill { padding: 5px 12px; font-size: 13px; }
+.fb-comment-quote { font-size: 22px; color: #bfdbfe; line-height: 0.9; font-weight: 700; }
+@media (max-width: 1100px) { .fb-kpi-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 900px) {
+  .fb-table .dd-head { display: grid; }
+  .fb-table .dd-row.dd-body > * { grid-column: auto !important; grid-row: auto !important; }
 }
