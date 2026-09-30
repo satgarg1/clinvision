@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=410" />
+<link rel="stylesheet" href="styles.css?v=411" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -383,16 +383,31 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-header"><h2>Clinic controls</h2></div>
-        <form id="clinicControlsForm" class="inline-form">
-          <div class="field" style="max-width:160px;">
-            <label>Follow-up window</label>
-            <input type="number" id="followUpBufferInput" min="0" max="90" step="1" placeholder="0" />
-            <span class="field-hint">Days a repeat visit skips the fee (0 = off)</span>
+      <div class="panel pm-card qr-card cc-card">
+        <div class="qr-head">
+          <div class="qr-head-left">
+            <div class="qr-badge">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M21 11V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6"/><path d="M3 10h18"/><circle cx="18" cy="18" r="2"/><path d="M18 14.5v1"/><path d="M18 20.5v1"/><path d="M14.5 18h1"/><path d="M20.5 18h1"/></svg>
+            </div>
+            <div>
+              <h2 class="qr-title">Clinic controls</h2>
+              <p class="qr-sub">Set core clinic preferences like follow-up validity, operating hours, and weekly off days.</p>
+            </div>
           </div>
-          <div class="field" style="max-width:180px;">
-            <label>Opening time</label>
+          <div class="qr-pill">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+            <span>Manage clinic operating hours</span>
+          </div>
+        </div>
+
+        <form id="clinicControlsForm" class="cc-form">
+          <div class="cc-field cc-follow">
+            <label class="qr-label" for="followUpBufferInput">Follow-up window</label>
+            <input type="number" id="followUpBufferInput" class="cc-input" min="0" max="90" step="1" placeholder="0" />
+            <span class="qr-hint">Days a repeat visit skips the fee (0 = off)</span>
+          </div>
+          <div class="cc-field cc-time">
+            <label class="qr-label">Opening time</label>
             <div class="time-picker" id="openingTimePicker">
               <button type="button" class="time-picker-trigger" id="openingTimeTrigger">
                 <span id="openingTimeTriggerText">Loading…</span><span class="time-picker-caret">▾</span>
@@ -400,10 +415,10 @@
               <input type="hidden" id="openingTimeInput" required />
               <div class="time-picker-panel" id="openingTimePanel" style="display:none;"></div>
             </div>
-            <span class="field-hint">Start of the appointment window</span>
+            <span class="qr-hint">Start of the appointment window</span>
           </div>
-          <div class="field" style="max-width:180px;">
-            <label>Closing time</label>
+          <div class="cc-field cc-time">
+            <label class="qr-label">Closing time</label>
             <div class="time-picker" id="closingTimePicker">
               <button type="button" class="time-picker-trigger" id="closingTimeTrigger">
                 <span id="closingTimeTriggerText">Loading…</span><span class="time-picker-caret">▾</span>
@@ -411,11 +426,11 @@
               <input type="hidden" id="closingTimeInput" required />
               <div class="time-picker-panel" id="closingTimePanel" style="display:none;"></div>
             </div>
-            <span class="field-hint">End of the appointment window</span>
+            <span class="qr-hint">End of the appointment window</span>
           </div>
-          <div class="field" style="max-width:440px;flex:0 0 auto;">
-            <label>Weekly off days</label>
-            <div class="day-chip-group" id="weeklyOffDaysGroup">
+          <div class="cc-field cc-days-field">
+            <div class="qr-label" id="weeklyOffLabel">Weekly off days</div>
+            <div class="day-chip-group" id="weeklyOffDaysGroup" role="group" aria-labelledby="weeklyOffLabel">
               <button type="button" class="day-chip" data-day="monday">Mon</button>
               <button type="button" class="day-chip" data-day="tuesday">Tue</button>
               <button type="button" class="day-chip" data-day="wednesday">Wed</button>
@@ -424,13 +439,38 @@
               <button type="button" class="day-chip" data-day="saturday">Sat</button>
               <button type="button" class="day-chip" data-day="sunday">Sun</button>
             </div>
-            <span class="field-hint">Warns Reception before booking these days</span>
+            <span class="qr-hint">Warns Reception before booking these days</span>
           </div>
-          <div class="field" style="flex:0;">
-            <label>&nbsp;</label>
-            <button type="submit" class="btn-sm primary">Save</button>
+          <div class="cc-field cc-save-col">
+            <button type="submit" class="qr-save cc-save" id="clinicControlsSaveBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <span>Save</span>
+            </button>
           </div>
         </form>
+
+        <div class="pm-alert blue qr-callout">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><line x1="12" y1="11" x2="12" y2="17" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1.3" fill="#ffffff"/></svg>
+          <div class="pm-alert-title">These settings apply clinic-wide and help standardize booking behavior for reception and staff.</div>
+        </div>
+
+        <div class="qr-preview">
+          <div class="qr-mini cc-sched">
+            <div class="qr-mini-head">
+              <span class="qr-mini-title">Clinic schedule</span>
+              <span class="qr-mini-time cc-sched-hours">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+                <span id="ccHours">Loading…</span>
+              </span>
+            </div>
+            <div class="cc-days" id="ccDays" aria-hidden="true"></div>
+          </div>
+          <div class="qr-preview-divider"></div>
+          <div>
+            <div class="qr-preview-title">How it helps staff</div>
+            <div class="qr-preview-text">Reception can avoid booking on off-days, define working hours clearly, and automatically apply follow-up fee rules consistently.</div>
+          </div>
+        </div>
       </div>
     </main>
   </div>
@@ -602,6 +642,8 @@
         const chip = e.target.closest('.day-chip');
         if (!chip) return;
         chip.classList.toggle('active');
+        chip.setAttribute('aria-pressed', String(chip.classList.contains('active')));
+        renderClinicSchedule();
       });
       function getWeeklyOffDays() {
         return Array.from(document.querySelectorAll('#weeklyOffDaysGroup .day-chip.active')).map((c) => c.getAttribute('data-day'));
@@ -610,8 +652,27 @@
         const set = new Set(days || []);
         document.querySelectorAll('#weeklyOffDaysGroup .day-chip').forEach((c) => {
           c.classList.toggle('active', set.has(c.getAttribute('data-day')));
+          c.setAttribute('aria-pressed', String(set.has(c.getAttribute('data-day'))));
         });
+        renderClinicSchedule();
       }
+
+      // The "Clinic schedule" preview follows the opening and closing times and
+      // whichever weekdays are marked off.
+      function renderClinicSchedule() {
+        const opening = document.getElementById('openingTimeInput').value;
+        const closing = document.getElementById('closingTimeInput').value;
+        if (opening && closing) {
+          document.getElementById('ccHours').textContent =
+            `${Qlinic.formatTime(Qlinic.parseTime(opening))} – ${Qlinic.formatTime(Qlinic.parseTime(closing))}`;
+        }
+        document.getElementById('ccDays').innerHTML = Array.from(document.querySelectorAll('#weeklyOffDaysGroup .day-chip')).map((c) => {
+          const off = c.classList.contains('active');
+          return `<div class="cc-day-col"><div class="cc-day${off ? ' off' : ''}">${c.textContent}</div><div class="cc-day-status${off ? ' off' : ''}">${off ? 'Off' : 'Open'}</div></div>`;
+        }).join('');
+      }
+      document.getElementById('openingTimeInput').addEventListener('change', renderClinicSchedule);
+      document.getElementById('closingTimeInput').addEventListener('change', renderClinicSchedule);
 
       document.getElementById('stateInput').innerHTML = '<option value="">Select state</option>' +
         Qlinic.INDIA_STATES_AND_UTS.map((s) => `<option value="${s}">${s}</option>`).join('');
@@ -876,6 +937,9 @@
           showToast('Closing time must be after opening time');
           return;
         }
+        const saveBtn = document.getElementById('clinicControlsSaveBtn');
+        const saveLabel = saveBtn.querySelector('span');
+        saveBtn.disabled = true;
         try {
           await Qlinic.updateClinic({
             followUpBufferDays: document.getElementById('followUpBufferInput').value || 0,
@@ -885,9 +949,14 @@
           });
         } catch (err) {
           showToast(err.message || 'Could not update clinic controls — please try again.');
+          saveBtn.disabled = false;
           return;
         }
         showToast('Clinic controls updated');
+        saveBtn.disabled = false;
+        saveBtn.classList.add('saved');
+        saveLabel.textContent = 'Saved';
+        setTimeout(() => { saveBtn.classList.remove('saved'); saveLabel.textContent = 'Save'; }, 2000);
       });
 
       await loadClinic();

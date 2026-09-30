@@ -4023,15 +4023,6 @@ th.th-filterable { position: relative; }
    only the hints themselves end up ragged at the bottom, which reads as
    normal captioning rather than a broken layout. */
 #rulesForm, #clinicControlsForm, #displayLanguageForm { gap: 16px; align-items: flex-start; }
-#rulesForm .time-picker-trigger, #clinicControlsForm .time-picker-trigger, #clinicControlsForm select,
-#followUpBufferInput, #clinicControlsForm .day-chip {
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--text-md);
-}
-#rulesForm .btn-sm, #clinicControlsForm .btn-sm {
-  padding: var(--space-3) var(--space-6);
-  font-size: var(--text-md);
-}
 /* Language select, Save, and the Appearance Day/Night toggle sit in the
    same visual row-height context across two panels — matched to
    .pill-select's own proven height (8px vertical padding, 13px text,
@@ -7406,4 +7397,44 @@ body.tool-blue .tool-btn { border-radius: 12px; }
 @media (max-width: 720px) {
   .qr-head { flex-direction: column; align-items: flex-start; }
   .qr-form { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Clinic Settings: Clinic controls card (reuses the .qr-card header, note and preview) */
+.cc-card { --qr-badge-bg: #d1fae5; --qr-badge: #059669; --cc-day-bg: #ffffff; --cc-day-line: #e2e8f0; --cc-day-text: #334155; --cc-open-bg: #dcfce7; --cc-open-text: #15803d; --cc-off-bg: #2563eb; --cc-hours: #6366f1; }
+:root[data-theme="dark"] .cc-card { --qr-badge-bg: rgba(52, 211, 153, 0.2); --qr-badge: #34d399; --cc-day-bg: transparent; --cc-day-line: #48484a; --cc-day-text: #e5e5ea; --cc-open-bg: rgba(34, 197, 94, 0.22); --cc-open-text: #86efac; --cc-hours: #a5b4fc; }
+.cc-form { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.cc-field { min-width: 0; }
+.cc-follow { width: 140px; flex: none; }
+.cc-time { width: 150px; flex: none; }
+.cc-days-field { flex: 1; }
+.cc-save-col { flex: none; padding-top: 22px; }
+.cc-save { width: auto; padding: 0 22px; }
+.cc-input {
+  width: 100%; height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid var(--qr-field-line); border-radius: 12px;
+  background: var(--pm-white); color: var(--pm-strong); font-family: inherit; font-size: 14px; box-shadow: 0 1px 1px rgba(15, 23, 42, 0.04);
+}
+.cc-input:focus { outline: 2px solid #3b82f6; border-color: #3b82f6; }
+.cc-card .day-chip-group { flex-wrap: wrap; gap: 6px; }
+.cc-card .day-chip { height: 40px; min-width: 44px; padding: 0 8px; border-radius: 10px; border-color: var(--cc-day-line); background: var(--cc-day-bg); color: var(--cc-day-text); font-size: 13px; font-weight: 500; cursor: pointer; }
+.cc-card .day-chip:hover { border-color: var(--pm-sub); }
+.cc-card .day-chip.active { background: var(--qr-save); border-color: var(--qr-save); color: #ffffff; font-weight: 500; }
+.cc-sched { width: 320px; }
+.cc-sched-hours { color: var(--cc-hours); }
+.cc-days { display: flex; gap: 6px; }
+.cc-day-col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.cc-day { width: 100%; box-sizing: border-box; padding: 6px 0; border-radius: 6px; background: var(--qr-chip-bg); color: var(--qr-chip-sub); font-size: 10.5px; font-weight: 500; text-align: center; }
+.cc-day.off { background: var(--cc-off-bg); color: #ffffff; font-weight: 700; }
+.cc-day-status { width: 100%; box-sizing: border-box; padding: 3px 0; border-radius: 6px; background: var(--cc-open-bg); color: var(--cc-open-text); font-size: 10.5px; font-weight: 600; text-align: center; }
+.cc-day-status.off { background: transparent; color: var(--pm-sub); }
+@media (max-width: 1200px) {
+  .cc-form { flex-wrap: wrap; }
+  .cc-days-field { flex: 1 1 100%; order: 5; }
+  .cc-save-col { padding-top: 0; }
+}
+@media (max-width: 900px) {
+  .cc-sched { width: auto; }
+}
+@media (max-width: 720px) {
+  .cc-follow, .cc-time { width: 100%; }
+  .cc-save-col, .cc-save { width: 100%; }
 }
