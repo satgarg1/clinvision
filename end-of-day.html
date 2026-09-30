@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=423" />
+<link rel="stylesheet" href="styles.css?v=424" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -43,10 +43,21 @@
         <div>
           <div class="breadcrumb"><a href="settings.html">Settings</a> <span>/</span> End of day</div>
           <h1>End of day</h1>
+          <p class="fb-page-sub">Finalize today's appointments and automatically mark no-shows for patients who never arrived.</p>
         </div>
       </div>
 
-      <div class="panel" id="endOfDayPanel"></div>
+      <div class="panel pm-card eod-card" id="endOfDayPanel"></div>
+
+      <div class="eod-info">
+        <div class="eod-info-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="11" x2="12" y2="17"/><circle cx="12" cy="7.5" r="0.6" fill="currentColor"/></svg>
+        </div>
+        <div>
+          <div class="eod-info-title">What happens when you close the day?</div>
+          <div class="eod-info-text">All patients who are still marked as "booked" but never arrived today will be finalized as no-shows. You can review these in your appointment reports.</div>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -54,7 +65,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=135"></script>
+  <script src="clinic-data.js?v=136"></script>
   <script src="app-topbar.js?v=5"></script>
   <script>
     (async function () {
@@ -81,16 +92,43 @@
         setTimeout(() => t.classList.remove('show'), 2200);
       }
 
+      const CLOCK_SVG = (size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+      const CHECK_CIRCLE_SVG = (size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="8 12.5 11 15.5 16 9"/></svg>`;
+      const USERS_SVG = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+      const REOPEN_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
+
       async function renderEndOfDay() {
-        const clinic = await Qlinic.getClinic();
+        const [clinic, counts] = await Promise.all([Qlinic.getClinic(), Qlinic.getTodayCloseoutCounts()]);
         const closedToday = clinic && clinic.last_closed_date === Qlinic.getTodayDate();
         const panel = document.getElementById('endOfDayPanel');
         if (closedToday) {
           panel.innerHTML = `
-            <div class="panel-header"><h2>End of day</h2></div>
-            <span class="badge badge-no-show" style="margin-bottom:12px;display:inline-block;">Day closed</span>
-            <p class="panel-note">Today's no-shows have been finalized. Reopening just unlocks the button below, it won't undo them.</p>
-            <button class="btn-sm accent-outline" id="reopenDayBtn">Reopen the day</button>
+            <div class="eod-head">
+              <div class="eod-badge closed">${CHECK_CIRCLE_SVG(36)}</div>
+              <div>
+                <h2 class="eod-title">Day closed</h2>
+                <p class="eod-text">Today's no-shows have been finalized. Reopening just unlocks the button below, it won't undo them.</p>
+              </div>
+            </div>
+            <div class="eod-tiles">
+              <div class="eod-tile blue">
+                <div class="eod-tile-icon">${USERS_SVG}</div>
+                <div>
+                  <div class="eod-count">${counts.noShows}</div>
+                  <div class="eod-tile-label">Patients finalized as no-shows</div>
+                  <div class="eod-tile-sub">closed out today</div>
+                </div>
+              </div>
+              <div class="eod-tile green">
+                <div class="eod-tile-icon">${CLOCK_SVG(26)}</div>
+                <div>
+                  <div class="eod-tile-title">Automatic closeout</div>
+                  <div class="eod-tile-text">Nothing more to do today. The next closeout happens automatically just after midnight.</div>
+                </div>
+              </div>
+            </div>
+            <div class="eod-divider"></div>
+            <div><button type="button" class="eod-btn outline" id="reopenDayBtn">${REOPEN_SVG}<span>Reopen the day</span></button></div>
           `;
           document.getElementById('reopenDayBtn').addEventListener('click', async () => {
             if (await Qlinic.confirmDialog({ title: 'Reopen the day?', message: "This only unlocks the close button again, it won't undo any no-shows already finalized.", confirmLabel: 'Reopen' })) {
@@ -106,9 +144,32 @@
           });
         } else {
           panel.innerHTML = `
-            <div class="panel-header"><h2>End of day</h2></div>
-            <p class="panel-note">Anyone still marked "booked" (never arrived) today will be closed out as a no-show. This also happens automatically just after midnight if nobody closes it by hand.</p>
-            <button class="btn-sm primary" id="closeDayBtn">Close the day &amp; finalize no-shows</button>
+            <div class="eod-head">
+              <div class="eod-badge">${CLOCK_SVG(36)}</div>
+              <div>
+                <h2 class="eod-title">Close out today</h2>
+                <p class="eod-text">Anyone still marked "booked" (never arrived) today will be closed out as a no-show. This also happens automatically just after midnight if nobody closes it by hand.</p>
+              </div>
+            </div>
+            <div class="eod-tiles">
+              <div class="eod-tile blue">
+                <div class="eod-tile-icon">${USERS_SVG}</div>
+                <div>
+                  <div class="eod-count">${counts.stillBooked}</div>
+                  <div class="eod-tile-label">Patients still marked as booked</div>
+                  <div class="eod-tile-sub">(never arrived today)</div>
+                </div>
+              </div>
+              <div class="eod-tile green">
+                <div class="eod-tile-icon">${CLOCK_SVG(26)}</div>
+                <div>
+                  <div class="eod-tile-title">Automatic closeout</div>
+                  <div class="eod-tile-text">If you don't close the day manually, this will happen automatically just after midnight.</div>
+                </div>
+              </div>
+            </div>
+            <div class="eod-divider"></div>
+            <div><button type="button" class="eod-btn" id="closeDayBtn">${CHECK_CIRCLE_SVG(22)}<span>Close the day &amp; finalize no-shows</span></button></div>
           `;
           document.getElementById('closeDayBtn').addEventListener('click', async () => {
             if (await Qlinic.confirmDialog({ title: 'Close the day?', message: 'Everyone still "booked" and not arrived today will be marked as no-show.', confirmLabel: 'Close the day' })) {

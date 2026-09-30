@@ -2195,6 +2195,27 @@
     currentClinic = null;
   }
 
+  // How many of today's patients the close button would (or did) turn into
+  // no-shows: same clinic + booked_date filter as closeDayNoShows, so the
+  // number on screen is exactly what the button acts on.
+  async function getTodayCloseoutCounts() {
+    const clinicId = await ensureClinicContext();
+    if (!clinicId) return { stillBooked: 0, noShows: 0 };
+    const today = todayDateStr();
+    const count = async (status) => {
+      const { count: n, error } = await sb
+        .from('patients')
+        .select('id', { count: 'exact', head: true })
+        .eq('clinic_id', clinicId)
+        .eq('status', status)
+        .eq('booked_date', today);
+      if (error) throw error;
+      return n || 0;
+    };
+    const [stillBooked, noShows] = await Promise.all([count('booked'), count('no_show')]);
+    return { stillBooked, noShows };
+  }
+
   async function reopenDay() {
     const clinicId = await ensureClinicContext();
     const { error } = await sb
@@ -3506,6 +3527,7 @@
     statBreakdownDialog,
     getDailySummary,
     closeDayNoShows,
+    getTodayCloseoutCounts,
     reopenDay,
     closeDoctorDay,
     reopenDoctorDay,
