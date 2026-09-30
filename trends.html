@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=433" />
+<link rel="stylesheet" href="styles.css?v=434" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -362,9 +362,8 @@
         return { currentmonth: 'last month', lastmonth: 'the month before', currentweek: 'last week', lastweek: 'the week before' }[rangePreset] || 'the previous period';
       }
       function rangeText(range) {
-        const f = (s) => { const [y, m, d] = s.split('-').map(Number); return `${d} ${MONTH_ABBREV[m - 1]}`; };
-        const y = range.end.slice(0, 4);
-        return `${f(range.start)} to ${f(range.end)} ${y}`;
+        const f = (s, withYear) => { const [y, m, d] = s.split('-').map(Number); return `${d} ${MONTH_ABBREV[m - 1]}${withYear ? ` ${y}` : ''}`; };
+        return `${f(range.start, range.start.slice(0, 4) !== range.end.slice(0, 4))} to ${f(range.end, true)}`;
       }
       function dateList(range) {
         const out = [];
@@ -383,7 +382,7 @@
         const pct = Math.round(((cur - prev) / prev) * 100);
         const cls = pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
         const arrow = pct > 0 ? '<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>' : pct < 0 ? '<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>' : '';
-        return `<div class="in-delta ${cls}">${arrow ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${arrow}</svg>` : ''}${Math.abs(pct)}% vs ${esc(compareLabel())}</div>`;
+        return `<div class="in-delta ${cls}"><span class="in-delta-n">${arrow ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${arrow}</svg>` : ''}${Math.abs(pct)}%</span><span class="in-delta-c">vs ${esc(compareLabel())}</span></div>`;
       }
       const ICONS = {
         users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
@@ -406,8 +405,10 @@
         orange: ['#ffedd5', '#ea580c'], pink: ['#fce7f3', '#db2777'], teal: ['#ccfbf1', '#0d9488'], amber: ['#fef3c7', '#d97706'],
       };
       const svgIcon = (inner, size = 26) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
-      function kpi(tone, icon, value, label, deltaOrSub) {
-        return `<div class="in-kpi"><div class="in-kpi-ic in-tone-${tone}">${svgIcon(ICONS[icon], 26)}</div><div class="in-kpi-main"><div class="in-kpi-v">${value}</div><div class="in-kpi-l">${label}</div>${deltaOrSub || ''}</div></div>`;
+      const INFO_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+      function kpi(tone, icon, value, label, deltaOrSub, tip) {
+        const info = tip ? `<span class="in-info" data-tip="${esc(tip)}" aria-label="${esc(tip)}">${INFO_ICON}</span>` : '';
+        return `<div class="in-kpi"><div class="in-kpi-ic in-tone-${tone}">${svgIcon(ICONS[icon], 26)}</div><div class="in-kpi-main"><div class="in-kpi-v">${value}</div><div class="in-kpi-l">${label}${info}</div>${deltaOrSub || ''}</div></div>`;
       }
       const sub = (t) => `<div class="in-kpi-sub">${t}</div>`;
       function kpiRow(items, cols) { return `<div class="in-kpi-row" style="--cols:${cols}">${items.join('')}</div>`; }
@@ -501,7 +502,8 @@
           return palette[Math.min(palette.length - 1, idx)];
         };
         const cols = `46px repeat(${colLabels.length}, minmax(0, 1fr))`;
-        const head = `<div class="in-hm-row" style="grid-template-columns:${cols}"><span></span>${colLabels.map((c) => `<span class="in-hm-col">${esc(c)}</span>`).join('')}</div>`;
+        const keepCol = new Set(pickLabelIdx(colLabels.length, 14));
+        const head = `<div class="in-hm-row" style="grid-template-columns:${cols}"><span></span>${colLabels.map((c, i) => `<span class="in-hm-col">${keepCol.has(i) ? esc(c) : ''}</span>`).join('')}</div>`;
         const body = rowLabels.map((r, ri) => `<div class="in-hm-row" style="grid-template-columns:${cols}"><span class="in-hm-rowlabel">${esc(r)}</span>${data[ri].map((v, ci) => `<span class="in-hm-cell in-hit" data-tip="${esc(`${r} ${colLabels[ci]}: ${v.label}`)}" style="background:${colorFor(v.value)}"></span>`).join('')}</div>`).join('');
         return head + body;
       }
@@ -518,17 +520,20 @@
         });
         return `<svg viewBox="0 0 ${W} ${H}" width="100%" class="in-svg" role="img" aria-label="Wait time distribution">${g}</svg>`;
       }
-      function groupedBars(labels, a, b, ca, cb, vmaxIn) {
-        const W = 1080, H = 270, L = 44, T = 14, R = 10, B = 34;
-        const vmax = niceMax((vmaxIn || Math.max(1, ...a, ...b)) * 1.1);
+      function groupedBars(labels, a, b, ca, cb, o = {}) {
+        const W = o.W || 1080, H = 270, L = 44, T = 14, R = 10, B = 34;
+        const vmax = niceMax(Math.max(1, ...a, ...b) * 1.1);
         const n = labels.length, cw = (W - L - R) / n;
+        const names = o.names || ['', ''];
+        const keep = new Set(pickLabelIdx(n, o.W ? 10 : 16));
         let g = gridLines(W, H, L, T, R, B, vmax, (v) => num(v), 4);
         labels.forEach((lab, i) => {
+          const tl = (o.tips && o.tips[i]) || lab;
           [[a, ca], [b, cb]].forEach(([arr, col], k) => {
             const h = (H - T - B) * arr[i] / vmax, x = L + i * cw + cw * 0.14 + k * cw * 0.36;
-            g += `<rect class="in-hit" data-tip="${esc(`${lab}: ${num(arr[i])}`)}" x="${x.toFixed(1)}" y="${(H - B - h).toFixed(1)}" width="${(cw * 0.32).toFixed(1)}" height="${Math.max(0, h).toFixed(1)}" rx="3" fill="${col}"/>`;
+            g += `<rect class="in-hit" data-tip="${esc(`${tl}: ${num(arr[i])}${names[k] ? ' ' + names[k] : ''}`)}" x="${x.toFixed(1)}" y="${(H - B - h).toFixed(1)}" width="${(cw * 0.32).toFixed(1)}" height="${Math.max(0, h).toFixed(1)}" rx="3" fill="${col}"/>`;
           });
-          g += `<text class="in-tx" x="${(L + i * cw + cw / 2).toFixed(1)}" y="${H - 10}" text-anchor="middle" font-size="11.5">${esc(lab)}</text>`;
+          if (keep.has(i)) g += `<text class="in-tx" x="${(L + i * cw + cw / 2).toFixed(1)}" y="${H - 10}" text-anchor="middle" font-size="11.5">${esc(lab)}</text>`;
         });
         return `<svg viewBox="0 0 ${W} ${H}" width="100%" class="in-svg" role="img" aria-label="Grouped bars">${g}</svg>`;
       }
@@ -548,9 +553,11 @@
         pickLabelIdx(n, 10).forEach((i) => { g += `<text class="in-tx" x="${X(i).toFixed(1)}" y="${H - 10}" text-anchor="middle" font-size="11">${esc(labels[i])}</text>`; });
         return `<svg viewBox="0 0 ${W} ${H}" width="100%" class="in-svg" role="img" aria-label="Demand against capacity">${g}</svg>`;
       }
-      function stacked100(labels, newPct, newCounts, retCounts) {
+      function stacked100(labels, newPct, newCounts, retCounts, tips) {
         const W = 620, H = 310, L = 46, T = 12, R = 10, B = 34;
         const n = labels.length, cw = (W - L - R) / n;
+        const tl = (i) => (tips && tips[i]) || labels[i];
+        const keep = new Set(pickLabelIdx(n, 12));
         let g = '';
         [0, 20, 40, 60, 80, 100].forEach((v) => {
           const y = T + (H - T - B) * (1 - v / 100);
@@ -559,9 +566,13 @@
         newPct.forEach((p, i) => {
           const x = L + i * cw + cw * 0.16, w = cw * 0.68;
           const hn = (H - T - B) * p / 100, hr = (H - T - B) - hn;
-          g += `<rect class="in-hit" data-tip="${esc(`${labels[i]}: ${num(newCounts[i])} new patients`)}" x="${x.toFixed(1)}" y="${(H - B - hn).toFixed(1)}" width="${w.toFixed(1)}" height="${hn.toFixed(1)}" fill="${C.blue}"/>`;
-          g += `<rect class="in-hit" data-tip="${esc(`${labels[i]}: ${num(retCounts[i])} returning patients`)}" x="${x.toFixed(1)}" y="${T}" width="${w.toFixed(1)}" height="${hr.toFixed(1)}" fill="${C.tealL}"/>`;
-          g += `<text class="in-tx2" x="${(L + i * cw + cw / 2).toFixed(1)}" y="${H - 10}" text-anchor="middle" font-size="12">${esc(labels[i])}</text>`;
+          if (newCounts[i] + retCounts[i] === 0) {
+            g += `<rect class="in-hit" data-tip="${esc(`${tl(i)}: no visits`)}" x="${x.toFixed(1)}" y="${T}" width="${w.toFixed(1)}" height="${(H - T - B).toFixed(1)}" rx="3" style="fill:var(--in-track)"/>`;
+          } else {
+            g += `<rect class="in-hit" data-tip="${esc(`${tl(i)}: ${num(newCounts[i])} new patient${newCounts[i] === 1 ? '' : 's'}`)}" x="${x.toFixed(1)}" y="${(H - B - hn).toFixed(1)}" width="${w.toFixed(1)}" height="${hn.toFixed(1)}" fill="${C.blue}"/>`;
+            g += `<rect class="in-hit" data-tip="${esc(`${tl(i)}: ${num(retCounts[i])} returning patient${retCounts[i] === 1 ? '' : 's'}`)}" x="${x.toFixed(1)}" y="${T}" width="${w.toFixed(1)}" height="${hr.toFixed(1)}" fill="${C.tealL}"/>`;
+          }
+          if (keep.has(i)) g += `<text class="in-tx2" x="${(L + i * cw + cw / 2).toFixed(1)}" y="${H - 10}" text-anchor="middle" font-size="12">${esc(labels[i])}</text>`;
         });
         return `<svg viewBox="0 0 ${W} ${H}" width="100%" class="in-svg" role="img" aria-label="New against returning patients">${g}</svg>`;
       }
@@ -608,21 +619,22 @@
       let D = null; // everything for the selected period
       const ui = { tab: amDoctor ? 'overview' : 'overview', overviewSeries: 0, revGran: null, demoTab: 0 };
       const TABS = [
-        { key: 'overview', label: 'Overview', emoji: '📊', sub: "A quick snapshot of your clinic's performance." },
-        { key: 'revenue', label: 'Revenue', emoji: '💰', sub: "Track your clinic's revenue, collections and billing health." },
-        { key: 'flow', label: 'Patient Flow', emoji: '🔄', sub: 'Understand how patients move through your clinic.' },
-        { key: 'scheduling', label: 'Scheduling', emoji: '🗓️', sub: 'Analyse demand patterns and optimise scheduling.' },
-        { key: 'patients', label: 'Patients', emoji: '👥', sub: 'Understand your patient base and retention.' },
-        { key: 'doctors', label: 'Doctors', emoji: '🩺', sub: 'Compare performance across doctors.' },
+        { key: 'overview', label: 'Overview', icon: 'bars', sub: "A quick snapshot of your clinic's performance." },
+        { key: 'revenue', label: 'Revenue', icon: 'rupee', sub: "Track your clinic's revenue, collections and billing health." },
+        { key: 'flow', label: 'Patient Flow', icon: 'repeat', sub: 'Understand how patients move through your clinic.' },
+        { key: 'scheduling', label: 'Scheduling', icon: 'cal', sub: 'Analyse demand patterns and optimise scheduling.' },
+        { key: 'patients', label: 'Patients', icon: 'users', sub: 'Understand your patient base and retention.' },
+        { key: 'doctors', label: 'Doctors', icon: 'steth', sub: 'Compare performance across doctors.' },
       ];
       const TAB_FOR_ANOMALY = { revenue: 'revenue', patients: 'overview', noshow: 'flow', consult: 'doctors' };
       const TAB_LABEL_FOR_ANOMALY = { revenue: 'Revenue', patients: 'Overview', noshow: 'Patient Flow', consult: 'Doctors' };
-      let historyLoading = false;
-      let historyCache = null; // lazy: six months of visits, directory and prescriptions
+      let historyLoadingKey = null;
+      let historyCache = null; // lazy and per period: visits around it, first visit dates and prescriptions
+      let dirCache = null;
 
       function visibleTabs() { return TABS.filter((t) => !(amDoctor && t.key === 'revenue')); }
       function renderTabs() {
-        document.getElementById('insTabs').innerHTML = visibleTabs().map((t) => `<button type="button" role="tab" data-tab="${t.key}" aria-selected="${t.key === ui.tab}" class="in-tab${t.key === ui.tab ? ' active' : ''}"><span class="in-tab-emoji" aria-hidden="true">${t.emoji}</span><span>${t.label}</span></button>`).join('');
+        document.getElementById('insTabs').innerHTML = visibleTabs().map((t) => `<button type="button" role="tab" data-tab="${t.key}" aria-selected="${t.key === ui.tab}" class="in-tab${t.key === ui.tab ? ' active' : ''}"><span class="in-tab-ic" aria-hidden="true">${svgIcon(ICONS[t.icon], 26)}</span><span>${t.label}</span></button>`).join('');
       }
       function setActiveTab(key) {
         ui.tab = key;
@@ -636,18 +648,68 @@
         setActiveTab(b.dataset.tab);
       });
 
-      function capacity(range, doctorCount) {
-        const c = D.clinic;
-        if (!c || !c.slot_interval_mins || !c.slot_capacity || !c.opening_time || !c.closing_time || !doctorCount) return null;
-        const toMin = (t) => { const [h, m] = String(t).slice(0, 5).split(':').map(Number); return h * 60 + m; };
-        const hoursOpen = (toMin(c.closing_time) - toMin(c.opening_time)) / 60;
-        if (hoursOpen <= 0) return null;
-        const off = new Set((c.weekly_off_days || []).map((d) => String(d).toLowerCase()));
-        const names = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-        const workDates = dateList(range).filter((d) => !off.has(names[new Date(`${d}T00:00:00`).getDay()]));
-        const perDoctorPerHour = (60 / c.slot_interval_mins) * c.slot_capacity;
-        return { workDays: workDates.length, hoursOpen, perHour: perDoctorPerHour * doctorCount, total: workDates.length * hoursOpen * perDoctorPerHour * doctorCount,
-          openHour: Math.floor(toMin(c.opening_time) / 60), closeHour: Math.ceil(toMin(c.closing_time) / 60) };
+      // ---- clinic hours ---------------------------------------------------
+      const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      // Opening and closing time come from Clinic Settings (9 AM to 6 PM until the clinic changes them).
+      let hoursMemo = { key: null, val: null };
+      function clinicHours() {
+        const c = (D && D.clinic) || clinic;
+        const key = `${c && c.opening_time}|${c && c.closing_time}`;
+        if (hoursMemo.key === key) return hoursMemo.val;
+        const toMin = (t) => { const [h, m] = String(t || '').slice(0, 5).split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+        let openMin = c && c.opening_time ? toMin(c.opening_time) : 9 * 60;
+        let closeMin = c && c.closing_time ? toMin(c.closing_time) : 18 * 60;
+        if (closeMin <= openMin) { openMin = 0; closeMin = 24 * 60; }
+        const openHour = Math.floor(openMin / 60);
+        const closeHourEx = Math.min(24, Math.ceil(closeMin / 60));
+        const val = { openMin, closeMin, openHour, closeHourEx, hours: Array.from({ length: closeHourEx - openHour }, (_, i) => openHour + i) };
+        hoursMemo = { key, val };
+        return val;
+      }
+      let offMemo = { key: null, val: null };
+      function offDaySet() {
+        const c = (D && D.clinic) || clinic;
+        const key = ((c && c.weekly_off_days) || []).join(',');
+        if (offMemo.key === key) return offMemo.val;
+        offMemo = { key, val: new Set(((c && c.weekly_off_days) || []).map((d) => String(d).toLowerCase())) };
+        return offMemo.val;
+      }
+      const dayNameCache = {};
+      const dayNameOf = (dateStr) => dayNameCache[dateStr] || (dayNameCache[dateStr] = DAY_NAMES[new Date(`${dateStr}T00:00:00`).getDay()]);
+      function isOperating(dateStr, hour) {
+        const h = clinicHours();
+        return hour >= h.openHour && hour < h.closeHourEx && !offDaySet().has(dayNameOf(dateStr));
+      }
+      function fmtClock(min) {
+        const h = Math.floor(min / 60) % 24, m = min % 60;
+        return `${h % 12 === 0 ? 12 : h % 12}${m ? ':' + pad2(m) : ''} ${h < 12 ? 'AM' : 'PM'}`;
+      }
+      function outsideCount(list, key) { return list.filter((p) => p[key] && !isOperating(p.tokenDate, hourOf(p[key]))).length; }
+      function outsideNote(n) {
+        if (!n) return '';
+        const h = clinicHours();
+        return `<p class="in-note">${num(n)} visit${n === 1 ? '' : 's'} came outside clinic hours (${fmtClock(h.openMin)} to ${fmtClock(h.closeMin)}) or on a weekly off day, so ${n === 1 ? 'it is' : 'they are'} not shown here.</p>`;
+      }
+      function utilText(u) { return u == null ? 'No data' : `${u < 10 ? u.toFixed(1) : Math.round(u)}%`; }
+      const UTIL_HELP = 'Time your doctors spent with patients as a share of the time the clinic was open. It uses the consultation times recorded on each visit, your opening hours, weekly off days, closed dates and doctor holidays. You do not need to enter a waiting room capacity.';
+
+      // Capacity comes from doctors' time, not from booking limits. Every doctor counts for each
+      // working day they were not on holiday, for the hours the clinic was open.
+      function capacity(range, docs, avgConsult) {
+        const hrs = clinicHours();
+        if (!docs.length || hrs.closeMin <= hrs.openMin) return null;
+        const off = offDaySet();
+        const workDates = dateList(range).filter((d) => !off.has(dayNameOf(d)) && !D.closures.has(d));
+        const hoursOpen = (hrs.closeMin - hrs.openMin) / 60;
+        let doctorDays = 0;
+        docs.forEach((d) => { const hol = D.holidays.get(d.id); doctorDays += hol ? workDates.filter((x) => !hol.has(x)).length : workDates.length; });
+        const measured = avgConsult != null && avgConsult >= 3;
+        const minutesEach = measured ? avgConsult : ((D.clinic && D.clinic.slot_interval_mins) || 15);
+        return {
+          workDays: workDates.length, doctorDays, hoursOpen, doctorCount: docs.length, minutesEach, measured,
+          perHour: workDates.length ? (doctorDays / workDates.length) * 60 / minutesEach : 0,
+          availableMinutes: doctorDays * hoursOpen * 60,
+        };
       }
       function metricsFor(patients, invoices, range) {
         const arrived = patients.filter(isArrived);
@@ -658,14 +720,18 @@
         const resolved = apptArrived.length + noShows.length;
         const waits = patients.map(waitMin).filter((v) => v != null);
         const consults = patients.map(consultMin).filter((v) => v != null);
-        const cap = capacity(range, D.doctors.filter((d) => d.isActive !== false).length || D.doctors.length);
+        const avgConsult = mean(consults);
+        // Doctors on the clinic now, plus anyone who saw patients in this period but has since left
+        const seenBy = new Set(seen.map((p) => p.doctorId));
+        const cap = capacity(range, D.doctors.filter((d) => d.isActive !== false || seenBy.has(d.id)), avgConsult);
         const revenue = invoices.reduce((s, i) => s + (i.amountReceived || 0), 0);
         return {
           patients, arrived, seen, appts, apptArrived, noShows,
           seenCount: seen.length, arrivedCount: arrived.length,
           noShowRate: resolved ? noShows.length / resolved * 100 : null,
-          avgWait: mean(waits), waits, avgConsult: mean(consults), consults,
-          capacity: cap, utilisation: cap && cap.total ? Math.min(100, seen.length / cap.total * 100) : null,
+          avgWait: mean(waits), waits, avgConsult, consults,
+          capacity: cap,
+          utilisation: cap && avgConsult != null && cap.availableMinutes > 0 ? Math.min(100, seen.length * avgConsult / cap.availableMinutes * 100) : null,
           invoices, revenue, invoiceCount: invoices.length,
           followUps: invoices.filter((i) => i.feeType === 'waived').length,
           uniqueBilled: new Set(invoices.map((i) => i.patientId || i.patientPhone || i.id)).size,
@@ -701,9 +767,9 @@
         document.getElementById('insTabs').style.display = '';
         document.getElementById('insRangeLabel').innerHTML = `${esc(rangeText(range))} ${svgIcon(ICONS.cal, 17)}`;
         const prev = previousRange(range);
-        let invoices, patients, prevInvoices, prevPatients, doctorsRaw, outstanding, audit;
+        let invoices, patients, prevInvoices, prevPatients, doctorsRaw, outstanding, audit, closures, holidays;
         try {
-          [invoices, patients, prevInvoices, prevPatients, doctorsRaw, outstanding, audit] = await Promise.all([
+          [invoices, patients, prevInvoices, prevPatients, doctorsRaw, outstanding, audit, closures, holidays] = await Promise.all([
             amDoctor ? Promise.resolve([]) : Qlinic.getInvoicesForDateRange(range.start, range.end),
             Qlinic.getPatientsInRange(range.start, range.end, myDoctorId || undefined),
             amDoctor ? Promise.resolve([]) : Qlinic.getInvoicesForDateRange(prev.start, prev.end),
@@ -711,16 +777,19 @@
             amDoctor ? Qlinic.getDoctor(myDoctorId) : Qlinic.getDoctors({ includeInactive: true }),
             amDoctor ? Promise.resolve([]) : Qlinic.getOutstandingInvoices().catch(() => []),
             amDoctor ? Promise.resolve(null) : Qlinic.getBillingAudit().catch(() => null),
+            Qlinic.getClinicClosures().catch(() => []),
+            Qlinic.getDoctorHolidays(myDoctorId || undefined).catch(() => []),
           ]);
         } catch (err) {
           showToast(err.message || 'Could not load Insights data, please try again.');
           return;
         }
         const doctors = amDoctor ? (doctorsRaw ? [doctorsRaw] : []) : doctorsRaw;
-        D = { range, prev, clinic, doctors, doctorById: Object.fromEntries(doctors.map((d) => [d.id, d])), outstanding, audit, invoicesRaw: invoices };
+        const holidayMap = new Map();
+        holidays.forEach((h) => { if (!holidayMap.has(h.doctorId)) holidayMap.set(h.doctorId, new Set()); holidayMap.get(h.doctorId).add(h.date); });
+        D = { range, prev, clinic, doctors, doctorById: Object.fromEntries(doctors.map((d) => [d.id, d])), outstanding, audit, invoicesRaw: invoices, closures: new Set(closures.map((c) => c.date)), holidays: holidayMap };
         D.cur = metricsFor(patients, invoices, range);
         D.old = metricsFor(prevPatients, prevInvoices, prev);
-        historyCache = null;
         renderBody();
       }
 
@@ -730,7 +799,7 @@
         const fn = { overview: renderOverview, revenue: renderRevenue, flow: renderFlow, scheduling: renderScheduling, patients: renderPatients, doctors: renderDoctors }[ui.tab];
         body.innerHTML = fn();
         wireBody();
-        if (ui.tab === 'patients' && !historyCache && !historyLoading) loadHistory();
+        if (ui.tab === 'patients') ensureHistory();
       }
       function wireBody() {
         const hook = (id, fn) => {
@@ -752,7 +821,7 @@
         if (!amDoctor) items.push(kpi('green', 'rupee', money(cur.revenue), 'Revenue', deltaHtml(cur.revenue, old.revenue)));
         items.push(kpi('purple', 'clock', cur.avgWait == null ? 'No data' : `${Math.round(cur.avgWait)} min`, 'Avg waiting time', deltaHtml(cur.avgWait, old.avgWait)));
         items.push(kpi('red', 'calx', cur.noShowRate == null ? 'No data' : `${cur.noShowRate.toFixed(1)}%`, 'No-show rate', deltaHtml(cur.noShowRate, old.noShowRate)));
-        items.push(kpi('teal', 'bars', cur.utilisation == null ? 'Not set' : `${Math.round(cur.utilisation)}%`, 'Clinic utilisation', deltaHtml(cur.utilisation, old.utilisation)));
+        items.push(kpi('teal', 'bars', utilText(cur.utilisation), 'Clinic utilisation', deltaHtml(cur.utilisation, old.utilisation), UTIL_HELP));
         if (!amDoctor) items.push(kpi('purple', 'repeat', num(cur.followUps), 'Follow up visits', deltaHtml(cur.followUps, old.followUps)));
 
         // patient journey (appointments)
@@ -834,7 +903,6 @@
           kpi('red', 'calx', cur.noShowRate == null ? 'No data' : `${cur.noShowRate.toFixed(1)}%`, 'No-show rate', deltaHtml(cur.noShowRate, old.noShowRate)),
         ], 4);
         const w = cur.waits;
-        const bounds = [10, 20, 30, 45];
         const counts = [0, 0, 0, 0, 0];
         w.forEach((m) => { counts[m < 10 ? 0 : m < 20 ? 1 : m < 30 ? 2 : m < 45 ? 3 : 4] += 1; });
         const tot = w.length || 1;
@@ -854,32 +922,39 @@
         ];
         const arrCard = card('Arrival against appointment time', donutBlock(parts, num(diffs.length), 'Arrived', 210), { sub: '(Appointments only)' });
 
-        const { rows, cols, hours } = weekdayHourGrid(cur.patients.filter(isArrived), 'arrivedAt');
-        const waitGrid = rows.map((r, ri) => cols.map((h) => { const ws = cur.patients.filter((p) => isArrived(p) && waitMin(p) != null && dowMon0(p.tokenDate) === r.dow && hourOf(p.arrivedAt) === h).map(waitMin); return { value: ws.length ? mean(ws) : 0, label: ws.length ? `${Math.round(mean(ws))} min average wait` : 'no data' }; }));
-        const waitPal = ['#eef2f7', '#86efac', '#fde047', '#fb923c', '#dc2626', '#7f1d1d'];
+        // Hours and days come from the clinic's own opening hours and weekly off days.
+        const { rows, cols } = weekdayHourGrid();
+        const arrivedList = cur.patients.filter(isArrived);
+        const outsideN = outsideCount(arrivedList, 'arrivedAt');
+        const waitGrid = rows.map((r) => cols.map((h) => {
+          const ws = arrivedList.filter((p) => waitMin(p) != null && dowMon0(p.tokenDate) === r.dow && hourOf(p.arrivedAt) === h).map(waitMin);
+          return { value: ws.length ? Math.max(mean(ws), 0.01) : 0, label: ws.length ? `${Math.round(mean(ws))} min average wait` : 'no data' };
+        }));
+        const waitPal = ['var(--in-h0)', 'var(--in-h1)', 'var(--in-h2)', 'var(--in-h3)', 'var(--in-h4)', 'var(--in-h5)'];
         const waitLeg = [['No data', waitPal[0]], ['Under 5 min', waitPal[1]], ['5 to 10 min', waitPal[2]], ['10 to 20 min', waitPal[3]], ['20 to 30 min', waitPal[4]], ['30 plus min', waitPal[5]]];
         const waitCol = (v) => (v <= 0 ? 0 : v < 5 ? 1 : v < 10 ? 2 : v < 20 ? 3 : v < 30 ? 4 : 5);
         const cells = waitGrid.map((row) => row.map((c) => ({ ...c, value: waitCol(c.value) })));
         const hmWait = heatmap(rows.map((r) => r.label), cols.map(formatHourLabel), cells, waitPal, [1, 2, 3, 4]);
-        const heatCard = card('Wait time by weekday and hour', w.length ? `<div class="in-hm-grid"><div>${hmWait}</div>${legendCol(waitLeg)}</div>` : empty('No wait times recorded in this period yet.'), { sub: '(Average wait in minutes)' });
+        const heatCard = card('Wait time by weekday and hour', w.length ? `<div class="in-hm-grid"><div>${hmWait}</div>${legendCol(waitLeg)}</div>${outsideNote(outsideN)}` : empty('No wait times recorded in this period yet.'), { sub: '(Average wait in minutes)' });
 
         const arrByHour = {}, seenByHour = {};
-        cur.patients.forEach((p) => { if (isArrived(p) && p.arrivedAt) { const h = hourOf(p.arrivedAt); arrByHour[h] = (arrByHour[h] || 0) + 1; } if (isSeen(p) && p.calledAt) { const h = hourOf(p.calledAt); seenByHour[h] = (seenByHour[h] || 0) + 1; } });
-        const hrs = hourSpan([...Object.keys(arrByHour), ...Object.keys(seenByHour)].map(Number));
-        const flowCard = card('Patient flow by hour', hrs.length ? groupedBars(hrs.map(formatHourLabel), hrs.map((h) => arrByHour[h] || 0), hrs.map((h) => seenByHour[h] || 0), C.blue, C.purple) + legend([['Arrivals', C.blue], ['Seen', C.purple]]) : empty('No arrivals in this period.'), { sub: '(Arrivals against consultations)' });
+        cur.patients.forEach((p) => {
+          if (isArrived(p) && p.arrivedAt) { const h = hourOf(p.arrivedAt); if (isOperating(p.tokenDate, h)) arrByHour[h] = (arrByHour[h] || 0) + 1; }
+          if (isSeen(p) && p.calledAt) { const h = hourOf(p.calledAt); if (isOperating(p.tokenDate, h)) seenByHour[h] = (seenByHour[h] || 0) + 1; }
+        });
+        const hrs = clinicHours().hours;
+        const anyFlow = Object.keys(arrByHour).length || Object.keys(seenByHour).length;
+        const flowCard = card('Patient flow by hour', anyFlow ? groupedBars(hrs.map(formatHourLabel), hrs.map((h) => arrByHour[h] || 0), hrs.map((h) => seenByHour[h] || 0), C.blue, C.purple, { names: ['arrivals', 'seen'] }) + legend([['Arrivals', C.blue], ['Seen', C.purple]]) + outsideNote(outsideN) : empty('No arrivals during clinic hours in this period.'), { sub: '(Arrivals against consultations)' });
         return items + `<div class="in-grid in-grid-b">${waitCard}${arrCard}</div>` + heatCard + flowCard;
       }
-      function hourSpan(hours) {
-        if (!hours.length) return [];
-        const lo = Math.max(6, Math.min(...hours, 9)), hi = Math.min(23, Math.max(...hours, 20));
-        return Array.from({ length: hi - lo + 1 }, (_, i) => lo + i);
-      }
-      function weekdayHourGrid(list, key) {
-        const hours = hourSpan(list.filter((p) => p[key]).map((p) => hourOf(p[key])));
-        const hasSun = list.some((p) => dowMon0(p.tokenDate) === 6);
-        const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        const rows = names.slice(0, hasSun ? 7 : 6).map((n, i) => ({ label: n, dow: i }));
-        return { rows, cols: hours, hours };
+      // Rows are the clinic's working weekdays, columns are its opening hours.
+      function weekdayHourGrid() {
+        const off = offDaySet();
+        const short = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const full = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        let rows = short.map((n, i) => ({ label: n, dow: i })).filter((r) => !off.has(full[r.dow]));
+        if (!rows.length) rows = short.map((n, i) => ({ label: n, dow: i }));
+        return { rows, cols: clinicHours().hours };
       }
       function legendCol(items) {
         return `<div class="in-legend-col">${items.map(([l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join('')}</div>`;
@@ -889,40 +964,44 @@
       function renderScheduling() {
         const { cur, old } = D;
         const arrived = cur.arrived;
+        // Hour based views only look at time the clinic was actually open.
+        const opArrived = arrived.filter((p) => p.arrivedAt && isOperating(p.tokenDate, hourOf(p.arrivedAt)));
+        const outsideN = arrived.length - opArrived.length;
         const byHour = {}, byDow = [0, 0, 0, 0, 0, 0, 0];
-        arrived.forEach((p) => { if (p.arrivedAt) { const h = hourOf(p.arrivedAt); byHour[h] = (byHour[h] || 0) + 1; } byDow[dowMon0(p.tokenDate)] += 1; });
+        opArrived.forEach((p) => { const h = hourOf(p.arrivedAt); byHour[h] = (byHour[h] || 0) + 1; byDow[dowMon0(p.tokenDate)] += 1; });
         const hEntries = Object.entries(byHour).map(([h, c]) => [Number(h), c]).sort((a, b) => b[1] - a[1]);
         const busiestHour = hEntries[0];
         const dowNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         const bd = byDow.indexOf(Math.max(...byDow));
         const items = kpiRow([
           kpi('green', 'users', num(arrived.length), 'Total arrivals', deltaHtml(arrived.length, old.arrivedCount)),
-          kpi('teal', 'bars', cur.utilisation == null ? 'Not set' : `${Math.round(cur.utilisation)}%`, 'Clinic utilisation', deltaHtml(cur.utilisation, old.utilisation)),
+          kpi('teal', 'bars', utilText(cur.utilisation), 'Clinic utilisation', deltaHtml(cur.utilisation, old.utilisation), UTIL_HELP),
           kpi('red', 'clock', busiestHour ? formatHourLabel(busiestHour[0]) : 'No data', 'Busiest hour', busiestHour ? sub(`${num(busiestHour[1])} arrivals`) : ''),
-          kpi('purple', 'cal', arrived.length ? dowNames[bd] : 'No data', 'Busiest day', arrived.length ? sub(`${num(byDow[bd])} arrivals`) : ''),
+          kpi('purple', 'cal', opArrived.length ? dowNames[bd] : 'No data', 'Busiest day', opArrived.length ? sub(`${num(byDow[bd])} arrivals`) : ''),
           kpi('pink', 'clock', cur.avgWait == null ? 'No data' : `${Math.round(cur.avgWait)} min`, 'Avg wait time', deltaHtml(cur.avgWait, old.avgWait)),
         ], 5);
         const cap = cur.capacity;
-        const hrs = hourSpan(Object.keys(byHour).map(Number));
-        let demand = empty('No arrivals in this period.');
-        if (hrs.length) {
+        const hrs = clinicHours().hours;
+        let demand = empty('No arrivals during clinic hours in this period.');
+        if (opArrived.length) {
           const days = cap ? Math.max(1, cap.workDays) : Math.max(1, dateList(D.range).length);
           const arr = hrs.map((h) => +((byHour[h] || 0) / days).toFixed(1));
-          const capArr = cap ? hrs.map((h) => (h >= cap.openHour && h < cap.closeHour ? +cap.perHour.toFixed(1) : 0)) : null;
-          demand = areaPair(hrs.map(formatHourLabel), arr, capArr, C.blue, C.teal) + legend(capArr ? [['Arrivals per working day', C.blue], ['Available capacity per hour', C.teal]] : [['Arrivals per working day', C.blue]]);
+          const capArr = cap ? hrs.map(() => +cap.perHour.toFixed(1)) : null;
+          const capNote = cap ? `<p class="in-note">Capacity is how many patients your ${cap.doctorCount} active doctor${cap.doctorCount === 1 ? '' : 's'} can see in an hour at your average consultation time (${Math.round(cap.minutesEach)} min${cap.measured ? '' : ', taken from your slot length because no consultation times are recorded yet'}).</p>` : '';
+          demand = areaPair(hrs.map(formatHourLabel), arr, capArr, C.blue, C.teal) + legend(capArr ? [['Arrivals per working day', C.blue], ['Doctor capacity per hour', C.teal]] : [['Arrivals per working day', C.blue]]) + capNote + outsideNote(outsideN);
         }
         const dc = card('Demand against capacity', demand, { sub: '(Average working day)' });
         const peaks = hEntries.slice(0, 5).map(([h, c], i) => `<div class="in-peak"><span class="in-peak-n">${i + 1}.</span><span class="in-peak-l">${formatHourLabel(h)} to ${formatHourLabel((h + 1) % 24)}</span><b>${num(c)}</b></div>`).join('');
-        const pk = card('Peak hours', peaks || empty('No arrivals in this period.'), { sub: '(Arrivals in the period)' });
-        const { rows, cols } = weekdayHourGrid(arrived, 'arrivedAt');
-        const counts = rows.map((r) => cols.map((h) => arrived.filter((p) => p.arrivedAt && dowMon0(p.tokenDate) === r.dow && hourOf(p.arrivedAt) === h).length));
+        const pk = card('Peak hours', peaks || empty('No arrivals during clinic hours in this period.'), { sub: '(Arrivals in the period)' });
+        const { rows, cols } = weekdayHourGrid();
+        const counts = rows.map((r) => cols.map((h) => opArrived.filter((p) => dowMon0(p.tokenDate) === r.dow && hourOf(p.arrivedAt) === h).length));
         const mx = Math.max(1, ...counts.flat());
         const th = [Math.max(1, Math.round(mx * 0.2)), Math.max(2, Math.round(mx * 0.4)), Math.max(3, Math.round(mx * 0.7))];
-        const pal = ['#eef2f7', '#bfdbfe', '#60a5fa', '#2563eb', '#1e1b7a'];
-        const cellsA = counts.map((row, ri) => row.map((v, ci) => ({ value: v, label: `${v} arrival${v === 1 ? '' : 's'}` })));
+        const pal = ['var(--in-h0)', 'var(--in-h1)', 'var(--in-h2)', 'var(--in-h3)', 'var(--in-h4)'];
+        const cellsA = counts.map((row) => row.map((v) => ({ value: v, label: `${v} arrival${v === 1 ? '' : 's'}` })));
         const hm = heatmap(rows.map((r) => r.label), cols.map(formatHourLabel), cellsA, pal, th);
         const leg = legend([['0', pal[0]], [`1 to ${th[0]}`, pal[1]], [`${th[0] + 1} to ${th[1]}`, pal[2]], [`${th[1] + 1} to ${th[2]}`, pal[3]], [`${th[2] + 1} plus`, pal[4]]]);
-        const wk = card('Weekday and hour heatmap', arrived.length ? hm + `<div class="in-hm-legend">${leg}</div>` : empty('No arrivals in this period.'), { sub: '(Number of arrivals)' });
+        const wk = card('Weekday and hour heatmap', opArrived.length ? hm + `<div class="in-hm-legend">${leg}</div>${outsideNote(outsideN)}` : empty('No arrivals during clinic hours in this period.'), { sub: '(Number of arrivals)' });
         let typeParts;
         if (D.invoicesRaw.length) {
           typeParts = [{ label: 'Consultation', value: D.invoicesRaw.filter((i) => i.feeType === 'consultation').length, color: C.blue }, { label: 'Follow up', value: D.invoicesRaw.filter((i) => i.feeType === 'waived').length, color: C.tealL }, { label: 'Emergency', value: D.invoicesRaw.filter((i) => i.feeType === 'emergency').length, color: C.orange }];
@@ -947,95 +1026,177 @@
         if (/\d/.test(pick) && parts[1]) pick = parts[1];
         return pick.replace(/\s+/g, ' ').toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
       }
-      async function loadHistory() {
-        historyLoading = true;
-        const end = todayStr();
-        const start = toDateStr(new Date(new Date().getFullYear(), new Date().getMonth() - 5, 1));
-        try {
-          const [rows, directory, rxs] = await Promise.all([
-            Qlinic.getPatientsInRange(start, end, myDoctorId || undefined),
-            Qlinic.getPatientDirectory().catch(() => []),
-            Qlinic.getClinicPrescriptionsByDate({ date: start, endDate: end, doctorId: myDoctorId || undefined }).catch(() => []),
-          ]);
-          historyCache = { start, end, rows, directory, rxs };
-        } catch (err) {
-          historyCache = { start, end, rows: [], directory: [], rxs: [], failed: true };
+      const MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const dayMonth = (s) => { const [, m, d] = s.split('-').map(Number); return `${d} ${MON3[m - 1]}`; };
+      const BUCKET_NOUN = { day: 'day', week: 'week', fortnight: 'fortnight', month: 'month' };
+
+      // Trend charts follow the selected period. One bar per day up to 2 weeks, per week up to about
+      // 2 months, per fortnight up to about 4 months, then per calendar month. That keeps every
+      // chart between roughly 5 and 14 bars. Buckets start on the first day of the period, so
+      // nothing outside the period is ever shown.
+      function periodBuckets(range) {
+        const today = todayStr();
+        const end = range.end > today ? today : range.end;
+        const days = daysBetween(range.start, end);
+        const kind = days <= 14 ? 'day' : days <= 62 ? 'week' : days <= 124 ? 'fortnight' : 'month';
+        const multiYear = range.start.slice(0, 4) !== end.slice(0, 4);
+        const list = [];
+        if (kind === 'month') {
+          let [y, m] = range.start.split('-').map(Number);
+          let s = range.start;
+          while (s <= end) {
+            const last = toDateStr(new Date(y, m, 0));
+            const e = last < end ? last : end;
+            const whole = s === toDateStr(new Date(y, m - 1, 1)) && e === last;
+            list.push({ start: s, end: e, label: multiYear ? `${MON3[m - 1]} '${String(y).slice(2)}` : MON3[m - 1], tip: `${MON3[m - 1]} ${y}${whole ? '' : ` (${dayMonth(s)} to ${dayMonth(e)})`}` });
+            m += 1;
+            if (m > 12) { m = 1; y += 1; }
+            s = toDateStr(new Date(y, m - 1, 1));
+          }
+        } else {
+          const step = kind === 'day' ? 1 : kind === 'week' ? 7 : 14;
+          for (let s = range.start; s <= end; s = addDays(s, step)) {
+            const e = addDays(s, step - 1) < end ? addDays(s, step - 1) : end;
+            list.push({ start: s, end: e, label: dayMonth(s), tip: s === e ? dayMonth(s) : `${dayMonth(s)} to ${dayMonth(e)}` });
+          }
         }
-        historyLoading = false;
-        if (ui.tab === 'patients') renderBody();
+        const at = {};
+        list.forEach((b, i) => { for (let d = b.start; d <= b.end; d = addDays(d, 1)) at[d] = i; });
+        return { kind, list, indexOf: (d) => (d in at ? at[d] : -1) };
+      }
+
+      const histKey = (r) => `${r.start}_${r.end}`;
+      function ensureHistory() {
+        const key = histKey(D.range);
+        if ((historyCache && historyCache.key === key) || historyLoadingKey === key) return;
+        loadHistory(D.range);
+      }
+      // Everything the Patients charts need beyond the period itself: visits just before and after it
+      // (to tell who came back), every patient's first visit date, and prescriptions with follow ups.
+      async function loadHistory(range) {
+        const key = histKey(range);
+        historyLoadingKey = key;
+        const today = todayStr();
+        const docId = myDoctorId || undefined;
+        const endC = range.end > today ? today : range.end;
+        const rxFrom = addDays(range.start, -60);
+        const cohortFrom = addDays(endC, -183);
+        const from = cohortFrom < rxFrom ? cohortFrom : rxFrom;
+        const to = addDays(range.end, 7) < today ? addDays(range.end, 7) : today;
+        const [before, after, directory, rxs] = await Promise.all([
+          from < range.start ? Qlinic.getPatientsInRange(from, addDays(range.start, -1), docId).catch(() => null) : Promise.resolve([]),
+          to > range.end ? Qlinic.getPatientsInRange(addDays(range.end, 1), to, docId).catch(() => null) : Promise.resolve([]),
+          dirCache ? Promise.resolve(dirCache) : Qlinic.getPatientDirectory().then((d) => { dirCache = d; return d; }).catch(() => null),
+          Qlinic.getClinicPrescriptionsByDate({ date: rxFrom, endDate: range.end, doctorId: docId }).catch(() => null),
+        ]);
+        if (historyLoadingKey !== key) return; // a newer period replaced this request
+        historyLoadingKey = null;
+        historyCache = { key, before, after, directory, rxs };
+        if (ui.tab === 'patients' && D && histKey(D.range) === key) renderBody();
       }
       function renderPatients() {
         const { cur } = D;
-        const seen = cur.patients.filter(isArrived);
+        const today = todayStr();
+        const arrivedRows = cur.patients.filter(isArrived);
         const people = new Map();
-        seen.forEach((p) => { if (!people.has(patientKey(p))) people.set(patientKey(p), p); });
+        arrivedRows.forEach((p) => { if (!people.has(patientKey(p))) people.set(patientKey(p), p); });
         const total = people.size;
-        const hist = historyCache;
+        const hist = historyCache && historyCache.key === histKey(D.range) ? historyCache : null;
+        const dirOk = !!(hist && hist.directory);
+        const visitsOk = !!(hist && hist.before && hist.after);
+        const allVisits = visitsOk ? hist.before.concat(cur.patients, hist.after).filter(isArrived) : arrivedRows;
+
+        // A patient's first ever visit comes from the directory. Anyone added since it was fetched is
+        // not in it, so their earliest visit we can see is their first.
         const first = {};
-        if (hist) hist.directory.forEach((e) => { first[e.phone ? `ph:${e.phone}` : ''] = e.firstVisitDate; });
+        if (dirOk) hist.directory.forEach((e) => { if (e.phone) first[`ph:${e.phone}`] = e.firstVisitDate; });
+        const earliest = {};
+        allVisits.forEach((p) => { const k = patientKey(p); if (!(k in earliest) || p.tokenDate < earliest[k]) earliest[k] = p.tokenDate; });
+        const firstOf = (k) => (first[k] && earliest[k] ? (first[k] < earliest[k] ? first[k] : earliest[k]) : (first[k] || earliest[k]));
+        // Patients with no phone number cannot be matched to earlier visits, so each visit counts as new.
+        const isNewIn = (k, lo, hi) => { if (k.startsWith('id:')) return true; const f = firstOf(k); return !!f && f >= lo && f <= hi; };
+
         let nNew = null, nRet = null;
-        if (hist && !hist.failed) {
+        if (dirOk) {
           nNew = 0; nRet = 0;
-          people.forEach((p, k) => { const f = first[k]; if (k.startsWith('id:') || (f && f >= D.range.start && f <= D.range.end)) nNew += 1; else nRet += 1; });
+          people.forEach((p, k) => { if (isNewIn(k, D.range.start, D.range.end)) nNew += 1; else nRet += 1; });
         }
-        // returned within 90 days
-        let retPct = null;
-        if (hist && !hist.failed) {
-          const cohortLo = addDays(todayStr(), -183), cohortHi = addDays(todayStr(), -90);
-          const visitsBy = {};
-          hist.rows.filter(isArrived).forEach((p) => { (visitsBy[patientKey(p)] = visitsBy[patientKey(p)] || []).push(p.tokenDate); });
-          let cohort = 0, back = 0;
-          Object.keys(visitsBy).forEach((k) => {
-            const f = first[k];
+        // Of patients first seen 3 to 6 months before the period ended, how many came back within 90 days.
+        let retPct = null, cohort = 0;
+        if (dirOk && visitsOk) {
+          const endC = D.range.end > today ? today : D.range.end;
+          const cohortLo = addDays(endC, -183), cohortHi = addDays(endC, -90);
+          const datesBy = {};
+          allVisits.forEach((p) => { (datesBy[patientKey(p)] = datesBy[patientKey(p)] || []).push(p.tokenDate); });
+          let back = 0;
+          Object.keys(datesBy).forEach((k) => {
+            if (k.startsWith('id:')) return;
+            const f = firstOf(k);
             if (!f || f < cohortLo || f > cohortHi) return;
             cohort += 1;
             const limit = addDays(f, 90);
-            if (visitsBy[k].some((d) => d > f && d <= limit)) back += 1;
+            if (datesBy[k].some((d) => d > f && d <= limit)) back += 1;
           });
           retPct = cohort ? Math.round(100 * back / cohort) : null;
         }
         const loading = !hist;
+        const retTip = cohort ? `Looks at the ${num(cohort)} patients whose first ever visit was 3 to 6 months before this period ended, and checks how many came back within 90 days.` : 'Looks at patients whose first ever visit was 3 to 6 months before this period ended, and checks how many came back within 90 days.';
+        const pctNew = total && nNew != null ? Math.round(100 * nNew / total) : 0;
         const items = kpiRow([
           kpi('blue', 'users', num(total), 'Total patients', sub('seen in this period')),
-          kpi('purple', 'userplus', loading ? '…' : nNew == null ? 'No data' : `${total ? Math.round(100 * nNew / total) : 0}%`, 'New patients', sub(loading ? 'Working it out' : nNew == null ? '' : `${num(nNew)} this period`)),
-          kpi('orange', 'repeat', loading ? '…' : nRet == null ? 'No data' : `${total ? Math.round(100 * nRet / total) : 0}%`, 'Returning patients', sub(loading ? 'Working it out' : nRet == null ? '' : `${num(nRet)} this period`)),
-          kpi('green', 'check', loading ? '…' : retPct == null ? 'Not enough data' : `${retPct}%`, 'Returned within 90 days', sub('of patients first seen 3 to 6 months ago')),
+          kpi('purple', 'userplus', loading ? '…' : nNew == null ? 'No data' : `${pctNew}%`, 'New patients', sub(loading ? 'Working it out' : nNew == null ? '' : `${num(nNew)} this period`)),
+          kpi('orange', 'repeat', loading ? '…' : nRet == null ? 'No data' : `${total ? 100 - pctNew : 0}%`, 'Returning patients', sub(loading ? 'Working it out' : nRet == null ? '' : `${num(nRet)} this period`)),
+          kpi('green', 'check', loading ? '…' : retPct == null ? 'Not enough data' : `${retPct}%`, 'Returned within 90 days', sub('of patients first seen 3 to 6 months earlier'), retTip),
         ], 4);
-        // new vs returning by month
+
+        // New against returning, one bar per day, week, fortnight or month of the selected period
+        const pb = periodBuckets(D.range);
+        const labels = pb.list.map((b) => b.label), tips = pb.list.map((b) => b.tip);
+        const gran = `By ${BUCKET_NOUN[pb.kind]}`;
         let nr = empty('Working it out…');
         let retention = empty('Working it out…');
-        if (hist && !hist.failed) {
-          const months = [];
-          const now = new Date();
-          for (let i = 5; i >= 0; i--) months.push(new Date(now.getFullYear(), now.getMonth() - i, 1));
-          const keyOf = (d) => toDateStr(d).slice(0, 7);
-          const labels = months.map((d) => d.toLocaleDateString(undefined, { month: 'short' }));
-          const newC = [], retC = [];
-          months.forEach((d) => {
-            const k = keyOf(d);
-            const inMonth = new Map();
-            hist.rows.filter(isArrived).forEach((p) => { if (p.tokenDate.slice(0, 7) === k && !inMonth.has(patientKey(p))) inMonth.set(patientKey(p), 1); });
-            let a = 0, b = 0;
-            inMonth.forEach((_, pk) => { const f = first[pk]; if (pk.startsWith('id:') || (f && f.slice(0, 7) === k)) a += 1; else b += 1; });
-            newC.push(a); retC.push(b);
-          });
-          const pcts = newC.map((a, i) => (a + retC[i] ? Math.round(100 * a / (a + retC[i])) : 0));
-          nr = newC.some((v, i) => v + retC[i]) ? stacked100(labels, pcts, newC, retC) + legend([['New', C.blue], ['Returning', C.tealL]]) : empty('No visits in the last six months.');
-          // retention from prescriptions
-          const adv = months.map(() => 0), back = months.map(() => 0);
-          const visitsBy = {};
-          hist.rows.filter(isArrived).forEach((p) => { (visitsBy[`ph:${p.phone}`] = visitsBy[`ph:${p.phone}`] || []).push(p.tokenDate); });
-          hist.rxs.filter((r) => r.followUpDate && r.patientPhone).forEach((r) => {
-            const created = toDateStr(new Date(r.createdAt));
-            const idx = months.findIndex((d) => keyOf(d) === r.followUpDate.slice(0, 7));
-            if (idx < 0) return;
-            adv[idx] += 1;
-            const limit = addDays(r.followUpDate, 7);
-            if ((visitsBy[`ph:${r.patientPhone}`] || []).some((d) => d > created && d <= limit)) back[idx] += 1;
-          });
-          retention = adv.some((v) => v) ? groupedBars(labels, adv, back, C.blue, '#34d399') + legend([['Follow up advised', C.blue], ['Actually returned', '#34d399']]) : empty('No follow up dates were written on prescriptions in this time.');
+        if (hist) {
+          if (dirOk) {
+            const inBucket = pb.list.map(() => new Map());
+            arrivedRows.forEach((p) => { const i = pb.indexOf(p.tokenDate); if (i >= 0) inBucket[i].set(patientKey(p), 1); });
+            const newC = [], retC = [];
+            let noPhone = 0;
+            inBucket.forEach((m, i) => {
+              let a = 0, b = 0;
+              m.forEach((_, k) => { if (k.startsWith('id:')) noPhone += 1; if (isNewIn(k, pb.list[i].start, pb.list[i].end)) a += 1; else b += 1; });
+              newC.push(a); retC.push(b);
+            });
+            const pcts = newC.map((a, i) => (a + retC[i] ? Math.round(100 * a / (a + retC[i])) : 0));
+            const phoneNote = noPhone ? `<p class="in-note">${num(noPhone)} visit${noPhone === 1 ? '' : 's'} had no phone number, so ${noPhone === 1 ? 'it' : 'they'} could not be matched to earlier visits and ${noPhone === 1 ? 'counts' : 'count'} as new.</p>` : '';
+            nr = newC.some((v, i) => v + retC[i]) ? stacked100(labels, pcts, newC, retC, tips) + legend([['New', C.blue], ['Returning', C.tealL]]) + phoneNote : empty('No visits in this period.');
+          } else {
+            nr = empty('New against returning needs the Patient Directory, which could not be loaded for this clinic.');
+          }
+          // Follow ups written on prescriptions, by the day, week, fortnight or month they were due in
+          if (visitsOk && hist.rxs) {
+            const adv = pb.list.map(() => 0), back = pb.list.map(() => 0);
+            const datesBy = {};
+            allVisits.forEach((p) => { if (p.phone) (datesBy[`ph:${p.phone}`] = datesBy[`ph:${p.phone}`] || []).push(p.tokenDate); });
+            let waiting = 0;
+            hist.rxs.forEach((r) => {
+              if (!r.followUpDate || !r.patientPhone) return;
+              const i = pb.indexOf(r.followUpDate);
+              if (i < 0) return;
+              const limit = addDays(r.followUpDate, 7);
+              if (limit > today) { waiting += 1; return; }
+              adv[i] += 1;
+              const created = toDateStr(new Date(r.createdAt));
+              if ((datesBy[`ph:${r.patientPhone}`] || []).some((d) => d > created && d <= limit)) back[i] += 1;
+            });
+            const waitNote = waiting ? ` ${num(waiting)} follow up${waiting === 1 ? ' is' : 's are'} still inside the 7 day grace period and ${waiting === 1 ? 'is' : 'are'} left out for now.` : '';
+            retention = adv.some((v) => v)
+              ? groupedBars(labels, adv, back, C.blue, '#34d399', { W: 620, tips, names: ['follow ups advised', 'returned'] }) + legend([['Follow up advised', C.blue], ['Actually returned', '#34d399']]) + `<p class="in-note">A patient counts as returned if they visited again within 7 days of the follow up date.${waitNote}</p>`
+              : empty(waiting ? 'The follow ups due in this period are still inside their 7 day grace period.' : 'No follow up dates were written on prescriptions for this period.');
+          } else {
+            retention = empty('Prescription follow ups could not be loaded, please try again.');
+          }
         }
-        const nrCard = card('New against returning patients', nr, { sub: '(Last six months)' });
+        const nrCard = card('New against returning patients', nr, { sub: `(${gran})` });
         // demographics
         const dtabs = ['Gender', 'Age group'];
         const di = ui.demoTab;
@@ -1058,7 +1219,7 @@
         const top = Object.entries(loc).sort((a, b) => b[1] - a[1]).slice(0, 5);
         const locRows = top.map(([l, c], i) => `<div class="in-loc"><span class="in-loc-n">${i + 1}.</span><span class="in-loc-l">${esc(l)}</span><b>${num(c)}</b><span class="in-loc-p">${total ? Math.round(100 * c / total) : 0}%</span></div>`).join('');
         const locCard = card('Top patient locations', top.length ? `<div class="in-loc-head"><span>Area</span><span>Patients</span><span>Share</span></div>${locRows}<p class="in-note">Areas are read from the address typed at the desk, so spelling differences are grouped together.</p>` : empty('No addresses recorded for these patients.'));
-        const retCard = card('Patient retention', retention, { sub: '(From prescriptions)' });
+        const retCard = card('Patient retention', retention, { sub: `(${gran}, from prescriptions)` });
         return items + `<div class="in-grid in-grid-d">${nrCard}${demoCard}</div>` + `<div class="in-grid in-grid-e">${locCard}${retCard}</div>`;
       }
 
