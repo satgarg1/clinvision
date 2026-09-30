@@ -5918,7 +5918,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
    plain grey every other .panel uses, scoped to this page specifically
    rather than changed on .panel itself (which would touch every panel
    sitewide). */
-#holidaysPanel, #allHolidaysPanel { border-color: var(--accent); }
+/* Team Holidays cards now take the shared .pm-card border (see the .hl-card block at the end). */
 /* The table itself already spans 100% of the panel -- the "columns
    don't fill the rectangle" look was actually the panel stretching to
    the full app-main width (uncapped, so 1500px+ on a wide screen)
@@ -7572,6 +7572,37 @@ select.cc-input { padding-right: 8px; }
 .dd-ibtn.danger:hover { background: rgba(239, 68, 68, 0.1); }
 .dd-ibtn.ok { color: #16a34a; }
 .dd-ibtn.ok:hover { background: rgba(22, 163, 74, 0.1); }
+/* Team holidays: Add / manage and View Holidays (visual pass only; reuses the .qr-card header, labels and note) */
+.hl-card { --hl-head: #f1f5f9; --hl-edit-bg: #dbeafe; --hl-edit: #2563eb; --hl-del-bg: #fee2e2; --hl-del: #dc2626; }
+:root[data-theme="dark"] .hl-card { --hl-head: rgba(255, 255, 255, 0.06); --hl-edit-bg: rgba(59, 130, 246, 0.22); --hl-edit: #93c5fd; --hl-del-bg: rgba(239, 68, 68, 0.2); --hl-del: #fca5a5; }
+.mode-toggle.hl-seg { background: var(--white); border-color: var(--grey-100); box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08); }
+.hl-seg .mode-btn { padding: 9px 22px; font-size: 13.5px; font-weight: 600; }
+.hl-card .hl-seg { margin-bottom: 0; align-self: flex-start; }
+.hl-seg-sm .mode-btn { padding: 7px 22px; font-size: 13px; }
+.hl-person { display: flex; flex-direction: column; max-width: 280px; }
+.hl-form { display: flex; align-items: flex-end; gap: 16px; }
+.hl-date { width: 220px; flex: none; }
+.hl-reason { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.hl-add { flex: none; width: 160px; }
+.hl-title-row { display: flex; align-items: center; gap: 12px; }
+.hl-list-head { display: flex; align-items: center; gap: 14px; }
+.hl-list-badge { width: 44px; height: 44px; flex: none; border-radius: 12px; background: var(--qr-badge-bg); color: var(--qr-badge); display: flex; align-items: center; justify-content: center; }
+.panel.pm-card h2.hl-list-title { font-size: 18px; }
+.hl-count { margin-left: auto; }
+.hl-count:empty { display: none; }
+.hl-card table.hl-table thead th { background: var(--hl-head); color: var(--pm-sub); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 12px 18px; border-bottom: none; }
+.hl-card table.hl-table thead th:first-child { border-radius: 10px 0 0 10px; }
+.hl-card table.hl-table thead th:last-child { border-radius: 0 10px 10px 0; }
+.hl-card table.hl-table td { padding: 12px 18px; border-bottom: 1px solid var(--pm-soft-line); }
+.hl-card .row-actions { text-align: right; white-space: nowrap; }
+.hl-card .icon-btn { width: 36px; height: 36px; padding: 0; border: none; border-radius: 10px; background: var(--hl-edit-bg); color: var(--hl-edit); display: inline-flex; align-items: center; justify-content: center; margin-left: 8px; }
+.hl-card .icon-btn:hover { filter: brightness(0.96); background: var(--hl-edit-bg); color: var(--hl-edit); }
+.hl-card .icon-btn.danger { background: var(--hl-del-bg); color: var(--hl-del); }
+.hl-card .icon-btn.danger:hover { background: var(--hl-del-bg); color: var(--hl-del); }
+@media (max-width: 720px) {
+  .hl-form { flex-direction: column; align-items: stretch; }
+  .hl-date, .hl-add { width: 100%; }
+}
 @media (max-width: 900px) {
   .dd-head { display: none; }
   .dd-row.dd-body { grid-template-columns: minmax(0, 1fr) auto; row-gap: 6px; }
