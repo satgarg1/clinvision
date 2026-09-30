@@ -8029,3 +8029,7 @@ select.cc-input { padding-right: 8px; }
 a.fb-menu-item { display: block; box-sizing: border-box; text-decoration: none; }
 @media (max-width: 1200px) { .ba-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .ba-kpi-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Closed dates: date picker matches the other fields on the Add a closure card */
+#closureForm .qdp-trigger { height: 44px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--qr-field-line); border-radius: 12px; background: var(--pm-white); color: var(--pm-strong); font-size: 14px; box-shadow: 0 1px 1px rgba(15, 23, 42, 0.04); }
+#closureForm .qdp-trigger-label.qdp-placeholder { color: var(--qr-hint); font-weight: 400; }
