@@ -7985,3 +7985,47 @@ select.cc-input { padding-right: 8px; }
   background: var(--pm-white); color: var(--pm-strong); font-size: 14px; box-shadow: 0 1px 1px rgba(15, 23, 42, 0.04);
 }
 #rangePresetField { flex-direction: column; }
+
+/* Billing Audit page (reuses the Patient Directory card, table and pager pieces) */
+.ba-kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+.ba-kpi {
+  --pm-text: #0f172a; --pm-body: #475569; --pm-soft-line: #f1f5f9; --pm-white: #ffffff;
+  box-sizing: border-box; display: flex; align-items: center; gap: 16px; padding: 20px 22px; min-height: 96px;
+  background: var(--pm-white); border: 1px solid var(--pm-soft-line); border-radius: 16px; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+:root[data-theme="dark"] .ba-kpi { --pm-text: #f2f2f4; --pm-body: #c7c7cc; --pm-soft-line: #38383a; --pm-white: #2c2c2e; }
+.ba-kpi-icon { width: 56px; height: 56px; flex: none; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+.ba-kpi-icon.blue { background: #dbeafe; color: #2563eb; }
+.ba-kpi-icon.green { background: #d1fae5; color: #059669; }
+.ba-kpi-icon.amber { background: #fef3c7; color: #d97706; }
+.ba-kpi-icon.red { background: #fee2e2; color: #dc2626; }
+:root[data-theme="dark"] .ba-kpi-icon.blue { background: rgba(59, 130, 246, 0.22); color: #93c5fd; }
+:root[data-theme="dark"] .ba-kpi-icon.green { background: rgba(16, 185, 129, 0.22); color: #6ee7b7; }
+:root[data-theme="dark"] .ba-kpi-icon.amber { background: rgba(245, 158, 11, 0.22); color: #fcd34d; }
+:root[data-theme="dark"] .ba-kpi-icon.red { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+.ba-kpi-main { min-width: 0; }
+.ba-kpi-value { font-size: 26px; font-weight: 700; line-height: 1.1; color: var(--pm-text); }
+.ba-kpi-value.sm { font-size: 18px; line-height: 1.2; }
+.ba-kpi-label { margin-top: 4px; font-size: 14px; color: var(--pm-body); }
+
+.fb-table.ba-table { min-width: 900px; }
+.dd-row.ba-cols { grid-template-columns: 1.6fr 1.4fr 1.6fr 1.5fr 1.3fr 1.9fr; gap: 12px; }
+.ba-table .dd-body { padding-top: 12px; padding-bottom: 12px; }
+.ba-status { display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; background: #fef3c7; color: #b45309; }
+.ba-status .ba-dot { width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; }
+.ba-status.in_consult { background: #dbeafe; color: #1d4ed8; }
+.ba-status.in_consult .ba-dot { background: #2563eb; }
+.ba-status.done { background: #dcfce7; color: #15803d; }
+.ba-status.done .ba-dot { background: #16a34a; }
+:root[data-theme="dark"] .ba-status { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+:root[data-theme="dark"] .ba-status.in_consult { background: rgba(59, 130, 246, 0.22); color: #93c5fd; }
+:root[data-theme="dark"] .ba-status.done { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+.ba-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.ba-kebab-gap { width: 32px; flex: none; }
+.ba-open { display: inline-flex; align-items: center; height: 36px; padding: 0 16px; box-sizing: border-box; border: 1.5px solid #bfdbfe; border-radius: 10px; background: var(--pm-white); color: #1d4ed8; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.ba-open:hover { background: #eff6ff; border-color: #2563eb; }
+:root[data-theme="dark"] .ba-open { border-color: rgba(96, 165, 250, 0.4); color: #93c5fd; }
+:root[data-theme="dark"] .ba-open:hover { background: rgba(59, 130, 246, 0.16); }
+a.fb-menu-item { display: block; box-sizing: border-box; text-decoration: none; }
+@media (max-width: 1200px) { .ba-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .ba-kpi-grid { grid-template-columns: minmax(0, 1fr); } }

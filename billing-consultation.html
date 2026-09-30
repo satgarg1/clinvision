@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=428" />
+<link rel="stylesheet" href="styles.css?v=429" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell" id="appShell">
@@ -557,6 +557,19 @@
         }
       } else {
         updateFeeTypeOptions();
+        // Arriving from Billing Audit ("Open billing"): fill in the patient and
+        // visit date, then let the normal phone lookup do the rest.
+        const params = new URLSearchParams(window.location.search);
+        const preName = (params.get('name') || '').replace(/[0-9]/g, '');
+        const prePhone = (params.get('phone') || '').replace(/\D/g, '').slice(-10);
+        const preDate = params.get('date') || '';
+        if (preName) document.getElementById('bName').value = preName;
+        if (prePhone) document.getElementById('bPhone').value = prePhone;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(preDate) && preDate <= Qlinic.getTodayDate()) {
+          document.getElementById('bDate').value = preDate;
+        }
+        if (prePhone) await checkPhoneLookup();
+        if (preName || prePhone) updateSubmitEnabled();
       }
     })();
   </script>
