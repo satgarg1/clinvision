@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=414" />
+<link rel="stylesheet" href="styles.css?v=415" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -47,52 +47,91 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-header"><h2>Add a doctor</h2></div>
-        <form id="addDoctorForm" class="doctor-form">
-          <div class="doctor-form-field" style="flex:1.4;min-width:160px;">
-            <label>Name</label>
-            <input type="text" id="newDoctorName" placeholder="Dr. Jane Doe" required />
+      <div class="panel pm-card qr-card">
+        <div class="qr-head">
+          <div class="qr-head-left">
+            <div class="qr-badge">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M5 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/><path d="M12 14v4"/><path d="M10 16h4"/></svg>
+            </div>
+            <div>
+              <h2 class="qr-title">Add a doctor</h2>
+              <p class="qr-sub">Create doctor profiles with specialty, fees, and registration details.</p>
+            </div>
           </div>
-          <div class="doctor-form-field" style="flex:1;min-width:150px;">
-            <label>Specialty</label>
-            <select id="newDoctorSpecialty"></select>
+          <div class="qr-pill">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg>
+            <span>Manage your doctor roster</span>
           </div>
-          <div class="doctor-form-field" id="newDoctorSpecialtyOtherField" style="display:none;flex:1;min-width:150px;">
-            <label>Specify specialty</label>
-            <input type="text" id="newDoctorSpecialtyOther" placeholder="e.g. Podiatrist" />
+        </div>
+
+        <form id="addDoctorForm" class="dd-form">
+          <div class="dd-field" style="--g:1.3;">
+            <label for="newDoctorName" class="qr-label">Name</label>
+            <input type="text" id="newDoctorName" class="dd-input" placeholder="Dr. Jane Doe" required />
           </div>
-          <div class="doctor-form-field" style="width:130px;">
-            <label>Consultation fee (&#8377;)</label>
-            <input type="number" id="newDoctorFeeNormal" min="0" step="1" />
+          <div class="dd-field" style="--g:1.3;">
+            <label for="newDoctorSpecialty" class="qr-label">Specialty</label>
+            <select id="newDoctorSpecialty" class="dd-input"></select>
           </div>
-          <div class="doctor-form-field" style="width:130px;">
-            <label>Emergency fee (&#8377;)</label>
-            <input type="number" id="newDoctorFeeEmergency" min="0" step="1" />
+          <div class="dd-field" id="newDoctorSpecialtyOtherField" style="--g:1.3;display:none;">
+            <label for="newDoctorSpecialtyOther" class="qr-label">Specify specialty</label>
+            <input type="text" id="newDoctorSpecialtyOther" class="dd-input" placeholder="e.g. Podiatrist" />
           </div>
-          <div class="doctor-form-field" style="width:150px;">
-            <label>HPR ID <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
-            <input type="text" id="newDoctorHprId" placeholder="e.g., 12-3456-7890-1234" style="text-transform:uppercase;" />
+          <div class="dd-field" style="--g:1;">
+            <label for="newDoctorFeeNormal" class="qr-label">Consultation fee (&#8377;)</label>
+            <input type="number" id="newDoctorFeeNormal" class="dd-input" min="0" step="1" />
           </div>
-          <div class="doctor-form-field" style="width:150px;">
-            <label>Qualification <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
-            <input type="text" id="newDoctorQualification" placeholder="e.g. MBBS, MD" />
+          <div class="dd-field" style="--g:1;">
+            <label for="newDoctorFeeEmergency" class="qr-label">Emergency fee (&#8377;)</label>
+            <input type="number" id="newDoctorFeeEmergency" class="dd-input" min="0" step="1" />
           </div>
-          <div class="doctor-form-field" style="width:150px;">
-            <label>Registration no. <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
-            <input type="text" id="newDoctorRegistrationNumber" placeholder="e.g. 41893" />
+          <div class="dd-field" style="--g:1.2;">
+            <label for="newDoctorHprId" class="qr-label">HPR ID <span class="cp-optional">(optional)</span></label>
+            <input type="text" id="newDoctorHprId" class="dd-input cp-upper" placeholder="e.g., 12-3456-7890-1234" />
           </div>
-          <button type="submit" class="btn-sm primary">Add doctor</button>
+          <div class="dd-field" style="--g:1.2;">
+            <label for="newDoctorQualification" class="qr-label">Qualification <span class="cp-optional">(optional)</span></label>
+            <input type="text" id="newDoctorQualification" class="dd-input" placeholder="e.g. MBBS, MD" />
+          </div>
+          <div class="dd-field" style="--g:1.2;">
+            <label for="newDoctorRegistrationNumber" class="qr-label">Registration no. <span class="cp-optional">(optional)</span></label>
+            <input type="text" id="newDoctorRegistrationNumber" class="dd-input" placeholder="e.g. 41893" />
+          </div>
+          <button type="submit" class="dd-add">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            <span>Add doctor</span>
+          </button>
         </form>
-        <div id="newDoctorFeeHint" class="slot-hint" style="display:none;"></div>
+        <div id="newDoctorFeeHint" class="slot-hint" style="display:none;margin-top:-8px;"></div>
+
+        <div class="pm-alert blue qr-callout">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><line x1="12" y1="11" x2="12" y2="17" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1.3" fill="#ffffff"/></svg>
+          <div class="pm-alert-title">Doctor settings help standardize scheduling, fees, and availability across your clinic.</div>
+        </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-header"><h2>All doctors</h2></div>
-        <div class="doctor-search-row">
-          <input type="search" id="doctorSearch" placeholder="Search by name…" class="doctor-search-input" />
-          <span class="panel-note" id="doctorCountNote"></span>
+      <div class="panel pm-card qr-card">
+        <div class="qr-head">
+          <div class="qr-head-left">
+            <div class="qr-badge">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div>
+              <h2 class="qr-title">All doctors</h2>
+              <p class="qr-sub">View, search, and manage every doctor profile in one place.</p>
+            </div>
+          </div>
+          <div class="qr-pill dd-count">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span id="doctorCountNote"></span>
+          </div>
         </div>
+
+        <div class="dd-search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" id="doctorSearch" class="dd-search-input" aria-label="Search doctors by name" placeholder="Search by name..." />
+        </div>
+
         <div id="doctorList"></div>
         <div class="pager" id="doctorPager"></div>
       </div>
@@ -173,10 +212,10 @@
       }
 
       function pencilIconSvg() {
-        return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+        return '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
       }
       function powerIconSvg() {
-        return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/></svg>';
+        return '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/></svg>';
       }
 
       function specialtyOptionsHtml(selected) {
@@ -227,24 +266,32 @@
           : `${allDoctors.length} doctor${allDoctors.length === 1 ? '' : 's'}`;
 
         box.innerHTML = `
-          <table class="qtable">
-            <thead><tr><th>Name</th><th>Specialty</th><th>Consultation fee (&#8377;)</th><th>Emergency fee (&#8377;)</th><th>Status</th><th></th></tr></thead>
-            <tbody>
-              ${pageDoctors.map((d) => `
-                <tr style="${d.isActive ? '' : 'opacity:0.5;'}">
-                  <td>${Qlinic.escapeHtml(d.name)}</td>
-                  <td>${Qlinic.escapeHtml(d.specialty)}</td>
-                  <td>&#8377;${d.feeNormal || 0}</td>
-                  <td>&#8377;${d.feeEmergency || 0}</td>
-                  <td><span class="status-dot-label"><span class="status-dot ${d.isActive ? 'active' : 'inactive'}"></span>${d.isActive ? 'Active' : 'Deactivated'}</span></td>
-                  <td class="row-actions">
-                    <button type="button" class="icon-btn" onclick="doOpenEditDoctor('${d.id}')" title="Edit" aria-label="Edit ${Qlinic.escapeHtml(d.name)}">${pencilIconSvg()}</button>
-                    <button type="button" class="icon-btn ${d.isActive ? 'danger' : ''}" onclick="doSetDoctorActive('${d.id}', ${!d.isActive})" title="${d.isActive ? 'Deactivate' : 'Reactivate'}" aria-label="${d.isActive ? 'Deactivate' : 'Reactivate'} ${Qlinic.escapeHtml(d.name)}">${powerIconSvg()}</button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
+          <div class="dd-table" role="table" aria-label="Doctors">
+            <div class="dd-row dd-head" role="row">
+              <span role="columnheader">Name</span>
+              <span role="columnheader">Specialty</span>
+              <span role="columnheader">Consultation fee (&#8377;)</span>
+              <span role="columnheader">Emergency fee (&#8377;)</span>
+              <span role="columnheader">Status</span>
+              <span role="columnheader" class="dd-right">Actions</span>
+            </div>
+            ${pageDoctors.map((d) => {
+              const colorIdx = Math.max(0, allDoctors.findIndex((x) => x.id === d.id)) % 5;
+              const initials = d.name.replace(/^dr\.?\s+/i, '').split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join('');
+              return `
+              <div class="dd-row dd-body${d.isActive ? '' : ' inactive'}" role="row">
+                <div role="cell" class="dd-name"><span class="dd-avatar dd-av-${colorIdx}" aria-hidden="true">${Qlinic.escapeHtml(initials)}</span><span class="dd-name-text">${Qlinic.escapeHtml(d.name)}</span></div>
+                <span role="cell" class="dd-muted">${Qlinic.escapeHtml(d.specialty)}</span>
+                <span role="cell">&#8377;${d.feeNormal || 0}</span>
+                <span role="cell">&#8377;${d.feeEmergency || 0}</span>
+                <div role="cell"><span class="dd-status${d.isActive ? '' : ' off'}"><span class="dd-dot"></span>${d.isActive ? 'Active' : 'Deactivated'}</span></div>
+                <div role="cell" class="dd-actions">
+                  <button type="button" class="dd-ibtn" onclick="doOpenEditDoctor('${d.id}')" title="Edit" aria-label="Edit ${Qlinic.escapeHtml(d.name)}">${pencilIconSvg()}</button>
+                  <button type="button" class="dd-ibtn ${d.isActive ? 'danger' : 'ok'}" onclick="doSetDoctorActive('${d.id}', ${!d.isActive})" title="${d.isActive ? 'Deactivate' : 'Reactivate'}" aria-label="${d.isActive ? 'Deactivate' : 'Reactivate'} ${Qlinic.escapeHtml(d.name)}">${powerIconSvg()}</button>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
         `;
         renderPager(filtered.length);
       }
