@@ -863,6 +863,7 @@
     if (fields.gstin !== undefined) payload.gstin = fields.gstin || null;
     if (fields.hfrId !== undefined) payload.hfr_id = fields.hfrId || null;
     if (fields.logoUrl !== undefined) payload.logo_url = fields.logoUrl;
+    if (fields.whatsappConfirmEnabled !== undefined) payload.whatsapp_confirm_enabled = !!fields.whatsappConfirmEnabled;
     if (fields.reviewLinkUrl !== undefined) {
       // Patients are sent to this URL, so only a real web link is accepted
       // (a javascript: or data: value must never be stored or opened).
@@ -1691,10 +1692,93 @@
     return `${dir}queue.html?id=${patientId}`;
   }
 
+  // ---- WhatsApp booking confirmation (Clinic Settings > Patient messages) ----
+  // Nothing is sent by the app: it builds a message and a wa.me link, and the
+  // receptionist presses Send in the clinic's own WhatsApp. Hindi first, then
+  // English, with the queue link written once at the end.
+  const HI_WEEKDAYS = ['रविवार', 'सोमवार', 'मंगलवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार'];
+  const HI_MONTHS = ['जनवरी', 'फ़रवरी', 'मार्च', 'अप्रैल', 'मई', 'जून', 'जुलाई', 'अगस्त', 'सितंबर', 'अक्टूबर', 'नवंबर', 'दिसंबर'];
+  const EN_WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const EN_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  function isWhatsAppConfirmEnabled(clinic) {
+    return !!clinic && clinic.whatsapp_confirm_enabled === true;
+  }
+
+  // Digits for a wa.me link: a 10 digit Indian number gets 91 in front; a
+  // number already typed with a country code is left as it is.
+  function whatsappPhoneDigits(phone) {
+    const digits = String(phone || '').replace(/\D/g, '').replace(/^0+/, '');
+    if (digits.length === 10) return '91' + digits;
+    return digits.length >= 11 && digits.length <= 15 ? digits : null;
+  }
+
+  function hindiTimeLabel(minutes) {
+    const h24 = Math.floor(minutes / 60);
+    const mm = String(minutes % 60).padStart(2, '0');
+    const period = h24 < 5 ? 'रात' : h24 < 12 ? 'सुबह' : h24 < 16 ? 'दोपहर' : h24 < 20 ? 'शाम' : 'रात';
+    return `${period} ${h24 % 12 || 12}:${mm}`;
+  }
+
+  // patient: { id, name, phone, type, bookedDate, bookedTime }. tokenLabel is
+  // the token exactly as the patient will see it ("#7", "W2").
+  function buildWhatsAppMessage({ patient, clinic, doctor, tokenLabel }) {
+    const plainDoctor = String((doctor && doctor.name) || '').replace(/^dr\.?\s+/i, '').trim();
+    const link = queueLinkFor(patient.id);
+    const hi = [`नमस्ते ${patient.name},`];
+    const en = [`Hello ${patient.name},`];
+
+    if (patient.type === 'appointment') {
+      hi.push(`${clinic.name} में आपकी बुकिंग पक्की हो गई है।`);
+      en.push(`Your booking at ${clinic.name} is confirmed.`);
+    } else {
+      hi.push(`आप ${clinic.name} की कतार में जुड़ गए हैं।`);
+      en.push(`You are in the queue at ${clinic.name}.`);
+    }
+    if (plainDoctor) {
+      hi.push(`डॉक्टर: डॉ. ${plainDoctor}`);
+      en.push(`Doctor: Dr. ${plainDoctor}`);
+    }
+    if (tokenLabel) {
+      hi.push(`टोकन नंबर: ${tokenLabel}`);
+      en.push(`Token number: ${tokenLabel}`);
+    }
+    if (patient.type === 'appointment' && patient.bookedDate) {
+      const [y, m, d] = patient.bookedDate.split('-').map(Number);
+      const day = new Date(y, m - 1, d);
+      hi.push(`तारीख: ${HI_WEEKDAYS[day.getDay()]}, ${d} ${HI_MONTHS[m - 1]}`);
+      en.push(`Date: ${EN_WEEKDAYS[day.getDay()]}, ${d} ${EN_MONTHS[m - 1]}`);
+      if (patient.bookedTime) {
+        const minutes = parseTime(patient.bookedTime);
+        hi.push(`समय: ${hindiTimeLabel(minutes)}`);
+        en.push(`Time: ${formatTime(minutes)}`);
+      }
+      hi.push('कृपया अपने समय से 15 मिनट पहले पहुँचें।');
+      en.push('Please arrive 15 minutes before your appointment time.');
+    }
+
+    return [
+      hi.join('\n'),
+      en.join('\n'),
+      'आप कतार की स्थिति यहाँ देख सकते हैं / You can follow the queue here:\n' + link,
+    ].join('\n\n');
+  }
+
+  // Returns null when the number can't be opened in WhatsApp.
+  function whatsappUrlFor({ patient, clinic, doctor, tokenLabel }) {
+    const digits = whatsappPhoneDigits(patient.phone);
+    if (!digits) return null;
+    const text = buildWhatsAppMessage({ patient, clinic, doctor, tokenLabel });
+    return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+  }
+
   async function queueBookingNotification({ patientId, phone, doctorId, kind, bookedDate, bookedTime, tokenNumber }) {
     try {
       const clinicId = await ensureClinicContext();
       const [clinic, doctor] = await Promise.all([getClinic(), getDoctor(doctorId)]);
+      // WhatsApp confirmations replace the pending text message queue for
+      // this clinic, so a message provider connected later can't double up.
+      if (isWhatsAppConfirmEnabled(clinic)) return null;
       const tokenDisplay = tokenNumber ? (tokenNumber > 100000 ? 'W' + (tokenNumber - 100000) : '#' + tokenNumber) : null;
       const tokenLine = tokenDisplay ? ` Your token number is ${tokenDisplay}.` : '';
       const link = tokenNumber ? queueLinkFor(patientId) : '';
@@ -3437,6 +3521,9 @@
     attachDatePicker,
     shouldFlipUp,
     getQueueStatus,
+    isWhatsAppConfirmEnabled,
+    whatsappUrlFor,
+    buildWhatsAppMessage,
     submitProductFeedback,
     submitVisitFeedback,
     getClinicFeedback,

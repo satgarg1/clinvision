@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=407" />
+<link rel="stylesheet" href="styles.css?v=408" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -164,6 +164,8 @@
         </form>
       </div>
 
+      <div id="waBookedBar"></div>
+
       <div class="panel">
         <div class="panel-header"><h2>Viewing queue for</h2></div>
         <div class="inline-form">
@@ -189,7 +191,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=134"></script>
+  <script src="clinic-data.js?v=135"></script>
   <script src="app-topbar.js?v=5"></script>
   <script>
     (async function () {
@@ -249,6 +251,10 @@
       // rest of the lookup hint in clearPatientLookupHint().
       let lastPhoneMatch = null;
       let doctorsCache = [];
+      // Clinic row (for the WhatsApp confirmation switch) and every patient
+      // currently drawn in the queue, so a row's WhatsApp button can find its data.
+      let waClinic = null;
+      const waPatients = {};
       let todayInvoices = [];
       let invoiceById = {};
 
@@ -320,6 +326,99 @@
         t.textContent = msg;
         t.classList.add('show');
         setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      // ---- WhatsApp booking confirmation (Clinic Settings > Patient messages) ----
+      const WA_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l1.65-4.9A8.5 8.5 0 1 1 8 19.4z"/><path d="M9.2 8.6c.3 2.7 2.6 5 5.4 5.5l1.1-1.3-2-1-.8.6a3.7 3.7 0 0 1-1.7-1.7l.6-.8-1-2z"/></svg>';
+
+      function waEnabled() {
+        return Qlinic.isWhatsAppConfirmEnabled(waClinic);
+      }
+
+      function waResendBtn(p) {
+        return `<button type="button" class="wa-resend-btn" data-wa-patient="${p.id}" title="Send WhatsApp message again" aria-label="Send WhatsApp message again to ${Qlinic.escapeHtml(p.name)}">${WA_ICON}</button>`;
+      }
+
+      // The token exactly as the patient's own queue page shows it (walk ins
+      // are ranked W1, W2, ...); falls back to the raw token number.
+      async function waTokenLabel(patient, tokenNumber) {
+        try {
+          const status = await Qlinic.getQueueStatus(patient.id);
+          if (status && status.tokenDisplay) return status.tokenDisplay;
+        } catch (err) { }
+        const n = tokenNumber != null ? tokenNumber : patient.tokenNumber;
+        if (n == null) return null;
+        if (patient.type === 'walkin') return 'W' + (n > 100000 ? n - 100000 : n);
+        return '#' + n;
+      }
+
+      // Row button: the new tab is opened straight from the click so the
+      // browser allows it, then pointed at WhatsApp once the token is known.
+      async function sendWhatsAppFor(patientId) {
+        const patient = waPatients[patientId];
+        if (!patient || !waEnabled()) return;
+        const tab = window.open('', '_blank');
+        if (tab) {
+          try {
+            tab.opener = null;
+            tab.document.write('<p style="font-family:sans-serif;padding:24px;">Opening WhatsApp…</p>');
+          } catch (err) { }
+        }
+        const tokenLabel = await waTokenLabel(patient);
+        const url = Qlinic.whatsappUrlFor({
+          patient, clinic: waClinic, doctor: doctorsCache.find((d) => d.id === patient.doctorId), tokenLabel,
+        });
+        if (!url) {
+          if (tab) tab.close();
+          showToast("This phone number can't be opened in WhatsApp. Check it with Edit.");
+          return;
+        }
+        if (!tab) {
+          showToast('Your browser blocked the new tab. Allow pop ups for this site and try again.');
+          return;
+        }
+        tab.location.href = url;
+      }
+
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-wa-patient]');
+        if (btn) { sendWhatsAppFor(btn.getAttribute('data-wa-patient')); return; }
+        if (e.target.closest('#waBookedDismiss')) document.getElementById('waBookedBar').innerHTML = '';
+      });
+
+      async function showWaBookedBar(patient, tokenNumber) {
+        const bar = document.getElementById('waBookedBar');
+        if (!waEnabled()) { bar.innerHTML = ''; return; }
+        const doctor = doctorsCache.find((d) => d.id === patient.doctorId);
+        const tokenLabel = await waTokenLabel(patient, tokenNumber);
+        const url = Qlinic.whatsappUrlFor({ patient, clinic: waClinic, doctor, tokenLabel });
+        const isAppointment = patient.type === 'appointment';
+        const when = isAppointment
+          ? `${Qlinic.formatDateLabel(patient.bookedDate)}, ${Qlinic.formatTime(Qlinic.parseTime(patient.bookedTime))}`
+          : 'Walk in';
+        const parts = [
+          doctor ? `Dr. ${Qlinic.escapeHtml(doctor.name.replace(/^dr\.?\s+/i, ''))}` : '',
+          Qlinic.escapeHtml(when),
+          tokenLabel ? `token ${Qlinic.escapeHtml(tokenLabel)}` : '',
+        ].filter(Boolean).join(', ');
+        bar.innerHTML = `
+          <div class="wa-booked" role="status">
+            <div class="wa-booked-check"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12.5 10 17.5 19 7.5"/></svg></div>
+            <div class="wa-booked-main">
+              <div class="wa-booked-title">${isAppointment ? 'Appointment booked for' : 'Walk in added for'} ${Qlinic.escapeHtml(patient.name)}</div>
+              <div class="wa-booked-sub">${parts}. Phone ${Qlinic.escapeHtml(patient.phone)}.</div>
+            </div>
+            <div class="wa-booked-actions">
+              <div class="wa-booked-buttons">
+                ${url
+                  ? `<a class="wa-send-btn" href="${url}" target="_blank" rel="noopener noreferrer">${WA_ICON.replace('width="18" height="18"', 'width="20" height="20"')}<span>Send on WhatsApp</span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>`
+                  : `<span class="wa-send-btn disabled">Send on WhatsApp</span>`}
+                <button type="button" class="btn-sm" id="waBookedDismiss">Dismiss</button>
+              </div>
+              <span class="wa-booked-note">${url ? 'Opens WhatsApp in a new tab. Press Send there.' : "This phone number can't be opened in WhatsApp."}</span>
+            </div>
+          </div>
+        `;
       }
 
       function renderNotificationPreview(message, phone) {
@@ -802,6 +901,7 @@
           invoiceById[inv.id] = inv;
         });
         lastSearchResults = results;
+        results.forEach((p) => { waPatients[p.id] = p; });
         lastSearchDoctorById = doctorById;
         lastSearchInvoiceByPatientId = searchInvoiceByPatientId;
         box.innerHTML = `
@@ -823,6 +923,7 @@
                     <td>
                       ${p.status === 'booked' ? `<button class="btn-sm primary" onclick="doMarkArrived('${p.id}', this)">Mark arrived</button>` : ''}
                       <button class="btn-sm" data-edit-patient="${p.id}">Edit</button>
+                      ${waEnabled() ? waResendBtn(p) : ''}
                     </td>
                   </tr>
                 `;
@@ -1160,8 +1261,15 @@
         const walkinRanks = buildWalkinRanks(queue);
         const soonCount = isTodayView ? bookedList.filter((p) => bookedSoonLabel(p).soon).length : 0;
 
-        const waitingColgroup = `<colgroup><col style="width:8%;"><col style="width:26%;"><col style="width:${canBill ? '14%' : '22%'};"><col style="width:${canBill ? '20%' : '44%'};">${canBill ? '<col style="width:32%;">' : ''}</colgroup>`;
-        const bookedColgroup = `<colgroup><col style="width:8%;"><col style="width:26%;"><col style="width:${isTodayView ? '18%' : '22%'};"><col style="width:${isTodayView ? '14%' : '44%'};">${isTodayView ? '<col style="width:34%;">' : ''}</colgroup>`;
+        // With the WhatsApp switch on, each table gains a narrow last column
+        // for the resend button; the width comes out of the widest column.
+        const waOn = waEnabled();
+        [...waitingList, ...bookedList].forEach((p) => { waPatients[p.id] = p; });
+        const waCol = waOn ? '<col style="width:10%;">' : '';
+        const waHead = waOn ? '<th style="text-align:right;">Message</th>' : '';
+        const waCell = (p) => (waOn ? `<td style="text-align:right;">${waResendBtn(p)}</td>` : '');
+        const waitingColgroup = `<colgroup><col style="width:8%;"><col style="width:26%;"><col style="width:${canBill ? '14%' : '22%'};"><col style="width:${canBill ? '20%' : (waOn ? '34%' : '44%')};">${canBill ? `<col style="width:${waOn ? '22%' : '32%'};">` : ''}${waCol}</colgroup>`;
+        const bookedColgroup = `<colgroup><col style="width:8%;"><col style="width:26%;"><col style="width:${isTodayView ? '18%' : '22%'};"><col style="width:${isTodayView ? '14%' : (waOn ? '34%' : '44%')};">${isTodayView ? `<col style="width:${waOn ? '24%' : '34%'};">` : ''}${waCol}</colgroup>`;
 
         panelEl.innerHTML = `
           <div class="panel accent-${accentForDoctor(queueDoctorId)}">
@@ -1177,7 +1285,7 @@
                 ${waitingList.length === 0 ? `<div class="empty-state">No one waiting.</div>` : `
                   <table class="qtable qtable-fixed">
                     ${waitingColgroup}
-                    <thead><tr><th>Token</th><th>Name</th><th>Type</th><th>Queue time</th>${canBill ? '<th>Billing</th>' : ''}</tr></thead>
+                    <thead><tr><th>Token</th><th>Name</th><th>Type</th><th>Queue time</th>${canBill ? '<th>Billing</th>' : ''}${waHead}</tr></thead>
                     <tbody>
                       ${waitingPageItems.map((p) => `
                         <tr ${p.id === highlightId ? 'class="just-arrived-flash"' : ''}>
@@ -1186,6 +1294,7 @@
                           <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
                           <td>${queueTimeCell(p)}</td>
                           ${canBill ? `<td>${billingCell(p, invoiceByPatientId, doctor)}</td>` : ''}
+                          ${waCell(p)}
                         </tr>
                       `).join('')}
                     </tbody>
@@ -1207,7 +1316,7 @@
                 ${bookedList.length === 0 ? `<div class="empty-state">${isTodayView ? 'Everyone booked has arrived.' : 'Nothing booked for ' + dateLabel + '.'}</div>` : `
                   <table class="qtable qtable-fixed">
                     ${bookedColgroup}
-                    <thead><tr><th>Token</th><th>Name</th><th>Booked</th><th>Status</th>${isTodayView ? '<th></th>' : ''}</tr></thead>
+                    <thead><tr><th>Token</th><th>Name</th><th>Booked</th><th>Status</th>${isTodayView ? '<th></th>' : ''}${waHead}</tr></thead>
                     <tbody>
                       ${bookedPageItems.map((p) => {
                         const soon = isTodayView ? bookedSoonLabel(p) : null;
@@ -1223,6 +1332,7 @@
                               <button class="btn-sm danger" onclick="doMarkNoShow('${p.id}')">No-show</button>
                             </td>
                           ` : ''}
+                          ${waCell(p)}
                         </tr>
                       `;
                       }).join('')}
@@ -1330,6 +1440,8 @@
         const doctorId = document.getElementById('pDoctor').value;
 
         const freshClinic = await Qlinic.getClinic(true);
+        waClinic = freshClinic;
+        document.getElementById('waBookedBar').innerHTML = '';
         const clinicBlock = clinicBookingBlockReason(freshClinic);
         if (clinicBlock) {
           const hint = document.getElementById('doctorClosedHint');
@@ -1373,6 +1485,7 @@
           }
           showToast(isPriority ? 'Emergency walk-in added — seen first' : 'Walk-in added to the queue');
           renderNotificationPreview(addResult.message, phone);
+          await showWaBookedBar({ id: addResult.id, name, phone, type: 'walkin', doctorId }, addResult.tokenNumber);
         } else {
           const date = document.getElementById('pDate').value;
           time = document.getElementById('pTime').value;
@@ -1411,6 +1524,7 @@
           bookedForToday = date === Qlinic.getTodayDate();
           showToast(bookedForToday ? 'Appointment added' : `Appointment booked for ${Qlinic.formatDateLabel(date)} (${Qlinic.formatTime(Qlinic.parseTime(time))})`);
           renderNotificationPreview(addResult.message, phone);
+          await showWaBookedBar({ id: addResult.id, name, phone, type: 'appointment', doctorId, bookedDate: date, bookedTime: time }, addResult.tokenNumber);
         }
 
         if (bookedForToday) {
@@ -1601,6 +1715,7 @@
       document.getElementById('pDate').addEventListener('change', checkFollowUpHint);
 
       const [clinic, closures, doctorHolidays] = await Promise.all([Qlinic.getClinic(), Qlinic.getClinicClosures(), Qlinic.getDoctorHolidays()]);
+      waClinic = clinic;
       if (clinic) {
         if (clinic.opening_time) clinicOpenMin = Qlinic.parseTime(clinic.opening_time);
         if (clinic.closing_time) clinicCloseMin = Qlinic.parseTime(clinic.closing_time);
@@ -1626,6 +1741,8 @@
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
         renderClosedDayBanner();
         updateDoctorClosedHint();
+        // Picks up the Patient messages switch being changed from Clinic Settings.
+        Qlinic.getClinic(true).then((c) => { waClinic = c; }).catch(() => { });
         renderQueues();
       }, 15000);
       document.getElementById('pDate').min = Qlinic.getTodayDate();

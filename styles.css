@@ -7128,3 +7128,135 @@ body.tool-blue .tool-btn { border-radius: 12px; }
   .tool-med-row .del { grid-column: 2; justify-self: end; }
   .tool-cta-band { flex-direction: column; text-align: center; margin: 32px 6vw 0; }
 }
+
+/* Clinic Settings: Patient messages card (WhatsApp booking confirmation) */
+.pm-card {
+  --pm-text: #0f172a; --pm-sub: #64748b; --pm-body: #475569; --pm-strong: #1e293b;
+  --pm-line: #e2e8f0; --pm-soft-line: #f1f5f9; --pm-white: #ffffff;
+  --pm-hero-bg: #f0fdfa; --pm-hero-line: #ccfbf1; --pm-teal: #0d9488; --pm-teal-soft: #99f6e4;
+  --pm-green: #16a34a; --pm-green-bg: #dcfce7;
+  --pm-blue: #2563eb; --pm-blue-bg: #dbeafe; --pm-blue-soft: #eff6ff;
+  --pm-purple: #9333ea; --pm-purple-bg: #f3e8ff;
+  --pm-alert-blue-bg: #eff6ff; --pm-alert-blue-title: #1e3a8a; --pm-alert-blue-text: #1d4ed8;
+  --pm-alert-grey-bg: #f1f5f9;
+  --pm-on: #059669; --pm-track-on: #10b981; --pm-track-off: #cbd5e1; --pm-arrow: #cbd5e1;
+  border-color: var(--pm-soft-line);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+:root[data-theme="dark"] .pm-card {
+  --pm-text: #f2f2f4; --pm-sub: #98989d; --pm-body: #c7c7cc; --pm-strong: #e5e5ea;
+  --pm-line: #48484a; --pm-soft-line: #38383a; --pm-white: #2c2c2e;
+  --pm-hero-bg: rgba(13, 148, 136, 0.14); --pm-hero-line: rgba(45, 212, 191, 0.3); --pm-teal: #2dd4bf; --pm-teal-soft: rgba(45, 212, 191, 0.4);
+  --pm-green: #4ade80; --pm-green-bg: rgba(34, 197, 94, 0.2);
+  --pm-blue: #60a5fa; --pm-blue-bg: rgba(59, 130, 246, 0.24); --pm-blue-soft: rgba(59, 130, 246, 0.16);
+  --pm-purple: #c084fc; --pm-purple-bg: rgba(168, 85, 247, 0.24);
+  --pm-alert-blue-bg: rgba(59, 130, 246, 0.14); --pm-alert-blue-title: #bfdbfe; --pm-alert-blue-text: #93c5fd;
+  --pm-alert-grey-bg: rgba(255, 255, 255, 0.07);
+  --pm-on: #34d399; --pm-track-on: #10b981; --pm-track-off: #636366; --pm-arrow: #636366;
+}
+.pm-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.pm-head-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.pm-head-icon { width: 52px; height: 52px; flex: none; border-radius: 14px; background: var(--pm-green-bg); color: var(--pm-green); display: flex; align-items: center; justify-content: center; }
+.pm-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--pm-text); }
+.pm-sub { margin-top: 3px; font-size: 14px; color: var(--pm-sub); }
+.pm-head-right { display: flex; align-items: center; gap: 12px; flex: none; }
+.pm-state { min-width: 26px; text-align: right; font-size: 14px; font-weight: 700; color: var(--pm-sub); }
+.pm-state.on { color: var(--pm-on); }
+.pm-switch { position: relative; width: 64px; height: 36px; padding: 0; border: none; border-radius: 999px; background: var(--pm-track-off); cursor: pointer; flex: none; transition: background 0.15s ease; }
+.pm-switch.on { background: var(--pm-track-on); }
+.pm-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pm-knob { position: absolute; top: 4px; left: 4px; width: 28px; height: 28px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: left 0.15s ease; }
+.pm-switch.on .pm-knob { left: 32px; }
+
+.pm-hero { display: flex; align-items: center; gap: 28px; padding: 22px 28px; background: var(--pm-hero-bg); border: 1px solid var(--pm-hero-line); border-radius: 12px; }
+.pm-hero-title { font-size: 18px; font-weight: 600; color: var(--pm-text); margin-bottom: 6px; }
+.pm-hero-text { margin: 0; max-width: 640px; font-size: 14.5px; line-height: 1.55; color: var(--pm-body); }
+.pm-phone { position: relative; width: 118px; height: 112px; flex: none; }
+.pm-phone-screen { position: absolute; left: 12px; top: 6px; width: 78px; height: 104px; box-sizing: border-box; border-radius: 16px; background: var(--pm-white); border: 3px solid var(--pm-teal); box-shadow: 0 4px 10px rgba(13, 148, 136, 0.18); }
+.pm-phone-badge { margin: 10px auto 0; width: 36px; height: 36px; border-radius: 50%; background: var(--pm-green); display: flex; align-items: center; justify-content: center; }
+.pm-phone-line { height: 7px; border-radius: 4px; background: var(--pm-hero-line); margin: 6px 10px 0; }
+.pm-phone-line.a { margin-top: 10px; }
+.pm-phone-line.b { background: var(--pm-line); margin-right: 18px; }
+.pm-phone-line.c { margin-left: 22px; }
+.pm-dot { position: absolute; border-radius: 50%; background: var(--pm-teal-soft); }
+.pm-dot.d1 { right: 6px; top: 4px; width: 5px; height: 5px; background: var(--pm-teal); }
+.pm-dot.d2 { right: 0; top: 20px; width: 9px; height: 9px; }
+.pm-dot.d3 { left: 0; top: 44px; width: 9px; height: 9px; }
+
+.pm-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.pm-info { display: flex; gap: 14px; padding: 18px; border: 1px solid var(--pm-line); border-radius: 12px; }
+.pm-info-icon { width: 44px; height: 44px; flex: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.pm-info-title { font-size: 14px; font-weight: 500; line-height: 1.35; color: var(--pm-strong); margin-bottom: 5px; }
+.pm-info-text { font-size: 12.5px; line-height: 1.5; color: var(--pm-sub); }
+.pm-info-icon.green, .pm-step-icon.green { background: var(--pm-green-bg); color: var(--pm-green); }
+.pm-info-icon.blue { background: var(--pm-blue-bg); color: var(--pm-blue); }
+.pm-info-icon.purple { background: var(--pm-purple-bg); color: var(--pm-purple); }
+
+.pm-how { margin-top: 24px; }
+.pm-how-title { font-size: 14px; font-weight: 700; color: var(--pm-text); margin-bottom: 12px; }
+.pm-steps { display: flex; align-items: center; gap: 8px; }
+.pm-step { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--pm-soft-line); border-radius: 10px; background: var(--pm-white); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); }
+.pm-step-num { width: 26px; height: 26px; flex: none; border-radius: 50%; background: var(--pm-blue-bg); color: var(--pm-blue); font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+.pm-step-icon { width: 38px; height: 38px; flex: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.pm-step-icon.blue { background: var(--pm-blue-soft); color: var(--pm-blue); }
+.pm-step-text { font-size: 14px; font-weight: 500; line-height: 1.35; color: var(--pm-strong); }
+.pm-arrow { flex: none; color: var(--pm-arrow); }
+
+.pm-alert { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border-radius: 12px; }
+.pm-how + .pm-alert { margin-top: 24px; }
+.pm-alert svg { flex: none; margin-top: 1px; }
+.pm-alert-title { font-size: 14px; font-weight: 600; }
+.pm-alert-text { font-size: 14px; }
+.pm-alert.blue { background: var(--pm-alert-blue-bg); color: var(--pm-blue); }
+.pm-alert.blue .pm-alert-title { color: var(--pm-alert-blue-title); }
+.pm-alert.blue .pm-alert-text { color: var(--pm-alert-blue-text); opacity: 0.85; }
+.pm-alert.grey { background: var(--pm-alert-grey-bg); color: var(--pm-sub); }
+.pm-alert.grey .pm-alert-title { color: var(--pm-text); }
+.pm-alert.grey .pm-alert-text { color: var(--pm-body); }
+.pm-actions { display: flex; gap: 10px; }
+
+@media (max-width: 900px) {
+  .pm-grid { grid-template-columns: minmax(0, 1fr); }
+  .pm-steps { flex-direction: column; align-items: stretch; }
+  .pm-arrow { transform: rotate(90deg); align-self: center; }
+}
+@media (max-width: 720px) {
+  .pm-head { flex-wrap: wrap; }
+  .pm-hero { flex-direction: column; text-align: center; padding: 20px; }
+  .pm-actions .btn-sm { flex: 1; }
+}
+
+/* Reception: Send on WhatsApp after a booking, and the resend icon on rows */
+.wa-booked {
+  display: flex; align-items: center; gap: 18px;
+  padding: 18px 22px; margin-bottom: 20px;
+  background: var(--success-bg); border: 1px solid rgba(30, 142, 62, 0.28); border-radius: 14px;
+}
+.wa-booked-check { width: 40px; height: 40px; flex: none; border-radius: 50%; background: var(--success); display: flex; align-items: center; justify-content: center; }
+.wa-booked-main { flex: 1; min-width: 0; }
+.wa-booked-title { font-size: 16px; font-weight: 700; color: var(--black); }
+.wa-booked-sub { margin-top: 3px; font-size: 13.5px; color: var(--grey-700); }
+.wa-booked-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: none; }
+.wa-booked-buttons { display: flex; align-items: center; gap: 10px; }
+.wa-send-btn {
+  display: inline-flex; align-items: center; gap: 9px; height: 44px; box-sizing: border-box; padding: 0 18px;
+  border-radius: 10px; background: #0e7c59; color: #ffffff; font-size: 14.5px; font-weight: 600; text-decoration: none;
+}
+.wa-send-btn:hover { background: #0b6a4c; }
+.wa-send-btn.disabled { background: var(--grey-500); pointer-events: none; }
+.wa-booked-note { font-size: 12px; color: var(--grey-700); }
+.wa-resend-btn {
+  width: 34px; height: 34px; padding: 0; border: 1px solid var(--grey-300); border-radius: 8px;
+  background: var(--white); color: #0e7c59; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; vertical-align: middle;
+}
+.wa-resend-btn:hover { background: var(--grey-100); }
+:root[data-theme="dark"] .wa-resend-btn { color: #34d399; }
+@media (max-width: 720px) {
+  .wa-booked { flex-wrap: wrap; }
+  .wa-booked-actions { align-items: stretch; width: 100%; }
+  .wa-send-btn { justify-content: center; }
+}
