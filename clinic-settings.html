@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=411" />
+<link rel="stylesheet" href="styles.css?v=412" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -47,67 +47,128 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-header"><h2>Clinic profile</h2></div>
-        <form id="clinicForm" class="inline-form">
-          <div class="field" style="min-width:220px;">
-            <label>Clinic name</label>
-            <input type="text" id="clinicNameInput" required />
+      <div class="panel pm-card qr-card">
+        <div class="qr-head">
+          <div class="qr-head-left">
+            <div class="qr-badge">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V8l8-5 8 5v13"/><path d="M2 21h20"/><path d="M12 9v5"/><path d="M9.5 11.5h5"/><path d="M9 21v-4h6v4"/></svg>
+            </div>
+            <div>
+              <h2 class="qr-title">Clinic profile</h2>
+              <p class="qr-sub">Manage your clinic identity, address details, and registration information.</p>
+            </div>
           </div>
-          <div class="field" style="max-width:140px;">
-            <label>Pincode</label>
-            <input type="text" id="pincodeInput" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" />
+          <div class="qr-pill">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Keep clinic details complete</span>
           </div>
-          <div class="field" style="min-width:200px;">
-            <label>Flat, house no., building</label>
-            <input type="text" id="buildingLineInput" placeholder="e.g., Flat 4B, Sunrise Apartments" />
+        </div>
+
+        <form id="clinicForm" class="cp-form">
+          <div class="cp-row">
+            <div class="cc-field">
+              <label class="qr-label" for="clinicNameInput">Clinic name</label>
+              <input type="text" id="clinicNameInput" class="cc-input" required />
+            </div>
+            <div class="cc-field">
+              <label class="qr-label" for="pincodeInput">Pincode</label>
+              <input type="text" id="pincodeInput" class="cc-input" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" />
+            </div>
+            <div class="cc-field">
+              <label class="qr-label" for="buildingLineInput">Flat, house no., building</label>
+              <input type="text" id="buildingLineInput" class="cc-input" placeholder="e.g., Flat 4B, Sunrise Apartments" />
+            </div>
+            <div class="cc-field">
+              <label class="qr-label" for="areaLineInput">Area, street, sector</label>
+              <input type="text" id="areaLineInput" class="cc-input" placeholder="e.g., MG Road, Sector 12" />
+            </div>
+            <div class="cc-field">
+              <label class="qr-label" for="landmarkInput">Landmark <span class="cp-optional">(optional)</span></label>
+              <input type="text" id="landmarkInput" class="cc-input" placeholder="e.g., near Apollo Hospital" />
+            </div>
           </div>
-          <div class="field" style="min-width:200px;">
-            <label>Area, street, sector</label>
-            <input type="text" id="areaLineInput" placeholder="e.g., MG Road, Sector 12" />
-          </div>
-          <div class="field" style="min-width:180px;">
-            <label>Landmark <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
-            <input type="text" id="landmarkInput" placeholder="e.g., near Apollo Hospital" />
-          </div>
-          <div class="field" style="min-width:160px;">
-            <label>City</label>
-            <input type="text" id="cityInput" placeholder="From pincode" />
-          </div>
-          <div class="field" style="min-width:160px;">
-            <label>State</label>
-            <select id="stateInput">
-              <option value="">From pincode</option>
-            </select>
-          </div>
-          <div class="field" style="min-width:180px;">
-            <label>GSTIN <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
-            <input type="text" id="gstinInput" placeholder="e.g., 22AAAAA0000A1Z5" maxlength="15" style="text-transform:uppercase;" />
-            <span class="field-hint">Consultation fees are GST-exempt</span>
-          </div>
-          <div class="field" style="min-width:180px;">
-            <label>HFR ID <span style="font-weight:400;color:var(--grey-500);">(optional)</span></label>
-            <input type="text" id="hfrIdInput" placeholder="e.g., IN2910000123" maxlength="20" style="text-transform:uppercase;" />
-            <span class="field-hint">From your ABDM Health Facility Registry registration</span>
-          </div>
-          <div class="field" style="flex:0;">
-            <label>&nbsp;</label>
-            <button type="submit" class="btn-sm primary">Save</button>
+          <div class="cp-row">
+            <div class="cc-field">
+              <label class="qr-label" for="cityInput">City</label>
+              <input type="text" id="cityInput" class="cc-input" placeholder="From pincode" />
+            </div>
+            <div class="cc-field">
+              <label class="qr-label" for="stateInput">State</label>
+              <select id="stateInput" class="cc-input">
+                <option value="">From pincode</option>
+              </select>
+            </div>
+            <div class="cc-field">
+              <label class="qr-label" for="gstinInput">GSTIN <span class="cp-optional">(optional)</span></label>
+              <input type="text" id="gstinInput" class="cc-input cp-upper" placeholder="e.g., 22AAAAA0000A1Z5" maxlength="15" />
+              <span class="qr-hint">Consultation fees are GST-exempt</span>
+            </div>
+            <div class="cc-field">
+              <label class="qr-label" for="hfrIdInput">HFR ID <span class="cp-optional">(optional)</span></label>
+              <input type="text" id="hfrIdInput" class="cc-input cp-upper" placeholder="e.g., IN2910000123" maxlength="20" />
+              <span class="qr-hint">From your ABDM Health Facility Registry registration</span>
+            </div>
+            <div class="cc-field cp-save-col">
+              <button type="submit" class="qr-save" id="clinicSaveBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <span>Save</span>
+              </button>
+            </div>
           </div>
         </form>
+
+        <div class="pm-alert blue qr-callout">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><line x1="12" y1="11" x2="12" y2="17" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1.3" fill="#ffffff"/></svg>
+          <div class="pm-alert-title">These details appear across appointments, invoices, and patient-facing clinic information.</div>
+        </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-header"><h2>Clinic logo</h2></div>
-        <p class="panel-note">Shown next to your clinic name in the sidebar, and on printed invoices.</p>
-        <div class="logo-upload-col">
-          <div class="logo-preview empty" id="logoPreview"></div>
-          <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" />
-          <div class="logo-actions">
-            <button type="button" class="btn-sm primary" id="chooseLogoBtn">Upload logo</button>
-            <button type="button" class="btn-sm danger" id="removeLogoBtn" style="display:none;">Remove</button>
+      <div class="panel pm-card qr-card">
+        <div class="qr-head">
+          <div class="qr-head-left">
+            <div class="qr-badge">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <div>
+              <h2 class="qr-title">Clinic logo</h2>
+              <p class="qr-sub">Shown on your printed receipts and prescriptions.</p>
+            </div>
           </div>
-          <div class="logo-hint">PNG, JPG or WebP, up to 2 MB.</div>
+          <div class="qr-pill">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Brand your clinic experience</span>
+          </div>
+        </div>
+
+        <div class="cp-logo-grid">
+          <div class="cp-upload">
+            <div class="cp-logo-box empty" id="logoPreview"></div>
+            <div class="cp-upload-side">
+              <span class="cp-upload-hint">PNG, JPG or WebP, up to 2 MB.</span>
+              <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" />
+              <div class="cp-upload-actions">
+                <button type="button" class="cp-btn blue" id="chooseLogoBtn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span>Upload logo</span>
+                </button>
+                <button type="button" class="cp-btn red" id="removeLogoBtn" style="display:none;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                  <span>Remove</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="cp-how">
+            <div>
+              <div class="cp-how-title">How it appears</div>
+              <div class="cp-how-sub">Your logo helps patients recognize the clinic instantly on printed receipts and prescriptions.</div>
+            </div>
+            <div class="cp-docs">
+              <div class="cp-paper" id="previewReceipt"></div>
+              <div class="cp-paper" id="previewRx"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -703,6 +764,7 @@
         document.getElementById('gstinInput').value = clinic.gstin || '';
         document.getElementById('hfrIdInput').value = clinic.hfr_id || '';
         document.getElementById('reviewLinkInput').value = clinic.review_link_url || '';
+        renderClinicPreviews();
         waSaved = Qlinic.isWhatsAppConfirmEnabled(clinic);
         waDraft = waSaved;
         renderWhatsAppCard();
@@ -758,6 +820,9 @@
           document.getElementById('gstinInput').focus();
           return;
         }
+        const saveBtn = document.getElementById('clinicSaveBtn');
+        const saveLabel = saveBtn.querySelector('span');
+        saveBtn.disabled = true;
         try {
           await Qlinic.updateClinic({
             name: clinicNameValue,
@@ -770,9 +835,14 @@
           });
         } catch (err) {
           showToast(err.message || 'Could not update clinic profile — please try again.');
+          saveBtn.disabled = false;
           return;
         }
         showToast('Clinic profile updated');
+        saveBtn.disabled = false;
+        saveBtn.classList.add('saved');
+        saveLabel.textContent = 'Saved';
+        setTimeout(() => { saveBtn.classList.remove('saved'); saveLabel.textContent = 'Save'; }, 2000);
         loadClinic();
       });
 
@@ -844,19 +914,73 @@
         showToast(waSaved ? 'WhatsApp messages to patients are on' : 'WhatsApp messages to patients are off');
       });
 
+      let currentLogoUrl = null;
       function renderLogoPreview(logoUrl) {
+        currentLogoUrl = logoUrl || null;
         const preview = document.getElementById('logoPreview');
         const removeBtn = document.getElementById('removeLogoBtn');
         if (logoUrl) {
-          preview.innerHTML = `<img src="${logoUrl}" alt="Clinic logo" />`;
+          preview.innerHTML = `<img src="${Qlinic.escapeHtml(logoUrl)}" alt="Clinic logo" />`;
           preview.classList.remove('empty');
-          removeBtn.style.display = 'inline-block';
+          removeBtn.style.display = '';
         } else {
-          preview.innerHTML = '';
+          preview.innerHTML = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>No logo yet</span>';
           preview.classList.add('empty');
           removeBtn.style.display = 'none';
         }
+        renderClinicPreviews();
       }
+
+      // "How it appears": the clinic's own name, address, GSTIN and logo laid
+      // out the way the printed receipt and prescription use them. It reads
+      // the form as it is typed, so it is never out of date with the fields.
+      // Names and numbers below the clinic identity are just sample lines.
+      function renderClinicPreviews() {
+        const esc = Qlinic.escapeHtml;
+        const val = (id) => document.getElementById(id).value.trim();
+        const name = val('clinicNameInput') || 'Your clinic name';
+        const street = [val('buildingLineInput'), val('areaLineInput'), val('landmarkInput') ? `near ${val('landmarkInput')}` : ''].filter(Boolean).join(', ');
+        const state = val('stateInput');
+        const pin = val('pincodeInput');
+        const stateLine = state && pin ? `${state} ${pin}` : state;
+        const city = val('cityInput');
+        const address = [street, city, stateLine].filter(Boolean).join(', ') || 'Your clinic address';
+        const gstin = val('gstinInput').toUpperCase();
+        const today = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+        const logo = (cls) => (currentLogoUrl ? `<img class="${cls}" src="${esc(currentLogoUrl)}" alt="" />` : '');
+
+        document.getElementById('previewReceipt').innerHTML = `
+          <div class="cp-doc-label">Receipt</div>
+          <div class="cp-rc-head">
+            ${logo('cp-rc-logo')}
+            <div class="cp-rc-name">${esc(name)}</div>
+            <div class="cp-rc-addr">${esc(address)}</div>
+            ${gstin ? `<div class="cp-rc-gstin">GSTIN ${esc(gstin)}</div>` : ''}
+          </div>
+          <div class="cp-rc-meta">
+            <div class="cp-rc-dates"><span>Billed on ${esc(today)}</span><span>Visit date ${esc(today)}</span></div>
+            <div class="cp-rc-num"><div>Receipt</div><b>0001</b></div>
+          </div>
+          <div class="cp-lines"><span></span><span class="short"></span></div>
+          ${currentLogoUrl ? `<div class="cp-rc-foot">${logo('cp-rc-foot-logo')}<span>${esc([city, stateLine].filter(Boolean).join(', '))}</span></div>` : ''}
+        `;
+        document.getElementById('previewRx').innerHTML = `
+          <div class="cp-doc-label">Prescription</div>
+          <div class="cp-rx-head">
+            ${logo('cp-rx-logo')}
+            <div class="cp-rx-id">
+              <div class="cp-rx-name">${esc(name)}</div>
+              <div class="cp-rx-addr">${esc(address)}</div>
+            </div>
+            <div class="cp-rx-doc"><b>Dr. Name</b><span>Speciality</span></div>
+          </div>
+          <div class="cp-rx-info"><span>Patient: Name</span><span>Date: ${esc(today)}</span></div>
+          <div class="cp-lines blue"><span></span><span class="alt"></span><span class="alt short"></span></div>
+          ${currentLogoUrl ? `<div class="cp-rc-foot">${logo('cp-rx-foot-logo')}</div>` : ''}
+        `;
+      }
+      document.getElementById('clinicForm').addEventListener('input', renderClinicPreviews);
+      document.getElementById('clinicForm').addEventListener('change', renderClinicPreviews);
 
       document.getElementById('chooseLogoBtn').addEventListener('click', () => {
         document.getElementById('logoFileInput').click();

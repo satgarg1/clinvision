@@ -7438,3 +7438,72 @@ body.tool-blue .tool-btn { border-radius: 12px; }
   .cc-follow, .cc-time { width: 100%; }
   .cc-save-col, .cc-save { width: 100%; }
 }
+
+/* Clinic Settings: Clinic profile and Clinic logo cards (reuse the .qr-card header, labels and note) */
+.cp-form { display: flex; flex-direction: column; gap: 16px; }
+.cp-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.cp-optional { font-weight: 400; color: var(--qr-hint); }
+.cp-upper { text-transform: uppercase; }
+.cp-save-col { padding-top: 22px; }
+select.cc-input { padding-right: 8px; }
+.cp-logo-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
+.cp-upload { grid-column: span 5; box-sizing: border-box; padding: 20px; border: 1.5px dashed var(--pm-line); border-radius: 14px; background: var(--pm-white); display: flex; align-items: center; gap: 20px; }
+.cp-logo-box { width: 170px; height: 150px; flex: none; box-sizing: border-box; border: 1px solid var(--pm-line); border-radius: 14px; background: #ffffff; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05); overflow: hidden; }
+.cp-logo-box img { max-width: 100%; max-height: 100%; object-fit: contain; padding: 10px; box-sizing: border-box; }
+.cp-logo-box.empty { flex-direction: column; gap: 8px; color: #94a3b8; font-size: 12px; background: transparent; }
+.cp-upload-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.cp-upload-hint { font-size: 12.5px; color: var(--pm-sub); }
+.cp-upload-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.cp-btn { height: 40px; padding: 0 16px; border-radius: 12px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.cp-btn.blue { border: none; background: var(--qr-save); color: #ffffff; }
+.cp-btn.blue:hover { background: var(--qr-save-hover); }
+.cp-btn.red { border: 1px solid #fecaca; background: transparent; color: #dc2626; }
+.cp-btn.red:hover { background: rgba(220, 38, 38, 0.08); }
+:root[data-theme="dark"] .cp-btn.red { border-color: rgba(248, 113, 113, 0.45); color: #f87171; }
+.cp-how { grid-column: span 7; box-sizing: border-box; padding: 20px; border: 1px solid var(--qr-panel-line); border-radius: 14px; background: var(--qr-panel-bg); display: flex; flex-direction: column; gap: 14px; }
+.cp-how-title { font-size: 14px; font-weight: 700; color: var(--pm-text); }
+.cp-how-sub { margin-top: 3px; max-width: 560px; font-size: 12.5px; line-height: 1.5; color: var(--pm-sub); }
+.cp-docs { display: flex; gap: 16px; align-items: flex-start; }
+/* The two sample documents stay paper white in dark mode, as they print. */
+.cp-paper { flex: 1; min-width: 0; box-sizing: border-box; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; color: #0f172a; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08); }
+.cp-doc-label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #94a3b8; margin-bottom: 8px; }
+.cp-rc-head { display: flex; flex-direction: column; align-items: center; text-align: center; padding-bottom: 10px; border-bottom: 2px solid #0f172a; }
+.cp-rc-logo { max-height: 48px; max-width: 150px; object-fit: contain; margin-bottom: 6px; }
+.cp-rc-name { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.cp-rc-addr { margin-top: 3px; font-size: 9.5px; line-height: 1.4; color: #475569; overflow-wrap: anywhere; }
+.cp-rc-gstin { margin-top: 2px; font-size: 9px; color: #94a3b8; }
+.cp-rc-meta { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 10px; }
+.cp-rc-dates { display: flex; flex-direction: column; gap: 3px; font-size: 9px; color: #64748b; }
+.cp-rc-num { text-align: right; }
+.cp-rc-num div { font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; }
+.cp-rc-num b { font-size: 12px; }
+.cp-lines { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.cp-lines span { display: block; height: 5px; border-radius: 3px; background: #e2e8f0; }
+.cp-lines span.short { width: 70%; background: #f1f5f9; }
+.cp-lines.blue span:first-child { background: #dbeafe; }
+.cp-lines span.alt { background: #f1f5f9; }
+.cp-rc-foot { margin-top: 12px; padding-top: 8px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; font-size: 8px; color: #94a3b8; }
+.cp-rc-foot-logo { max-height: 24px; max-width: 70px; object-fit: contain; }
+.cp-rx-foot-logo { max-height: 20px; max-width: 60px; object-fit: contain; }
+.cp-rx-head { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 3px solid #0071e3; }
+.cp-rx-logo { max-height: 36px; max-width: 100px; object-fit: contain; flex: none; }
+.cp-rx-id { min-width: 0; flex: 1; }
+.cp-rx-name { font-size: 12px; font-weight: 700; color: #0071e3; line-height: 1.25; overflow-wrap: anywhere; }
+.cp-rx-addr { margin-top: 2px; font-size: 8.5px; line-height: 1.35; color: #94a3b8; overflow-wrap: anywhere; }
+.cp-rx-doc { text-align: right; flex: none; display: flex; flex-direction: column; }
+.cp-rx-doc b { font-size: 10px; }
+.cp-rx-doc span { font-size: 8.5px; color: #94a3b8; }
+.cp-rx-info { display: flex; gap: 10px; margin-top: 10px; font-size: 9px; color: #64748b; }
+@media (max-width: 1200px) {
+  .cp-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .cp-save-col { padding-top: 0; }
+  .cp-logo-grid .cp-upload, .cp-logo-grid .cp-how { grid-column: 1 / -1; }
+}
+@media (max-width: 900px) {
+  .cp-docs { flex-direction: column; }
+  .cp-paper { width: 100%; }
+}
+@media (max-width: 720px) {
+  .cp-row { grid-template-columns: minmax(0, 1fr); }
+  .cp-upload { flex-direction: column; align-items: flex-start; }
+}
