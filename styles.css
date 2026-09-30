@@ -3370,9 +3370,12 @@ input[type="number"] { -moz-appearance: textfield; }
 /* Settings hub: same grid idea as .card-grid, but for full .panel cards
    (title + description + a button) rather than compact stat tiles - a
    wider minmax so a card's description/button don't get squeezed. */
+/* auto-fill, not auto-fit: auto-fit collapses the empty tracks, so a tab with
+   one or two cards (Team & Access, Preferences) stretched them across the
+   whole row. auto-fill keeps every card the width of a card on a full tab. */
 .settings-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 18px;
 }
 /* .panel's own margin-bottom would double up with the grid's gap here
