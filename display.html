@@ -449,6 +449,11 @@
         'Physiotherapist': 'फिजियोथेरेपिस्ट',
       };
 
+      // Names are saved without a title and the screen adds Dr. itself, so a typed one must not show twice.
+      function plainDoctor(name) {
+        const typed = String(name || '').trim();
+        return typed.replace(/^dr\.?\s+/i, '').trim() || typed;
+      }
       function localizeName(text) {
         return escapeHtml(T === STRINGS.hi ? toDevanagari(text) : text);
       }
@@ -586,7 +591,7 @@
           <div class="doc-tile${isWide ? ' wide' : ''}${isEmergency ? ' is-emergency' : ''}${isOnBreak ? ' is-on-break' : ''}" style="--tile-accent: var(--mkt-${ACCENT_COLORS[index % ACCENT_COLORS.length]});">
             <div class="tile-top">
               <div>
-                <div class="tile-name">${T.drPrefix}${localizeName(doctor.name)}</div>
+                <div class="tile-name">${T.drPrefix}${localizeName(plainDoctor(doctor.name))}</div>
                 <div class="tile-spec">${localizeSpecialty(doctor.specialty)}</div>
               </div>
               ${pillHtml}
@@ -649,7 +654,7 @@
             <span class="board-pos">${p.tokenDisplay ? '#' + p.tokenDisplay : '·'}</span>
             <span class="board-time-cell">${boardTimeCell(p)}</span>
             <span class="board-name-row">${localizeName(p.name)}${p.isPriority ? `<span class="board-priority">${T.priority}</span>` : ''}</span>
-            ${showDoctorCol ? `<span class="board-doc">${T.drPrefix}${localizeName(p.doctorName)}</span>` : ''}
+            ${showDoctorCol ? `<span class="board-doc">${T.drPrefix}${localizeName(plainDoctor(p.doctorName))}</span>` : ''}
           </div>
         `).join('');
       }

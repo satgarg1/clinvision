@@ -360,10 +360,12 @@
       }
 
       // ---- small html builders -------------------------------------------
-      function deltaHtml(cur, prev) {
+      function deltaHtml(cur, prev, lowerIsBetter) {
         if (cur == null || prev == null || prev <= 0) return '';
         const pct = Math.round(((cur - prev) / prev) * 100);
-        const cls = pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
+        // colour says good or bad: for waiting time and no-show rate a rise is bad (red) and a fall is good (green)
+        const good = lowerIsBetter ? pct < 0 : pct > 0, bad = lowerIsBetter ? pct > 0 : pct < 0;
+        const cls = good ? 'up' : bad ? 'down' : 'flat';
         const arrow = pct > 0 ? '<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>' : pct < 0 ? '<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>' : '';
         return `<div class="in-delta ${cls}"><span class="in-delta-n">${arrow ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${arrow}</svg>` : ''}${Math.abs(pct)}%</span><span class="in-delta-c">vs ${esc(compareLabel())}</span></div>`;
       }
@@ -852,8 +854,8 @@
           kpi('blue', 'users', num(cur.seenCount), 'Patients seen', deltaHtml(cur.seenCount, old.seenCount)),
         ];
         if (!amDoctor) items.push(kpi('green', 'rupee', money(cur.revenue), 'Revenue', deltaHtml(cur.revenue, old.revenue)));
-        items.push(kpi('purple', 'clock', cur.avgWait == null ? 'No data' : `${Math.round(cur.avgWait)} min`, 'Avg waiting time', deltaHtml(cur.avgWait, old.avgWait)));
-        items.push(kpi('red', 'calx', cur.noShowRate == null ? 'No data' : `${cur.noShowRate.toFixed(1)}%`, 'No-show rate', deltaHtml(cur.noShowRate, old.noShowRate)));
+        items.push(kpi('purple', 'clock', cur.avgWait == null ? 'No data' : `${Math.round(cur.avgWait)} min`, 'Avg waiting time', deltaHtml(cur.avgWait, old.avgWait, true)));
+        items.push(kpi('red', 'calx', cur.noShowRate == null ? 'No data' : `${cur.noShowRate.toFixed(1)}%`, 'No-show rate', deltaHtml(cur.noShowRate, old.noShowRate, true)));
         items.push(kpi('teal', 'bars', utilText(cur.utilisation), 'Clinic utilisation', deltaHtml(cur.utilisation, old.utilisation), UTIL_HELP));
         if (!amDoctor) items.push(kpi('purple', 'repeat', num(cur.followUps), 'Follow up visits', deltaHtml(cur.followUps, old.followUps)));
 
@@ -934,7 +936,7 @@
           kpi('blue', 'cal', num(booked), 'Appointments booked', deltaHtml(booked, oBooked)),
           kpi('green', 'check', num(arrivedA), 'Appointments arrived', sub(booked ? `${Math.round(100 * arrivedA / booked)}% of booked` : '')),
           kpi('blue', 'users', num(seenA), 'Appointments seen', sub(arrivedA ? `${Math.round(100 * seenA / arrivedA)}% of arrived` : '')),
-          kpi('red', 'calx', cur.noShowRate == null ? 'No data' : `${cur.noShowRate.toFixed(1)}%`, 'No-show rate', deltaHtml(cur.noShowRate, old.noShowRate)),
+          kpi('red', 'calx', cur.noShowRate == null ? 'No data' : `${cur.noShowRate.toFixed(1)}%`, 'No-show rate', deltaHtml(cur.noShowRate, old.noShowRate, true)),
         ], 4);
         const w = cur.waits;
         const counts = [0, 0, 0, 0, 0];
@@ -1017,7 +1019,7 @@
           kpi('teal', 'bars', utilText(cur.utilisation), 'Clinic utilisation', deltaHtml(cur.utilisation, old.utilisation), UTIL_HELP),
           kpi('red', 'clock', busiestHour ? formatHourLabel(busiestHour[0]) : 'No data', 'Busiest hour', busiestHour ? sub(`${num(busiestHour[1])} arrivals`) : ''),
           kpi('purple', 'cal', opArrived.length ? dowNames[bd] : 'No data', 'Busiest day', opArrived.length ? sub(`${num(byDow[bd])} arrivals`) : ''),
-          kpi('pink', 'clock', cur.avgWait == null ? 'No data' : `${Math.round(cur.avgWait)} min`, 'Avg wait time', deltaHtml(cur.avgWait, old.avgWait)),
+          kpi('pink', 'clock', cur.avgWait == null ? 'No data' : `${Math.round(cur.avgWait)} min`, 'Avg wait time', deltaHtml(cur.avgWait, old.avgWait, true)),
         ], 5);
         const cap = cur.capacity;
         const hrs = clinicHours().hours;
