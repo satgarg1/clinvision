@@ -161,7 +161,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=137"></script>
+  <script src="clinic-data.js?v=138"></script>
   <script src="app-topbar.js?v=5"></script>
   <script>
     (async function () {
@@ -272,8 +272,10 @@
       }
 
       function csvCell(value) {
-        const s = String(value == null ? '' : value);
-        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        let s = String(value == null ? '' : value);
+        // A leading = + - or @ would run as a formula when the file is opened in Excel, so text like that is forced to plain text.
+        if (typeof value !== 'number' && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
+        return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
       }
       function downloadCsv(filename, csvText) {
         const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
@@ -293,7 +295,7 @@
           out.push([
             p.name,
             p.phone || '',
-            p.age || '',
+            p.age ?? '',
             p.gender || '',
             p.address || '',
             p.tokenDate || '',
@@ -457,7 +459,7 @@
         const unique = new Set(now.map((p) => p.phone || `name:${(p.name || '').toLowerCase()}`)).size;
         document.getElementById('nsCount').textContent = String(now.length);
         document.getElementById('nsUnique').textContent = String(unique);
-        let cls = 'bad';
+        let cls = 'flat';
         let text = '0%';
         let arrow = '';
         if (prev.length === 0 && now.length > 0) { cls = 'new'; text = 'New'; }
@@ -570,7 +572,7 @@
             </div>
             ${pageItems.map((p) => {
               const doctor = doctorById[p.doctorId];
-              const subInfo = [p.age ? `${p.age} yrs` : '', p.address ? Qlinic.escapeHtml(p.address) : ''].filter(Boolean).join(' · ');
+              const subInfo = [p.age != null && p.age !== '' ? `${p.age} yrs` : '', p.address ? Qlinic.escapeHtml(p.address) : ''].filter(Boolean).join(' · ');
               return `
               <div class="dd-row dd-body ns-cols" role="row">
                 <div role="cell">
@@ -617,7 +619,7 @@
       function exportRows() {
         return filteredNoShows().map((p) => {
           const doctor = doctorById[p.doctorId];
-          return [p.name, p.phone || '', p.age || '', p.gender || '', p.address || '', p.tokenDate || '', p.bookedTime || '', doctor ? doctor.name : '', TYPE_LABELS[p.type] || p.type];
+          return [p.name, p.phone || '', p.age ?? '', p.gender || '', p.address || '', p.tokenDate || '', p.bookedTime || '', doctor ? doctor.name : '', TYPE_LABELS[p.type] || p.type];
         });
       }
       const EXPORT_HEAD = ['Name', 'Phone', 'Age', 'Gender', 'Address', 'Appointment date', 'Scheduled time', 'Doctor', 'Type'];
@@ -688,12 +690,16 @@
         return rangePreset === 'custom' ? customRange : rangeForPreset(rangePreset);
       }
 
-      async function loadNoShows() {
+      let loadSeq = 0;
+      async function loadNoShows(keepPage) {
+        const mySeq = ++loadSeq;
         const range = currentRange();
-        allNoShows = viewMode === 'range'
+        const rows = viewMode === 'range'
           ? (range ? await Qlinic.getNoShowsForDateRange(range.start, range.end) : [])
           : await Qlinic.getNoShowsForDate(document.getElementById('dateFilter').value);
-        currentPage = 1;
+        if (mySeq !== loadSeq) return; // an older request finished after a newer one
+        allNoShows = rows;
+        if (keepPage !== true) currentPage = 1; // a live update keeps the page being read
         renderTable();
       }
 
@@ -749,9 +755,9 @@
       renderRangePresetOptions();
 
       await loadDoctorFilterOptions();
-      await loadNoShows();
       loadKpis();
-      Qlinic.onLiveChange(() => { loadNoShows(); loadKpis(); });
+      await loadNoShows();
+      Qlinic.onLiveChange(() => { loadNoShows(true); loadKpis(); });
     })();
   </script>
 

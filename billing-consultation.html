@@ -196,7 +196,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=137"></script>
+  <script src="clinic-data.js?v=138"></script>
   <script src="app-topbar.js?v=5"></script>
   <script>
     (async function () {
@@ -307,7 +307,9 @@
           return;
         }
         const billingDate = document.getElementById('bDate').value || Qlinic.getTodayDate();
-        const match = await Qlinic.getBillingPatientLookup(phone, billingDate);
+        // The typed name picks the right person when family members share one phone number.
+        const typedName = document.getElementById('bName').value.trim();
+        const match = await Qlinic.getBillingPatientLookup(phone, billingDate, { name: typedName });
         if (mySeq !== phoneLookupSeq) return;
         if (!match) {
           hint.textContent = 'No previous visit found for this number, fill in details manually.';
@@ -315,7 +317,8 @@
           return;
         }
         currentPatientId = match.todayPatientId || null;
-        if (match.name) document.getElementById('bName').value = match.name;
+        const keepTypedName = typedName && match.todayPatientName && match.todayPatientName.trim().toLowerCase() === typedName.toLowerCase();
+        if (match.name && !keepTypedName) document.getElementById('bName').value = match.name;
         if (match.address) document.getElementById('bAddress').value = match.address;
         if (match.age != null) document.getElementById('bAge').value = match.age;
         if (match.gender) document.getElementById('bGender').value = match.gender;

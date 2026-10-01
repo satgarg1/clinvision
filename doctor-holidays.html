@@ -175,7 +175,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=137"></script>
+  <script src="clinic-data.js?v=138"></script>
   <script src="app-topbar.js?v=5"></script>
   <script>
     (async function () {
@@ -299,14 +299,19 @@
         `;
       }
 
+      let holidaysSeq = 0;
       async function loadHolidays() {
+        const mySeq = ++holidaysSeq;
+        let rows;
         if (personType === 'staff') {
           if (!targetProfileId) { holidays = []; renderHolidays(); return; }
-          holidays = await Qlinic.getStaffHolidays(targetProfileId);
+          rows = await Qlinic.getStaffHolidays(targetProfileId);
         } else {
           if (!targetDoctorId) { holidays = []; renderHolidays(); return; }
-          holidays = await Qlinic.getDoctorHolidays(targetDoctorId);
+          rows = await Qlinic.getDoctorHolidays(targetDoctorId);
         }
+        if (mySeq !== holidaysSeq) return; // the person was switched while this was loading
+        holidays = rows;
         renderHolidays();
       }
 
@@ -530,6 +535,7 @@
         const dateInput = document.getElementById('holidayDate');
         const noteInput = document.getElementById('holidayNote');
         const date = dateInput.value;
+        if (personType === 'staff' ? !targetProfileId : !targetDoctorId) { showToast('Choose a person first'); return; }
         if (!date) { showToast('Pick a date first'); return; }
         if (holidays.some((h) => h.date === date)) { showToast('That date is already on the list'); return; }
         try {

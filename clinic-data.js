@@ -1044,10 +1044,16 @@
     return data ? normalizeDoctor(data) : null;
   }
 
+  // Doctors are saved without a title; every screen adds "Dr." itself, so a typed one would show twice.
+  function plainDoctorName(name) {
+    const typed = String(name || '').trim();
+    return typed.replace(/^dr\.?\s+/i, '').trim() || typed;
+  }
+
   async function addDoctor({ name, specialty, feeNormal, feeEmergency, hprId, qualification, registrationNumber }) {
     const clinicId = await ensureClinicContext();
     const { data, error } = await sb.from('doctors').insert({
-      clinic_id: clinicId, name, specialty: specialty || '',
+      clinic_id: clinicId, name: plainDoctorName(name), specialty: specialty || '',
       fee_normal: feeNormal || 0, fee_emergency: feeEmergency || 0,
       hpr_id: hprId || null,
       qualification: qualification || '', registration_number: registrationNumber || '',
@@ -1058,7 +1064,7 @@
 
   async function updateDoctor(doctorId, { name, specialty, feeNormal, feeEmergency, hprId, qualification, registrationNumber }) {
     const { error } = await sb.from('doctors').update({
-      name, specialty: specialty || '',
+      name: plainDoctorName(name), specialty: specialty || '',
       fee_normal: feeNormal || 0, fee_emergency: feeEmergency || 0,
       hpr_id: hprId || null,
       qualification: qualification || '', registration_number: registrationNumber || '',
@@ -1448,6 +1454,7 @@
 
     let todayDoctorId = null;
     let todayPatientId = null;
+    let todayPatientName = null;
     let todayVisitDate = null;
     let todayFeeType = null;
     let todayInvoiceId = null;
@@ -1469,6 +1476,7 @@
       if (todayPatient) {
         todayDoctorId = todayPatient.doctor_id;
         todayPatientId = todayPatient.id;
+        todayPatientName = todayPatient.name || '';
         const { data: todayInvoice, error: invoiceErr } = await sb.from('invoices')
           .select('id, fee_type, payment_mode, amount_received')
           .eq('clinic_id', clinicId).eq('patient_id', todayPatient.id).eq('invoice_type', 'consultation')
@@ -1537,6 +1545,7 @@
       mostRecentVisitDate,
       todayDoctorId,
       todayPatientId,
+      todayPatientName,
       todayVisitDate,
       todayFeeType,
       todayInvoiceId,
@@ -1788,10 +1797,11 @@
   async function queueBookingNotification({ patientId, phone, doctorId, kind, bookedDate, bookedTime, tokenNumber }) {
     try {
       const clinicId = await ensureClinicContext();
-      const [clinic, doctor] = await Promise.all([getClinic(), getDoctor(doctorId)]);
+      const clinic = await getClinic();
       // WhatsApp confirmations replace the pending text message queue for
       // this clinic, so a message provider connected later can't double up.
       if (isWhatsAppConfirmEnabled(clinic)) return null;
+      const doctor = await getDoctor(doctorId);
       const tokenDisplay = tokenNumber ? (tokenNumber > 100000 ? 'W' + (tokenNumber - 100000) : '#' + tokenNumber) : null;
       const tokenLine = tokenDisplay ? ` Your token number is ${tokenDisplay}.` : '';
       const link = tokenNumber ? queueLinkFor(patientId) : '';
@@ -1865,11 +1875,13 @@
   // table read in this file. Embeds the patient's name/phone via the
   // foreign key relationship rather than a second round trip.
   async function getClinicFeedback() {
-    const { data, error } = await sb
+    // Paged: one request is capped at 1000 rows, which would silently cut off older feedback.
+    const data = await fetchAllRows((from, to) => sb
       .from('visit_feedback')
       .select('id, rating, feedback_text, routed_to_review, submitted_at, patients(name, phone, doctor_id)')
-      .order('submitted_at', { ascending: false });
-    if (error) throw error;
+      .order('submitted_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to));
     return (data || []).map((row) => ({
       id: row.id,
       rating: row.rating,

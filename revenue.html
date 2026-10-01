@@ -144,7 +144,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=137"></script>
+  <script src="clinic-data.js?v=138"></script>
   <script src="app-topbar.js?v=5"></script>
   <script>
     (async function () {
@@ -279,8 +279,10 @@
       }
 
       function csvCell(value) {
-        const s = String(value == null ? '' : value);
-        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        let s = String(value == null ? '' : value);
+        // A leading = + - or @ would run as a formula when the file is opened in Excel, so text like that is forced to plain text.
+        if (typeof value !== 'number' && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
+        return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
       }
       function downloadCsv(filename, csvText) {
         const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
@@ -300,7 +302,7 @@
           rows.push([
             inv.patientName,
             inv.patientPhone || '',
-            inv.patientAge || '',
+            inv.patientAge ?? '',
             inv.patientAddress || '',
             Qlinic.doctorLabel(doctor),
             FEE_TYPE_LABELS[inv.feeType] || inv.feeType,
@@ -775,7 +777,7 @@
             ${pageItems.map((inv) => {
               const balance = inv.amount - inv.amountReceived;
               const doctor = doctorById[inv.doctorId];
-              const subInfo = [inv.patientAge ? `${inv.patientAge} yrs` : '', inv.patientAddress ? Qlinic.escapeHtml(inv.patientAddress) : ''].filter(Boolean).join(' · ');
+              const subInfo = [inv.patientAge != null && inv.patientAge !== '' ? `${inv.patientAge} yrs` : '', inv.patientAddress ? Qlinic.escapeHtml(inv.patientAddress) : ''].filter(Boolean).join(' · ');
               return `
               <div class="dd-row dd-body rv-cols" role="row">
                 <div role="cell">
@@ -829,7 +831,7 @@
       function exportRows() {
         return filteredInvoices().map((inv) => {
           const doctor = doctorById[inv.doctorId];
-          return [inv.patientName, inv.patientPhone || '', inv.patientAge || '', inv.patientAddress || '', Qlinic.doctorLabel(doctor), FEE_TYPE_LABELS[inv.feeType] || inv.feeType, PAYMENT_MODE_LABELS[inv.paymentMode] || inv.paymentMode, inv.amount, inv.amountReceived, inv.amount - inv.amountReceived];
+          return [inv.patientName, inv.patientPhone || '', inv.patientAge ?? '', inv.patientAddress || '', Qlinic.doctorLabel(doctor), FEE_TYPE_LABELS[inv.feeType] || inv.feeType, PAYMENT_MODE_LABELS[inv.paymentMode] || inv.paymentMode, inv.amount, inv.amountReceived, inv.amount - inv.amountReceived];
         });
       }
       const EXPORT_HEAD = ['Patient', 'Phone', 'Age', 'Address', 'Doctor', 'Type', 'Payment mode', 'Amount billed', 'Amount received', 'Balance'];
@@ -914,13 +916,17 @@
         return rangePreset === 'custom' ? customRange : rangeForPreset(rangePreset);
       }
 
-      async function loadInvoices() {
-        renderRevenueChip();
+      let loadSeq = 0;
+      async function loadInvoices(keepPage) {
+        renderRevenueChip().catch(() => { });
+        const mySeq = ++loadSeq;
         const range = currentRange();
-        allInvoices = viewMode === 'range'
+        const rows = viewMode === 'range'
           ? (range ? await Qlinic.getInvoicesForDateRange(range.start, range.end) : [])
           : await Qlinic.getInvoicesForDate(document.getElementById('dateFilter').value);
-        currentPage = 1;
+        if (mySeq !== loadSeq) return; // an older request finished after a newer one
+        allInvoices = rows;
+        if (keepPage !== true) currentPage = 1; // a live update keeps the page the admin is reading
         renderSummary();
         renderTable();
       }
@@ -988,7 +994,7 @@
 
       await loadDoctorFilterOptions();
       await loadInvoices();
-      Qlinic.onLiveChange(loadInvoices);
+      Qlinic.onLiveChange(() => loadInvoices(true));
     })();
   </script>
 

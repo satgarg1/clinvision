@@ -65,7 +65,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=137"></script>
+  <script src="clinic-data.js?v=138"></script>
   <script src="app-topbar.js?v=5"></script>
   <script>
     (async function () {
@@ -98,7 +98,11 @@
       const REOPEN_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
 
       async function renderEndOfDay() {
-        const [clinic, counts] = await Promise.all([Qlinic.getClinic(), Qlinic.getTodayCloseoutCounts()]);
+        // Re-read the clinic row each time: another desk may have closed the day, and a failed count must not blank the page.
+        const [clinic, counts] = await Promise.all([
+          Qlinic.getClinic(true),
+          Qlinic.getTodayCloseoutCounts().catch(() => ({ stillBooked: 0, noShows: 0 })),
+        ]);
         const closedToday = clinic && clinic.last_closed_date === Qlinic.getTodayDate();
         const panel = document.getElementById('endOfDayPanel');
         if (closedToday) {
@@ -115,8 +119,8 @@
                 <div class="eod-tile-icon">${USERS_SVG}</div>
                 <div>
                   <div class="eod-count">${counts.noShows}</div>
-                  <div class="eod-tile-label">Patients finalized as no-shows</div>
-                  <div class="eod-tile-sub">closed out today</div>
+                  <div class="eod-tile-label">Patients marked as no-shows today</div>
+                  <div class="eod-tile-sub">including any marked by hand</div>
                 </div>
               </div>
               <div class="eod-tile green">

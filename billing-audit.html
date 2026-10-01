@@ -115,7 +115,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=137"></script>
+  <script src="clinic-data.js?v=138"></script>
   <script src="app-topbar.js?v=5"></script>
   <script>
     (async function () {
@@ -418,8 +418,10 @@
         return filteredRows().map((p) => [p.name, p.phone || '', doctorName(p.doctorId), p.tokenDate || '', STATUS_LABELS[p.status] || p.status]);
       }
       function csvCell(value) {
-        const s = String(value == null ? '' : value);
-        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        let s = String(value == null ? '' : value);
+        // A leading = + - or @ would run as a formula when the file is opened in Excel, so text like that is forced to plain text.
+        if (typeof value !== 'number' && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
+        return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
       }
       function downloadBlob(filename, blob) {
         const url = URL.createObjectURL(blob);

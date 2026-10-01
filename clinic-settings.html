@@ -544,7 +544,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=137"></script>
+  <script src="clinic-data.js?v=138"></script>
   <script src="app-topbar.js?v=5"></script>
   <script>
     (async function () {
@@ -777,8 +777,10 @@
         document.getElementById('hfrIdInput').value = clinic.hfr_id || '';
         document.getElementById('reviewLinkInput').value = clinic.review_link_url || '';
         renderClinicPreviews();
+        // keep a switch position the admin has staged but not saved when another card reloads the clinic
+        const waWasStaged = waDraft !== waSaved;
         waSaved = Qlinic.isWhatsAppConfirmEnabled(clinic);
-        waDraft = waSaved;
+        if (!waWasStaged) waDraft = waSaved;
         renderWhatsAppCard();
         graceWindowPicker.setValue(clinic.grace_window_mins);
         slotIntervalPicker.setValue(clinic.slot_interval_mins);

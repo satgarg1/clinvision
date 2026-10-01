@@ -89,7 +89,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=137"></script>
+  <script src="clinic-data.js?v=138"></script>
   <script src="app-topbar.js?v=5"></script>
   <script>
     (async function () {
@@ -123,7 +123,6 @@
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
-      const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const MONTH_ABBREV = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
       function pad2(n) { return String(n).padStart(2, '0'); }
@@ -217,24 +216,6 @@
         const entry = RANGE_PRESETS.find((p) => p.key === preset);
         return entry && entry.compute ? entry.compute() : null;
       }
-      function presetLabel() {
-        if (rangePreset !== 'custom') {
-          const entry = RANGE_PRESETS.find((p) => p.key === rangePreset);
-          return entry ? entry.label : '';
-        }
-        if (!customRange) return 'Custom';
-        const [sy, sm, sd] = customRange.start.split('-').map(Number);
-        const [ey, em, ed] = customRange.end.split('-').map(Number);
-        return `${sd} ${MONTH_ABBREV[sm - 1]} ${sy} - ${ed} ${MONTH_ABBREV[em - 1]} ${ey}`;
-      }
-
-      function bucketGranularity(startStr, endStr) {
-        const days = Math.round((new Date(endStr) - new Date(startStr)) / 86400000) + 1;
-        if (days <= 8) return 'day';
-        if (days <= 35) return 'week';
-        return 'month';
-      }
-
       function weekStartStr(d) {
         const day = d.getDay();
         const diffToMonday = day === 0 ? 6 : day - 1;
@@ -350,7 +331,9 @@
       function previousRange(range) {
         const len = daysBetween(range.start, range.end);
         const [y, m, d] = range.start.split('-').map(Number);
-        if (d === 1) {
+        const isWeek = rangePreset === 'currentweek' || rangePreset === 'lastweek';
+        if (isWeek && rangePreset === 'currentweek') return { start: addDays(range.start, -7), end: addDays(range.end, -7) };
+        if (d === 1 && !isWeek && range.start.slice(0, 7) === range.end.slice(0, 7)) {
           const ps = new Date(y, m - 2, 1);
           const pe = new Date(y, m - 1, 0);
           const span = addDays(toDateStr(ps), len - 1);
@@ -796,8 +779,9 @@
       const rolling = (arr, gran) => { const n = AVG_WINDOW[gran] || 7; return arr.map((_, i) => { const s = arr.slice(Math.max(0, i - n + 1), i + 1); return +(s.reduce((a, b) => a + b, 0) / s.length).toFixed(1); }); };
       const patFmt = (v) => `${+v.toFixed(1)} ${v === 1 ? 'patient' : 'patients'}`;
 
+      let loadSeq = 0, chipAt = 0, extraCache = null;
       async function loadAndRender() {
-        renderAnomalyChip();
+        const mySeq = ++loadSeq;
         const range = currentRange();
         if (!range) return;
         if (amDoctor && !myDoctorId) {
@@ -806,11 +790,14 @@
           document.getElementById('insBody').innerHTML = '';
           return;
         }
+        // The chip does not depend on the chosen period, so it refreshes at most once a minute.
+        if (Date.now() - chipAt > 60000) { chipAt = Date.now(); renderAnomalyChip(); }
         document.getElementById('unlinkedDoctorPanel').style.display = 'none';
         document.getElementById('insTabs').style.display = '';
         document.getElementById('insRangeLabel').innerHTML = `${esc(rangeText(range))} ${svgIcon(ICONS.cal, 17)}`;
         const prev = previousRange(range);
         let invoices, patients, prevInvoices, prevPatients, doctorsRaw, outstanding, audit, closures, holidays;
+        const needExtra = !amDoctor && (!extraCache || Date.now() - extraCache.at > 60000);
         try {
           [invoices, patients, prevInvoices, prevPatients, doctorsRaw, outstanding, audit, closures, holidays] = await Promise.all([
             amDoctor ? Promise.resolve([]) : Qlinic.getInvoicesForDateRange(range.start, range.end),
@@ -818,8 +805,8 @@
             amDoctor ? Promise.resolve([]) : Qlinic.getInvoicesForDateRange(prev.start, prev.end),
             Qlinic.getPatientsInRange(prev.start, prev.end, myDoctorId || undefined),
             amDoctor ? Qlinic.getDoctor(myDoctorId) : Qlinic.getDoctors({ includeInactive: true }),
-            amDoctor ? Promise.resolve([]) : Qlinic.getOutstandingInvoices().catch(() => []),
-            amDoctor ? Promise.resolve(null) : Qlinic.getBillingAudit().catch(() => null),
+            needExtra ? Qlinic.getOutstandingInvoices().catch(() => null) : Promise.resolve(null),
+            needExtra ? Qlinic.getBillingAudit().catch(() => null) : Promise.resolve(null),
             Qlinic.getClinicClosures().catch(() => []),
             Qlinic.getDoctorHolidays(myDoctorId || undefined).catch(() => []),
           ]);
@@ -827,10 +814,13 @@
           showToast(err.message || 'Could not load Insights data, please try again.');
           return;
         }
+        if (mySeq !== loadSeq) return; // a newer request (period change or live update) replaced this one
+        const extra = amDoctor ? { outstanding: [], audit: null } : (needExtra ? { outstanding, audit } : extraCache);
+        if (needExtra && outstanding !== null) extraCache = { at: Date.now(), outstanding, audit };
         const doctors = amDoctor ? (doctorsRaw ? [doctorsRaw] : []) : doctorsRaw;
         const holidayMap = new Map();
         holidays.forEach((h) => { if (!holidayMap.has(h.doctorId)) holidayMap.set(h.doctorId, new Set()); holidayMap.get(h.doctorId).add(h.date); });
-        D = { range, prev, clinic, doctors, doctorById: Object.fromEntries(doctors.map((d) => [d.id, d])), outstanding, audit, invoicesRaw: invoices, closures: new Set(closures.map((c) => c.date)), holidays: holidayMap };
+        D = { range, prev, clinic, doctors, doctorById: Object.fromEntries(doctors.map((d) => [d.id, d])), outstanding: extra.outstanding || [], outstandingOk: amDoctor || extra.outstanding !== null, audit: extra.audit, invoicesRaw: invoices, closures: new Set(closures.map((c) => c.date)), holidays: holidayMap };
         D.cur = metricsFor(patients, invoices, range);
         D.old = metricsFor(prevPatients, prevInvoices, prev);
         renderBody();
@@ -876,7 +866,8 @@
         const pctOf = (a, b) => (b ? `${Math.round(100 * a / b)}%` : null);
         const step = (val, label, pct, cls) => `<div class="in-step ${cls}"><div class="in-step-v">${num(val)}</div><div class="in-step-l">${label}</div>${pct ? `<div class="in-step-p">${pct}</div>` : ''}</div>`;
         const arrow = '<svg class="in-step-arrow" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
-        const followBilled = D.invoicesRaw.filter((i) => i.feeType === 'waived' && cur.appts.some((p) => p.id === i.patientId)).length;
+        const apptIds = new Set(cur.appts.map((p) => p.id));
+        const followBilled = D.invoicesRaw.filter((i) => i.feeType === 'waived' && apptIds.has(i.patientId)).length;
         const steps = [step(booked, 'Booked', null, 'a'), arrow, step(arrivedA, 'Arrived', pctOf(arrivedA, booked), 'b'), arrow, step(seenA, 'Seen', pctOf(seenA, arrivedA), 'b')];
         if (!amDoctor) steps.push(arrow, step(billedA, 'Billed', pctOf(billedA, seenA), 'a'), arrow, step(followBilled, 'Follow up', pctOf(followBilled, billedA), 'b'));
         const journey = card('Patient journey', `<div class="in-journey">${steps.join('')}</div><p class="in-note">Appointments only. Each step shows the share of the step before it. Walk ins start at Arrived.</p>`, { sub: '(Conversion)' });
@@ -911,7 +902,7 @@
           kpi('green', 'rupee', money(cur.revenue), 'Total revenue', deltaHtml(cur.revenue, old.revenue)),
           kpi('purple', 'doc', num(cur.invoiceCount), 'Invoices issued', deltaHtml(cur.invoiceCount, old.invoiceCount)),
           kpi('blue', 'users', cur.uniqueBilled ? money(cur.revenue / cur.uniqueBilled) : '₹0', 'Avg revenue per patient', deltaHtml(cur.uniqueBilled ? cur.revenue / cur.uniqueBilled : null, old.uniqueBilled ? old.revenue / old.uniqueBilled : null)),
-          kpi('red', 'warn', money(outTotal), 'Outstanding', sub(`Across ${D.outstanding.length} invoice${D.outstanding.length === 1 ? '' : 's'}`)),
+          kpi('red', 'warn', D.outstandingOk ? money(outTotal) : 'Not available', 'Outstanding', sub(D.outstandingOk ? `Across ${D.outstanding.length} invoice${D.outstanding.length === 1 ? '' : 's'}` : 'Could not be loaded')),
         ], 4);
         const gran = ui.revGran || granularityFor(D.range);
         const ser = bucketSeries(D.range, [], D.invoicesRaw, gran);
@@ -930,7 +921,7 @@
         const noFee = D.doctors.filter((d) => d.isActive !== false && !(d.feeNormal > 0)).length;
         const att = (tone, ic, big, label, s2, cls) => `<div class="in-att"><div class="in-att-ic in-tone-${tone}">${svgIcon(ICONS[ic], 24)}</div><div><div class="in-att-v">${big}</div><div class="in-att-l">${label}</div><div class="in-att-s ${cls || ''}">${s2}</div></div></div>`;
         const link = D.audit ? '<a class="in-link" href="billing-audit.html">Review in Billing Audit <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>' : '';
-        const needs = card('Revenue needing attention', `<div class="in-att-row">${att('red', 'doc', money(outTotal), 'Outstanding amount', `${D.outstanding.length} invoice${D.outstanding.length === 1 ? '' : 's'}`, 'bad')}${att('orange', 'rupee', num(unbilled), 'Seen without an invoice', unbilled ? 'Needs review' : 'All billed', unbilled ? 'bad' : 'good')}${att('amber', 'tag', num(noFee), noFee === 1 ? 'Doctor with no fee set' : 'Doctors with no fee set', noFee ? 'Fee not configured' : 'All set', noFee ? 'warn' : 'good')}</div>`, { right: link });
+        const needs = card('Revenue needing attention', `<div class="in-att-row">${att('red', 'doc', D.outstandingOk ? money(outTotal) : 'Not available', 'Outstanding amount', D.outstandingOk ? `${D.outstanding.length} invoice${D.outstanding.length === 1 ? '' : 's'}` : 'Could not be loaded', D.outstandingOk ? 'bad' : 'warn')}${att('orange', 'rupee', D.audit ? num(unbilled) : 'Not available', 'Seen without an invoice', D.audit ? (unbilled ? 'Needs review' : 'All billed') : 'Billing Audit is not available', D.audit ? (unbilled ? 'bad' : 'good') : 'warn')}${att('amber', 'tag', num(noFee), noFee === 1 ? 'Doctor with no fee set' : 'Doctors with no fee set', noFee ? 'Fee not configured' : 'All set', noFee ? 'warn' : 'good')}</div>`, { right: link });
         return items + trend + `<div class="in-grid in-grid-a">${docCard}${payCard}</div>` + needs;
       }
 
@@ -969,10 +960,15 @@
         const { rows, cols } = weekdayHourGrid();
         const arrivedList = cur.patients.filter(isArrived);
         const outsideN = outsideCount(arrivedList, 'arrivedAt');
-        const waitGrid = rows.map((r) => cols.map((h) => {
-          const ws = arrivedList.filter((p) => waitMin(p) != null && dowMon0(p.tokenDate) === r.dow && hourOf(p.arrivedAt) === h).map(waitMin);
-          return { value: ws.length ? Math.max(mean(ws), 0.01) : 0, label: ws.length ? `${Math.round(mean(ws))} min average wait` : 'no data' };
-        }));
+        const rowIdx = new Map(rows.map((r, i) => [r.dow, i])), colIdx = new Map(cols.map((h, i) => [h, i]));
+        const waitBins = rows.map(() => cols.map(() => []));
+        arrivedList.forEach((p) => {
+          const w = waitMin(p);
+          if (w == null) return;
+          const ri = rowIdx.get(dowMon0(p.tokenDate)), ci = colIdx.get(hourOf(p.arrivedAt));
+          if (ri != null && ci != null) waitBins[ri][ci].push(w);
+        });
+        const waitGrid = waitBins.map((row) => row.map((ws) => ({ value: ws.length ? Math.max(mean(ws), 0.01) : 0, label: ws.length ? `${Math.round(mean(ws))} min average wait` : 'no data' })));
         const waitPal = ['var(--in-h0)', 'var(--in-h1)', 'var(--in-h2)', 'var(--in-h3)', 'var(--in-h4)', 'var(--in-h5)'];
         const waitLeg = [['No data', waitPal[0]], ['Under 5 min', waitPal[1]], ['5 to 10 min', waitPal[2]], ['10 to 20 min', waitPal[3]], ['20 to 30 min', waitPal[4]], ['30 plus min', waitPal[5]]];
         const waitCol = (v) => (v <= 0 ? 0 : v < 5 ? 1 : v < 10 ? 2 : v < 20 ? 3 : v < 30 ? 4 : 5);
@@ -1039,7 +1035,9 @@
         const peaks = hEntries.slice(0, 5).map(([h, c], i) => `<div class="in-peak"><span class="in-peak-n">${i + 1}.</span><span class="in-peak-l">${formatHourLabel(h)} to ${formatHourLabel((h + 1) % 24)}</span><b>${num(c)}</b></div>`).join('');
         const pk = card('Peak hours', peaks || empty('No arrivals during clinic hours in this period.'), { sub: '(Arrivals in the period)' });
         const { rows, cols } = weekdayHourGrid();
-        const counts = rows.map((r) => cols.map((h) => opArrived.filter((p) => dowMon0(p.tokenDate) === r.dow && hourOf(p.arrivedAt) === h).length));
+        const rIdx = new Map(rows.map((r, i) => [r.dow, i])), cIdx = new Map(cols.map((h, i) => [h, i]));
+        const counts = rows.map(() => cols.map(() => 0));
+        opArrived.forEach((p) => { const ri = rIdx.get(dowMon0(p.tokenDate)), ci = cIdx.get(hourOf(p.arrivedAt)); if (ri != null && ci != null) counts[ri][ci] += 1; });
         const mx = Math.max(1, ...counts.flat());
         const th = [Math.max(1, Math.round(mx * 0.2)), Math.max(2, Math.round(mx * 0.4)), Math.max(3, Math.round(mx * 0.7))];
         const pal = ['var(--in-h0)', 'var(--in-h1)', 'var(--in-h2)', 'var(--in-h3)', 'var(--in-h4)'];
@@ -1113,7 +1111,8 @@
       const histKey = (r) => `${r.start}_${r.end}`;
       function ensureHistory() {
         const key = histKey(D.range);
-        if ((historyCache && historyCache.key === key) || historyLoadingKey === key) return;
+        if (historyLoadingKey === key) return;
+        if (historyCache && historyCache.key === key && (historyCache.ok || Date.now() - historyCache.at < 30000)) return;
         loadHistory(D.range);
       }
       // Everything the Patients charts need beyond the period itself: visits just before and after it
@@ -1136,7 +1135,7 @@
         ]);
         if (historyLoadingKey !== key) return; // a newer period replaced this request
         historyLoadingKey = null;
-        historyCache = { key, before, after, directory, rxs };
+        historyCache = { key, before, after, directory, rxs, at: Date.now(), ok: !!(before && after && rxs) };
         if (ui.tab === 'patients' && D && histKey(D.range) === key) renderBody();
       }
       function renderPatients() {
@@ -1508,7 +1507,7 @@
       renderTabs();
       document.getElementById('insSubtitle').textContent = TABS[0].sub;
       await loadAndRender();
-      Qlinic.onLiveChange(loadAndRender);
+      Qlinic.onLiveChange(() => { const r = currentRange(); if (r && r.end < todayStr()) return; loadAndRender(); });
     })();
   </script>
 

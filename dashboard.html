@@ -116,7 +116,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=137"></script>
+  <script src="clinic-data.js?v=138"></script>
   <script src="app-topbar.js?v=5"></script>
   <script>
     (async function () {
@@ -222,10 +222,10 @@
       // (eye, ent). Anything unmatched falls back to a stethoscope, since a
       // clinic can type any specialty name.
       const SPECIALTY_EMOJI_RULES = [
-        [/dent|tooth|teeth|orthodont/i, '\u{1F9B7}'],
+        [/\bdent|tooth|teeth|orthodont/i, '\u{1F9B7}'],
         [/lasik|ophthal|eye|optom|retina/i, '\u{1F441}️'],
         [/neuro|brain/i, '\u{1F9E0}'],
-        [/psych|mental|counsel/i, '\u{1F4AD}'],
+        [/psych|\bmental\b|counsel/i, '\u{1F4AD}'],
         [/cardio|heart/i, '❤️'],
         [/pulmo|chest|lung|respir/i, '\u{1FAC1}'],
         [/gastro|stomach|digest|liver|hepat/i, '\u{1F37D}️'],
@@ -241,7 +241,7 @@
         [/surg/i, '\u{1F97C}'],
         [/onco|cancer/i, '\u{1F397}️'],
         [/anesth|anaesth/i, '\u{1F634}'],
-        [/patholog|lab/i, '\u{1F52C}'],
+        [/patholog|\blab\b|laborator/i, '\u{1F52C}'],
         [/diet|nutrition/i, '\u{1F957}'],
         [/ayurved|homeo|homoeo|naturo|unani/i, '\u{1F33F}'],
       ];

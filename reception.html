@@ -191,7 +191,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=137"></script>
+  <script src="clinic-data.js?v=138"></script>
   <script src="app-topbar.js?v=5"></script>
   <script>
     (async function () {
@@ -1728,6 +1728,7 @@
       // the queue view date and the booking date are set once at load. When
       // the day changes, move whatever was on "today" forward to the new one.
       let knownToday = Qlinic.getTodayDate();
+      let waClinicTick = 0;
       setInterval(() => {
         const today = Qlinic.getTodayDate();
         if (today !== knownToday) {
@@ -1741,8 +1742,8 @@
         document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
         renderClosedDayBanner();
         updateDoctorClosedHint();
-        // Picks up the Patient messages switch being changed from Clinic Settings.
-        Qlinic.getClinic(true).then((c) => { waClinic = c; }).catch(() => { });
+        // Picks up the Patient messages switch being changed from Clinic Settings (once a minute is plenty).
+        if (++waClinicTick % 4 === 0) Qlinic.getClinic(true).then((c) => { waClinic = c; }).catch(() => { });
         renderQueues();
       }, 15000);
       document.getElementById('pDate').min = Qlinic.getTodayDate();
