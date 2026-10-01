@@ -8511,3 +8511,15 @@ button.rv-kpi:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1); }
   .queue-page #doneState .queue-feedback-star { width: 44px; height: 44px; }
 }
 .queue-page #doneState .queue-done-expired:empty + .queue-done-token { margin: 0 auto; }
+
+/* Top of every sidebar page: the profile pill no longer owns a 54px strip of its own.
+   It hangs from the top edge beside the page title, so the title row starts at the top of the page.
+   The first row leaves room for the pill (app-topbar.js sets --tb-reserve to its width). Desktop only. */
+@media (min-width: 721px) {
+  .app-shell { --main-pad-top: 12px; }
+  .global-topbar { height: 0; align-items: flex-start; }
+  .global-topbar:has(+ .closed-day-banner:not([style*="none"])) { height: 54px; align-items: center; }
+  .global-topbar + .app-topbar, .global-topbar + .closed-day-banner + .app-topbar, #listView > .app-topbar:first-child,
+  .global-topbar + .rv-head, .in-page > .in-head, .global-topbar + .dash-header .dash-header-row,
+  .global-topbar + .page > .app-topbar:first-child { padding-right: var(--tb-reserve, 0px); box-sizing: border-box; }
+}
