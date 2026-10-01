@@ -8,7 +8,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=442" />
+<link rel="preload" as="image" href="doc-man.webp" type="image/webp" />
+<link rel="preload" as="image" href="doc-woman.webp" type="image/webp" />
+<link rel="stylesheet" href="styles.css?v=443" />
 </head>
 <body class="queue-page">
   <div class="login-wrap">
@@ -456,6 +458,13 @@
       function localizeSpecialty(text) {
         return text;
       }
+      // The doctor illustration follows the first name. Doctors have no gender on file,
+      // so this is a best guess from common Indian names; anything unsure shows the man.
+      const FEMALE_NAMES = /^(priya|neha|pooja|anita|sunita|kavita|savita|rekha|meena|seema|geeta|gita|sita|radha|lata|usha|asha|nisha|isha|ritu|shweta|swati|sneha|divya|anjali|deepa|deepika|shilpa|shalini|sushma|suman|renu|poonam|madhu|manju|mamta|kiran|jyoti|nidhi|nikita|pallavi|payal|preeti|prerna|ruchi|sakshi|sarita|shruti|tanvi|vandana|varsha|vidya|yamini|aarti|archana|bhavna|chhaya|garima|harsha|indu|juhi|kajal|komal|kriti|lakshmi|laxmi|mansi|megha|mona|namrata|neelam|nilam|parul|rashmi|reena|richa|roshni|sangeeta|sapna|shobha|simran|sonal|sonia|sudha|sunaina|tripti|urmila|vaishali|vineeta|zoya|fatima|ayesha|saira|shabana|farah|nazia|rubina|harpreet|gurpreet|manpreet|jasleen|simarjeet)$/i;
+      function doctorIsWoman(name) {
+        const first = String(name || '').replace(/^dr\.?\s+/i, '').trim().split(/\s+/)[0] || '';
+        return FEMALE_NAMES.test(first);
+      }
       function localizeDateLabel(label) {
         if (T !== STRINGS.hi) return label;
         if (label === 'Today') return 'आज';
@@ -669,6 +678,7 @@
         const nowServingBlock = document.getElementById('nowServingBlock');
         if (data.nowServingToken != null) {
           nowServingBlock.style.display = 'block';
+          nowServingBlock.classList.toggle('is-woman', doctorIsWoman(data.doctorName));
           document.getElementById('nowServingNum').textContent = data.nowServingToken;
           document.getElementById('nowServingMeta').textContent = data.nowServingCalledAt
             ? T.calledAt(Qlinic.formatTimestamp(data.nowServingCalledAt))
