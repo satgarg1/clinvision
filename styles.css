@@ -8342,7 +8342,7 @@ button.rv-kpi:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1); }
 .as-sum-text { margin: 6px 0 0; font-size: 14px; color: var(--pm-sub); max-width: 360px; }
 .as-sum-item { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 4px 18px; border-left: 1px solid var(--pm-soft-line); min-width: 0; }
 .as-sum-ic { width: 38px; height: 38px; border-radius: 50%; background: rgba(59, 130, 246, 0.12); color: #2563eb; display: flex; align-items: center; justify-content: center; }
-.as-sum-l { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 14px; font-weight: 600; color: var(--pm-text); }
+.as-sum-l { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 6px; min-height: 52px; font-size: 14px; font-weight: 600; color: var(--pm-text); }
 .as-sum-v { font-size: 13px; color: var(--pm-sub); overflow-wrap: break-word; }
 .as-pill { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; background: rgba(100, 116, 139, 0.14); color: var(--pm-sub); font-size: 12px; font-weight: 600; white-space: nowrap; }
 .as-pill.good { background: rgba(16, 185, 129, 0.16); color: #047857; }
