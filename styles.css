@@ -8335,10 +8335,10 @@ button.rv-kpi:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1); }
 .as-lede { margin: 6px 0 0; font-size: 15px; color: var(--grey-500); }
 .as-page { display: flex; flex-direction: column; gap: 24px; }
 .as-gone { display: none; }
-.as-summary { display: grid; grid-template-columns: minmax(0, 1.7fr) repeat(4, minmax(0, 1fr)); align-items: center; gap: 0; padding: 26px 8px 26px 28px; background: linear-gradient(100deg, var(--pm-white) 0%, var(--pm-white) 55%, rgba(59, 130, 246, 0.08) 100%); }
+.as-summary { display: grid; grid-template-columns: minmax(420px, 1.9fr) repeat(4, minmax(0, 1fr)); align-items: center; gap: 0; padding: 26px 8px 26px 28px; background: linear-gradient(100deg, var(--pm-white) 0%, rgba(16, 185, 129, 0.10) 55%, rgba(16, 185, 129, 0.24) 100%); }
 .as-sum-main { display: flex; align-items: center; gap: 18px; padding-right: 24px; min-width: 0; }
-.as-shield { width: 64px; height: 64px; flex: none; border-radius: 50%; background: rgba(59, 130, 246, 0.12); color: #2563eb; display: flex; align-items: center; justify-content: center; }
-.as-sum-title { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 18px; font-weight: 700; color: var(--pm-text); }
+.as-shield { width: 64px; height: 64px; flex: none; border-radius: 50%; background: rgba(16, 185, 129, 0.16); color: #059669; display: flex; align-items: center; justify-content: center; }
+.as-sum-title { white-space: nowrap; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 18px; font-weight: 700; color: var(--pm-text); }
 .as-sum-text { margin: 6px 0 0; font-size: 14px; color: var(--pm-sub); max-width: 360px; }
 .as-sum-item { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 4px 18px; border-left: 1px solid var(--pm-soft-line); min-width: 0; }
 .as-sum-ic { width: 38px; height: 38px; border-radius: 50%; background: rgba(59, 130, 246, 0.12); color: #2563eb; display: flex; align-items: center; justify-content: center; }
@@ -8357,7 +8357,7 @@ button.rv-kpi:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1); }
 .as-ic.violet { background: rgba(139, 92, 246, 0.14); color: #7c3aed; }
 .as-ic.green { background: rgba(16, 185, 129, 0.14); color: #059669; }
 .as-ic.amber { background: rgba(249, 115, 22, 0.14); color: #ea580c; }
-.as-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--pm-text); }
+.panel .as-title { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: normal; color: var(--pm-text); }
 .as-sub { margin: 3px 0 0; font-size: 14px; color: var(--pm-sub); }
 .as-current { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; margin-bottom: 18px; border-radius: 14px; background: rgba(100, 116, 139, 0.09); }
 .as-cur-l { font-size: 13px; color: var(--pm-sub); }
