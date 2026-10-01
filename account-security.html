@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=436" />
+<link rel="stylesheet" href="styles.css?v=437" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -44,100 +44,117 @@
         <div>
           <div class="breadcrumb"><a href="settings.html">Settings</a> <span>/</span> Account &amp; security</div>
           <h1>Account &amp; security</h1>
+          <p class="as-lede">Manage your account details and keep your ClinVision account secure.</p>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="account-section" id="emailPanel">
-          <div class="account-section-header">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-            <h2>Email</h2>
-            <span class="account-section-current"><span class="account-current-label">Current Email:</span> <span id="currentEmail">·</span></span>
-          </div>
-          <form id="emailForm" class="inline-form">
-            <div class="field">
-              <label>New email</label>
-              <input type="email" id="newEmailInput" required />
+      <div class="as-page">
+        <section class="panel pm-card qr-card as-summary" aria-label="Account overview">
+          <div class="as-sum-main">
+            <div class="as-shield"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="8.5 12 11 14.5 15.5 9.5"/></svg></div>
+            <div>
+              <div class="as-sum-title"><span id="asStatusTitle">Your account is secure</span> <span class="as-pill good" id="asStatusPill">Good</span></div>
+              <p class="as-sum-text" id="asStatusText">Keep your information up to date so you can always get back in.</p>
             </div>
-            <div class="field" style="flex:0;">
-              <label>&nbsp;</label>
-              <button type="submit" class="btn-sm primary">Change email</button>
-            </div>
-          </form>
-          <p class="panel-note" id="emailNote" style="display:none;"></p>
-        </div>
-
-        <div class="account-section-divider"></div>
-
-        <div class="account-section" id="loginPhonePanel">
-          <div class="account-section-header">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            <h2>Login phone</h2>
-            <span class="account-section-current"><span class="account-current-label">Current Phone:</span> <span id="currentLoginPhone">·</span></span>
           </div>
-          <p class="panel-note" style="margin:0 0 12px;">Lets you log in with your phone instead of typing your email every time.</p>
-          <form id="loginPhoneForm" class="inline-form">
-            <div class="field">
-              <label>New phone number</label>
-              <div style="display:flex;gap:8px;">
-                <input type="text" value="+91" disabled style="flex:0 0 60px;text-align:center;" />
-                <input type="tel" id="newLoginPhoneInput" inputmode="numeric" maxlength="10" placeholder="10-digit number" style="flex:1;min-width:0;" />
+          <div class="as-sum-item">
+            <span class="as-sum-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span>
+            <div class="as-sum-l">Email</div>
+            <div class="as-sum-v" id="sumEmail">·</div>
+          </div>
+          <div class="as-sum-item">
+            <span class="as-sum-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
+            <div class="as-sum-l">Login phone <span class="as-pill" id="sumLoginPill">Not added</span></div>
+            <div class="as-sum-v" id="sumLoginPhone">·</div>
+          </div>
+          <div class="as-sum-item" id="sumClinicItem">
+            <span class="as-sum-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 21v-4h6v4M8 7h.01M12 7h.01M16 7h.01M8 11h.01M12 11h.01M16 11h.01"/></svg></span>
+            <div class="as-sum-l">Clinic phone <span class="as-pill" id="sumClinicPill">Not added</span></div>
+            <div class="as-sum-v" id="sumClinicPhone">·</div>
+          </div>
+          <div class="as-sum-item">
+            <span class="as-sum-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <div class="as-sum-l">Password</div>
+            <div class="as-sum-v">Change it any time below</div>
+          </div>
+        </section>
+
+        <div class="as-grid">
+          <section class="panel pm-card qr-card as-card" id="emailPanel">
+            <div class="as-head">
+              <div class="as-ic blue"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div>
+              <div><h2 class="as-title">Email address</h2><p class="as-sub">Used for login and important account notifications.</p></div>
+            </div>
+            <div class="as-current"><div><div class="as-cur-l">Current email</div><div class="as-cur-v" id="currentEmail">·</div></div></div>
+            <form id="emailForm">
+              <label class="qr-label" for="newEmailInput">New email address</label>
+              <div class="as-row">
+                <input type="email" id="newEmailInput" class="dd-input" placeholder="Enter new email address" required />
+                <button type="submit" class="as-btn">Change email <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
               </div>
-            </div>
-            <div class="field" style="flex:0;">
-              <label>&nbsp;</label>
-              <button type="submit" class="btn-sm primary">Save phone</button>
-            </div>
-          </form>
-          <p class="panel-note" id="loginPhoneNote" style="display:none;"></p>
-        </div>
+            </form>
+            <p class="panel-note" id="emailNote" style="display:none;"></p>
+          </section>
 
-        <div class="account-section-divider" id="phoneDivider"></div>
-
-        <div class="account-section" id="phonePanel">
-          <div class="account-section-header">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            <h2>Clinic phone</h2>
-            <span class="account-section-current" id="currentPhone">·</span>
-          </div>
-          <form id="phoneForm" class="inline-form">
-            <div class="field">
-              <label>New phone number</label>
-              <div style="display:flex;gap:8px;">
-                <input type="text" value="+91" disabled style="flex:0 0 60px;text-align:center;" />
-                <input type="tel" id="newPhoneInput" inputmode="numeric" maxlength="10" placeholder="10-digit number" required style="flex:1;min-width:0;" />
+          <section class="panel pm-card qr-card as-card" id="loginPhonePanel">
+            <div class="as-head">
+              <div class="as-ic violet"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+              <div><h2 class="as-title">Login phone</h2><p class="as-sub">Lets you log in with your phone instead of typing your email every time.</p></div>
+            </div>
+            <div class="as-current"><div><div class="as-cur-l">Current phone</div><div class="as-cur-v" id="currentLoginPhone">·</div></div><span class="as-pill" id="loginPhoneBadge">Not added</span></div>
+            <form id="loginPhoneForm">
+              <label class="qr-label" for="newLoginPhoneInput">New phone number</label>
+              <div class="as-row">
+                <input type="text" value="+91" disabled class="dd-input tm-cc" aria-label="Country code" />
+                <input type="tel" id="newLoginPhoneInput" class="dd-input" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number" />
+                <button type="submit" class="as-btn">Save phone <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
               </div>
-            </div>
-            <div class="field" style="flex:0;">
-              <label>&nbsp;</label>
-              <button type="submit" class="btn-sm primary">Change phone</button>
-            </div>
-          </form>
-          <p class="panel-note" id="phoneNote" style="display:none;"></p>
-        </div>
+              <p class="as-hint">Leave it blank and save to turn phone login off.</p>
+            </form>
+            <p class="panel-note" id="loginPhoneNote" style="display:none;"></p>
+          </section>
 
-        <div class="account-section-divider"></div>
+          <div class="as-gone" id="phoneDivider" hidden></div>
+          <section class="panel pm-card qr-card as-card" id="phonePanel">
+            <div class="as-head">
+              <div class="as-ic green"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 21v-4h6v4M8 7h.01M12 7h.01M16 7h.01M8 11h.01M12 11h.01M16 11h.01"/></svg></div>
+              <div><h2 class="as-title">Clinic phone</h2><p class="as-sub">Your clinic's main contact number, so ClinVision can reach you.</p></div>
+            </div>
+            <div class="as-current"><div><div class="as-cur-l">Current clinic phone</div><div class="as-cur-v" id="currentPhone">·</div></div><span class="as-pill" id="clinicPhoneBadge">Not added</span></div>
+            <form id="phoneForm">
+              <label class="qr-label" for="newPhoneInput">New phone number</label>
+              <div class="as-row">
+                <input type="text" value="+91" disabled class="dd-input tm-cc" aria-label="Country code" />
+                <input type="tel" id="newPhoneInput" class="dd-input" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number" required />
+                <button type="submit" class="as-btn">Change phone <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+              </div>
+            </form>
+            <p class="panel-note" id="phoneNote" style="display:none;"></p>
+          </section>
 
-        <div class="account-section" id="passwordPanel">
-          <div class="account-section-header">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <h2>Password</h2>
-          </div>
-          <form id="passwordForm" class="inline-form">
-            <div class="field">
-              <label>New password</label>
-              <input type="password" id="newPasswordInput" minlength="8" required />
+          <section class="panel pm-card qr-card as-card" id="passwordPanel">
+            <div class="as-head">
+              <div class="as-ic amber"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+              <div><h2 class="as-title">Password</h2><p class="as-sub">Use a strong password to keep your account safe.</p></div>
             </div>
-            <div class="field">
-              <label>Confirm new password</label>
-              <input type="password" id="confirmPasswordInput" minlength="8" required />
-            </div>
-            <div class="field" style="flex:0;min-width:180px;">
-              <label>&nbsp;</label>
-              <button type="submit" class="btn-sm primary">Change password</button>
-            </div>
-          </form>
-          <p class="panel-note" id="passwordNote" style="display:none;"></p>
+            <form id="passwordForm">
+              <div class="as-pw">
+                <div>
+                  <label class="qr-label" for="newPasswordInput">New password</label>
+                  <input type="password" id="newPasswordInput" class="dd-input" placeholder="Enter new password" minlength="8" required />
+                </div>
+                <div>
+                  <label class="qr-label" for="confirmPasswordInput">Confirm new password</label>
+                  <input type="password" id="confirmPasswordInput" class="dd-input" placeholder="Confirm new password" minlength="8" required />
+                </div>
+              </div>
+              <div class="as-pw-foot">
+                <div class="as-tip"><b>Create a strong password</b><span>Use at least 8 characters with a mix of letters, numbers and symbols for better security.</span></div>
+                <button type="submit" class="as-btn">Change password <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+              </div>
+            </form>
+            <p class="panel-note" id="passwordNote" style="display:none;"></p>
+          </section>
         </div>
       </div>
     </main>
@@ -295,6 +312,31 @@
       document.getElementById('currentPhone').textContent = (clinic && clinic.phone) || '·';
       const myProfile = await Qlinic.getMyProfile();
       document.getElementById('currentLoginPhone').textContent = (myProfile && myProfile.phone) || '·';
+
+      // Summary band and badges follow the three "current" values (they are rewritten after each save).
+      function refreshSummary() {
+        const read = (id) => { const t = document.getElementById(id).textContent.trim(); return t === '·' || t === 'Not added yet' ? '' : t; };
+        const email = read('currentEmail'), login = read('currentLoginPhone'), clinicPhone = read('currentPhone');
+        [['currentEmail', email], ['currentLoginPhone', login], ['currentPhone', clinicPhone]].forEach(([id, v]) => {
+          const el = document.getElementById(id), want = v || 'Not added yet';
+          if (el.textContent !== want) el.textContent = want;
+        });
+        const pill = (id, on) => { const el = document.getElementById(id); el.textContent = on ? 'Added' : 'Not added'; el.className = 'as-pill' + (on ? ' good' : ''); };
+        pill('loginPhoneBadge', !!login); pill('clinicPhoneBadge', !!clinicPhone); pill('sumLoginPill', !!login); pill('sumClinicPill', !!clinicPhone);
+        document.getElementById('sumEmail').textContent = email || '·';
+        document.getElementById('sumLoginPhone').textContent = login ? '+91 ' + login.replace(/^\+91/, '') : '—';
+        document.getElementById('sumClinicPhone').textContent = clinicPhone ? clinicPhone.replace(/^\+91/, '+91 ') : '—';
+        const complete = !!login && (!admin || !!clinicPhone);
+        document.getElementById('asStatusTitle').textContent = complete ? 'Your account is secure' : 'Your account is almost set up';
+        const sp = document.getElementById('asStatusPill'); sp.textContent = complete ? 'Good' : 'Add details'; sp.className = 'as-pill ' + (complete ? 'good' : 'warn');
+        document.getElementById('asStatusText').textContent = complete
+          ? 'Keep your information up to date so you can always get back in.'
+          : 'Add the phone numbers below so you can always get back in.';
+      }
+      if (!admin) document.getElementById('sumClinicItem').style.display = 'none';
+      const summaryObserver = new MutationObserver(refreshSummary);
+      ['currentEmail', 'currentLoginPhone', 'currentPhone'].forEach((id) => summaryObserver.observe(document.getElementById(id), { childList: true, characterData: true, subtree: true }));
+      refreshSummary();
     })();
   </script>
 
