@@ -8,9 +8,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=440" />
+<link rel="stylesheet" href="styles.css?v=441" />
 </head>
-<body>
+<body class="queue-page">
   <div class="login-wrap">
     <div class="login-blob login-blob-teal"></div>
     <div class="login-blob login-blob-coral"></div>
@@ -109,13 +109,13 @@
         <div class="queue-appt-line" id="appointmentLine"></div>
         <div class="queue-status-msg" id="statusMsgText"></div>
 
-        <div style="text-align:center;margin-bottom:16px;">
-          <div style="font-size:13px;color:var(--grey-500);" id="tokenLabel">Your token number</div>
-          <div style="font-size:56px;font-weight:700;line-height:1.15;" id="tokenNumber">·</div>
+        <div class="queue-token">
+          <div class="queue-token-label" id="tokenLabel">Your token number</div>
+          <div class="queue-token-num" id="tokenNumber">·</div>
         </div>
 
-        <div id="positionBlock" style="display:none;text-align:center;margin-bottom:18px;">
-          <div style="font-size:16px;font-weight:600;" id="positionText"></div>
+        <div id="positionBlock" class="queue-position" style="display:none;">
+          <div class="queue-position-text" id="positionText"></div>
         </div>
 
         <div id="doctorStatusBlock" style="display:none;"></div>
@@ -286,8 +286,8 @@
           closedTitle: 'Doctor has closed for the day',
           closedBody: 'Please check back tomorrow, or contact the clinic directly.',
           clinicClosedTitle: "We're closed for the day",
-          clinicClosedBody: 'Thanks for your patience today — the clinic will reopen tomorrow.',
-          notYetNote: (dateLabel) => `This link isn't active yet — please come back and open it again on the morning of ${dateLabel} to see your live position in the queue.`,
+          clinicClosedBody: 'Thanks for your patience today. The clinic will reopen tomorrow.',
+          notYetNote: (dateLabel) => `This link isn't active yet. Please come back and open it again on the morning of ${dateLabel} to see your live position in the queue.`,
           apptLineWithTime: (doctorName, specialty, timeStr) =>
             `Your appointment is booked for <b>${doctorName}</b><span style="display:block;margin-top:2px;">${specialty} at ${timeStr}</span>`,
           apptLineFutureDate: (doctorName, specialty, dateLabel) =>
@@ -296,7 +296,7 @@
             `You're in the queue with <b>${doctorName}</b>${specialty}`,
           statusMessage: {
             booked: 'You have not checked in to the clinic yet',
-            waiting: 'You are currently waiting in clinic',
+            waiting: 'You are currently waiting in the clinic',
             in_consult: 'You are currently with the doctor',
           },
           tokenLabelNamed: (name) => `${name}, your token number is:`,
@@ -308,9 +308,9 @@
             emergency: 'Doctor is dealing with an emergency',
           },
           formatDuration(mins) {
-            if (mins < 60) return `${mins}min`;
+            if (mins < 60) return `${mins} min`;
             const h = Math.floor(mins / 60), m = mins % 60;
-            return m === 0 ? `${h}hr` : `${h}hr ${m}min`;
+            return m === 0 ? `${h} hr` : `${h} hr ${m} min`;
           },
           forDuration: (d) => `for ${d}`,
           since: (t) => `since ${t}`,
@@ -318,10 +318,10 @@
           calledAt: (t) => `Called at ${t}`,
           viewQueueDetails: 'View queue details',
           nextUpPatients: 'Next Up Patients',
-          orderedBySchedule: 'Patients are ordered by their scheduled appointment time and not token number',
-          live: 'Live — updates automatically',
-          advisory: 'Please check this live queue regularly for queue updates.',
-          footerNote: 'This is your own private link and it refreshes automatically.',
+          orderedBySchedule: 'Patients are ordered by their scheduled appointment time, not by token number.',
+          live: 'Live, updates automatically',
+          advisory: 'Please check this live queue regularly for updates.',
+          footerNote: 'This is your own private link, and it refreshes automatically.',
           noShowHeadline: 'This appointment was marked as a no-show',
           noShowSub: (clinicName) => `If this was a mistake, please contact ${clinicName} directly.`,
           visitCompleteHeadline: 'Your visit is complete',
@@ -338,22 +338,22 @@
           googleBtn: 'Share on Google',
           googleBtnSent: 'Opened, thank you!',
           detailsTitle: 'Queue details',
-          detailsInConsult: (nowStr) => `You're currently with the doctor — here's how the rest of today's queue looks right now (${nowStr}).`,
-          detailsWaiting: (nowStr) => `You've checked in and are waiting — here's how today's queue looks right now (${nowStr}).`,
-          detailsPassedNotCalled: (apptStr, nowStr) => `Your appointment time (${apptStr}) has passed and you haven't checked in yet — here's where things stand right now (${nowStr}).`,
+          detailsInConsult: (nowStr) => `You're currently with the doctor. Here's how the rest of today's queue looks right now (${nowStr}).`,
+          detailsWaiting: (nowStr) => `You've checked in and you're waiting. Here's how today's queue looks right now (${nowStr}).`,
+          detailsPassedNotCalled: (apptStr, nowStr) => `Your appointment time (${apptStr}) has passed and you haven't checked in yet. Here's where things stand right now (${nowStr}).`,
           detailsFromNowThrough: (nowStr, apptStr) => `Showing details from now (${nowStr}) through your appointment at ${apptStr}.`,
           detailsFallback: 'Showing details from now through your position in the queue.',
-          detailsAdvisoryEarly: (apptStr) => `<b>It's a bit early</b> to show queue details for your ${apptStr} appointment — check back within 2 hours of your slot to see exactly how things stand.`,
+          detailsAdvisoryEarly: (apptStr) => `<b>It's a bit early</b> to show queue details for your ${apptStr} appointment. Check back within 2 hours of your slot to see exactly how things stand.`,
           windowBookedUpToSlot: 'Booked up to your slot',
           windowBookedBySlot: (apptStr) => `Booked by ${apptStr}`,
-          arrivedWaiting: 'Arrived & waiting',
+          arrivedWaiting: 'Arrived and waiting',
           windowArrivedByThen: 'Arrived by then',
           windowNotCheckedIn: "Haven't checked in yet",
           windowIncludingYou: '(including you)',
-          windowFriendlyNote: "Most people arrive a little later than their slot — this isn't unusual.",
+          windowFriendlyNote: "Most people arrive a little later than their slot. This isn't unusual.",
           summaryDoctorOnTime: 'Doctor is on time today.',
           summaryStartedSeeing: (t) => `Started seeing patients at ${t}.`,
-          summaryBreaksToday: (n, d) => (n === 1 ? `1 break/emergency today, ${d} total.` : `${n} breaks/emergencies today, ${d} total.`),
+          summaryBreaksToday: (n, d) => (n === 1 ? `1 break or emergency today, ${d} in total` : `${n} breaks or emergencies today, ${d} in total`),
           summaryOngoingSuffix: ' (still ongoing)',
           close: 'Close',
         },
@@ -442,21 +442,19 @@
         if (localStorage.getItem('qlinic_queue_lang') === 'hi') T = STRINGS.hi;
       } catch (e) { }
 
+      // Names are always shown in English: a machine made Hindi spelling of a person's name is often wrong.
       function localizeName(text) {
-        if (!text) return text;
-        return T === STRINGS.hi ? toDevanagari(text) : text;
+        return text;
       }
       // Doctors are saved without a title, so every line that names one adds it:
       // "Dr. Satyam Garg" / "डॉ. सत्यम गर्ग". A title typed into the name is not doubled.
       function doctorDisplay(name) {
         if (!name) return '';
         const plain = String(name).replace(/^dr\.?\s+/i, '').trim();
-        return (T === STRINGS.hi ? 'डॉ. ' : 'Dr. ') + localizeName(plain);
+        return 'Dr. ' + plain;
       }
       function localizeSpecialty(text) {
-        if (!text) return text;
-        if (T !== STRINGS.hi) return text;
-        return SPECIALTY_HI[text] || toDevanagari(text);
+        return text;
       }
       function localizeDateLabel(label) {
         if (T !== STRINGS.hi) return label;
@@ -755,7 +753,7 @@
         if (data.breaksTodayCount) {
           const durationStr = T.formatDuration(Math.round((data.awaySecondsToday || 0) / 60));
           const ongoing = (data.doctorStatus === 'on_break' || data.doctorStatus === 'emergency') ? T.summaryOngoingSuffix : '';
-          lines.push(`${T.summaryBreaksToday(data.breaksTodayCount, durationStr)}${ongoing}`);
+          lines.push(`${T.summaryBreaksToday(data.breaksTodayCount, durationStr)}${ongoing}${T === STRINGS.en ? "." : ""}`);
         }
 
         return lines.map((l) => `<p>${l}</p>`).join('');
