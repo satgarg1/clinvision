@@ -3398,7 +3398,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .dash-header-illustration-clip { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
 .dash-header-illustration { position: absolute; top: -10px; right: 10px; opacity: 0.4; }
 .dash-header-row { position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.dash-eyebrow { font-size: 13px; color: var(--grey-500); font-weight: 600; margin-bottom: 6px; }
+.dash-eyebrow { font-size: var(--text-2xl); font-weight: 700; letter-spacing: -0.02em; color: var(--black); margin-bottom: 6px; }
 .dash-greeting-row { display: flex; align-items: center; gap: 10px; }
 .dash-greeting { font-size: 24px; font-weight: 700; color: var(--black); }
 .dash-subtitle { font-size: 14px; color: var(--grey-500); margin-top: 4px; margin-left: 38px; }
