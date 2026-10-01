@@ -63,7 +63,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=138"></script>
+  <script src="clinic-data.js?v=139"></script>
   <script src="app-topbar.js?v=7"></script>
   <script>
     (async function () {
@@ -209,12 +209,12 @@
       document.getElementById('breadcrumbMetric').textContent = config.title;
       document.getElementById('pageTitle').textContent = `${config.title} — ${Qlinic.formatDateLabel(dateStr)}`;
 
-      const [doctors, patients] = await Promise.all([
+      let [doctors, patients] = await Promise.all([
         Qlinic.getDoctors({ includeInactive: true }),
         Qlinic.getPatientsInRange(dateStr, dateStr, fetchDoctorId || undefined),
       ]);
-      const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
-      const nowMs = Date.now();
+      let doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
+      let nowMs = Date.now();
 
       function waitMinsFor(p) {
         const start = Qlinic.effectiveMoment(p, doctorById[p.doctorId]).getTime();
@@ -413,6 +413,28 @@
 
       render();
 
+      // The list follows the clinic live: a patient arriving, being called or finishing
+      // updates it without a reload. Wait times also keep counting up every minute.
+      let breakdownSeq = 0;
+      async function refreshBreakdown() {
+        const seq = ++breakdownSeq;
+        try {
+          const [freshDoctors, freshPatients] = await Promise.all([
+            Qlinic.getDoctors({ includeInactive: true }),
+            Qlinic.getPatientsInRange(dateStr, dateStr, fetchDoctorId || undefined),
+          ]);
+          if (seq !== breakdownSeq) return;
+          doctors = freshDoctors;
+          patients = freshPatients;
+          doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
+          nowMs = Date.now();
+          render();
+        } catch (err) { }
+      }
+      Qlinic.onLiveChange(refreshBreakdown);
+      if (config.needsWait) {
+        setInterval(() => { if (document.visibilityState === 'visible') refreshBreakdown(); }, 60000);
+      }
     })();
   </script>
 

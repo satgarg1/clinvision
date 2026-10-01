@@ -3208,11 +3208,56 @@
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => cb(payload), 300);
     }
-    sb.channel('clinic-' + clinicId)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'patients', filter: `clinic_id=eq.${clinicId}` }, debouncedCb)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'doctors', filter: `clinic_id=eq.${clinicId}` }, debouncedCb)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'doctor_holidays', filter: `clinic_id=eq.${clinicId}` }, debouncedCb)
-      .subscribe();
+    // One channel per table: if a table is missing from the realtime publication only that
+    // channel fails, the others keep working. Money (invoices) is watched too, so Revenue,
+    // Insights and the Dashboard follow a bill the moment it is created or adjusted.
+    const watched = [
+      { table: 'patients', filter: `clinic_id=eq.${clinicId}` },
+      { table: 'doctors', filter: `clinic_id=eq.${clinicId}` },
+      { table: 'doctor_holidays', filter: `clinic_id=eq.${clinicId}` },
+      { table: 'staff_holidays', filter: `clinic_id=eq.${clinicId}` },
+      { table: 'clinic_closures', filter: `clinic_id=eq.${clinicId}` },
+      { table: 'invoices', filter: `clinic_id=eq.${clinicId}` },
+      { table: 'visit_feedback', filter: `clinic_id=eq.${clinicId}` },
+      { table: 'clinics', filter: `id=eq.${clinicId}` },
+    ];
+    const subscribed = {};
+    let lastRefresh = Date.now();
+    function refresh(payload) {
+      lastRefresh = Date.now();
+      debouncedCb(payload);
+    }
+    watched.forEach((w) => {
+      let wasSubscribed = false;
+      sb.channel('clinic-' + clinicId + '-' + w.table)
+        .on('postgres_changes', { event: '*', schema: 'public', table: w.table, filter: w.filter }, refresh)
+        .subscribe((status) => {
+          subscribed[w.table] = status === 'SUBSCRIBED';
+          // Back after a dropped connection: whatever happened in between was missed.
+          if (status === 'SUBSCRIBED' && wasSubscribed) refresh();
+          if (status === 'SUBSCRIBED') wasSubscribed = true;
+        });
+    });
+    // Safety nets so a page never sits on old numbers:
+    // - coming back to the tab or the network after a while refreshes it;
+    // - if the patients or doctors channel is not connected, refresh every 30 seconds instead;
+    // - the day changing at midnight refreshes it.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastRefresh > 30000) refresh();
+    });
+    window.addEventListener('online', () => refresh());
+    let knownDay = todayDateStr();
+    setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      const day = todayDateStr();
+      // Only the core tables decide this: a role that may not read a table (a doctor and
+      // invoices, say) gets no events from it and must not put the page on permanent polling.
+      const allLive = subscribed.patients && subscribed.doctors;
+      if (day !== knownDay || (!allLive && Date.now() - lastRefresh > 30000)) {
+        knownDay = day;
+        refresh();
+      }
+    }, 15000);
   }
 
   function normalizeMedicine(row) {

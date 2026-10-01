@@ -160,7 +160,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=138"></script>
+  <script src="clinic-data.js?v=139"></script>
   <script src="app-topbar.js?v=7"></script>
   <script>
     (async function () {
@@ -640,6 +640,19 @@
       }
       renderSummary();
       renderTable();
+
+      // A new rating from a patient's phone appears here without a reload.
+      let feedbackLoadSeq = 0;
+      Qlinic.onLiveChange(async () => {
+        const seq = ++feedbackLoadSeq;
+        try {
+          const fresh = await Qlinic.getClinicFeedback();
+          if (seq !== feedbackLoadSeq) return;
+          allEntries = fresh;
+          renderSummary();
+          renderTable();
+        } catch (err) { }
+      });
     })();
   </script>
 

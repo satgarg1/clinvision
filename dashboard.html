@@ -116,7 +116,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=138"></script>
+  <script src="clinic-data.js?v=139"></script>
   <script src="app-topbar.js?v=7"></script>
   <script>
     (async function () {
@@ -451,7 +451,10 @@
         }
 
         const yesterdayFootfallAtCutoff = yesterdayPatients.filter((p) =>
-          ['waiting', 'in_consult', 'done'].includes(p.status) && p.arrivedAt && new Date(p.arrivedAt) <= cutoffYesterday
+          // Same rule as today's footfall (every waiting, in consult or done visit); a visit with
+          // no arrival time recorded is placed by when it was called or created.
+          ['waiting', 'in_consult', 'done'].includes(p.status)
+            && new Date(p.arrivedAt || p.calledAt || p.createdAt) <= cutoffYesterday
         ).length;
 
         const perDoctorById = Object.fromEntries(summary.perDoctor.map((p) => [p.doctorId, p]));
@@ -799,6 +802,9 @@
       scheduleRender();
       setInterval(updateDateTimeLabel, 30000);
       Qlinic.onLiveChange(scheduleRender);
+      // Waiting times and "next appointment" move with the clock even when no patient
+      // changes, so the cards are also refreshed once a minute while the tab is open.
+      setInterval(() => { if (document.visibilityState === 'visible') scheduleRender(); }, 60000);
 
       // Chrome/Safari restore this exact page (including its old scroll
       // position) from bfcache on Back/forward instead of reloading it, so

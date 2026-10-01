@@ -115,7 +115,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=138"></script>
+  <script src="clinic-data.js?v=139"></script>
   <script src="app-topbar.js?v=7"></script>
   <script>
     (async function () {
@@ -139,10 +139,11 @@
       await Qlinic.applyFeatureNavGating();
       document.body.style.visibility = 'visible';
 
-      const [doctors, audit] = await Promise.all([
+      const [doctors, firstAudit] = await Promise.all([
         Qlinic.getDoctors({ includeInactive: true }),
         Qlinic.getBillingAudit(),
       ]);
+      let audit = firstAudit;
       const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
 
       const STATUS_LABELS = { waiting: 'Waiting', in_consult: 'In consultation', done: 'Done' };
@@ -490,6 +491,19 @@
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeColumnFilter(); closeRowMenu(); closeExportMenu(); } });
 
       renderUnbilled();
+
+      // A new bill or a newly seen patient updates the cards and the list without a reload.
+      let auditLoadSeq = 0;
+      Qlinic.onLiveChange(async () => {
+        const seq = ++auditLoadSeq;
+        try {
+          const fresh = await Qlinic.getBillingAudit();
+          if (seq !== auditLoadSeq) return;
+          audit = fresh;
+          renderSummary();
+          renderUnbilled();
+        } catch (err) { }
+      });
     })();
   </script>
 

@@ -171,7 +171,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=138"></script>
+  <script src="clinic-data.js?v=139"></script>
   <script src="app-topbar.js?v=7"></script>
   <script>
     (async function () {
@@ -727,6 +727,20 @@
 
       renderKpis();
       renderTable();
+
+      // A newly registered patient or a new visit shows up without a reload.
+      let directoryLoadSeq = 0;
+      Qlinic.onLiveChange(async () => {
+        const seq = ++directoryLoadSeq;
+        try {
+          const fresh = await Qlinic.getPatientDirectory();
+          if (seq !== directoryLoadSeq) return;
+          fresh.sort((a, b) => (b.lastVisitDate || '').localeCompare(a.lastVisitDate || ''));
+          allEntries = fresh;
+          renderKpis();
+          renderTable();
+        } catch (err) { }
+      });
     })();
   </script>
 
