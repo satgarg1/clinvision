@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=435" />
+<link rel="stylesheet" href="styles.css?v=436" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -608,13 +608,22 @@
         g += `<text class="in-tx2" transform="rotate(-90 14 ${((T + H - B) / 2).toFixed(0)})" x="14" y="${((T + H - B) / 2).toFixed(0)}" text-anchor="middle" font-size="12">Avg consultation (min)</text>`;
         points.forEach((p) => {
           const x = L + (W - L - R) * p.x / xMax, y = T + (H - T - B) * (1 - p.y / yMax);
-          g += `<circle class="in-hit" data-tip="${esc(`${p.name}: ${p.x.toFixed(1)} patients a day, ${Math.round(p.y)} min each`)}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" fill="${p.color}" opacity="0.9"/>`;
+          g += `<circle class="in-hit" data-tip="${esc(`${p.name}: ${p.x.toFixed(1)} patients a day, ${Math.round(p.y)} min each${p.n < 3 ? ` (from only ${p.n} consultation${p.n === 1 ? '' : 's'})` : ''}`)}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" fill="${p.color}" opacity="0.9"/>`;
         });
         return `<svg viewBox="0 0 ${W} ${H}" width="100%" class="in-svg" role="img" aria-label="Workload against consultation time">${g}</svg>`;
       }
       function rangeRows(rows, axisMax) {
         if (!rows.length) return empty('No consultation timing recorded in this period yet.');
         return rows.map((r) => {
+          if (r.hi == null) {
+            // Fewer than 3 timed consultations: a middle 80% would mean nothing, so every doctor still gets a row
+            // and each consultation is shown as its own dot.
+            const n = r.vals.length, avg = mean(r.vals), at = (v) => (100 * v / axisMax).toFixed(1);
+            const body = n
+              ? `${r.vals.map((v) => `<div class="in-rng-pt in-hit" data-tip="${esc(`${r.name}: a consultation of ${Math.round(v)} min`)}" style="left:${at(v)}%;background:${r.color}"></div>`).join('')}<div class="in-rng-medlabel" style="left:${at(avg)}%;color:${r.color}">${n > 1 ? 'avg ' : ''}${Math.round(avg)} min</div>`
+              : `<span class="in-rng-none in-hit" data-tip="${esc(`No consultation was timed for ${r.name} in this period`)}">No consultations timed</span>`;
+            return `<div class="in-rng"><span class="in-rng-name">${esc(r.name)}</span><div class="in-rng-track"><div class="in-rng-line"></div>${body}</div><span class="in-rng-end">${n ? `${n} visit${n === 1 ? '' : 's'}` : 'No data'}</span></div>`;
+          }
           const a = 100 * r.lo / axisMax, b = 100 * r.hi / axisMax, m = 100 * r.med / axisMax;
           return `<div class="in-rng"><span class="in-rng-name">${esc(r.name)}</span><div class="in-rng-track"><div class="in-rng-line"></div><div class="in-rng-span in-hit" data-tip="${esc(`${r.name}: most consultations took ${Math.round(r.lo)} to ${Math.round(r.hi)} min`)}" style="left:${a.toFixed(0)}%;width:${Math.max(2, b - a).toFixed(0)}%;background:${r.color}"></div><div class="in-rng-med" style="left:${m.toFixed(0)}%;background:${r.color}"></div><div class="in-rng-medlabel" style="left:${m.toFixed(0)}%;color:${r.color}">${Math.round(r.med)} min</div></div><span class="in-rng-end">${Math.round(r.lo)} to ${Math.round(r.hi)} min</span></div>`;
         }).join('');
@@ -1290,12 +1299,18 @@
         const rowsHtml = perDoc.map((r) => `<div class="in-trow" style="${grid}"><span class="in-tdoc"><span class="in-av" style="background:${r.tone.bg};color:${r.tone.fg}">${esc(initials(r.d.name))}</span>${esc(Qlinic.doctorLabel(r.d))}</span><span class="r">${num(r.seen)}</span><span class="r">${r.avgConsult == null ? 'No data' : Math.round(r.avgConsult) + ' min'}</span><span class="r">${r.avgWait == null ? 'No data' : Math.round(r.avgWait) + ' min'}</span><span class="r good">${r.onTimeRate == null ? 'No data' : Math.round(r.onTimeRate) + '%'}</span>${showRev ? `<span class="r strong">${money(r.revenue)}</span><span class="r">${r.followRate == null ? 'No data' : Math.round(r.followRate) + '%'}</span>` : ''}</div>`).join('');
         const perf = card('Doctor performance', perDoc.length ? `<div class="in-trow in-thead" style="${grid}">${th}</div>${rowsHtml}` : empty('No doctors to show.'));
         const wd = Math.max(1, (D.cur.capacity ? D.cur.capacity.workDays : dateList(D.range).length));
-        const pts = perDoc.filter((r) => r.avgConsult != null && r.seen).map((r) => ({ name: Qlinic.doctorLabel(r.d), x: r.seen / wd, y: r.avgConsult, color: r.tone.bar }));
+        const pts = perDoc.filter((r) => r.avgConsult != null && r.seen).map((r) => ({ name: Qlinic.doctorLabel(r.d), x: r.seen / wd, y: r.avgConsult, n: r.cons.length, color: r.tone.bar }));
         const xMax = Math.max(4, Math.ceil(Math.max(0, ...pts.map((p) => p.x)) * 1.2 / 4) * 4), yMax = Math.max(4, Math.ceil(Math.max(0, ...pts.map((p) => p.y)) * 1.25 / 4) * 4);
         const sc = card('Workload against consultation time', pts.length ? scatter(pts, xMax, yMax) + legend(pts.map((p) => [esc(p.name), p.color])) : empty('No consultation timing recorded in this period yet.'));
-        const rr = perDoc.filter((r) => r.cons.length >= 3).map((r) => ({ name: Qlinic.doctorLabel(r.d), lo: percentile(r.cons, 0.1), med: percentile(r.cons, 0.5), hi: percentile(r.cons, 0.9), color: r.tone.bar }));
-        const axisMax = Math.max(10, Math.ceil(Math.max(0, ...rr.map((r) => r.hi)) * 1.15 / 5) * 5);
-        const cd = card('Consultation duration', rr.length ? `<div class="in-rng-head"><span>Short</span><span>Median</span><span>Long</span></div>${rangeRows(rr, axisMax)}<p class="in-note">The bar covers the middle 80% of consultations for each doctor.</p>` : empty('Not enough consultation timing recorded yet.'), { sub: '(Spread of consultation times)' });
+        // Every doctor gets a row. The spread needs at least 3 timed consultations; with fewer, the row shows each one.
+        const rr = perDoc.map((r) => {
+          const base = { name: Qlinic.doctorLabel(r.d), color: r.tone.bar, vals: r.cons.slice().sort((a, b) => a - b) };
+          return r.cons.length >= 3 ? { ...base, lo: percentile(r.cons, 0.1), med: percentile(r.cons, 0.5), hi: percentile(r.cons, 0.9) } : base;
+        });
+        const topOf = (r) => (r.hi != null ? r.hi : Math.max(0, ...r.vals));
+        const axisMax = Math.max(10, Math.ceil(Math.max(0, ...rr.map(topOf)) * 1.15 / 5) * 5);
+        const anyFew = rr.some((r) => r.hi == null && r.vals.length);
+        const cd = card('Consultation duration', rr.some((r) => r.vals.length) ? `<div class="in-rng-head"><span>Short</span><span>Median</span><span>Long</span></div>${rangeRows(rr, axisMax)}<p class="in-note">The bar covers the middle 80% of consultations for each doctor.${anyFew ? ' A doctor with fewer than 3 timed consultations has no spread yet, so each consultation is shown as a dot.' : ''}</p>` : empty('Not enough consultation timing recorded yet.'), { sub: '(Spread of consultation times)' });
         return items + perf + `<div class="in-grid in-grid-f">${sc}${cd}</div>`;
       }
 

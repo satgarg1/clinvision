@@ -8320,6 +8320,9 @@ button.rv-kpi:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1); }
 .in-rng-span { position: absolute; top: 8px; height: 8px; border-radius: 6px; opacity: 0.4; }
 .in-rng-med { position: absolute; top: 3px; width: 4px; height: 18px; margin-left: -2px; border-radius: 2px; }
 .in-rng-medlabel { position: absolute; top: -17px; transform: translateX(-50%); font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+.in-rng-pt { position: absolute; top: 5px; width: 14px; height: 14px; margin-left: -7px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--in-card); }
+.in-rng-none { position: absolute; left: 0; right: 0; top: 4px; font-size: 12.5px; color: var(--in-axis); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.in-rng-none:hover { opacity: 1; }
 .in-rng-end { width: 92px; text-align: right; font-size: 12.5px; color: var(--in-sub); flex: none; }
 .in-rng-head { display: flex; justify-content: space-between; margin: 0 92px 22px 134px; font-size: 12px; color: var(--in-axis); }
 #trendsCustomRangeFilters.in-custom .qdp-trigger { height: 44px; box-sizing: border-box; padding: 0 14px; border-radius: 12px; border-color: var(--grey-300); }
