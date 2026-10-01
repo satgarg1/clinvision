@@ -306,7 +306,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=139"></script>
+  <script src="clinic-data.js?v=140"></script>
   <script src="app-topbar.js?v=7"></script>
   <script>
     (async function () {
@@ -374,7 +374,8 @@
             cancelLabel: 'Still with them',
           });
           if (shouldFinish) {
-            await Qlinic.finishCurrentPatient(currentDoctorId());
+            // Only the patient named in the dialog: if the queue moved on meanwhile, do nothing.
+            await Qlinic.finishCurrentPatient(currentDoctorId(), serving.id);
             render();
             showToast('Visit marked as done');
           }
@@ -466,7 +467,7 @@
             <tbody>
               ${waitingPageItems.map((p) => `
                 <tr>
-                  <td>${formatToken(p, walkinRanks) ? '#' + formatToken(p, walkinRanks) : '·'}</td>
+                  <td>${formatToken(p, walkinRanks) ? (/^[A-Za-z]/.test(String(formatToken(p, walkinRanks))) ? '' : '#') + formatToken(p, walkinRanks) : '·'}</td>
                   <td><div>${Qlinic.escapeHtml(p.name)}${p.isPriority ? ' <span class="badge badge-no-show">Priority</span>' : ''}</div><div class="sub-line">${p.address ? Qlinic.escapeHtml(p.address) : 'No address on file'}</div></td>
                   <td>${p.type === 'appointment' ? 'Appointment' : 'Walk-in'}</td>
                   <td>${queueTimeCell(p)}</td>

@@ -144,7 +144,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=139"></script>
+  <script src="clinic-data.js?v=140"></script>
   <script src="app-topbar.js?v=7"></script>
   <script>
     (async function () {
@@ -994,7 +994,7 @@
 
       await loadDoctorFilterOptions();
       await loadInvoices();
-      Qlinic.onLiveChange(() => loadInvoices(true));
+      Qlinic.onLiveChange(() => loadInvoices(true), { tables: ['patients', 'invoices'] });
     })();
   </script>
 

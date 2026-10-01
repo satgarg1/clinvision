@@ -185,7 +185,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=139"></script>
+  <script src="clinic-data.js?v=140"></script>
   <script>
     (async function () {
       const urlParams = new URLSearchParams(location.search);
@@ -226,8 +226,9 @@
           cleanUrl.search = '';
           history.replaceState(null, '', cleanUrl.toString());
         } catch (err) {
+          // A fixed message only: the server's error text can echo whatever was put in the link.
           document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#1e1b4b;background:#fbfbfe;font-family:sans-serif;font-size:20px;text-align:center;padding:20px;">' +
-            (err.message || 'This QR code is no longer valid — please scan the one currently on screen.') + '</div>';
+            'This QR code is no longer valid — please scan the one currently on screen.</div>';
           document.body.style.visibility = 'visible';
           return;
         }
@@ -651,7 +652,7 @@
         }
         return pageItems.map((p, i) => `
           <div class="board-row">
-            <span class="board-pos">${p.tokenDisplay ? '#' + p.tokenDisplay : '·'}</span>
+            <span class="board-pos">${p.tokenDisplay ? (/^[A-Za-z]/.test(p.tokenDisplay) ? '' : '#') + p.tokenDisplay : '·'}</span>
             <span class="board-time-cell">${boardTimeCell(p)}</span>
             <span class="board-name-row">${localizeName(p.name)}${p.isPriority ? `<span class="board-priority">${T.priority}</span>` : ''}</span>
             ${showDoctorCol ? `<span class="board-doc">${T.drPrefix}${localizeName(plainDoctor(p.doctorName))}</span>` : ''}

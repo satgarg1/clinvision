@@ -158,7 +158,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=139"></script>
+  <script src="clinic-data.js?v=140"></script>
   <script>
     (async function () {
       const params = new URLSearchParams(window.location.search);
@@ -578,7 +578,8 @@
           syncFeedbackLayout();
         }
 
-        if (pollIntervalId) { clearInterval(pollIntervalId); pollIntervalId = null; }
+        // A no-show can still be checked in at the desk, so keep watching the link in that case.
+        if (!isNoShow && pollIntervalId) { clearInterval(pollIntervalId); pollIntervalId = null; }
       }
 
       function showClosed(data, isClinicClosed) {

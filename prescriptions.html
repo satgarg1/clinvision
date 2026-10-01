@@ -191,7 +191,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=139"></script>
+  <script src="clinic-data.js?v=140"></script>
   <script src="app-topbar.js?v=7"></script>
   <script>
     (async function () {
@@ -450,29 +450,35 @@
       // instead, since that's the only other thing a doctor here ever
       // actually wants (see search_clinic_prescriptions, which already
       // has no date bound of its own).
+      let loadCurrentTabSeq = 0;
       async function loadCurrentTab() {
+        const mySeq = ++loadCurrentTabSeq;
         const container = document.getElementById('rxListContainer');
         container.innerHTML = '<div class="empty-state">Loading…</div>';
+        let loaded = [];
         try {
           const q = document.getElementById('rxSearchInput').value.trim();
           if (q.length >= 2) {
-            currentItems = await Qlinic.searchClinicPrescriptions(q);
+            loaded = await Qlinic.searchClinicPrescriptions(q);
             // search_clinic_prescriptions has no doctor-id parameter of its
             // own -- without this, the doctor filter dropdown silently
             // stopped applying the moment a search query was typed.
             const searchDoctorId = amAdmin ? (document.getElementById('rxDoctorFilter').value || null) : null;
-            if (searchDoctorId) currentItems = currentItems.filter((rx) => rx.doctorId === searchDoctorId);
+            if (searchDoctorId) loaded = loaded.filter((rx) => rx.doctorId === searchDoctorId);
           } else {
             // This is a history feature — the default view is every
             // prescription the caller can see, most recent first, not
             // just today's.
             const doctorId = amAdmin ? (document.getElementById('rxDoctorFilter').value || null) : null;
-            currentItems = await Qlinic.getClinicPrescriptions({ doctorId });
+            loaded = await Qlinic.getClinicPrescriptions({ doctorId });
           }
         } catch (err) {
-          showToast(err.message || 'Could not load prescriptions');
-          currentItems = [];
+          if (mySeq === loadCurrentTabSeq) showToast(err.message || 'Could not load prescriptions');
+          loaded = [];
         }
+        // A slower, older search finishing last must not replace the newer list.
+        if (mySeq !== loadCurrentTabSeq) return;
+        currentItems = loaded;
         renderList(currentItems);
       }
 

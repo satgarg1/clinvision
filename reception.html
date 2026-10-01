@@ -188,7 +188,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=139"></script>
+  <script src="clinic-data.js?v=140"></script>
   <script src="app-topbar.js?v=7"></script>
   <script>
     (async function () {
@@ -293,7 +293,7 @@
                   <span class="patient-name">${Qlinic.escapeHtml(p.name)}</span>
                   ${p.isPriority ? '<span class="waiting-emergency-badge">🚨 Emergency</span>' : ''}
                 </div>
-                <div class="patient-sub">Token #${p.tokenNumber} · ${Qlinic.escapeHtml(p.doctorName)}</div>
+                <div class="patient-sub">Token ${p.tokenNumber > 100000 ? 'W' + (p.tokenNumber - 100000) : '#' + p.tokenNumber} · ${Qlinic.escapeHtml(p.doctorName)}</div>
               </div>
               <span class="waiting-time-badge">${Qlinic.formatTimestamp(p.effectiveTime)}</span>
             </div>
@@ -918,7 +918,7 @@
                     <td>${searchStatusBadge(p)}</td>
                     ${billingTd}
                     <td>
-                      ${p.status === 'booked' ? `<button class="btn-sm primary" onclick="doMarkArrived('${p.id}', this)">Mark arrived</button>` : ''}
+                      ${p.status === 'booked' || p.status === 'no_show' ? `<button class="btn-sm primary" onclick="doMarkArrived('${p.id}', this)">Mark arrived</button>` : ''}
                       <button class="btn-sm" data-edit-patient="${p.id}">Edit</button>
                       ${waEnabled() ? waResendBtn(p) : ''}
                     </td>

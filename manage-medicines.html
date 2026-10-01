@@ -217,7 +217,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=139"></script>
+  <script src="clinic-data.js?v=140"></script>
   <script src="app-topbar.js?v=7"></script>
   <script>
     (async function () {
@@ -427,10 +427,19 @@
         document.getElementById('medicineModalError').style.display = 'none';
         document.getElementById('medicineModal').style.display = 'flex';
       }
+      // Stock saves are not idempotent: a double click must not book the stock twice.
+      function guardedSave(buttonId, handler) {
+        const btn = document.getElementById(buttonId);
+        btn.addEventListener('click', async () => {
+          if (btn.disabled) return;
+          btn.disabled = true;
+          try { await handler(); } finally { btn.disabled = false; }
+        });
+      }
       document.getElementById('addMedicineBtn').addEventListener('click', () => openMedicineModal(null));
       document.getElementById('editMedicineBtn').addEventListener('click', () => openMedicineModal(currentMedicine));
       document.getElementById('medicineModalCancelBtn').addEventListener('click', () => { document.getElementById('medicineModal').style.display = 'none'; });
-      document.getElementById('medicineModalSaveBtn').addEventListener('click', async () => {
+      guardedSave('medicineModalSaveBtn', async () => {
         const errEl = document.getElementById('medicineModalError');
         errEl.style.display = 'none';
         const name = document.getElementById('mfName').value.trim();
@@ -496,7 +505,7 @@
         document.getElementById('batchModal').style.display = 'flex';
       });
       document.getElementById('batchModalCancelBtn').addEventListener('click', () => { document.getElementById('batchModal').style.display = 'none'; });
-      document.getElementById('batchModalSaveBtn').addEventListener('click', async () => {
+      guardedSave('batchModalSaveBtn', async () => {
         const errEl = document.getElementById('batchModalError');
         errEl.style.display = 'none';
         const packs = Number(document.getElementById('bfPacksReceived').value);
@@ -531,7 +540,7 @@
         document.getElementById('adjustModal').style.display = 'flex';
       }
       document.getElementById('adjustModalCancelBtn').addEventListener('click', () => { document.getElementById('adjustModal').style.display = 'none'; });
-      document.getElementById('adjustModalSaveBtn').addEventListener('click', async () => {
+      guardedSave('adjustModalSaveBtn', async () => {
         const errEl = document.getElementById('adjustModalError');
         errEl.style.display = 'none';
         const delta = Number(document.getElementById('adjDelta').value);

@@ -686,12 +686,11 @@
     return date.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
 
+  // The clinic day is the India day, whatever time zone this device is set to: the database
+  // and the queue functions all count days in Asia/Kolkata.
+  const IST_DATE_FORMAT = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
   function todayDateStr() {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
+    return IST_DATE_FORMAT.format(new Date());
   }
 
   function formatDateLabel(dateStr) {
@@ -1473,8 +1472,9 @@
         .eq('clinic_id', clinicId).eq('phone', cleanPhone).eq('token_date', targetDateStr)
         .order('created_at', { ascending: false }).limit(10);
       if (patientErr) throw patientErr;
+      // A typed name that matches nobody must not adopt another family member's visit and bill.
       const todayPatient = (todayRows || []).find((r) => wantedName && (r.name || '').trim().toLowerCase() === wantedName)
-        || (todayRows && todayRows[0])
+        || (wantedName ? null : (todayRows && todayRows[0]))
         || null;
       if (todayPatient) {
         todayDoctorId = todayPatient.doctor_id;
@@ -1495,7 +1495,7 @@
         let unbilledVisit = null;
         try {
           const { data: candidates, error: candErr } = await sb.from('patients')
-            .select('id, doctor_id, token_date')
+            .select('id, doctor_id, token_date, name')
             .eq('clinic_id', clinicId).eq('phone', cleanPhone)
             .in('status', ['waiting', 'in_consult', 'done'])
             .order('token_date', { ascending: false })
@@ -1508,7 +1508,8 @@
               .in('patient_id', candidateIds).eq('invoice_type', 'consultation');
             if (invErr) throw invErr;
             const billedIds = new Set((existingInvoices || []).map((i) => i.patient_id));
-            unbilledVisit = candidates.find((c) => !billedIds.has(c.id)) || null;
+            unbilledVisit = candidates.find((c) => !billedIds.has(c.id)
+              && (!wantedName || (c.name || '').trim().toLowerCase() === wantedName)) || null;
           }
         } catch (e) { if (strict) throw e; }
 
@@ -1642,6 +1643,9 @@
   async function getOutstandingInvoices() {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
+    // Server side filter (migration 113); falls back to reading every bill if it is not there yet.
+    const { data: outstanding, error: rpcError } = await sb.rpc('get_outstanding_invoices');
+    if (!rpcError && Array.isArray(outstanding)) return outstanding.map(normalizeInvoice);
     const data = await fetchAllRows((from, to) => sb.from('invoices').select('*')
       .eq('clinic_id', clinicId)
       .eq('invoice_type', 'consultation')
@@ -1910,28 +1914,35 @@
       if (current.calledAt) {
         updatePayload.consultation_duration_seconds = Math.max(0, Math.round((doneAt.getTime() - new Date(current.calledAt).getTime()) / 1000));
       }
-      const { error } = await sb.from('patients').update(updatePayload).eq('id', current.id);
+      const { data: finished, error } = await sb.from('patients').update(updatePayload).eq('id', current.id).eq('status', 'in_consult').select('id');
       if (error) throw error;
+      if (!finished || !finished.length) throw new Error('The queue changed on another screen. Please check it and try again.');
     }
     const waiting = mine.filter((p) => p.status === 'waiting').sort((a, b) => compareQueueOrder(a, b, doctor));
     if (waiting.length === 0) return { called: false };
-    const { error } = await sb.from('patients').update({ status: 'in_consult', called_at: new Date().toISOString() }).eq('id', waiting[0].id);
+    const { data: called, error } = await sb.from('patients').update({ status: 'in_consult', called_at: new Date().toISOString() }).eq('id', waiting[0].id).eq('status', 'waiting').select('id');
     if (error) throw error;
+    if (!called || !called.length) throw new Error('The queue changed on another screen. Please check it and try again.');
     return { called: true };
   }
 
-  async function finishCurrentPatient(doctorId) {
+  async function finishCurrentPatient(doctorId, expectedPatientId) {
     const today = todayDateStr();
     const mine = await fetchPatientsForDoctorAndDate(doctorId, today);
     const current = mine.find((p) => p.status === 'in_consult');
+    // When the caller names the patient it means to finish and someone else is in now, do nothing.
+    if (expectedPatientId && (!current || current.id !== expectedPatientId)) {
+      throw new Error('That visit was already finished on another screen.');
+    }
     if (current) {
       const doneAt = new Date();
       const updatePayload = { status: 'done', done_at: doneAt.toISOString() };
       if (current.calledAt) {
         updatePayload.consultation_duration_seconds = Math.max(0, Math.round((doneAt.getTime() - new Date(current.calledAt).getTime()) / 1000));
       }
-      const { error } = await sb.from('patients').update(updatePayload).eq('id', current.id);
+      const { data: finished, error } = await sb.from('patients').update(updatePayload).eq('id', current.id).eq('status', 'in_consult').select('id');
       if (error) throw error;
+      if (!finished || !finished.length) throw new Error('That visit was already finished on another screen.');
     }
   }
 
@@ -2283,11 +2294,7 @@
 
   function isDoctorClosedToday(doctor) {
     if (!doctor || !doctor.dayClosedAt) return false;
-    const closed = new Date(doctor.dayClosedAt);
-    const y = closed.getFullYear();
-    const m = String(closed.getMonth() + 1).padStart(2, '0');
-    const d = String(closed.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}` === todayDateStr();
+    return IST_DATE_FORMAT.format(new Date(doctor.dayClosedAt)) === todayDateStr();
   }
 
   const CLOSED_RESET_HOUR = 4;
@@ -3200,7 +3207,8 @@
     return (data || []).map(normalizePrescriptionRow);
   }
 
-  async function onLiveChange(cb) {
+  async function onLiveChange(cb, options) {
+    const mustBeLive = (options && options.tables) || ['patients', 'doctors'];
     const clinicId = await ensureClinicContext();
     if (!clinicId) return;
     let debounceTimer = null;
@@ -3240,7 +3248,7 @@
     });
     // Safety nets so a page never sits on old numbers:
     // - coming back to the tab or the network after a while refreshes it;
-    // - if the patients or doctors channel is not connected, refresh every 30 seconds instead;
+    // - if a table this page depends on is not connected, refresh every 30 seconds instead;
     // - the day changing at midnight refreshes it.
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && Date.now() - lastRefresh > 30000) refresh();
@@ -3250,9 +3258,9 @@
     setInterval(() => {
       if (document.visibilityState !== 'visible') return;
       const day = todayDateStr();
-      // Only the core tables decide this: a role that may not read a table (a doctor and
-      // invoices, say) gets no events from it and must not put the page on permanent polling.
-      const allLive = subscribed.patients && subscribed.doctors;
+      // Only the tables this page depends on decide this: a role that may not read some other
+      // table gets no events from it and must not put the page on permanent polling.
+      const allLive = mustBeLive.every((t) => subscribed[t]);
       if (day !== knownDay || (!allLive && Date.now() - lastRefresh > 30000)) {
         knownDay = day;
         refresh();
@@ -3336,11 +3344,12 @@
   async function getMedicines({ activeOnly = true, search = '' } = {}) {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    let query = sb.from('medicines').select('*').eq('clinic_id', clinicId);
-    if (activeOnly) query = query.eq('is_active', true);
-    if (search) query = query.ilike('name', `%${search}%`);
-    const { data, error } = await query.order('name');
-    if (error) throw error;
+    const data = await fetchAllRows((from, to) => {
+      let query = sb.from('medicines').select('*').eq('clinic_id', clinicId);
+      if (activeOnly) query = query.eq('is_active', true);
+      if (search) query = query.ilike('name', `%${search}%`);
+      return query.order('name').order('id').range(from, to);
+    });
     return data.map(normalizeMedicine);
   }
 
@@ -3357,9 +3366,8 @@
   async function getClinicMedicinesForRx() {
     const clinicId = await ensureClinicContext();
     if (!clinicId) return [];
-    const { data, error } = await sb.from('medicines').select('id, name, generic_name, manufacturer')
-      .eq('clinic_id', clinicId).eq('is_active', true).order('name');
-    if (error) throw error;
+    const data = await fetchAllRows((from, to) => sb.from('medicines').select('id, name, generic_name, manufacturer')
+      .eq('clinic_id', clinicId).eq('is_active', true).order('name').order('id').range(from, to));
     return data.map((r) => ({
       clinicMedicineId: r.id, genericMedicineId: null,
       name: r.name, composition: r.generic_name || '', manufacturer: r.manufacturer || '',
@@ -3522,6 +3530,19 @@
     if (error) throw error;
     return data.map(normalizeInvoiceItem);
   }
+
+  // Another tab signing out or in as someone else must not leave this tab on the old clinic.
+  let knownUserId = null;
+  sb.auth.onAuthStateChange((event, session) => {
+    const userId = session && session.user ? session.user.id : null;
+    if (event === 'SIGNED_OUT' || (knownUserId && userId && userId !== knownUserId)) {
+      currentClinicId = null;
+      currentClinic = null;
+      myProfilePromise = null;
+      Object.keys(featureCache).forEach((key) => { delete featureCache[key]; });
+    }
+    knownUserId = userId;
+  });
 
   global.Qlinic = {
     parseTime,

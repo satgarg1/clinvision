@@ -196,7 +196,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=139"></script>
+  <script src="clinic-data.js?v=140"></script>
   <script src="app-topbar.js?v=7"></script>
   <script>
     (async function () {
@@ -525,10 +525,10 @@
           window.print();
           resetForm();
         } catch (err) {
+          // Keep what the cashier typed (a partial payment must not flip back to the full fee).
           showToast(err.message || 'Could not create the bill.');
         } finally {
           btn.textContent = 'Print receipt';
-          updateTotal();
         }
       });
 

@@ -91,7 +91,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=139"></script>
+  <script src="clinic-data.js?v=140"></script>
   <script src="app-topbar.js?v=7"></script>
   <script>
     (async function () {
@@ -339,7 +339,10 @@
           const ps = new Date(y, m - 2, 1);
           const pe = new Date(y, m - 1, 0);
           const span = addDays(toDateStr(ps), len - 1);
-          return { start: toDateStr(ps), end: span < toDateStr(pe) ? span : toDateStr(pe) };
+          // A finished calendar month is compared with the whole month before it;
+          // only a month still in progress is cut to the same number of days.
+          const monthFinished = range.end === toDateStr(new Date(y, m, 0));
+          return { start: toDateStr(ps), end: (monthFinished || span >= toDateStr(pe)) ? toDateStr(pe) : span };
         }
         return { start: addDays(range.start, -len), end: addDays(range.start, -1) };
       }
