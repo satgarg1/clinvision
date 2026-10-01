@@ -47,9 +47,6 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
             Quick Walk-In Rx
           </button>
-          <div class="clock-pill">
-            <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Time: <span class="time" id="clockTime">--</span></span>
-          </div>
         </div>
       </div>
 
@@ -241,8 +238,6 @@
       }
 
       const clinic = await Qlinic.getClinic();
-      document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
-      setInterval(() => { document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date()); }, 30000);
 
       // Also doubles as Quick Walk-In Rx's own doctor list — an admin
       // picks who it's for there the same way they narrow this page's own

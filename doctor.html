@@ -44,9 +44,6 @@
         <h1>Doctor View</h1>
         <div style="display:flex;align-items:center;gap:12px;">
           <button class="btn-sm primary" id="viewFullScheduleBtn">Today's full schedule</button>
-          <div class="clock-pill">
-            <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Time: <span class="time" id="clockTime">--</span></span>
-          </div>
         </div>
       </div>
 
@@ -2347,9 +2344,7 @@
       }
       document.getElementById('rxSavePrintBtn').addEventListener('click', () => saveRxPrescription(true));
       document.getElementById('rxSaveOnlyBtn').addEventListener('click', () => saveRxPrescription(false));
-      document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
       setInterval(() => {
-        document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
         if (currentQueue) renderNextAppointment(currentQueue);
         checkLongConsultation();
       }, 30000);
