@@ -8524,5 +8524,5 @@ button.rv-kpi:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1); }
   .global-topbar + .rv-head,
   .global-topbar + .page > .app-topbar:first-child { padding-right: var(--tb-reserve, 0px); box-sizing: border-box; min-height: var(--tb-h, 50px); }
   /* Dashboard: the date and holiday chips sit under the pill, on the right. */
-  .global-topbar + .dash-header .dash-pill-row, .in-page > .in-head .in-head-right { margin: var(--tb-h, 50px) 0 0 auto; }
+  .global-topbar + .dash-header .dash-pill-row, .in-page > .in-head .in-head-right { margin: calc(var(--tb-h, 50px) + 12px) 0 0 auto; }
 }
