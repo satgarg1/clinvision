@@ -51,9 +51,6 @@
             </button>
             <div class="waiting-popover" id="waitingPopover"></div>
           </div>
-          <div class="clock-pill">
-            <span><span class="live-dot" style="width:7px;height:7px;margin-right:8px;"></span>Time: <span class="time" id="clockTime">--</span></span>
-          </div>
         </div>
       </div>
 
@@ -192,7 +189,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
   <script src="clinic-data.js?v=138"></script>
-  <script src="app-topbar.js?v=6"></script>
+  <script src="app-topbar.js?v=7"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -1723,7 +1720,6 @@
       }
       clinicClosureByDate = Object.fromEntries(closures.map((c) => [c.date, c.note]));
       doctorHolidayByKey = Object.fromEntries(doctorHolidays.map((h) => [`${h.doctorId}::${h.date}`, h.note]));
-      document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
       // A reception PC left on overnight otherwise keeps showing yesterday:
       // the queue view date and the booking date are set once at load. When
       // the day changes, move whatever was on "today" forward to the new one.
@@ -1739,7 +1735,6 @@
           knownToday = today;
           updateClosedDayHint();
         }
-        document.getElementById('clockTime').textContent = Qlinic.formatTimestamp(new Date());
         renderClosedDayBanner();
         updateDoctorClosedHint();
         // Picks up the Patient messages switch being changed from Clinic Settings (once a minute is plenty).

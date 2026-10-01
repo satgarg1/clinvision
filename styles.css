@@ -8520,6 +8520,8 @@ button.rv-kpi:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1); }
   .global-topbar { height: 0; align-items: flex-start; }
   .global-topbar:has(+ .closed-day-banner:not([style*="none"])) { height: 54px; align-items: center; }
   .global-topbar + .app-topbar, .global-topbar + .closed-day-banner + .app-topbar, #listView > .app-topbar:first-child,
-  .global-topbar + .rv-head, .in-page > .in-head, .global-topbar + .dash-header .dash-header-row,
-  .global-topbar + .page > .app-topbar:first-child { padding-right: var(--tb-reserve, 0px); box-sizing: border-box; }
+  .global-topbar + .rv-head, .in-page > .in-head,
+  .global-topbar + .page > .app-topbar:first-child { padding-right: var(--tb-reserve, 0px); box-sizing: border-box; min-height: var(--tb-h, 50px); }
+  /* Dashboard: the date and holiday chips sit under the pill, on the right. */
+  .global-topbar + .dash-header .dash-pill-row { margin: var(--tb-h, 50px) 0 0 auto; }
 }

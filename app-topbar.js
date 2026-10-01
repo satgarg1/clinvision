@@ -85,6 +85,7 @@
     const pill = bar.querySelector('.tb-pill');
     // Tells the page's first row how much room the pill takes (see .global-topbar in styles.css).
     shell.style.setProperty('--tb-reserve', (pill.offsetWidth + 20) + 'px');
+    shell.style.setProperty('--tb-h', pill.offsetHeight + 'px');
     const menu = bar.querySelector('.tb-menu');
     function setOpen(open) {
       menu.classList.toggle('open', open);
