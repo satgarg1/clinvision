@@ -760,6 +760,7 @@
       hprId: row.hpr_id,
       qualification: row.qualification || '',
       registrationNumber: row.registration_number || '',
+      gender: row.gender || '',
     };
   }
 
@@ -1050,24 +1051,26 @@
     return typed.replace(/^dr\.?\s+/i, '').trim() || typed;
   }
 
-  async function addDoctor({ name, specialty, feeNormal, feeEmergency, hprId, qualification, registrationNumber }) {
+  async function addDoctor({ name, specialty, feeNormal, feeEmergency, hprId, qualification, registrationNumber, gender }) {
     const clinicId = await ensureClinicContext();
     const { data, error } = await sb.from('doctors').insert({
       clinic_id: clinicId, name: plainDoctorName(name), specialty: specialty || '',
       fee_normal: feeNormal || 0, fee_emergency: feeEmergency || 0,
       hpr_id: hprId || null,
       qualification: qualification || '', registration_number: registrationNumber || '',
+      gender: gender === 'male' || gender === 'female' ? gender : null,
     }).select().single();
     if (error) throw error;
     return normalizeDoctor(data);
   }
 
-  async function updateDoctor(doctorId, { name, specialty, feeNormal, feeEmergency, hprId, qualification, registrationNumber }) {
+  async function updateDoctor(doctorId, { name, specialty, feeNormal, feeEmergency, hprId, qualification, registrationNumber, gender }) {
     const { error } = await sb.from('doctors').update({
       name: plainDoctorName(name), specialty: specialty || '',
       fee_normal: feeNormal || 0, fee_emergency: feeEmergency || 0,
       hpr_id: hprId || null,
       qualification: qualification || '', registration_number: registrationNumber || '',
+      gender: gender === 'male' || gender === 'female' ? gender : null,
     }).eq('id', doctorId);
     if (error) throw error;
   }

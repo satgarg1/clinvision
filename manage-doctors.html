@@ -69,6 +69,14 @@
             <label for="newDoctorName" class="qr-label">Name</label>
             <input type="text" id="newDoctorName" class="dd-input" placeholder="Amit Sharma" required />
           </div>
+          <div class="dd-field" style="--g:0.8;min-width:112px;">
+            <label for="newDoctorGender" class="qr-label">Gender</label>
+            <select id="newDoctorGender" class="dd-input">
+              <option value="">Select</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
           <div class="dd-field" style="--g:1.5;min-width:190px;">
             <label for="newDoctorSpecialty" class="qr-label">Specialty</label>
             <select id="newDoctorSpecialty" class="dd-input"></select>
@@ -318,6 +326,14 @@
               <input type="text" id="editDoctorName" value="${doctor.name.replace(/"/g, '&quot;')}" />
             </div>
             <div class="doctor-form-field" style="margin-bottom:14px;">
+              <label>Gender</label>
+              <select id="editDoctorGender">
+                <option value="">Select</option>
+                <option value="male"${doctor.gender === 'male' ? ' selected' : ''}>Male</option>
+                <option value="female"${doctor.gender === 'female' ? ' selected' : ''}>Female</option>
+              </select>
+            </div>
+            <div class="doctor-form-field" style="margin-bottom:14px;">
               <label>Specialty</label>
               <select id="editDoctorSpecialty">${specialtyOptionsHtml(doctor.specialty)}</select>
             </div>
@@ -402,8 +418,9 @@
           const hprId = backdrop.querySelector('#editDoctorHprId').value.trim().toUpperCase();
           const qualification = backdrop.querySelector('#editDoctorQualification').value.trim();
           const registrationNumber = backdrop.querySelector('#editDoctorRegistrationNumber').value.trim();
+          const gender = backdrop.querySelector('#editDoctorGender').value;
           try {
-            await Qlinic.updateDoctor(doctor.id, { name, specialty, feeNormal, feeEmergency, hprId, qualification, registrationNumber });
+            await Qlinic.updateDoctor(doctor.id, { name, specialty, feeNormal, feeEmergency, hprId, qualification, registrationNumber, gender });
           } catch (err) {
             showToast(err.message || 'Could not update doctor — please try again.');
             return;
@@ -481,8 +498,9 @@
         const hprId = document.getElementById('newDoctorHprId').value.trim().toUpperCase();
         const qualification = document.getElementById('newDoctorQualification').value.trim();
         const registrationNumber = document.getElementById('newDoctorRegistrationNumber').value.trim();
+        const gender = document.getElementById('newDoctorGender').value;
         try {
-          await Qlinic.addDoctor({ name, specialty, feeNormal, feeEmergency, hprId, qualification, registrationNumber });
+          await Qlinic.addDoctor({ name, specialty, feeNormal, feeEmergency, hprId, qualification, registrationNumber, gender });
         } catch (err) {
           showToast(err.message || 'Could not add doctor — please try again.');
           return;

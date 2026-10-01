@@ -458,10 +458,12 @@
       function localizeSpecialty(text) {
         return text;
       }
-      // The doctor illustration follows the first name. Doctors have no gender on file,
-      // so this is a best guess from common Indian names; anything unsure shows the man.
+      // The doctor illustration follows the gender set in Settings, Doctors. A doctor with no
+      // gender saved gets a best guess from common Indian first names, otherwise the man.
       const FEMALE_NAMES = /^(priya|neha|pooja|anita|sunita|kavita|savita|rekha|meena|seema|geeta|gita|sita|radha|lata|usha|asha|nisha|isha|ritu|shweta|swati|sneha|divya|anjali|deepa|deepika|shilpa|shalini|sushma|suman|renu|poonam|madhu|manju|mamta|kiran|jyoti|nidhi|nikita|pallavi|payal|preeti|prerna|ruchi|sakshi|sarita|shruti|tanvi|vandana|varsha|vidya|yamini|aarti|archana|bhavna|chhaya|garima|harsha|indu|juhi|kajal|komal|kriti|lakshmi|laxmi|mansi|megha|mona|namrata|neelam|nilam|parul|rashmi|reena|richa|roshni|sangeeta|sapna|shobha|simran|sonal|sonia|sudha|sunaina|tripti|urmila|vaishali|vineeta|zoya|fatima|ayesha|saira|shabana|farah|nazia|rubina|harpreet|gurpreet|manpreet|jasleen|simarjeet)$/i;
-      function doctorIsWoman(name) {
+      function doctorIsWoman(name, gender) {
+        if (gender === 'female') return true;
+        if (gender === 'male') return false;
         const first = String(name || '').replace(/^dr\.?\s+/i, '').trim().split(/\s+/)[0] || '';
         return FEMALE_NAMES.test(first);
       }
@@ -678,7 +680,7 @@
         const nowServingBlock = document.getElementById('nowServingBlock');
         if (data.nowServingToken != null) {
           nowServingBlock.style.display = 'block';
-          nowServingBlock.classList.toggle('is-woman', doctorIsWoman(data.doctorName));
+          nowServingBlock.classList.toggle('is-woman', doctorIsWoman(data.doctorName, data.doctorGender));
           document.getElementById('nowServingNum').textContent = data.nowServingToken;
           document.getElementById('nowServingMeta').textContent = data.nowServingCalledAt
             ? T.calledAt(Qlinic.formatTimestamp(data.nowServingCalledAt))
