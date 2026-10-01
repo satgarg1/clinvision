@@ -5026,7 +5026,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .anomaly-chip.good { background: var(--mkt-teal-bg); color: var(--mkt-teal); }
 .anomaly-chip.calm { background: var(--grey-100); color: var(--grey-700); font-weight: 600; }
 .anomaly-popover {
-  position: absolute; top: calc(100% + 8px); left: 0; width: 340px;
+  position: absolute; top: calc(100% + 8px); right: 0; width: 340px;
   background: var(--white); border: 1px solid var(--grey-300); border-radius: 12px;
   box-shadow: 0 16px 32px rgba(0, 0, 0, 0.14); z-index: 50; padding: 14px 16px; display: none;
 }
@@ -8148,6 +8148,7 @@ button.rv-kpi:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1); }
 .in-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
 .in-head h1 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
 .in-head-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.in-head-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
 .in-select-wrap { position: relative; }
 .in-select { height: 44px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--grey-300); border-radius: 12px; background: var(--white); color: var(--black); font-family: inherit; font-size: 14px; cursor: pointer; max-width: 260px; }
 .in-select:focus { outline: 2px solid #3b82f6; border-color: #3b82f6; }
