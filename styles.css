@@ -8179,7 +8179,9 @@ button.rv-kpi:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1); }
 .in-kpi-l { margin-top: 5px; font-size: 14px; color: var(--in-body); }
 .in-kpi-sub { margin-top: 6px; font-size: 12.5px; color: var(--in-sub); }
 .in-delta { margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; font-size: 13px; font-weight: 800; }
-.in-delta-n, .in-delta-c { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.in-delta-n { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.in-delta-c { min-width: 0; }
+.in-nw { white-space: nowrap; }
 .in-delta.up { color: var(--in-up); }
 .in-delta.down { color: var(--in-down); }
 .in-delta.flat { color: var(--in-flat); }
@@ -8223,8 +8225,20 @@ button.rv-kpi:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1); }
 .in-tx-strong { fill: var(--in-text); }
 .in-dot { fill: var(--in-card); }
 .in-hit { cursor: default; }
+.in-hit:hover { opacity: 0.8; }
+.in-page { --in-band: rgba(37, 99, 235, 0.07); }
+:root[data-theme="dark"] .in-page { --in-band: rgba(147, 197, 253, 0.12); }
+.in-col { fill: transparent; transition: fill 0.12s ease; }
+.in-col:hover { fill: var(--in-band); }
+.in-kpi, .in-card { position: relative; transition: transform 0.18s ease, box-shadow 0.18s ease; }
+.in-kpi::after, .in-card::after { content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 6px; }
+@media (hover: hover) and (pointer: fine) {
+  .in-kpi:hover, .in-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); z-index: 2; }
+}
+.in-hm-cell:hover { opacity: 1; outline: 2px solid var(--in-text); outline-offset: -2px; }
 .in-tip { position: fixed; z-index: 500; max-width: 280px; padding: 8px 12px; border-radius: 9px; background: #0f172a; color: #ffffff; font-size: 12.5px; line-height: 1.35; pointer-events: none; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3); }
 .in-tip[hidden] { display: none; }
+.in-tip { white-space: pre-line; }
 
 .in-journey { display: flex; align-items: center; gap: 14px; }
 .in-step { flex: 1; min-width: 0; box-sizing: border-box; padding: 22px 12px; border-radius: 14px; text-align: center; background: #eff6ff; }

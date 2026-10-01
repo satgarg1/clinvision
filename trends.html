@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=434" />
+<link rel="stylesheet" href="styles.css?v=435" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -408,7 +408,9 @@
       const INFO_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
       function kpi(tone, icon, value, label, deltaOrSub, tip) {
         const info = tip ? `<span class="in-info" data-tip="${esc(tip)}" aria-label="${esc(tip)}">${INFO_ICON}</span>` : '';
-        return `<div class="in-kpi"><div class="in-kpi-ic in-tone-${tone}">${svgIcon(ICONS[icon], 26)}</div><div class="in-kpi-main"><div class="in-kpi-v">${value}</div><div class="in-kpi-l">${label}${info}</div>${deltaOrSub || ''}</div></div>`;
+        // the info icon stays attached to the last word so it never sits alone on a line
+        const labelHtml = tip ? label.replace(/(\S+)$/, (m) => `<span class="in-nw">${m}${info}</span>`) : label;
+        return `<div class="in-kpi"><div class="in-kpi-ic in-tone-${tone}">${svgIcon(ICONS[icon], 26)}</div><div class="in-kpi-main"><div class="in-kpi-v">${value}</div><div class="in-kpi-l">${labelHtml}</div>${deltaOrSub || ''}</div></div>`;
       }
       const sub = (t) => `<div class="in-kpi-sub">${t}</div>`;
       function kpiRow(items, cols) { return `<div class="in-kpi-row" style="--cols:${cols}">${items.join('')}</div>`; }
@@ -448,10 +450,18 @@
         if (out[out.length - 1] !== n - 1 && n - 1 - out[out.length - 1] > step / 2) out.push(n - 1);
         return out;
       }
+      // A transparent strip per x position, drawn last so it sits on top of the bars, lines and dots.
+      // Hovering anywhere in the column (not just on a thin bar or a dot) shows that position's numbers.
+      function hoverCols(spans, T, H, B, tipAt) {
+        return spans.map((s, i) => `<rect class="in-col" data-tip="${esc(tipAt(i))}" x="${s.x.toFixed(1)}" y="${T}" width="${s.w.toFixed(1)}" height="${(H - T - B).toFixed(1)}"/>`).join('');
+      }
+      const evenSpans = (n, L, cw) => Array.from({ length: n }, (_, i) => ({ x: L + i * cw, w: cw }));
       // bars with an optional line laid over them
       function comboChart(labels, bars, line, o = {}) {
         const W = o.W || 780, H = o.H || 310, L = 56, T = 18, R = 14, B = 36;
         const fmt = o.fmt || ((v) => num(v));
+        const tipFmt = o.tipFmt || fmt;
+        const hasLine = !!(line && line.length);
         const vmax = niceMax(Math.max(1, ...bars, ...(line || []).map((v) => v || 0)) * 1.08);
         const n = bars.length;
         const cw = (W - L - R) / n;
@@ -459,16 +469,16 @@
         bars.forEach((v, i) => {
           const h = (H - T - B) * v / vmax;
           const x = L + i * cw + cw * 0.2;
-          const tip = esc(`${labels[i]}: ${(o.tipFmt || fmt)(v)}`);
-          g += `<rect class="in-hit" data-tip="${tip}" x="${x.toFixed(1)}" y="${(H - B - h).toFixed(1)}" width="${(cw * 0.6).toFixed(1)}" height="${Math.max(0, h).toFixed(1)}" rx="3" fill="${o.barColor || C.blueL}" opacity="0.92"/>`;
+          g += `<rect x="${x.toFixed(1)}" y="${(H - B - h).toFixed(1)}" width="${(cw * 0.6).toFixed(1)}" height="${Math.max(0, h).toFixed(1)}" rx="3" fill="${o.barColor || C.blueL}" opacity="0.92"/>`;
         });
-        if (line && line.length) {
+        if (hasLine) {
           const pts = line.map((v, i) => [L + i * cw + cw / 2, T + (H - T - B) * (1 - (v || 0) / vmax)]);
-          if (o.area) g += `<path d="M${pts[0][0].toFixed(1)},${H - B} ${pts.map(([x, y]) => `L${x.toFixed(1)},${y.toFixed(1)}`).join(' ')} L${pts[pts.length - 1][0].toFixed(1)},${H - B} Z" fill="${o.lineColor || C.teal}" opacity="0.10"/>`;
-          g += `<path d="M${pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' L')}" fill="none" stroke="${o.lineColor || C.teal}" stroke-width="2.4" stroke-linejoin="round"/>`;
-          if (n <= 40) pts.forEach(([x, y]) => { g += `<circle class="in-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" stroke="${o.lineColor || C.teal}" stroke-width="2"/>`; });
+          if (o.area) g += `<path pointer-events="none" d="M${pts[0][0].toFixed(1)},${H - B} ${pts.map(([x, y]) => `L${x.toFixed(1)},${y.toFixed(1)}`).join(' ')} L${pts[pts.length - 1][0].toFixed(1)},${H - B} Z" fill="${o.lineColor || C.teal}" opacity="0.10"/>`;
+          g += `<path pointer-events="none" d="M${pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' L')}" fill="none" stroke="${o.lineColor || C.teal}" stroke-width="2.4" stroke-linejoin="round"/>`;
+          if (n <= 40) pts.forEach(([x, y]) => { g += `<circle pointer-events="none" class="in-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" stroke="${o.lineColor || C.teal}" stroke-width="2"/>`; });
         }
         pickLabelIdx(n).forEach((i) => { g += `<text class="in-tx" x="${(L + i * cw + cw / 2).toFixed(1)}" y="${H - 10}" text-anchor="middle" font-size="11.5">${esc(labels[i])}</text>`; });
+        g += hoverCols(evenSpans(n, L, cw), T, H, B, (i) => `${(o.tips && o.tips[i]) || labels[i]}\n${o.barName ? o.barName + ': ' : ''}${tipFmt(bars[i])}${hasLine ? `\n${o.lineName || 'Average'}: ${tipFmt(line[i])}` : ''}`);
         return `<svg viewBox="0 0 ${W} ${H}" width="100%" class="in-svg" role="img" aria-label="${esc(o.aria || 'Chart')}">${g}</svg>`;
       }
       function donut(parts, bigText, smallText, size = 210, stroke = 34) {
@@ -514,10 +524,11 @@
         let g = gridLines(W, H, L, T, R, B, vmax, (v) => num(v), 4);
         values.forEach((v, i) => {
           const h = (H - T - B) * v / vmax, x = L + i * cw + cw * 0.18;
-          g += `<rect class="in-hit" data-tip="${esc(`${labels[i]} min: ${num(v)} patients`)}" x="${x.toFixed(1)}" y="${(H - B - h).toFixed(1)}" width="${(cw * 0.64).toFixed(1)}" height="${Math.max(0, h).toFixed(1)}" rx="4" fill="${color}"/>`;
+          g += `<rect x="${x.toFixed(1)}" y="${(H - B - h).toFixed(1)}" width="${(cw * 0.64).toFixed(1)}" height="${Math.max(0, h).toFixed(1)}" rx="4" fill="${color}"/>`;
           g += `<text class="in-tx2" x="${(L + i * cw + cw / 2).toFixed(1)}" y="${H - B + 19}" text-anchor="middle" font-size="12">${esc(labels[i])}</text>`;
           g += `<text class="in-tx-strong" x="${(L + i * cw + cw / 2).toFixed(1)}" y="${H - B + 37}" text-anchor="middle" font-size="11.5" font-weight="700">${esc(subLabels[i])}</text>`;
         });
+        g += hoverCols(evenSpans(n, L, cw), T, H, B, (i) => `${labels[i]} min waiting\n${num(values[i])} patients (${subLabels[i]})`);
         return `<svg viewBox="0 0 ${W} ${H}" width="100%" class="in-svg" role="img" aria-label="Wait time distribution">${g}</svg>`;
       }
       function groupedBars(labels, a, b, ca, cb, o = {}) {
@@ -528,29 +539,33 @@
         const keep = new Set(pickLabelIdx(n, o.W ? 10 : 16));
         let g = gridLines(W, H, L, T, R, B, vmax, (v) => num(v), 4);
         labels.forEach((lab, i) => {
-          const tl = (o.tips && o.tips[i]) || lab;
           [[a, ca], [b, cb]].forEach(([arr, col], k) => {
             const h = (H - T - B) * arr[i] / vmax, x = L + i * cw + cw * 0.14 + k * cw * 0.36;
-            g += `<rect class="in-hit" data-tip="${esc(`${tl}: ${num(arr[i])}${names[k] ? ' ' + names[k] : ''}`)}" x="${x.toFixed(1)}" y="${(H - B - h).toFixed(1)}" width="${(cw * 0.32).toFixed(1)}" height="${Math.max(0, h).toFixed(1)}" rx="3" fill="${col}"/>`;
+            g += `<rect x="${x.toFixed(1)}" y="${(H - B - h).toFixed(1)}" width="${(cw * 0.32).toFixed(1)}" height="${Math.max(0, h).toFixed(1)}" rx="3" fill="${col}"/>`;
           });
           if (keep.has(i)) g += `<text class="in-tx" x="${(L + i * cw + cw / 2).toFixed(1)}" y="${H - 10}" text-anchor="middle" font-size="11.5">${esc(lab)}</text>`;
         });
+        g += hoverCols(evenSpans(n, L, cw), T, H, B, (i) => `${(o.tips && o.tips[i]) || labels[i]}\n${num(a[i])} ${names[0]}\n${num(b[i])} ${names[1]}`.replace(/ \n/g, '\n'));
         return `<svg viewBox="0 0 ${W} ${H}" width="100%" class="in-svg" role="img" aria-label="Grouped bars">${g}</svg>`;
       }
-      function areaPair(labels, a, b, ca, cb, peakIdx) {
-        const W = 640, H = 310, L = 46, T = 14, R = 12, B = 34;
+      function areaPair(labels, a, b, ca, cb, o = {}) {
+        const W = 640, H = 310, L = 46, T = 14, R = 28, B = 34;
         const vmax = niceMax(Math.max(1, ...a, ...(b || [0])) * 1.12);
         const n = labels.length;
         const X = (i) => L + (n > 1 ? i * (W - L - R) / (n - 1) : (W - L - R) / 2);
-        let g = gridLines(W, H, L, T, R, B, vmax, (v) => num(v), 4);
+        const fmtTick = (v) => (Number.isInteger(v) ? String(v) : String(+v.toFixed(1)));
+        let g = gridLines(W, H, L, T, R, B, vmax, fmtTick, 4);
         [[a, ca], [b, cb]].forEach(([arr, col]) => {
           if (!arr) return;
           const pts = arr.map((v, i) => [X(i), T + (H - T - B) * (1 - v / vmax)]);
-          g += `<path d="M${pts[0][0].toFixed(1)},${H - B} ${pts.map(([x, y]) => `L${x.toFixed(1)},${y.toFixed(1)}`).join(' ')} L${pts[pts.length - 1][0].toFixed(1)},${H - B} Z" fill="${col}" opacity="0.14"/>`;
-          g += `<path d="M${pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' L')}" fill="none" stroke="${col}" stroke-width="2.4" stroke-linejoin="round"/>`;
-          pts.forEach(([x, y], i) => { g += `<circle class="in-dot in-hit" data-tip="${esc(`${labels[i]}: ${num(arr[i])}`)}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" stroke="${col}" stroke-width="2"/>`; });
+          g += `<path pointer-events="none" d="M${pts[0][0].toFixed(1)},${H - B} ${pts.map(([x, y]) => `L${x.toFixed(1)},${y.toFixed(1)}`).join(' ')} L${pts[pts.length - 1][0].toFixed(1)},${H - B} Z" fill="${col}" opacity="0.14"/>`;
+          g += `<path pointer-events="none" d="M${pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' L')}" fill="none" stroke="${col}" stroke-width="2.4" stroke-linejoin="round"/>`;
+          pts.forEach(([x, y]) => { g += `<circle pointer-events="none" class="in-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" stroke="${col}" stroke-width="2"/>`; });
         });
         pickLabelIdx(n, 10).forEach((i) => { g += `<text class="in-tx" x="${X(i).toFixed(1)}" y="${H - 10}" text-anchor="middle" font-size="11">${esc(labels[i])}</text>`; });
+        const step = n > 1 ? (W - L - R) / (n - 1) : (W - L - R);
+        const spans = labels.map((_, i) => { const x0 = Math.max(L, X(i) - step / 2), x1 = Math.min(W - R, X(i) + step / 2); return { x: x0, w: x1 - x0 }; });
+        g += hoverCols(spans, T, H, B, (i) => (o.tipAt ? o.tipAt(i) : `${labels[i]}\n${fmtTick(a[i])}`));
         return `<svg viewBox="0 0 ${W} ${H}" width="100%" class="in-svg" role="img" aria-label="Demand against capacity">${g}</svg>`;
       }
       function stacked100(labels, newPct, newCounts, retCounts, tips) {
@@ -566,13 +581,17 @@
         newPct.forEach((p, i) => {
           const x = L + i * cw + cw * 0.16, w = cw * 0.68;
           const hn = (H - T - B) * p / 100, hr = (H - T - B) - hn;
-          if (newCounts[i] + retCounts[i] === 0) {
-            g += `<rect class="in-hit" data-tip="${esc(`${tl(i)}: no visits`)}" x="${x.toFixed(1)}" y="${T}" width="${w.toFixed(1)}" height="${(H - T - B).toFixed(1)}" rx="3" style="fill:var(--in-track)"/>`;
-          } else {
-            g += `<rect class="in-hit" data-tip="${esc(`${tl(i)}: ${num(newCounts[i])} new patient${newCounts[i] === 1 ? '' : 's'}`)}" x="${x.toFixed(1)}" y="${(H - B - hn).toFixed(1)}" width="${w.toFixed(1)}" height="${hn.toFixed(1)}" fill="${C.blue}"/>`;
-            g += `<rect class="in-hit" data-tip="${esc(`${tl(i)}: ${num(retCounts[i])} returning patient${retCounts[i] === 1 ? '' : 's'}`)}" x="${x.toFixed(1)}" y="${T}" width="${w.toFixed(1)}" height="${hr.toFixed(1)}" fill="${C.tealL}"/>`;
+          if (newCounts[i] + retCounts[i] > 0) {
+            g += `<rect x="${x.toFixed(1)}" y="${(H - B - hn).toFixed(1)}" width="${w.toFixed(1)}" height="${hn.toFixed(1)}" fill="${C.blue}"/>`;
+            g += `<rect x="${x.toFixed(1)}" y="${T}" width="${w.toFixed(1)}" height="${hr.toFixed(1)}" fill="${C.tealL}"/>`;
           }
           if (keep.has(i)) g += `<text class="in-tx2" x="${(L + i * cw + cw / 2).toFixed(1)}" y="${H - 10}" text-anchor="middle" font-size="12">${esc(labels[i])}</text>`;
+        });
+        g += hoverCols(evenSpans(n, L, cw), T, H, B, (i) => {
+          const a = newCounts[i], r = retCounts[i], t = a + r;
+          if (!t) return `${tl(i)}\nNo visits`;
+          const pn = Math.round(100 * a / t);
+          return `${tl(i)}\n${num(a)} new patient${a === 1 ? '' : 's'} (${pn}%)\n${num(r)} returning patient${r === 1 ? '' : 's'} (${100 - pn}%)`;
         });
         return `<svg viewBox="0 0 ${W} ${H}" width="100%" class="in-svg" role="img" aria-label="New against returning patients">${g}</svg>`;
       }
@@ -749,9 +768,24 @@
           const w = waitMin(p); if (w != null) waitMap[k].push(w);
         });
         invoices.forEach((i) => { const k = bucketKeyFor(new Date(`${i.invoiceDate}T00:00:00`), gran); if (k in revMap) revMap[k] += i.amountReceived || 0; });
-        return { keys, labels: keys.map((k) => bucketLabelFor(k, gran)), seen: keys.map((k) => seenMap[k]), revenue: keys.map((k) => revMap[k]), wait: keys.map((k) => (waitMap[k].length ? Math.round(mean(waitMap[k])) : 0)) };
+        const clipEnd = range.end > todayStr() ? todayStr() : range.end;
+        const tipFor = (k) => {
+          const [y, m, d] = k.split('-').map(Number);
+          if (gran === 'day') return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+          if (gran === 'month') return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+          const s = k < range.start ? range.start : k;
+          const wk = weekRangeFromMonday(k).end;
+          const e = wk < clipEnd ? wk : clipEnd;
+          return s === e ? dayMonth(s) : `${dayMonth(s)} to ${dayMonth(e)}`;
+        };
+        return { keys, tips: keys.map(tipFor), labels: keys.map((k) => bucketLabelFor(k, gran)), seen: keys.map((k) => seenMap[k]), revenue: keys.map((k) => revMap[k]), wait: keys.map((k) => (waitMap[k].length ? Math.round(mean(waitMap[k])) : 0)) };
       }
-      const rolling = (arr, n = 7) => arr.map((_, i) => { const s = arr.slice(Math.max(0, i - n + 1), i + 1); return Math.round(s.reduce((a, b) => a + b, 0) / s.length); });
+      // The line on trend charts: an average of the last few bars, so quiet and busy days do not hide the direction.
+      const AVG_WINDOW = { day: 7, week: 4, month: 3 };
+      const avgName = (gran) => `${AVG_WINDOW[gran]} ${gran} average`;
+      const avgNote = (gran) => `<p class="in-note">The line is the ${avgName(gran)}. Each point averages that ${gran} and the ${AVG_WINDOW[gran] - 1} before it, which smooths out quiet and busy ${gran}s so the trend is easier to see. At the start of the period it averages fewer ${gran}s, because only those exist so far.</p>`;
+      const rolling = (arr, gran) => { const n = AVG_WINDOW[gran] || 7; return arr.map((_, i) => { const s = arr.slice(Math.max(0, i - n + 1), i + 1); return +(s.reduce((a, b) => a + b, 0) / s.length).toFixed(1); }); };
+      const patFmt = (v) => `${+v.toFixed(1)} ${v === 1 ? 'patient' : 'patients'}`;
 
       async function loadAndRender() {
         renderAnomalyChip();
@@ -845,9 +879,9 @@
         const mi = Math.min(ui.overviewSeries, modes.length - 1);
         const mode = modes[mi];
         let chart;
-        if (mode === 'Patients') chart = comboChart(ser.labels, ser.seen, rolling(ser.seen), { aria: 'Patients seen over time', tipFmt: (v) => `${num(v)} patients` }) + legend([['Patients seen', C.blueL], ['7 period average', C.teal]]);
-        else if (mode === 'Revenue') chart = comboChart(ser.labels, ser.revenue, rolling(ser.revenue), { fmt: moneyShort, tipFmt: money, barColor: '#99e6d3', lineColor: C.green, aria: 'Revenue over time' }) + legend([['Revenue', '#99e6d3'], ['7 period average', C.green]]);
-        else chart = comboChart(ser.labels, ser.wait, null, { fmt: (v) => `${Math.round(v)}m`, tipFmt: (v) => `${v} min average wait`, barColor: '#c4b5fd', aria: 'Average wait over time' }) + legend([['Average wait (minutes)', '#c4b5fd']]);
+        if (mode === 'Patients') chart = comboChart(ser.labels, ser.seen, rolling(ser.seen, gran), { aria: 'Patients seen over time', tips: ser.tips, barName: 'Patients seen', lineName: avgName(gran), tipFmt: patFmt }) + legend([['Patients seen', C.blueL], [avgName(gran), C.teal]]) + avgNote(gran);
+        else if (mode === 'Revenue') chart = comboChart(ser.labels, ser.revenue, rolling(ser.revenue, gran), { fmt: moneyShort, tipFmt: money, barColor: '#99e6d3', lineColor: C.green, tips: ser.tips, barName: 'Revenue', lineName: avgName(gran), aria: 'Revenue over time' }) + legend([['Revenue', '#99e6d3'], [avgName(gran), C.green]]) + avgNote(gran);
+        else chart = comboChart(ser.labels, ser.wait, null, { fmt: (v) => `${Math.round(v)}m`, tipFmt: (v) => `${v} min`, tips: ser.tips, barName: 'Average wait', barColor: '#c4b5fd', aria: 'Average wait over time' }) + legend([['Average wait (minutes)', '#c4b5fd']]);
         const daily = bucketSeries(D.range, D.cur.patients, [], 'day');
         const withData = daily.seen.map((v, i) => ({ v, label: daily.labels[i] })).filter((x) => x.v > 0);
         const peak = withData.length ? withData.reduce((a, b) => (b.v > a.v ? b : a)) : null;
@@ -873,7 +907,7 @@
         const gran = ui.revGran || granularityFor(D.range);
         const ser = bucketSeries(D.range, [], D.invoicesRaw, gran);
         const gi = ['day', 'week', 'month'].indexOf(gran);
-        const trend = card(`${{ day: 'Daily', week: 'Weekly', month: 'Monthly' }[gran]} revenue trend`, cur.revenue > 0 ? comboChart(ser.labels, ser.revenue, rolling(ser.revenue), { W: 1080, fmt: moneyShort, tipFmt: money, barColor: '#99e6d3', lineColor: C.green, area: true, aria: 'Revenue trend' }) : empty('No billed invoices in this period.'), { right: segBtns('revGran', ['Daily', 'Weekly', 'Monthly'], gi) });
+        const trend = card(`${{ day: 'Daily', week: 'Weekly', month: 'Monthly' }[gran]} revenue trend`, cur.revenue > 0 ? comboChart(ser.labels, ser.revenue, rolling(ser.revenue, gran), { W: 1080, fmt: moneyShort, tipFmt: money, barColor: '#99e6d3', lineColor: C.green, area: true, tips: ser.tips, barName: 'Revenue', lineName: avgName(gran), aria: 'Revenue trend' }) + legend([['Revenue', '#99e6d3'], [avgName(gran), C.green]]) + avgNote(gran) : empty('No billed invoices in this period.'), { right: segBtns('revGran', ['Daily', 'Weekly', 'Monthly'], gi) });
         const byDoc = {};
         D.invoicesRaw.forEach((i) => { byDoc[i.doctorId] = (byDoc[i.doctorId] || 0) + (i.amountReceived || 0); });
         const total = Object.values(byDoc).reduce((a, b) => a + b, 0) || 1;
@@ -944,7 +978,7 @@
         });
         const hrs = clinicHours().hours;
         const anyFlow = Object.keys(arrByHour).length || Object.keys(seenByHour).length;
-        const flowCard = card('Patient flow by hour', anyFlow ? groupedBars(hrs.map(formatHourLabel), hrs.map((h) => arrByHour[h] || 0), hrs.map((h) => seenByHour[h] || 0), C.blue, C.purple, { names: ['arrivals', 'seen'] }) + legend([['Arrivals', C.blue], ['Seen', C.purple]]) + outsideNote(outsideN) : empty('No arrivals during clinic hours in this period.'), { sub: '(Arrivals against consultations)' });
+        const flowCard = card('Patient flow by hour', anyFlow ? groupedBars(hrs.map(formatHourLabel), hrs.map((h) => arrByHour[h] || 0), hrs.map((h) => seenByHour[h] || 0), C.blue, C.purple, { names: ['arrivals', 'seen'], tips: hrs.map((h) => `${formatHourLabel(h)} to ${formatHourLabel((h + 1) % 24)}`) }) + legend([['Arrivals', C.blue], ['Seen', C.purple]]) + outsideNote(outsideN) : empty('No arrivals during clinic hours in this period.'), { sub: '(Arrivals against consultations)' });
         return items + `<div class="in-grid in-grid-b">${waitCard}${arrCard}</div>` + heatCard + flowCard;
       }
       // Rows are the clinic's working weekdays, columns are its opening hours.
@@ -987,8 +1021,10 @@
           const days = cap ? Math.max(1, cap.workDays) : Math.max(1, dateList(D.range).length);
           const arr = hrs.map((h) => +((byHour[h] || 0) / days).toFixed(1));
           const capArr = cap ? hrs.map(() => +cap.perHour.toFixed(1)) : null;
-          const capNote = cap ? `<p class="in-note">Capacity is how many patients your ${cap.doctorCount} active doctor${cap.doctorCount === 1 ? '' : 's'} can see in an hour at your average consultation time (${Math.round(cap.minutesEach)} min${cap.measured ? '' : ', taken from your slot length because no consultation times are recorded yet'}).</p>` : '';
-          demand = areaPair(hrs.map(formatHourLabel), arr, capArr, C.blue, C.teal) + legend(capArr ? [['Arrivals per working day', C.blue], ['Doctor capacity per hour', C.teal]] : [['Arrivals per working day', C.blue]]) + capNote + outsideNote(outsideN);
+          const docs = cap ? +(cap.doctorDays / Math.max(1, cap.workDays)).toFixed(1) : 0;
+          const capNote = cap ? `<p class="in-note">Capacity is how many patients your doctors can see in an hour: ${docs} doctor${docs === 1 ? '' : 's'}${Number.isInteger(docs) ? '' : ' on an average day'} × 60 minutes ÷ ${+cap.minutesEach.toFixed(1)} minutes per consultation = ${+cap.perHour.toFixed(1)} patients an hour${cap.measured ? ', using the average consultation time recorded in this period' : ', using your slot length because no consultation times are recorded yet'}.</p>` : '';
+          const hourTip = (i) => `${formatHourLabel(hrs[i])} to ${formatHourLabel((hrs[i] + 1) % 24)}\nArrivals: ${arr[i]} on an average working day${capArr ? `\nCapacity: ${capArr[i]} patients an hour` : ''}`;
+          demand = areaPair(hrs.map(formatHourLabel), arr, capArr, C.blue, C.teal, { tipAt: hourTip }) + legend(capArr ? [['Arrivals per working day', C.blue], ['Doctor capacity per hour', C.teal]] : [['Arrivals per working day', C.blue]]) + capNote + outsideNote(outsideN);
         }
         const dc = card('Demand against capacity', demand, { sub: '(Average working day)' });
         const peaks = hEntries.slice(0, 5).map(([h, c], i) => `<div class="in-peak"><span class="in-peak-n">${i + 1}.</span><span class="in-peak-l">${formatHourLabel(h)} to ${formatHourLabel((h + 1) % 24)}</span><b>${num(c)}</b></div>`).join('');
