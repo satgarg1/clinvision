@@ -641,7 +641,7 @@
               </div>
               <div class="dash-kpi-value">${c.value}${c.unit ? ` <span style="font-size:12px;font-weight:600;color:var(--grey-500);">${Qlinic.escapeHtml(c.unit)}</span>` : ''}</div>
               <div class="dash-kpi-trend${c.chip ? (c.chip.good ? ' good' : ' bad') : ''}">${
-                c.chip ? `${c.chip.arrow === '▲' ? '&#8593;' : '&#8595;'} ${c.chip.text} vs yesterday` : (c.sub ? Qlinic.escapeHtml(c.sub) : 'Right now')
+                c.chip ? `${c.chip.arrow === '▲' ? '&#8593;' : '&#8595;'} ${c.chip.text} vs yesterday` : (c.sub ? Qlinic.escapeHtml(c.sub) : '&nbsp;')
               }</div>
             </div>
             ${kpiSparklineSvg(ACCENT_HEX[c.accent] || '#2563eb')}
