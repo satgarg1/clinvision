@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=441" />
+<link rel="stylesheet" href="styles.css?v=442" />
 </head>
 <body class="queue-page">
   <div class="login-wrap">
@@ -367,9 +367,9 @@
           clinicClosedBody: 'आज आपके धैर्य के लिए धन्यवाद — क्लिनिक कल फिर खुलेगा।',
           notYetNote: (dateLabel) => `यह लिंक अभी सक्रिय नहीं है — कृपया ${dateLabel} की सुबह वापस आकर इसे दोबारा खोलें, ताकि आप कतार में अपनी लाइव स्थिति देख सकें।`,
           apptLineWithTime: (doctorName, specialty, timeStr) =>
-            `आपकी अपॉइंटमेंट <b>${doctorName}</b>${specialty ? ' ' + specialty : ''} के साथ<span style="display:block;margin-top:2px;">${timeStr} पर बुक है</span>`,
+            `आपकी अपॉइंटमेंट बुक है<b>${doctorName} के साथ</b><span style="display:block;margin-top:2px;">${specialty ? specialty + ', ' : ''}${timeStr} पर</span>`,
           apptLineFutureDate: (doctorName, specialty, dateLabel) =>
-            `आपकी अपॉइंटमेंट <b>${doctorName}</b>${specialty} के साथ बुक है<span style="display:block;margin-top:2px;">${dateLabel} को</span>`,
+            `आपकी अपॉइंटमेंट बुक है<b>${doctorName} के साथ</b><span style="display:block;margin-top:2px;">${specialty ? specialty.trim() + ', ' : ''}${dateLabel} को</span>`,
           inQueueLine: (doctorName, specialty) =>
             `आप <b>${doctorName}</b>${specialty} की कतार में हैं`,
           statusMessage: {

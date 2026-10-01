@@ -8448,3 +8448,7 @@ button.rv-kpi:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1); }
 .queue-page .queue-details-note { margin: 14px 0 0; padding: 14px 16px; font-size: 13.5px; line-height: 1.5; color: #475569; background: rgba(255, 255, 255, 0.7); border-radius: 14px; }
 .queue-page #queueDetailsCloseBtn { width: 100%; min-height: 54px; font-size: 16.5px; font-weight: 700; border-radius: 999px; background: linear-gradient(180deg, #2f7bf5 0%, #1d63e0 100%); box-shadow: 0 10px 24px rgba(29, 99, 224, 0.32); }
 .queue-page #queueDetailsBackdrop .modal-actions { display: block; }
+
+/* No outlines on the live queue cards: soft shadows only. */
+.queue-page .login-card:has(#statusState[style*="block"]) .queue-appt-line, .queue-page .login-card:has(#statusState[style*="block"]) .queue-position, .queue-page .login-card:has(#statusState[style*="block"]) #nearbyBlock, .queue-page .login-card:has(#statusState[style*="block"]) .queue-token-num, .queue-page .login-card:has(#statusState[style*="block"]) .queue-nowserving-cell, .queue-page .login-card:has(#statusState[style*="block"]) .queue-doctor-status, .queue-page .login-card:has(#statusState[style*="block"]) .queue-status-msg .pill, .queue-page .login-card:has(#statusState[style*="block"]) .queue-status-msg.is-waiting .pill, .queue-page .login-card:has(#statusState[style*="block"]) .lang-toggle-wrap .filter-seg,
+.queue-page .queue-stat-cell, .queue-page .queue-details-summary { border: none; }
