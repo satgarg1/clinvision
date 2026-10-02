@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=467" />
+<link rel="stylesheet" href="styles.css?v=468" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -486,19 +486,6 @@
         return t ? (/^[A-Za-z]/.test(t) ? t : '#' + t) : '';
       }
 
-      // Read only: who was called and was not here. Only reception puts them back in line.
-      function skippedNoteHtml(q) {
-        const list = q.skipped || [];
-        if (!list.length) return '';
-        const ranks = buildWalkinRanks(q);
-        const items = list.map((p) => {
-          const t = formatToken(p, ranks);
-          const away = Math.max(0, Math.round((Date.now() - new Date(p.skippedAt || Date.now()).getTime()) / 60000));
-          return `${Qlinic.escapeHtml(p.name)}${t ? ' (' + (/^[A-Za-z]/.test(String(t)) ? '' : '#') + t + ')' : ''}, away ${away} min`;
-        });
-        return `<div class="skipped-note"><b>Called, not here (${list.length}):</b> ${items.join(' &middot; ')}. Reception puts them back in line.</div>`;
-      }
-
       function renderWaitingList(q) {
         const walkinRanks = buildWalkinRanks(q);
         const totalWaitingPages = Math.max(1, Math.ceil(q.waiting.length / DOCTOR_WAITING_PAGE_SIZE));
@@ -523,7 +510,6 @@
           </table>
           <div id="doctorWaitingPagerWrap">${Qlinic.pagerHtml(doctorWaitingPage + 1, totalWaitingPages)}</div>
         `;
-        document.getElementById('waitingList').insertAdjacentHTML('beforeend', skippedNoteHtml(q));
         Qlinic.wirePager(document.getElementById('doctorWaitingPagerWrap'), doctorWaitingPage + 1, totalWaitingPages, (p) => { doctorWaitingPage = p - 1; renderWaitingList(q); });
       }
 
