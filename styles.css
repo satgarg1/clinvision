@@ -3785,6 +3785,8 @@ th.th-filterable { position: relative; }
    to it. */
 .holiday-popup-who-row { display: grid; grid-template-columns: 84px 1fr; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--grey-300); }
 .holiday-popup-who-row:last-child { border-bottom: none; }
+/* The closed day popup's labels ("Weekly off") are wider than the role tags above. */
+.holiday-popup-who-row.closure { grid-template-columns: 100px 1fr; }
 .holiday-popup-who-row .role-tag { justify-self: start; }
 .holiday-popup-who-name { font-weight: 700; font-size: 14px; text-align: left; }
 

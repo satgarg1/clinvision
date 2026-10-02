@@ -122,6 +122,53 @@
 
   build().catch(() => { });
 
+  // ---- Closed day popup -------------------------------------------------
+  // Whoever logs in (admin, reception, doctor, pharmacist) is told when the clinic is closed today: a
+  // weekly off day from Clinic Settings or a date on the Closed dates page. It shows on the first page
+  // opened after logging in and on the first page of each day, once, never on an open day.
+  const CLOSURE_SEEN_KEY = 'qlinic_closure_popup_seen';
+
+  async function showClosurePopup() {
+    if (!Qlinic.getClosureReasonsFor || location.pathname.endsWith('admin.html')) return;
+    const email = await Qlinic.getCurrentUserEmail();
+    if (!email) return;
+    const today = Qlinic.getTodayDate();
+    const mark = email + '|' + today;
+    let seen = null;
+    try { seen = localStorage.getItem(CLOSURE_SEEN_KEY); } catch (e) { /* storage blocked */ }
+    if (seen === mark) return;
+    const reasons = await Qlinic.getClosureReasonsFor(today);
+    try { localStorage.setItem(CLOSURE_SEEN_KEY, mark); } catch (e) { /* storage blocked */ }
+    if (!reasons.length) return;
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML =
+      '<div class="modal-card holiday-popup-modal" role="alertdialog" aria-modal="true" aria-labelledby="closurePopupTitle">' +
+        '<div class="holiday-popup-icon" aria-hidden="true">🗓️</div>' +
+        '<h2 class="modal-title" id="closurePopupTitle">The clinic is closed today.</h2>' +
+        '<div class="holiday-popup-who">' +
+          reasons.map((r) =>
+            '<div class="holiday-popup-who-row closure">' +
+              '<span class="role-tag ' + (r.kind === 'weekly' ? 'reception' : 'doctor') + '">' + (r.kind === 'weekly' ? 'Weekly off' : 'Holiday') + '</span>' +
+              '<span class="holiday-popup-who-name">' + Qlinic.escapeHtml(r.label) + '</span>' +
+            '</div>').join('') +
+        '</div>' +
+        '<button type="button" class="btn-sm primary" id="closurePopupDismiss" style="width:100%;">Got it</button>' +
+      '</div>';
+    document.body.appendChild(backdrop);
+    function cleanup() {
+      backdrop.remove();
+      document.removeEventListener('keydown', onKeydown);
+    }
+    function onKeydown(e) { if (e.key === 'Escape') cleanup(); }
+    document.addEventListener('keydown', onKeydown);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) cleanup(); });
+    backdrop.querySelector('#closurePopupDismiss').addEventListener('click', cleanup);
+    backdrop.querySelector('#closurePopupDismiss').focus();
+  }
+  showClosurePopup().catch(() => { });
+
   // ---- Loading skeleton -------------------------------------------------
   // Grey blocks with a light band sweeping across them stand in for the page until its first
   // data has arrived. It stays invisible for the first 0.2 seconds (CSS), so a fast connection

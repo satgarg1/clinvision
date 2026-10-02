@@ -1011,6 +1011,22 @@
     return normalizeClosure(data);
   }
 
+  // Why the clinic is closed on a day, as a list: the weekly off day set in Clinic Settings and/or a date on
+  // the Closed dates page (national holidays, festivals). Empty when the clinic is open that day.
+  async function getClosureReasonsFor(dateStr) {
+    const date = dateStr || todayDateStr();
+    const [y, m, d] = date.split('-').map(Number);
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayName = days[new Date(y, m - 1, d).getDay()];
+    const [clinic, closures] = await Promise.all([getClinic(), getClinicClosures().catch(() => [])]);
+    const reasons = [];
+    const off = ((clinic && clinic.weekly_off_days) || []).map((x) => String(x).toLowerCase());
+    if (off.includes(dayName)) reasons.push({ kind: 'weekly', label: dayName[0].toUpperCase() + dayName.slice(1) });
+    const closure = closures.find((c) => c.date === date);
+    if (closure) reasons.push({ kind: 'closed', label: closure.note || 'Closed date' });
+    return reasons;
+  }
+
   async function deleteClinicClosure(closureId) {
     const { error } = await sb.from('clinic_closures').delete().eq('id', closureId);
     if (error) throw error;
@@ -2410,6 +2426,8 @@
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
     if (error) throw error;
     await finishClinicSetupIfNeeded(data.session);
+    // A fresh login always gets the closed day popup again (see app-topbar.js).
+    try { localStorage.removeItem('qlinic_closure_popup_seen'); } catch (e) { /* storage blocked */ }
     return true;
   }
 
@@ -3645,6 +3663,7 @@
     addClinicClosure,
     updateClinicClosure,
     deleteClinicClosure,
+    getClosureReasonsFor,
     getDoctorHolidays,
     addDoctorHoliday,
     updateDoctorHoliday,
