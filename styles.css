@@ -8694,5 +8694,12 @@ button.rv-kpi:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1); }
 .queue-page .login-card:has(:is(#statusState, #notYetState)[style*="block"]) .queue-status-msg.is-skipped .pill::before { content: ''; flex: none; width: 22px; height: 22px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23d97706' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23fde7bd'/%3E%3Cline x1='12' y1='8' x2='12' y2='13'/%3E%3Cline x1='12' y1='16.5' x2='12.01' y2='16.5'/%3E%3C/svg%3E") center / 22px no-repeat; }
 .queue-page .login-card:has(:is(#statusState, #notYetState)[style*="block"]) .queue-token.is-skipped .queue-token-num { color: #8a4b05; background: linear-gradient(160deg, #fff4e0 0%, #ffe6c0 100%); border-color: #f5d4a0; box-shadow: 0 10px 24px rgba(217, 119, 6, 0.16); }
 
-/* Under the booking button when WhatsApp messages are on: the consent and first-contact reminder. */
-.wa-consent { margin: 10px 0 0; font-size: 12px; line-height: 1.5; color: var(--grey-500); }
+/* Settings, Patient messages: the downloadable rule guide for the clinic's WhatsApp number. */
+.pm-guide { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 16px 0; padding: 16px 18px; border: 1px solid var(--grey-300); border-radius: 16px; background: var(--grey-100); }
+.pm-guide-icon { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: #dbeafe; color: #2563eb; flex: none; }
+.pm-guide-copy { flex: 1 1 260px; min-width: 0; }
+.pm-guide-title { font-size: 15px; font-weight: 700; color: var(--black); }
+.pm-guide-text { margin-top: 2px; font-size: 13px; line-height: 1.5; color: var(--grey-700); }
+.pm-guide-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.pm-guide-btn { display: inline-flex; align-items: center; padding: 9px 16px; border-radius: 10px; background: #2563eb; color: #fff; font-size: 13px; font-weight: 600; text-decoration: none; }
+.pm-guide-btn:hover { background: #1d4ed8; }

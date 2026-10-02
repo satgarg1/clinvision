@@ -16,6 +16,7 @@ clinic_flow_brief.md
 *.json
 *.zip
 *.pdf
+!guides/*.pdf
 *.docx
 *mockup*
 *.py

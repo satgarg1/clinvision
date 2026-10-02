@@ -15,7 +15,6 @@ exclude:
   - "*.csv"
   - "*.json"
   - "*.zip"
-  - "*.pdf"
   - "*.docx"
   - "*mockup*"
   - "*.py"

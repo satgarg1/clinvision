@@ -4,6 +4,7 @@
 zine2riV
 .claude/
 *.pdf
+!guides/*.pdf
 *.docx
 *.jpg
 QLINIC~2/
