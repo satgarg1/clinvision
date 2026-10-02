@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=466" />
+<link rel="stylesheet" href="styles.css?v=467" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -116,7 +116,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=143"></script>
+  <script src="clinic-data.js?v=144"></script>
   <script src="app-topbar.js?v=9"></script>
   <script>
     (async function () {
@@ -523,7 +523,7 @@
         if (doctors.length > 0) {
           allWaiting = queues.flatMap((q) => q.waiting);
           const nowMs = Date.now();
-          const waitMinsFor = (p) => Math.max(0, Math.round((nowMs - p.effectiveTime.getTime()) / 60000));
+          const waitMinsFor = (p) => Math.max(0, Math.round((nowMs - p.effectiveTime.getTime() - (p.awaySeconds || 0) * 1000) / 60000));
 
           const avgWaitMins = allWaiting.length
             ? Math.round(allWaiting.reduce((sum, p) => sum + waitMinsFor(p), 0) / allWaiting.length)
@@ -559,7 +559,7 @@
           function peakWaitMinsFor(p) {
             const start = Qlinic.effectiveMoment(p, doctorById[p.doctorId]).getTime();
             const end = p.status === 'waiting' ? nowMs : (p.calledAt ? new Date(p.calledAt).getTime() : nowMs);
-            return Math.max(0, Math.round((end - start) / 60000));
+            return Math.max(0, Math.round((end - start - (p.awaySeconds || 0) * 1000) / 60000));
           }
           const todayWaitCandidates = todayPatients.filter((p) => ['waiting', 'in_consult', 'done'].includes(p.status));
           const longestWaiting = todayWaitCandidates.length

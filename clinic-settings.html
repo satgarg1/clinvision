@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=466" />
+<link rel="stylesheet" href="styles.css?v=467" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -237,6 +237,17 @@
               <div class="time-picker-panel" id="scheduleIntervalPanel" style="display:none;"></div>
             </div>
             <span class="qr-hint">Bucket size for Reception's "View day's schedule" popup</span>
+          </div>
+          <div class="qr-field">
+            <label class="qr-label">Return window</label>
+            <div class="time-picker" id="returnWindowPicker">
+              <button type="button" class="time-picker-trigger" id="returnWindowTrigger">
+                <span id="returnWindowTriggerText">Loading…</span><span class="time-picker-caret">▾</span>
+              </button>
+              <input type="hidden" id="returnWindowInput" required />
+              <div class="time-picker-panel" id="returnWindowPanel" style="display:none;"></div>
+            </div>
+            <span class="qr-hint">How long a patient who was called but not here keeps their place</span>
           </div>
           <div class="qr-field qr-save-col">
             <button type="submit" class="qr-save" id="rulesSaveBtn">
@@ -544,7 +555,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=143"></script>
+  <script src="clinic-data.js?v=144"></script>
   <script src="app-topbar.js?v=9"></script>
   <script>
     (async function () {
@@ -683,6 +694,14 @@
         hiddenId: 'graceWindowInput', panelId: 'graceWindowPanel', options: DURATION_OPTIONS,
         fallbackLabel: (v) => `${v} min`,
       });
+      const RETURN_WINDOW_OPTIONS = [15, 30, 45, 60, 90, 120, 180, 240].map((m) => ({
+        value: m, label: m < 60 ? `${m} min` : `${m / 60} hr`,
+      }));
+      const returnWindowPicker = setupDropdownPicker({
+        pickerId: 'returnWindowPicker', triggerId: 'returnWindowTrigger', triggerTextId: 'returnWindowTriggerText',
+        hiddenId: 'returnWindowInput', panelId: 'returnWindowPanel', options: RETURN_WINDOW_OPTIONS,
+        fallbackLabel: (v) => `${v} min`,
+      });
       const slotIntervalPicker = setupDropdownPicker({
         pickerId: 'slotIntervalPicker', triggerId: 'slotIntervalTrigger', triggerTextId: 'slotIntervalTriggerText',
         hiddenId: 'slotIntervalInput', panelId: 'slotIntervalPanel', options: SLOT_LENGTH_OPTIONS,
@@ -783,6 +802,7 @@
         if (!waWasStaged) waDraft = waSaved;
         renderWhatsAppCard();
         graceWindowPicker.setValue(clinic.grace_window_mins);
+        returnWindowPicker.setValue(clinic.return_window_mins || 60);
         slotIntervalPicker.setValue(clinic.slot_interval_mins);
         slotCapacityPicker.setValue(clinic.slot_capacity);
         scheduleIntervalPicker.setValue(clinic.schedule_interval_mins || 30);
@@ -1051,6 +1071,7 @@
         try {
           await Qlinic.updateClinic({
             graceWindowMins: document.getElementById('graceWindowInput').value,
+            returnWindowMins: document.getElementById('returnWindowInput').value,
             slotIntervalMins: document.getElementById('slotIntervalInput').value,
             slotCapacity: document.getElementById('slotCapacityInput').value,
             scheduleIntervalMins: document.getElementById('scheduleIntervalInput').value,

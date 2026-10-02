@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=466" />
+<link rel="stylesheet" href="styles.css?v=467" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -144,6 +144,10 @@
             <button class="ns-btn-lg solid" id="finishCurrentBtn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
               Done
+            </button>
+            <button class="ns-btn-lg warm" id="notHereBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="22" y2="13"/><line x1="22" y1="8" x2="17" y2="13"/></svg>
+              Not here
             </button>
           </div>
           <div class="call-confirm-overlay" id="callConfirmOverlay"><span class="call-confirm-check">✓</span>Next patient called</div>
@@ -306,7 +310,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=143"></script>
+  <script src="clinic-data.js?v=144"></script>
   <script src="app-topbar.js?v=9"></script>
   <script>
     (async function () {
@@ -389,9 +393,33 @@
 
       function showToast(msg) {
         const t = document.getElementById('toast');
+        clearTimeout(actionToastTimer);
+        t.classList.remove('has-action');
         t.textContent = msg;
         t.classList.add('show');
         setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      // A toast with one button (Undo), kept on screen longer than a plain toast.
+      let actionToastTimer = null;
+      function showActionToast(msg, label, onAction, ms) {
+        const t = document.getElementById('toast');
+        clearTimeout(actionToastTimer);
+        t.textContent = '';
+        const span = document.createElement('span');
+        span.textContent = msg;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'toast-action';
+        btn.textContent = label;
+        btn.addEventListener('click', async () => {
+          clearTimeout(actionToastTimer);
+          t.classList.remove('show', 'has-action');
+          await onAction();
+        });
+        t.append(span, btn);
+        t.classList.add('show', 'has-action');
+        actionToastTimer = setTimeout(() => t.classList.remove('show', 'has-action'), ms || 10000);
       }
 
       let callConfirmTimer = null;
@@ -441,7 +469,7 @@
         const ranks = new Map();
         const walkins = [
           ...(q.nowServing ? [q.nowServing] : []),
-          ...q.waiting, ...q.booked, ...q.done, ...q.noShow,
+          ...q.waiting, ...q.booked, ...q.done, ...q.noShow, ...(q.skipped || []),
         ].filter((p) => p.type === 'walkin');
         walkins.sort((a, b) => (a.tokenNumber || 0) - (b.tokenNumber || 0));
         walkins.forEach((p, i) => ranks.set(p.id, i + 1));
@@ -451,6 +479,24 @@
         if (!p || p.tokenNumber == null) return null;
         if (p.type === 'walkin') return 'W' + (ranks.get(p.id) || '?');
         return String(p.tokenNumber);
+      }
+
+      function tokenText(p) {
+        const t = formatToken(p, buildWalkinRanks(currentQueue));
+        return t ? (/^[A-Za-z]/.test(t) ? t : '#' + t) : '';
+      }
+
+      // Read only: who was called and was not here. Only reception puts them back in line.
+      function skippedNoteHtml(q) {
+        const list = q.skipped || [];
+        if (!list.length) return '';
+        const ranks = buildWalkinRanks(q);
+        const items = list.map((p) => {
+          const t = formatToken(p, ranks);
+          const away = Math.max(0, Math.round((Date.now() - new Date(p.skippedAt || Date.now()).getTime()) / 60000));
+          return `${Qlinic.escapeHtml(p.name)}${t ? ' (' + (/^[A-Za-z]/.test(String(t)) ? '' : '#') + t + ')' : ''}, away ${away} min`;
+        });
+        return `<div class="skipped-note"><b>Called, not here (${list.length}):</b> ${items.join(' &middot; ')}. Reception puts them back in line.</div>`;
       }
 
       function renderWaitingList(q) {
@@ -477,6 +523,7 @@
           </table>
           <div id="doctorWaitingPagerWrap">${Qlinic.pagerHtml(doctorWaitingPage + 1, totalWaitingPages)}</div>
         `;
+        document.getElementById('waitingList').insertAdjacentHTML('beforeend', skippedNoteHtml(q));
         Qlinic.wirePager(document.getElementById('doctorWaitingPagerWrap'), doctorWaitingPage + 1, totalWaitingPages, (p) => { doctorWaitingPage = p - 1; renderWaitingList(q); });
       }
 
@@ -585,7 +632,7 @@
           });
           visibleBuckets = chartBuckets.filter((b) => b.end > nowMin || b.isBacklog);
           currentBucket = visibleBuckets.find((b) => nowMin >= b.start && nowMin < b.end);
-          stillToSee = allAppts.filter((p) => p.status === 'booked' || p.status === 'waiting' || p.status === 'in_consult').length;
+          stillToSee = allAppts.filter((p) => p.status === 'booked' || p.status === 'waiting' || p.status === 'in_consult' || p.status === 'skipped').length;
           showChart = chartBuckets.length > 0;
         }
         recompute(q);
@@ -977,6 +1024,11 @@
           : (!q.nowServing ? 'No one is currently in consultation.'
           : (q.waiting.length > 0 ? 'Patients are waiting — use "Call next patient" instead.' : ''));
 
+        const notHereBtn = document.getElementById('notHereBtn');
+        notHereBtn.disabled = dayIsClosed || !q.nowServing;
+        notHereBtn.title = dayIsClosed ? lockTitle
+          : (!q.nowServing ? 'No one is currently called in.' : 'The patient you called is not in the clinic. They go to reception, and the next patient is called.');
+
         const writeRxBtn = document.getElementById('writeRxBtn');
         writeRxBtn.disabled = !q.nowServing;
         writeRxBtn.title = q.nowServing ? '' : 'No one is currently in consultation.';
@@ -1298,6 +1350,37 @@
           await Qlinic.finishCurrentPatient(currentDoctorId());
           render();
           showToast('Visit marked as done');
+        } catch (err) {
+          showToast(err.message || 'Could not update the queue');
+        } finally {
+          queueActionBusy = false;
+        }
+      });
+
+      // Not here: the patient who was called is not in the room. They move to Skipped (reception puts them
+      // back in line) and the next waiting patient is called. Undo lasts a few seconds.
+      document.getElementById('notHereBtn').addEventListener('click', async () => {
+        if (queueActionBusy) return;
+        const serving = currentQueue && currentQueue.nowServing;
+        if (!serving) return;
+        queueActionBusy = true;
+        try {
+          const { next } = await Qlinic.markNotHere(currentDoctorId(), serving.id);
+          await render();
+          const now = currentQueue && currentQueue.nowServing;
+          const nextLine = next
+            ? ` ${next.name}${now && now.id === next.id && tokenText(now) ? ' (' + tokenText(now) + ')' : ''} called.`
+            : ' No one else is waiting.';
+          showActionToast(`${serving.name} marked not here.${nextLine}`, 'Undo', async () => {
+            try {
+              await Qlinic.undoNotHere(serving.id, next && next.id);
+              await render();
+              showToast(`${serving.name} is back in consultation.`);
+            } catch (err) {
+              showToast(err.message || 'Could not undo');
+            }
+          }, 10000);
+          if (next) flashCallConfirm();
         } catch (err) {
           showToast(err.message || 'Could not update the queue');
         } finally {

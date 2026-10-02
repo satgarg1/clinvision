@@ -845,6 +845,9 @@
       tokenDate: row.token_date,
       isPriority: row.is_priority,
       createdAt: row.created_at,
+      skippedAt: row.skipped_at || null,
+      skipCount: row.skip_count || 0,
+      awaySeconds: row.away_seconds || 0,
     };
   }
 
@@ -921,6 +924,7 @@
     const payload = {};
     if (fields.name !== undefined) payload.name = fields.name;
     if (fields.graceWindowMins !== undefined) payload.grace_window_mins = Number(fields.graceWindowMins);
+    if (fields.returnWindowMins !== undefined) payload.return_window_mins = Number(fields.returnWindowMins);
     if (fields.slotIntervalMins !== undefined) payload.slot_interval_mins = Number(fields.slotIntervalMins);
     if (fields.slotCapacity !== undefined) payload.slot_capacity = Number(fields.slotCapacity);
     if (fields.scheduleIntervalMins !== undefined) payload.schedule_interval_mins = Number(fields.scheduleIntervalMins);
@@ -1198,7 +1202,10 @@
 
     const done = mine.filter((p) => p.status === 'done');
     const noShow = mine.filter((p) => p.status === 'no_show');
-    return { nowServing, waiting, booked, done, noShow };
+    // Called but not here: newest first. Only reception puts them back in line.
+    const skipped = mine.filter((p) => p.status === 'skipped')
+      .sort((a, b) => new Date(b.skippedAt || 0) - new Date(a.skippedAt || 0));
+    return { nowServing, waiting, booked, done, noShow, skipped };
   }
 
   async function getAllQueues(dateStr) {
@@ -1288,7 +1295,7 @@
       .from('patients')
       .select('*')
       .eq('clinic_id', clinicId)
-      .in('status', ['booked', 'waiting', 'no_show'])
+      .in('status', ['booked', 'waiting', 'skipped', 'no_show'])
       .eq('token_date', today)
       .or(`name.ilike.${nameFilter},phone.ilike.${nameFilter}`);
     if (error) throw error;
@@ -1323,10 +1330,43 @@
   async function markNoShow(patientId) {
     const { data, error } = await sb.from('patients')
       .update({ status: 'no_show' })
-      .eq('id', patientId).in('status', ['booked', 'waiting'])
+      .eq('id', patientId).in('status', ['booked', 'waiting', 'skipped'])
       .select('id');
     if (error) throw error;
     if (!data || !data.length) throw new Error('This patient was already updated by someone else. Refresh to see the latest.');
+  }
+
+  // ---- Called but not here (migration 118) ----
+  // The doctor taps Not here on the patient who was called: that visit moves to "skipped" and the next
+  // waiting patient is called straight away. Reception (or admin) puts the patient back in line.
+  async function markNotHere(doctorId, patientId) {
+    const { error } = await sb.rpc('skip_called_patient', { p_patient_id: patientId });
+    if (error) throw error;
+    let next = null;
+    try {
+      const res = await callNextPatient(doctorId);
+      if (res.called) next = { id: res.patientId, name: res.name };
+    } catch (err) { /* the doctor can still press Call next patient */ }
+    return { next };
+  }
+
+  async function undoNotHere(patientId, nextPatientId) {
+    const { error } = await sb.rpc('undo_not_here', { p_patient_id: patientId, p_next_patient_id: nextPatientId || null });
+    if (error) throw error;
+  }
+
+  async function returnSkippedPatient(patientId) {
+    const { data, error } = await sb.rpc('return_skipped_patient', { p_patient_id: patientId });
+    if (error) throw error;
+    return { keptPlace: !!(data && data.keptPlace) };
+  }
+
+  // Until when a skipped patient keeps their place, as a Date; null when they no longer can (skipped
+  // twice). The length comes from Clinic Settings (Return window), 60 minutes by default.
+  function skippedKeepUntil(patient, clinic) {
+    if (!patient || !patient.skippedAt || (patient.skipCount || 0) > 1) return null;
+    const mins = Number(clinic && clinic.return_window_mins) || 60;
+    return new Date(new Date(patient.skippedAt).getTime() + mins * 60000);
   }
 
   async function addWalkIn(info) {
@@ -1898,6 +1938,49 @@
     return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
   }
 
+  // Minutes since midnight in India, for the "come back by" line of the not here message.
+  function istMinutesOfDay(date) {
+    const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(date);
+    const h = Number(parts.find((p) => p.type === 'hour').value) % 24;
+    return h * 60 + Number(parts.find((p) => p.type === 'minute').value);
+  }
+
+  // Called but not here: Hindi first, then English. keepUntil (a Date) adds the line about keeping their
+  // place; it is left out once that time has passed.
+  function buildNotHereMessage({ patient, clinic, doctor, tokenLabel, keepUntil }) {
+    const plainDoctor = String((doctor && doctor.name) || '').replace(/^dr\.?\s+/i, '').trim();
+    const link = queueLinkFor(patient.id, patient.queueCode);
+    const hi = [`नमस्ते ${patient.name},`];
+    const en = [`Hello ${patient.name},`];
+    if (plainDoctor) {
+      hi.push(`${clinic.name} में डॉ. ${plainDoctor} ने आपको बुलाया था, पर आप उस समय क्लिनिक में नहीं थे।`);
+      en.push(`Dr. ${plainDoctor} at ${clinic.name} called you, but you were not in the clinic.`);
+    } else {
+      hi.push(`${clinic.name} में आपको बुलाया गया था, पर आप उस समय क्लिनिक में नहीं थे।`);
+      en.push(`You were called at ${clinic.name}, but you were not in the clinic.`);
+    }
+    hi.push(`क्लिनिक लौटते ही कृपया रिसेप्शन पर आएँ${tokenLabel ? ` और अपना टोकन (${tokenLabel}) बताएँ` : ''}, ताकि हम आपको कतार में वापस जोड़ सकें।`);
+    en.push(`As soon as you are back, please come to the reception desk${tokenLabel ? ` and tell us your token (${tokenLabel})` : ''} so we can put you back in line.`);
+    if (keepUntil && keepUntil.getTime() > Date.now()) {
+      const mins = istMinutesOfDay(keepUntil);
+      hi.push(`${hindiTimeLabel(mins)} तक आ जाएँ तो आपकी बारी अपनी जगह पर बनी रहेगी।`);
+      en.push(`Come by ${formatTime(mins)} to keep your place in the queue.`);
+    }
+    return [
+      hi.join('\n'),
+      en.join('\n'),
+      'आप कतार की स्थिति यहाँ देख सकते हैं / You can follow the queue here:\n' + link,
+    ].join('\n\n');
+  }
+
+  // Returns null when the number can't be opened in WhatsApp.
+  function whatsappNotHereUrlFor({ patient, clinic, doctor, tokenLabel, keepUntil }) {
+    const digits = whatsappPhoneDigits(patient.phone);
+    if (!digits) return null;
+    const text = buildNotHereMessage({ patient, clinic, doctor, tokenLabel, keepUntil });
+    return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+  }
+
   async function queueBookingNotification({ patientId, queueCode, phone, doctorId, kind, bookedDate, bookedTime, tokenNumber }) {
     try {
       const clinicId = await ensureClinicContext();
@@ -2021,7 +2104,7 @@
     const { data: called, error } = await sb.from('patients').update({ status: 'in_consult', called_at: new Date().toISOString() }).eq('id', waiting[0].id).eq('status', 'waiting').select('id');
     if (error) throw error;
     if (!called || !called.length) throw new Error('The queue changed on another screen. Please check it and try again.');
-    return { called: true };
+    return { called: true, patientId: waiting[0].id, name: waiting[0].name };
   }
 
   async function finishCurrentPatient(doctorId, expectedPatientId) {
@@ -2065,7 +2148,7 @@
       .eq('doctor_id', doctorId)
       .eq('booked_date', dateStr)
       .not('booked_time', 'is', null)
-      .in('status', ['booked', 'waiting', 'in_consult']);
+      .in('status', ['booked', 'waiting', 'in_consult', 'skipped']);
     if (error) throw error;
     return data.filter((p) =>
       p.id !== excludePatientId &&
@@ -2088,7 +2171,7 @@
       .eq('doctor_id', doctorId)
       .eq('booked_date', dateStr)
       .not('booked_time', 'is', null)
-      .in('status', ['booked', 'waiting', 'in_consult']);
+      .in('status', ['booked', 'waiting', 'in_consult', 'skipped']);
     if (error) throw error;
     const counts = {};
     data.forEach((p) => {
@@ -2296,7 +2379,7 @@
         done: mine.filter((p) => p.status === 'done').length,
         noShow: mine.filter((p) => p.status === 'no_show').length,
         priorityWaiting: mine.filter((p) => p.status === 'waiting' && p.isPriority).length,
-        footfall: mine.filter((p) => ['waiting', 'in_consult', 'done'].indexOf(p.status) !== -1).length,
+        footfall: mine.filter((p) => ['waiting', 'in_consult', 'done', 'skipped'].indexOf(p.status) !== -1).length,
       };
     });
 
@@ -2306,7 +2389,7 @@
       totalAppointments,
       totalWalkIns,
       totalBookedToday: totalAppointments + totalWalkIns,
-      footfallSoFar: todays.filter((p) => ['waiting', 'in_consult', 'done'].indexOf(p.status) !== -1).length,
+      footfallSoFar: todays.filter((p) => ['waiting', 'in_consult', 'done', 'skipped'].indexOf(p.status) !== -1).length,
       noShowCount: todays.filter((p) => p.status === 'no_show').length,
       waitingNow: todays.filter((p) => p.status === 'waiting').length,
       doneCount: todays.filter((p) => p.status === 'done').length,
@@ -2324,6 +2407,14 @@
       .eq('status', 'booked')
       .eq('booked_date', todayDateStr());
     if (error) throw error;
+    // Called, never came back: a no-show too.
+    const { error: skippedError } = await sb
+      .from('patients')
+      .update({ status: 'no_show' })
+      .eq('clinic_id', clinicId)
+      .eq('status', 'skipped')
+      .eq('token_date', todayDateStr());
+    if (skippedError) throw skippedError;
     const { error: clinicError } = await sb
       .from('clinics')
       .update({ last_closed_date: todayDateStr(), closed_at: new Date().toISOString() })
@@ -2339,18 +2430,18 @@
     const clinicId = await ensureClinicContext();
     if (!clinicId) return { stillBooked: 0, noShows: 0 };
     const today = todayDateStr();
-    const count = async (status) => {
+    const count = async (status, dateColumn) => {
       const { count: n, error } = await sb
         .from('patients')
         .select('id', { count: 'exact', head: true })
         .eq('clinic_id', clinicId)
         .eq('status', status)
-        .eq('booked_date', today);
+        .eq(dateColumn || 'booked_date', today);
       if (error) throw error;
       return n || 0;
     };
-    const [stillBooked, noShows] = await Promise.all([count('booked'), count('no_show')]);
-    return { stillBooked, noShows };
+    const [booked, skipped, noShows] = await Promise.all([count('booked'), count('skipped', 'token_date'), count('no_show')]);
+    return { stillBooked: booked + skipped, noShows };
   }
 
   async function reopenDay() {
@@ -3712,6 +3803,12 @@
     removePatientVisit,
     markArrived,
     markNoShow,
+    markNotHere,
+    undoNotHere,
+    returnSkippedPatient,
+    skippedKeepUntil,
+    buildNotHereMessage,
+    whatsappNotHereUrlFor,
     addWalkIn,
     addAppointment,
     callNextPatient,

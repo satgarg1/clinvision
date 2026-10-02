@@ -11,7 +11,7 @@
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
 <link rel="preload" as="image" href="doc-man.webp" type="image/webp" />
 <link rel="preload" as="image" href="doc-woman.webp" type="image/webp" />
-<link rel="stylesheet" href="styles.css?v=466" />
+<link rel="stylesheet" href="styles.css?v=467" />
 </head>
 <body class="queue-page">
   <div class="login-wrap">
@@ -153,6 +153,11 @@
           <div class="queue-token-num" id="tokenNumber">·</div>
         </div>
 
+        <div id="skippedBlock" class="queue-skipped" style="display:none;">
+          <p class="h" id="skippedHeading"></p>
+          <p class="s" id="skippedText"></p>
+        </div>
+
         <div id="positionBlock" class="queue-position" style="display:none;">
           <div class="queue-position-text" id="positionText"></div>
         </div>
@@ -190,7 +195,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=143"></script>
+  <script src="clinic-data.js?v=144"></script>
   <script>
     (async function () {
       const params = new URLSearchParams(window.location.search);
@@ -351,7 +356,11 @@
             booked: 'You have not checked in to the clinic yet',
             waiting: 'You are currently waiting in the clinic',
             in_consult: 'You are currently with the doctor',
+            skipped: 'You were called, but you were not here',
           },
+          skippedHeading: 'Please come to the reception desk',
+          skippedInside: (calledAt, keepBy) => `We called you at <b>${calledAt}</b>. Come by <b>${keepBy}</b> to keep your place.`,
+          skippedLate: (calledAt) => `We called you at <b>${calledAt}</b>. You will be seen after the patients who are already waiting.`,
           tokenLabelNamed: (name) => `${name}, your token number is:`,
           tokenLabelGeneric: 'Your token number',
           youAreNext: "You're next!",
@@ -443,7 +452,11 @@
             booked: 'आपने अभी तक क्लिनिक में चेक-इन नहीं किया है',
             waiting: 'आप अभी क्लिनिक में प्रतीक्षा कर रहे हैं',
             in_consult: 'आप अभी डॉक्टर के साथ हैं',
+            skipped: 'आपको बुलाया गया था, पर आप यहाँ नहीं थे',
           },
+          skippedHeading: 'कृपया रिसेप्शन पर आएँ',
+          skippedInside: (calledAt, keepBy) => `आपको <b>${calledAt}</b> पर बुलाया गया था। अपनी जगह बनाए रखने के लिए <b>${keepBy}</b> तक आ जाएँ।`,
+          skippedLate: (calledAt) => `आपको <b>${calledAt}</b> पर बुलाया गया था। आपको पहले से प्रतीक्षा कर रहे मरीज़ों के बाद देखा जाएगा।`,
           tokenLabelNamed: (name) => `${name}, आपका टोकन नंबर है:`,
           tokenLabelGeneric: 'आपका टोकन नंबर',
           youAreNext: 'अब आपकी बारी है!',
@@ -759,6 +772,7 @@
         const statusMsgEl = document.getElementById('statusMsgText');
         statusMsgEl.innerHTML = `<span class="pill">${Qlinic.escapeHtml(T.statusMessage[data.status] || '')}</span>`;
         statusMsgEl.classList.toggle('is-waiting', data.status === 'waiting');
+        statusMsgEl.classList.toggle('is-skipped', data.status === 'skipped');
         document.getElementById('tokenNumber').textContent = data.tokenDisplay || '·';
         document.getElementById('tokenLabel').textContent = data.patientName
           ? T.tokenLabelNamed(localizeName(data.patientName))
@@ -820,6 +834,31 @@
             renderDetailsModal(data);
           }
         }
+        renderSkipped(data);
+      }
+
+      // Called but not here: reception puts them back in line, so there is no button on this screen.
+      // The link turns back into the normal waiting view by itself once they do.
+      function renderSkipped(data) {
+        const isSkipped = data.status === 'skipped';
+        document.getElementById('skippedBlock').style.display = isSkipped ? 'block' : 'none';
+        document.querySelector('.queue-token').classList.toggle('is-skipped', isSkipped);
+        const advisory = document.querySelector('.queue-advisory');
+        if (advisory) advisory.style.display = isSkipped ? 'none' : '';
+        if (!isSkipped) return;
+        ['positionBlock', 'nowServingBlock', 'nearbyBlock', 'doctorStatusBlock', 'detailsOpenWrap'].forEach((id) => {
+          document.getElementById(id).style.display = 'none';
+        });
+        const modal = document.getElementById('queueDetailsBackdrop');
+        if (modal) modal.remove();
+        const calledAt = data.calledAt ? Qlinic.formatTimestamp(data.calledAt) : '';
+        const keepMs = data.skippedAt && (data.skipCount || 0) <= 1 && data.returnWindowMins
+          ? new Date(data.skippedAt).getTime() + Number(data.returnWindowMins) * 60000
+          : 0;
+        document.getElementById('skippedHeading').textContent = T.skippedHeading;
+        document.getElementById('skippedText').innerHTML = keepMs && Date.now() <= keepMs
+          ? T.skippedInside(calledAt, Qlinic.formatTimestamp(new Date(keepMs)))
+          : T.skippedLate(calledAt);
       }
 
       function slotContext(data) {

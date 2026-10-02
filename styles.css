@@ -7342,7 +7342,7 @@ body.tool-blue .tool-btn { border-radius: 12px; }
 .panel.pm-card h2.pr-title, .panel.pm-card h2.qr-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: normal; line-height: 1.2; }
 .panel.pm-card .pm-sub, .panel.pm-card .qr-sub { margin: 2px 0 0; }
 .qr-pill { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: var(--qr-pill-bg); border: 1px solid var(--qr-pill-line); font-size: 12px; font-weight: 600; color: var(--qr-pill-text); }
-.qr-form { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.qr-form { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; align-items: start; }
 .qr-field { min-width: 0; }
 .qr-label { display: block; margin: 0 0 6px; font-size: 12px; font-weight: 700; color: var(--pm-strong); }
 .qr-hint { display: block; margin-top: 6px; font-size: 11px; line-height: 1.35; color: var(--qr-hint); }
@@ -8663,3 +8663,27 @@ button.rv-kpi:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1); }
 .adj-remove[hidden] { display: none; }
 .adj-remove-btn { border: none; background: none; padding: 0; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--danger); cursor: pointer; }
 .adj-remove-btn:hover { text-decoration: underline; }
+
+/* ---- Called but not here (migration 118) ---- */
+/* Reception: the amber section above Waiting. Doctor: the Not here button and its Undo toast. */
+.qsection-tinted.skipped-tint { background: var(--warning-bg); }
+.qsection-tinted.skipped-tint .qsection-head { border-bottom-color: #ecd3a6; }
+.skipped-actions { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+.goes { display: block; font-size: 11.5px; font-weight: 600; margin-top: 4px; text-align: center; }
+.goes.next { color: var(--success); }
+.goes.end { color: var(--warning); }
+.ns-btn-lg.warm { background: var(--warning-bg); color: var(--warning); box-shadow: inset 0 0 0 1px #f0d2a0; }
+.ns-btn-lg.warm:hover:not(:disabled) { background: #fbe6bd; }
+.ns-btn-lg.warm:disabled { opacity: 0.5; cursor: not-allowed; }
+.skipped-note { margin-top: 14px; padding: 10px 14px; border-radius: 10px; background: var(--warning-bg); color: var(--warning); font-size: 13px; line-height: 1.5; }
+.toast.has-action { display: flex; align-items: center; gap: 14px; pointer-events: auto; }
+.toast .toast-action { background: none; border: none; padding: 0; font: inherit; font-weight: 700; color: #7db8ff; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+/* Patient link: the amber pill, a warm token card and the come-to-reception card. */
+.queue-skipped { display: none; margin: 0 0 14px; padding: 16px 18px; background: #fff7ea; border: 1px solid #f7d9a8; border-radius: 18px; }
+.queue-skipped .h { margin: 0 0 4px; font-size: 17px; font-weight: 800; color: #7a3d00; line-height: 1.3; }
+.queue-skipped .s { margin: 0; font-size: 14.5px; line-height: 1.5; color: #6b4a1a; }
+.queue-skipped .s b { color: #7a3d00; }
+.queue-page .login-card:has(:is(#statusState, #notYetState)[style*="block"]) .queue-status-msg.is-skipped .pill { color: #8a4b05; background: #ffedd2; border: 1px solid #f7d9a8; }
+.queue-page .login-card:has(:is(#statusState, #notYetState)[style*="block"]) .queue-status-msg.is-skipped .pill::before { content: ''; flex: none; width: 22px; height: 22px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23d97706' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23fde7bd'/%3E%3Cline x1='12' y1='8' x2='12' y2='13'/%3E%3Cline x1='12' y1='16.5' x2='12.01' y2='16.5'/%3E%3C/svg%3E") center / 22px no-repeat; }
+.queue-page .login-card:has(:is(#statusState, #notYetState)[style*="block"]) .queue-token.is-skipped .queue-token-num { color: #8a4b05; background: linear-gradient(160deg, #fff4e0 0%, #ffe6c0 100%); border-color: #f5d4a0; box-shadow: 0 10px 24px rgba(217, 119, 6, 0.16); }

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=466" />
+<link rel="stylesheet" href="styles.css?v=467" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -188,7 +188,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=143"></script>
+  <script src="clinic-data.js?v=144"></script>
   <script src="app-topbar.js?v=9"></script>
   <script>
     (async function () {
@@ -354,6 +354,13 @@
       async function sendWhatsAppFor(patientId) {
         const patient = waPatients[patientId];
         if (!patient || !waEnabled()) return;
+        await openWhatsAppFor(patient, (tokenLabel) => Qlinic.whatsappUrlFor({
+          patient, clinic: waClinic, doctor: doctorsCache.find((d) => d.id === patient.doctorId), tokenLabel,
+        }));
+      }
+
+      // Opens the new tab straight from the click, then points it at WhatsApp once the token is known.
+      async function openWhatsAppFor(patient, makeUrl) {
         const tab = window.open('', '_blank');
         if (tab) {
           try {
@@ -362,9 +369,7 @@
           } catch (err) { }
         }
         const tokenLabel = await waTokenLabel(patient);
-        const url = Qlinic.whatsappUrlFor({
-          patient, clinic: waClinic, doctor: doctorsCache.find((d) => d.id === patient.doctorId), tokenLabel,
-        });
+        const url = makeUrl(tokenLabel);
         if (!url) {
           if (tab) tab.close();
           showToast("This phone number can't be opened in WhatsApp. Check it with Edit.");
@@ -776,7 +781,7 @@
         const ranks = new Map();
         const walkins = [
           ...(q.nowServing ? [q.nowServing] : []),
-          ...q.waiting, ...q.booked, ...q.done, ...q.noShow,
+          ...q.waiting, ...q.booked, ...q.done, ...q.noShow, ...(q.skipped || []),
         ].filter((p) => p.type === 'walkin');
         walkins.sort((a, b) => (a.tokenNumber || 0) - (b.tokenNumber || 0));
         walkins.forEach((p, i) => ranks.set(p.id, i + 1));
@@ -874,6 +879,7 @@
 
       function searchStatusBadge(p) {
         if (p.status === 'waiting') return '<span class="badge badge-done">Waiting</span>';
+        if (p.status === 'skipped') return '<span class="badge badge-likely">Not here</span>';
         if (p.status === 'no_show') return '<span class="badge badge-no-show">No-show</span>';
         return '<span class="badge badge-booked">Not yet arrived</span>';
       }
@@ -920,6 +926,7 @@
                     ${billingTd}
                     <td>
                       ${p.status === 'booked' || p.status === 'no_show' ? `<button class="btn-sm primary" onclick="doMarkArrived('${p.id}', this)">Mark arrived</button>` : ''}
+                      ${p.status === 'skipped' ? `<button class="btn-sm primary" onclick="doBackInLine('${p.id}', this)">Back in line</button>` : ''}
                       <button class="btn-sm" data-edit-patient="${p.id}">Edit</button>
                       ${waEnabled() ? waResendBtn(p) : ''}
                     </td>
@@ -1152,6 +1159,90 @@
       window.doMarkArrived = doMarkArrived;
       window.doMarkNoShow = doMarkNoShow;
 
+      // ---- Called, not here: the doctor called them and they were not in the clinic ----
+      function skippedWaBtn(p) {
+        return `<button type="button" class="wa-resend-btn" data-nothere-wa="${p.id}" title="Message on WhatsApp: you were called, please come to reception" aria-label="Message ${Qlinic.escapeHtml(p.name)} on WhatsApp to come to reception">${WA_ICON}</button>`;
+      }
+
+      function skippedSectionHtml(list, walkinRanks) {
+        if (!list.length) return '';
+        const winMins = Number((waClinic && waClinic.return_window_mins) || 60);
+        const winLabel = winMins % 60 === 0 ? `${winMins / 60} hr` : `${winMins} min`;
+        const rows = list.map((p) => {
+          const away = Math.max(0, Math.round((Date.now() - new Date(p.skippedAt || Date.now()).getTime()) / 60000));
+          const keepUntil = Qlinic.skippedKeepUntil(p, waClinic);
+          const keeps = !!keepUntil && keepUntil.getTime() >= Date.now();
+          const sub = (p.skipCount || 0) > 1
+            ? 'Skipped twice today'
+            : (p.type === 'appointment' && p.bookedTime ? `Appointment ${Qlinic.formatTime(Qlinic.parseTime(p.bookedTime))}` : 'Walk-in');
+          return `
+            <tr>
+              <td class="token-num">${formatToken(p, walkinRanks)}</td>
+              <td><div class="qtable-wrap">${Qlinic.escapeHtml(p.name)}</div><div class="sub-line">${sub}</div></td>
+              <td style="white-space:nowrap;">${Qlinic.formatTimestamp(p.calledAt || p.skippedAt)}<div class="sub-line">away ${formatMinutesDuration(away)}</div></td>
+              <td class="actions-cell">
+                <div class="skipped-actions">
+                  <div>
+                    <button class="btn-sm primary" onclick="doBackInLine('${p.id}', this)">Back in line</button>
+                    <span class="goes ${keeps ? 'next' : 'end'}">${keeps ? 'Goes next' : 'Goes to the end'}</span>
+                  </div>
+                  <button class="btn-sm danger" onclick="doMarkNoShow('${p.id}')">No-show</button>
+                  ${skippedWaBtn(p)}
+                </div>
+              </td>
+            </tr>`;
+        }).join('');
+        return `
+          <div class="qsection">
+            <div class="qsection-tinted skipped-tint">
+              <div class="qsection-head">
+                <span class="qsection-title">Called, not here <span class="qsection-note">(${list.length})</span></span>
+                <span class="qsection-note">back within ${winLabel} keeps their place</span>
+              </div>
+              <table class="qtable qtable-fixed">
+                <colgroup><col style="width:9%;"><col style="width:27%;"><col style="width:17%;"><col style="width:47%;"></colgroup>
+                <thead><tr><th>Token</th><th>Name</th><th>Called</th><th></th></tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          </div>`;
+      }
+
+      // Back in line: reception only. Inside the return window they keep their place (called right after
+      // the patient who is inside); later, or on a second skip, they join the end of the line.
+      async function doBackInLine(id, btn) {
+        if (btn) btn.disabled = true;
+        let res;
+        try {
+          res = await Qlinic.returnSkippedPatient(id);
+        } catch (err) {
+          if (btn) btn.disabled = false;
+          showToast(err.message || 'Could not put the patient back in line. Please try again.');
+          renderQueues();
+          renderSearch();
+          return;
+        }
+        const who = (waPatients[id] && waPatients[id].name) || 'The patient';
+        pendingHighlightPatientId = id;
+        renderQueues();
+        renderSearch();
+        showToast(res.keptPlace ? `${who} is back in line and goes next.` : `${who} is back in line, at the end.`);
+      }
+      window.doBackInLine = doBackInLine;
+
+      async function sendNotHereWhatsApp(patientId) {
+        const patient = waPatients[patientId];
+        if (!patient || !waClinic) return;
+        await openWhatsAppFor(patient, (tokenLabel) => Qlinic.whatsappNotHereUrlFor({
+          patient, clinic: waClinic, doctor: doctorsCache.find((d) => d.id === patient.doctorId), tokenLabel,
+          keepUntil: Qlinic.skippedKeepUntil(patient, waClinic),
+        }));
+      }
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-nothere-wa]');
+        if (btn) sendNotHereWhatsApp(btn.getAttribute('data-nothere-wa'));
+      });
+
       async function fillQueueDoctorFilter() {
         const sel = document.getElementById('queueDoctorFilter');
         const doctors = doctorsCache;
@@ -1162,7 +1253,8 @@
         const isToday = queueViewDate === Qlinic.getTodayDate();
         sel.innerHTML = doctors.map((d, i) => {
           const q = queues[i];
-          const countLabel = isToday ? `${q.waiting.length} waiting, ${q.booked.length} booked` : `${q.booked.length} booked`;
+          const notHere = (q.skipped || []).length;
+          const countLabel = isToday ? `${q.waiting.length} waiting, ${q.booked.length} booked${notHere ? `, ${notHere} not here` : ''}` : `${q.booked.length} booked`;
           return `<option value="${d.id}" ${d.id === queueDoctorId ? 'selected' : ''}>${Qlinic.escapeHtml(d.name)}, ${Qlinic.escapeHtml(d.specialty)} (${countLabel})</option>`;
         }).join('');
         // Handed back so renderQueues() can reuse the selected doctor's
@@ -1258,11 +1350,13 @@
         const dateLabel = Qlinic.formatDateLabel(queueViewDate);
         const walkinRanks = buildWalkinRanks(queue);
         const soonCount = isTodayView ? bookedList.filter((p) => bookedSoonLabel(p).soon).length : 0;
+        const skippedList = isTodayView ? (queue.skipped || []) : [];
+        const skippedHtml = skippedSectionHtml(skippedList, walkinRanks);
 
         // With the WhatsApp switch on, each table gains a narrow last column
         // for the resend button; the width comes out of the widest column.
         const waOn = waEnabled();
-        [...waitingList, ...bookedList].forEach((p) => { waPatients[p.id] = p; });
+        [...waitingList, ...bookedList, ...skippedList].forEach((p) => { waPatients[p.id] = p; });
         const waCol = waOn ? '<col style="width:10%;">' : '';
         const waHead = waOn ? '<th style="text-align:right;">Message</th>' : '';
         const waCell = (p) => (waOn ? `<td style="text-align:right;">${waResendBtn(p)}</td>` : '');
@@ -1274,6 +1368,8 @@
             <div class="panel-header"><span class="board-doc-dot dot-${accentForDoctor(queueDoctorId)}"></span><h2>${Qlinic.escapeHtml(doctor.name)}, ${Qlinic.escapeHtml(doctor.specialty)}</h2></div>
             ${isTodayView ? `
               ${queue.nowServing ? `<p style="font-size:14px;margin:0 0 14px;"><strong>Now with:</strong> ${Qlinic.escapeHtml(queue.nowServing.name)}</p>` : '<p style="font-size:14px;color:var(--grey-500);margin:0 0 14px;">No one in consultation right now.</p>'}
+
+              ${skippedHtml}
 
               <div class="qsection">
                 <div class="qsection-head">

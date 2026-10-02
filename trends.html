@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=466" />
+<link rel="stylesheet" href="styles.css?v=467" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -91,7 +91,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=143"></script>
+  <script src="clinic-data.js?v=144"></script>
   <script src="app-topbar.js?v=9"></script>
   <script>
     (async function () {
@@ -287,7 +287,7 @@
         { bg: '#ede9fe', fg: '#6d28d9', bar: '#7c3aed' }, { bg: '#ffedd5', fg: '#c2410c', bar: '#f97316' },
         { bg: '#fce7f3', fg: '#be185d', bar: '#ec4899' },
       ];
-      const ARRIVED = new Set(['waiting', 'in_consult', 'done']);
+      const ARRIVED = new Set(['waiting', 'in_consult', 'done', 'skipped']);
       const SEEN = new Set(['in_consult', 'done']);
       const isArrived = (p) => ARRIVED.has(p.status);
       const isSeen = (p) => SEEN.has(p.status);
@@ -304,7 +304,7 @@
       }
       function waitMin(p) {
         if (!p.arrivedAt || !p.calledAt) return null;
-        const m = (new Date(p.calledAt) - new Date(p.arrivedAt)) / 60000;
+        const m = (new Date(p.calledAt) - new Date(p.arrivedAt)) / 60000 - (p.awaySeconds || 0) / 60;
         return m >= 0 && m <= 480 ? m : null;
       }
       function consultMin(p) {
@@ -1366,7 +1366,7 @@
         ]);
 
         const sumReceived = (invs) => invs.reduce((sum, inv) => sum + inv.amountReceived, 0);
-        const seenCount = (pats) => pats.filter((p) => p.status === 'waiting' || p.status === 'in_consult' || p.status === 'done').length;
+        const seenCount = (pats) => pats.filter((p) => p.status === 'waiting' || p.status === 'in_consult' || p.status === 'done' || p.status === 'skipped').length;
         const noShowCount = (pats) => pats.filter((p) => p.status === 'no_show').length;
         const avgConsultMins = (pats) => {
           const timed = pats.filter((p) => p.status === 'done' && p.calledAt && p.doneAt && new Date(p.doneAt) >= new Date(p.calledAt));
