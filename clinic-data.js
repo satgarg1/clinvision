@@ -312,7 +312,7 @@
     });
   }
 
-  function openAdjustBillingModal({ invoice, doctor, onSaved }) {
+  function openAdjustBillingModal({ invoice, doctor, onSaved, onRemoved }) {
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop';
     backdrop.innerHTML = `
@@ -340,6 +340,9 @@
         </div>
         <p class="amount-preview" id="adjModalPreview"></p>
         <p class="modal-message" id="adjModalError" style="display:none;color:var(--danger);margin:6px 0 16px;font-size:13px;"></p>
+        <div class="adj-remove" id="adjModalRemoveWrap" hidden>
+          <button type="button" class="adj-remove-btn" id="adjModalRemoveBtn">Remove patient</button>
+        </div>
         <div class="modal-actions">
           <button type="button" class="btn-sm primary" id="adjModalSaveBtn">Save</button>
           <button type="button" class="btn-sm" id="adjModalCancelBtn">Cancel</button>
@@ -371,10 +374,44 @@
       backdrop.remove();
       document.removeEventListener('keydown', onKeydown);
     }
-    function onKeydown(e) { if (e.key === 'Escape') cleanup(); }
+    function onKeydown(e) {
+      if (e.key !== 'Escape') return;
+      // The "Remove patient?" question sits on top of this window: Esc answers that one only.
+      const open = document.querySelectorAll('.modal-backdrop');
+      if (open[open.length - 1] === backdrop) cleanup();
+    }
     document.addEventListener('keydown', onKeydown);
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) cleanup(); });
     backdrop.querySelector('#adjModalCancelBtn').addEventListener('click', cleanup);
+
+    // Remove patient: admin only, for a patient added by mistake. The patient and the bill are hidden
+    // everywhere; reception and doctors never see this link (the database refuses them as well).
+    isAdmin().then((admin) => {
+      if (admin) backdrop.querySelector('#adjModalRemoveWrap').hidden = false;
+    }).catch(() => { });
+    backdrop.querySelector('#adjModalRemoveBtn').addEventListener('click', async () => {
+      const errorEl = backdrop.querySelector('#adjModalError');
+      errorEl.style.display = 'none';
+      const who = invoice.patientName || 'this patient';
+      const sure = await confirmDialog({
+        title: `Remove ${who}?`,
+        message: 'Use this only for a patient added by mistake.',
+        confirmLabel: 'Remove patient',
+        cancelLabel: 'Cancel',
+        danger: true,
+      });
+      if (!sure) return;
+      try {
+        await removePatientVisit(invoice.id);
+      } catch (err) {
+        errorEl.textContent = err.message || 'Could not remove the patient, please try again.';
+        errorEl.style.display = 'block';
+        return;
+      }
+      cleanup();
+      if (onRemoved) onRemoved(who); else if (onSaved) onSaved();
+    });
+
     backdrop.querySelector('#adjModalSaveBtn').addEventListener('click', async () => {
       const errorEl = backdrop.querySelector('#adjModalError');
       errorEl.style.display = 'none';
@@ -1721,12 +1758,19 @@
     if (error) throw error;
     return {
       totalInvoices: data.totalInvoices || 0,
+      removedInvoices: data.removedInvoices || 0,
       minInvoiceNumber: data.minInvoiceNumber,
       maxInvoiceNumber: data.maxInvoiceNumber,
       unbilledPatients: (data.unbilledPatients || []).map((p) => ({
         id: p.id, name: p.name, phone: p.phone, tokenDate: p.tokenDate, status: p.status, doctorId: p.doctorId,
       })),
     };
+  }
+
+  // Hides a patient added by mistake and their consultation bill everywhere (admin only, migration 117).
+  async function removePatientVisit(invoiceId) {
+    const { error } = await sb.rpc('remove_patient_visit', { p_invoice_id: invoiceId });
+    if (error) throw error;
   }
 
   async function updateInvoicePayment({ invoiceId, feeType, paymentMode, amountReceived }) {
@@ -1926,7 +1970,8 @@
       .order('submitted_at', { ascending: false })
       .order('id', { ascending: true })
       .range(from, to));
-    return (data || []).map((row) => ({
+    // A rating whose patient was removed comes back without a patient: it is kept, but not listed.
+    return (data || []).filter((row) => row.patients).map((row) => ({
       id: row.id,
       rating: row.rating,
       feedbackText: row.feedback_text || '',
@@ -3645,6 +3690,7 @@
     getInvoiceById,
     getBillingAudit,
     updateInvoicePayment,
+    removePatientVisit,
     markArrived,
     markNoShow,
     addWalkIn,

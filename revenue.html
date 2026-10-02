@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=457" />
+<link rel="stylesheet" href="styles.css?v=458" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -144,7 +144,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=141"></script>
+  <script src="clinic-data.js?v=142"></script>
   <script src="app-topbar.js?v=8"></script>
   <script>
     (async function () {
@@ -907,6 +907,7 @@
           invoice: inv,
           doctor,
           onSaved: async () => { showToast('Billing updated'); await loadInvoices(); },
+          onRemoved: async (who) => { showToast(`${who} was removed.`); await loadInvoices(); },
         });
       }
       window.openAdjustBilling = openAdjustBilling;
