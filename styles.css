@@ -8605,3 +8605,6 @@ button.rv-kpi:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1); }
 .queue-page #notYetState .queue-notyet-details { padding: 14px 16px; font-size: 14.5px; font-weight: 600; line-height: 1.4; color: #475569; background: rgba(226, 235, 250, 0.8); border: 1px dashed #b8c9e6; border-radius: 18px; }
 .queue-page #notYetState .queue-notyet-live { text-align: center; font-size: 14px; font-weight: 600; color: #15803d; }
 .queue-page #notYetState .queue-notyet-live::before { content: ''; display: inline-block; width: 9px; height: 9px; margin-right: 8px; border-radius: 50%; background: #16a34a; }
+
+/* The specialty in brackets after a doctor's name on the patient queue page, lighter than the name. */
+.queue-page .queue-appt-line b i.spec { font-style: normal; font-weight: 600; font-size: 14.5px; color: #475569; }

@@ -11,7 +11,7 @@
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
 <link rel="preload" as="image" href="doc-man.webp" type="image/webp" />
 <link rel="preload" as="image" href="doc-woman.webp" type="image/webp" />
-<link rel="stylesheet" href="styles.css?v=456" />
+<link rel="stylesheet" href="styles.css?v=457" />
 </head>
 <body class="queue-page">
   <div class="login-wrap">
@@ -341,12 +341,12 @@
           notYetDetails: 'Queue details will be available on the day of your visit.',
           notYetLive: 'Updates automatically once your queue opens',
           apptLineWithTime: (doctorName, specialty, timeStr) =>
-            `Your appointment is booked for <b>${doctorName}</b><span style="display:block;margin-top:2px;">${specialty} at ${timeStr}</span>`,
+            `Your appointment is booked for<b>${doctorName}</b><span style="display:block;margin-top:2px;">Today at ${timeStr}</span>`,
           apptLineNotYet: (doctorName, specialty, whenText) =>
-            `Your appointment is booked for<b>${doctorName}</b>${specialty ? `<em>${specialty}</em>` : ''}<span style="display:block;margin-top:2px;">${whenText}</span>`,
+            `Your appointment is booked for<b>${doctorName}</b><span style="display:block;margin-top:2px;">${whenText}</span>`,
           whenWithTime: (isTomorrow, dateLabel, timeStr) => (timeStr ? `${isTomorrow ? 'Tomorrow' : dateLabel} at ${timeStr}` : (isTomorrow ? 'Tomorrow' : dateLabel)),
           inQueueLine: (doctorName, specialty) =>
-            `You're in the queue with <b>${doctorName}</b>${specialty}`,
+            `You're in the queue with<b>${doctorName}</b>`,
           statusMessage: {
             booked: 'You have not checked in to the clinic yet',
             waiting: 'You are currently waiting in the clinic',
@@ -433,12 +433,12 @@
           notYetDetails: 'कतार का विवरण आपकी विज़िट वाले दिन उपलब्ध होगा।',
           notYetLive: 'कतार खुलते ही अपने आप अपडेट होगा',
           apptLineWithTime: (doctorName, specialty, timeStr) =>
-            `आपकी अपॉइंटमेंट बुक है<b>${doctorName} के साथ</b><span style="display:block;margin-top:2px;">${specialty ? specialty + ', ' : ''}${timeStr} पर</span>`,
+            `आपकी अपॉइंटमेंट बुक है<b>${doctorName} के साथ</b><span style="display:block;margin-top:2px;">आज, ${timeStr} पर</span>`,
           apptLineNotYet: (doctorName, specialty, whenText) =>
-            `आपकी अपॉइंटमेंट बुक है<b>${doctorName} के साथ</b>${specialty ? `<em>${specialty}</em>` : ''}<span style="display:block;margin-top:2px;">${whenText}</span>`,
+            `आपकी अपॉइंटमेंट बुक है<b>${doctorName} के साथ</b><span style="display:block;margin-top:2px;">${whenText}</span>`,
           whenWithTime: (isTomorrow, dateLabel, timeStr) => (timeStr ? `${isTomorrow ? 'कल' : dateLabel}, ${timeStr} पर` : `${isTomorrow ? 'कल' : dateLabel} को`),
           inQueueLine: (doctorName, specialty) =>
-            `आप <b>${doctorName}</b>${specialty} की कतार में हैं`,
+            `आप <b>${doctorName}</b> की कतार में हैं`,
           statusMessage: {
             booked: 'आपने अभी तक क्लिनिक में चेक-इन नहीं किया है',
             waiting: 'आप अभी क्लिनिक में प्रतीक्षा कर रहे हैं',
@@ -522,7 +522,22 @@
         return 'Dr. ' + plain;
       }
       function localizeSpecialty(text) {
+        if (T === STRINGS.hi) return SPECIALTY_HI[text] || text;
         return text;
+      }
+      // The specialty always sits in brackets right after the doctor's name, so an older patient
+      // knows what kind of doctor it is: "Dr. Khushi Gupta (Gynecologist)".
+      function specialtyBracket(data) {
+        const sp = data.doctorSpecialty ? localizeSpecialty(data.doctorSpecialty) : '';
+        return sp ? `(${sp})` : '';
+      }
+      function doctorLabelText(data) {
+        const sp = specialtyBracket(data);
+        return doctorDisplay(data.doctorName) + (sp ? ' ' + sp : '');
+      }
+      function doctorLabelHtml(data) {
+        const sp = specialtyBracket(data);
+        return Qlinic.escapeHtml(doctorDisplay(data.doctorName)) + (sp ? ` <i class="spec">${Qlinic.escapeHtml(sp)}</i>` : '');
       }
       // The doctor illustration follows the gender set in Settings, Doctors. A doctor with no
       // gender saved gets a best guess from common Indian first names, otherwise the man.
@@ -616,7 +631,7 @@
           feedbackBlock.style.display = 'none';
         } else {
           feedbackBlock.style.display = 'block';
-          document.getElementById('feedbackQuestion').textContent = T.feedbackQuestion(doctorDisplay(data.doctorName));
+          document.getElementById('feedbackQuestion').textContent = T.feedbackQuestion(doctorLabelText(data));
           document.getElementById('feedbackHint').textContent = T.feedbackHint;
           document.getElementById('feedbackTextInput').placeholder = T.feedbackPlaceholder;
           document.getElementById('feedbackSendBtn').textContent = T.feedbackSend;
@@ -651,7 +666,7 @@
         document.getElementById('closedClinicName').textContent = localizeName(data.clinicName);
         const doctorNameEl = document.getElementById('closedDoctorName');
         doctorNameEl.style.display = isClinicClosed ? 'none' : '';
-        doctorNameEl.textContent = isClinicClosed ? '' : doctorDisplay(data.doctorName);
+        doctorNameEl.textContent = isClinicClosed ? '' : doctorLabelText(data);
         document.getElementById('closedTitle').textContent = isClinicClosed ? T.clinicClosedTitle : T.closedTitle;
         document.getElementById('closedBody').textContent = isClinicClosed ? T.clinicClosedBody : T.closedBody;
       }
@@ -664,12 +679,11 @@
         footerEl.style.display = 'block';
         notYetEl.style.display = 'block';
         document.getElementById('notYetClinicName').textContent = localizeName(data.clinicName);
-        const specialty = data.doctorSpecialty ? Qlinic.escapeHtml(localizeSpecialty(data.doctorSpecialty)) : '';
         const isTomorrow = isDayAfterToday(data.bookedDate);
         const dateLabel = shortDateLabel(data.bookedDate);
         const timeStr = data.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(data.bookedTime)) : '';
         document.getElementById('notYetApptLine').innerHTML =
-          T.apptLineNotYet(Qlinic.escapeHtml(doctorDisplay(data.doctorName)), specialty, T.whenWithTime(isTomorrow, dateLabel, timeStr));
+          T.apptLineNotYet(doctorLabelHtml(data), '', T.whenWithTime(isTomorrow, dateLabel, timeStr));
         document.getElementById('notYetPill').textContent = T.notYetPill(isTomorrow, dateLabel);
         document.getElementById('notYetHeadline').textContent = T.notYetHeadline;
         document.getElementById('notYetSub').textContent = T.notYetSub(isTomorrow, dateLabel);
@@ -699,13 +713,12 @@
       }
 
       function appointmentLineHtml(data) {
-        const doctorName = Qlinic.escapeHtml(doctorDisplay(data.doctorName));
-        const specialty = data.doctorSpecialty ? ` (${Qlinic.escapeHtml(localizeSpecialty(data.doctorSpecialty))})` : '';
+        const doctorName = doctorLabelHtml(data);
         if (data.type === 'appointment' && data.bookedTime) {
           const timeStr = Qlinic.formatTime(Qlinic.parseTime(data.bookedTime));
-          return T.apptLineWithTime(doctorName, specialty.trim(), timeStr);
+          return T.apptLineWithTime(doctorName, '', timeStr);
         }
-        return T.inQueueLine(doctorName, specialty);
+        return T.inQueueLine(doctorName, '');
       }
 
       async function render() {
