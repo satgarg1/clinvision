@@ -1936,6 +1936,9 @@
     return `${period} ${h24 % 12 || 12}:${mm}`;
   }
 
+  // Every message ends with a way to opt out; it keeps the number in good standing with WhatsApp.
+  const WA_STOP_LINE = 'संदेश नहीं चाहिए तो STOP लिखकर भेजें / Reply STOP if you would rather not get these messages.';
+
   // patient: { id, name, phone, type, bookedDate, bookedTime }. tokenLabel is
   // the token exactly as the patient will see it ("#7", "W2").
   function buildWhatsAppMessage({ patient, clinic, doctor, tokenLabel }) {
@@ -1972,11 +1975,20 @@
       hi.push('कृपया अपने समय से 15 मिनट पहले पहुँचें।');
       en.push('Please arrive 15 minutes before your appointment time.');
     }
+    // Asking for a reply turns a first message into a conversation the patient has started to answer.
+    if (patient.type === 'appointment') {
+      hi.push('क्या आप आ रहे हैं? कृपया YES (हाँ) या NO (नहीं) लिखकर भेजें।');
+      en.push('Will you be coming? Please reply YES to confirm, or NO if you cannot make it.');
+    } else {
+      hi.push('कृपया OK लिखकर बताएँ कि यह संदेश आपको मिल गया।');
+      en.push('Please reply OK so we know this reached you.');
+    }
 
     return [
       hi.join('\n'),
       en.join('\n'),
       'आप कतार की स्थिति यहाँ देख सकते हैं / You can follow the queue here:\n' + link,
+      WA_STOP_LINE,
     ].join('\n\n');
   }
 
@@ -2020,6 +2032,7 @@
       hi.join('\n'),
       en.join('\n'),
       'आप कतार की स्थिति यहाँ देख सकते हैं / You can follow the queue here:\n' + link,
+      WA_STOP_LINE,
     ].join('\n\n');
   }
 

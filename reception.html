@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=469" />
+<link rel="stylesheet" href="styles.css?v=470" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -150,6 +150,7 @@
             </div>
             <div class="field" style="margin-top:24px;">
               <button type="submit" class="btn-sm primary" id="patientSubmitBtn" style="width:100%;">Add appointment</button>
+              <p class="wa-consent" id="waConsentNote" style="display:none;">We will WhatsApp this patient's booking details on the number above. Please tell them it comes from the clinic, and ask them to save the number or reply.</p>
             </div>
           </div>
           <div id="closedDayHint" class="slot-hint error" style="display:none;"></div>
@@ -188,7 +189,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=146"></script>
+  <script src="clinic-data.js?v=147"></script>
   <script src="app-topbar.js?v=9"></script>
   <script>
     (async function () {
@@ -251,6 +252,7 @@
       // Clinic row (for the WhatsApp confirmation switch) and every patient
       // currently drawn in the queue, so a row's WhatsApp button can find its data.
       let waClinic = null;
+      function syncWaConsent() { const n = document.getElementById('waConsentNote'); if (n) n.style.display = (waClinic && Qlinic.isWhatsAppConfirmEnabled(waClinic)) ? '' : 'none'; }
       const waPatients = {};
       let todayInvoices = [];
       let invoiceById = {};
@@ -360,7 +362,33 @@
       }
 
       // Opens the new tab straight from the click, then points it at WhatsApp once the token is known.
+      // A gentle pacing guard: a prompt, never a block, when many WhatsApp messages are opened within a minute.
+      // Messages sent in a burst are one of the things that gets a clinic's WhatsApp number restricted.
+      const waSendTimes = [];
+      async function waPaceOk() {
+        const now = Date.now();
+        while (waSendTimes.length && now - waSendTimes[0] > 60000) waSendTimes.shift();
+        if (waSendTimes.length >= 5) {
+          const go = await Qlinic.confirmDialog({
+            title: 'Slow down on WhatsApp?',
+            message: `You have opened ${waSendTimes.length} WhatsApp messages in the last minute. Sending many messages quickly can get the clinic's WhatsApp number restricted.\nSend this one now?`,
+            confirmLabel: 'Send anyway',
+            cancelLabel: 'Wait a moment',
+          });
+          if (!go) return false;
+        }
+        waSendTimes.push(Date.now());
+        return true;
+      }
+      document.addEventListener('click', async (e) => {
+        const a = e.target.closest('a.wa-send-btn');
+        if (!a || a.classList.contains('disabled')) return;
+        e.preventDefault();
+        if (await waPaceOk()) window.open(a.href, '_blank', 'noopener,noreferrer');
+      });
+
       async function openWhatsAppFor(patient, makeUrl) {
+        if (!(await waPaceOk())) return;
         const tab = window.open('', '_blank');
         if (tab) {
           try {
@@ -1535,6 +1563,7 @@
 
         const freshClinic = await Qlinic.getClinic(true);
         waClinic = freshClinic;
+        syncWaConsent();
         document.getElementById('waBookedBar').innerHTML = '';
         const clinicBlock = clinicBookingBlockReason(freshClinic);
         if (clinicBlock) {
@@ -1819,6 +1848,7 @@
 
       const [clinic, closures, doctorHolidays] = await Promise.all([Qlinic.getClinic(), Qlinic.getClinicClosures(), Qlinic.getDoctorHolidays()]);
       waClinic = clinic;
+      syncWaConsent();
       if (clinic) {
         if (clinic.opening_time) clinicOpenMin = Qlinic.parseTime(clinic.opening_time);
         if (clinic.closing_time) clinicCloseMin = Qlinic.parseTime(clinic.closing_time);
@@ -1844,7 +1874,7 @@
         renderClosedDayBanner();
         updateDoctorClosedHint();
         // Picks up the Patient messages switch being changed from Clinic Settings (once a minute is plenty).
-        if (++waClinicTick % 4 === 0) Qlinic.getClinic(true).then((c) => { waClinic = c; }).catch(() => { });
+        if (++waClinicTick % 4 === 0) Qlinic.getClinic(true).then((c) => { waClinic = c; syncWaConsent(); }).catch(() => { });
         renderQueues();
       }, 15000);
       document.getElementById('pDate').min = Qlinic.getTodayDate();
