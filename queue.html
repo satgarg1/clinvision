@@ -11,7 +11,7 @@
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
 <link rel="preload" as="image" href="doc-man.webp" type="image/webp" />
 <link rel="preload" as="image" href="doc-woman.webp" type="image/webp" />
-<link rel="stylesheet" href="styles.css?v=455" />
+<link rel="stylesheet" href="styles.css?v=456" />
 </head>
 <body class="queue-page">
   <div class="login-wrap">
@@ -64,8 +64,30 @@
 
       <div id="notYetState" style="display:none;">
         <div class="queue-clinic-name" id="notYetClinicName"></div>
-        <div class="queue-appt-line" id="notYetApptLine" style="margin-bottom:18px;"></div>
-        <p class="panel-note" style="text-align:center;" id="notYetNote"></p>
+        <div class="queue-appt-line" id="notYetApptLine"></div>
+        <div class="queue-notyet-pill" id="notYetPill"></div>
+        <div class="queue-notyet-art" aria-hidden="true"><svg width="210" height="150" viewBox="0 0 210 150" fill="none"><ellipse cx="105" cy="138" rx="78" ry="8" fill="#c9d9f2" opacity="0.55"/><ellipse cx="62" cy="80" rx="42" ry="40" fill="#cfe0fb" opacity="0.7"/><ellipse cx="158" cy="88" rx="30" ry="38" fill="#c3e9e4" opacity="0.85"/><path d="M150 112 C132 96 140 70 160 60 C164 82 166 98 150 112 Z" fill="#9edbd2" opacity="0.9"/><rect x="52" y="30" width="104" height="92" rx="14" fill="#ffffff" stroke="#b5cff3" stroke-width="2"/><path d="M52 44 a14 14 0 0 1 14 -14 h76 a14 14 0 0 1 14 14 v14 h-104 z" fill="#3b82f6"/><rect x="72" y="20" width="8" height="22" rx="4" fill="#2563eb"/><rect x="104" y="20" width="8" height="22" rx="4" fill="#2563eb"/><rect x="128" y="20" width="8" height="22" rx="4" fill="#2563eb"/><g fill="#dbeafe"><rect x="66" y="70" width="16" height="14" rx="4"/><rect x="90" y="70" width="16" height="14" rx="4"/><rect x="114" y="70" width="16" height="14" rx="4"/><rect x="66" y="92" width="16" height="14" rx="4"/><rect x="90" y="92" width="16" height="14" rx="4"/></g><rect x="114" y="92" width="16" height="14" rx="4" fill="#2563eb"/><circle cx="150" cy="108" r="28" fill="#ffffff" stroke="#2563eb" stroke-width="5"/><polyline points="150 92 150 108 162 114" stroke="#2563eb" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="queue-notyet-head">
+          <h1 id="notYetHeadline"></h1>
+          <p id="notYetSub"></p>
+        </div>
+        <div class="queue-notyet-next">
+          <div class="queue-notyet-next-title" id="notYetNextTitle"></div>
+        <div class="queue-notyet-row">
+          <span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          <span class="tx"><b id="notYetN1a"></b><span id="notYetN1b"></span></span>
+        </div>
+        <div class="queue-notyet-row">
+          <span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span>
+          <span class="tx"><b id="notYetN2a"></b><span id="notYetN2b"></span></span>
+        </div>
+        <div class="queue-notyet-row">
+          <span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span>
+          <span class="tx"><b id="notYetN3a"></b><span id="notYetN3b"></span></span>
+        </div>
+        </div>
+        <div class="queue-notyet-details" id="notYetDetails"></div>
+        <div class="queue-notyet-live" id="notYetLive"></div>
       </div>
 
       <div id="doneState" style="display:none;">
@@ -306,11 +328,23 @@
           closedBody: 'Please check back tomorrow, or contact the clinic directly.',
           clinicClosedTitle: "We're closed for the day",
           clinicClosedBody: 'Thanks for your patience today. The clinic will reopen tomorrow.',
-          notYetNote: (dateLabel) => `This link isn't active yet. Please come back and open it again on the morning of ${dateLabel} to see your live position in the queue.`,
+          tomorrow: 'Tomorrow',
+          notYetPill: (isTomorrow, dateLabel) => (isTomorrow ? 'Your live queue opens tomorrow' : `Your live queue opens on ${dateLabel}`),
+          notYetHeadline: "Your queue isn't live yet",
+          notYetSub: (isTomorrow, dateLabel) => (isTomorrow
+            ? 'Open this link again tomorrow to see your position in the queue.'
+            : `Open this link again on ${dateLabel} to see your position in the queue.`),
+          notYetNextTitle: 'What happens next?',
+          notYetN1a: 'Your token and position will appear here', notYetN1b: 'on the day of your visit.',
+          notYetN2a: 'This page updates by itself', notYetN2b: 'once the queue opens. No need to refresh.',
+          notYetN3a: 'Keep this link', notYetN3b: 'It is the only link you need for your visit.',
+          notYetDetails: 'Queue details will be available on the day of your visit.',
+          notYetLive: 'Updates automatically once your queue opens',
           apptLineWithTime: (doctorName, specialty, timeStr) =>
             `Your appointment is booked for <b>${doctorName}</b><span style="display:block;margin-top:2px;">${specialty} at ${timeStr}</span>`,
-          apptLineFutureDate: (doctorName, specialty, dateLabel) =>
-            `Your appointment is booked for <b>${doctorName}</b>${specialty}<span style="display:block;margin-top:2px;">on ${dateLabel}</span>`,
+          apptLineNotYet: (doctorName, specialty, whenText) =>
+            `Your appointment is booked for<b>${doctorName}</b>${specialty ? `<em>${specialty}</em>` : ''}<span style="display:block;margin-top:2px;">${whenText}</span>`,
+          whenWithTime: (isTomorrow, dateLabel, timeStr) => (timeStr ? `${isTomorrow ? 'Tomorrow' : dateLabel} at ${timeStr}` : (isTomorrow ? 'Tomorrow' : dateLabel)),
           inQueueLine: (doctorName, specialty) =>
             `You're in the queue with <b>${doctorName}</b>${specialty}`,
           statusMessage: {
@@ -386,11 +420,23 @@
           closedBody: 'कृपया कल फिर से देखें, या सीधे क्लिनिक से संपर्क करें।',
           clinicClosedTitle: 'आज के लिए बंद हैं',
           clinicClosedBody: 'आज आपके धैर्य के लिए धन्यवाद — क्लिनिक कल फिर खुलेगा।',
-          notYetNote: (dateLabel) => `यह लिंक अभी सक्रिय नहीं है — कृपया ${dateLabel} की सुबह वापस आकर इसे दोबारा खोलें, ताकि आप कतार में अपनी लाइव स्थिति देख सकें।`,
+          tomorrow: 'कल',
+          notYetPill: (isTomorrow, dateLabel) => (isTomorrow ? 'आपकी लाइव कतार कल खुलेगी' : `आपकी लाइव कतार ${dateLabel} को खुलेगी`),
+          notYetHeadline: 'आपकी कतार अभी शुरू नहीं हुई है',
+          notYetSub: (isTomorrow, dateLabel) => (isTomorrow
+            ? 'कतार में अपनी स्थिति देखने के लिए कृपया कल यह लिंक दोबारा खोलें।'
+            : `कतार में अपनी स्थिति देखने के लिए कृपया ${dateLabel} को यह लिंक दोबारा खोलें।`),
+          notYetNextTitle: 'आगे क्या होगा?',
+          notYetN1a: 'आपका टोकन और कतार की स्थिति यहाँ दिखेगी', notYetN1b: 'आपकी विज़िट वाले दिन।',
+          notYetN2a: 'यह पेज अपने आप अपडेट होता है', notYetN2b: 'कतार शुरू होने के बाद, रिफ्रेश करने की ज़रूरत नहीं।',
+          notYetN3a: 'इस लिंक को सहेजकर रखें', notYetN3b: 'आपकी विज़िट के लिए बस यही एक लिंक चाहिए।',
+          notYetDetails: 'कतार का विवरण आपकी विज़िट वाले दिन उपलब्ध होगा।',
+          notYetLive: 'कतार खुलते ही अपने आप अपडेट होगा',
           apptLineWithTime: (doctorName, specialty, timeStr) =>
             `आपकी अपॉइंटमेंट बुक है<b>${doctorName} के साथ</b><span style="display:block;margin-top:2px;">${specialty ? specialty + ', ' : ''}${timeStr} पर</span>`,
-          apptLineFutureDate: (doctorName, specialty, dateLabel) =>
-            `आपकी अपॉइंटमेंट बुक है<b>${doctorName} के साथ</b><span style="display:block;margin-top:2px;">${specialty ? specialty.trim() + ', ' : ''}${dateLabel} को</span>`,
+          apptLineNotYet: (doctorName, specialty, whenText) =>
+            `आपकी अपॉइंटमेंट बुक है<b>${doctorName} के साथ</b>${specialty ? `<em>${specialty}</em>` : ''}<span style="display:block;margin-top:2px;">${whenText}</span>`,
+          whenWithTime: (isTomorrow, dateLabel, timeStr) => (timeStr ? `${isTomorrow ? 'कल' : dateLabel}, ${timeStr} पर` : `${isTomorrow ? 'कल' : dateLabel} को`),
           inQueueLine: (doctorName, specialty) =>
             `आप <b>${doctorName}</b>${specialty} की कतार में हैं`,
           statusMessage: {
@@ -618,11 +664,38 @@
         footerEl.style.display = 'block';
         notYetEl.style.display = 'block';
         document.getElementById('notYetClinicName').textContent = localizeName(data.clinicName);
-        const specialty = data.doctorSpecialty ? ` (${Qlinic.escapeHtml(localizeSpecialty(data.doctorSpecialty))})` : '';
-        const dateLabel = localizeDateLabel(Qlinic.formatDateLabel(data.bookedDate));
+        const specialty = data.doctorSpecialty ? Qlinic.escapeHtml(localizeSpecialty(data.doctorSpecialty)) : '';
+        const isTomorrow = isDayAfterToday(data.bookedDate);
+        const dateLabel = shortDateLabel(data.bookedDate);
+        const timeStr = data.bookedTime ? Qlinic.formatTime(Qlinic.parseTime(data.bookedTime)) : '';
         document.getElementById('notYetApptLine').innerHTML =
-          T.apptLineFutureDate(Qlinic.escapeHtml(doctorDisplay(data.doctorName)), specialty, dateLabel);
-        document.getElementById('notYetNote').textContent = T.notYetNote(dateLabel);
+          T.apptLineNotYet(Qlinic.escapeHtml(doctorDisplay(data.doctorName)), specialty, T.whenWithTime(isTomorrow, dateLabel, timeStr));
+        document.getElementById('notYetPill').textContent = T.notYetPill(isTomorrow, dateLabel);
+        document.getElementById('notYetHeadline').textContent = T.notYetHeadline;
+        document.getElementById('notYetSub').textContent = T.notYetSub(isTomorrow, dateLabel);
+        document.getElementById('notYetNextTitle').textContent = T.notYetNextTitle;
+        ['N1a', 'N1b', 'N2a', 'N2b', 'N3a', 'N3b'].forEach((k) => { document.getElementById('notYet' + k).textContent = T['notYet' + k]; });
+        document.getElementById('notYetDetails').textContent = T.notYetDetails;
+        document.getElementById('notYetLive').textContent = T.notYetLive;
+      }
+
+      // "Tomorrow" when the visit is the day after today (India day), otherwise the date, like "Sat, 3 Oct".
+      function isDayAfterToday(dateStr) {
+        const [ty, tm, td] = Qlinic.getTodayDate().split('-').map(Number);
+        const next = new Date(Date.UTC(ty, tm - 1, td + 1));
+        const nextStr = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
+        return dateStr === nextStr;
+      }
+      const EN_DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const EN_MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const HI_DAYS_SHORT = ['रवि', 'सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि'];
+      const HI_MONTHS_FULL = ['जनवरी', 'फ़रवरी', 'मार्च', 'अप्रैल', 'मई', 'जून', 'जुलाई', 'अगस्त', 'सितंबर', 'अक्टूबर', 'नवंबर', 'दिसंबर'];
+      function shortDateLabel(dateStr) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const day = new Date(y, m - 1, d).getDay();
+        return T === STRINGS.hi
+          ? `${HI_DAYS_SHORT[day]}, ${d} ${HI_MONTHS_FULL[m - 1]}`
+          : `${EN_DAYS_SHORT[day]}, ${d} ${EN_MONTHS_SHORT[m - 1]}`;
       }
 
       function appointmentLineHtml(data) {
