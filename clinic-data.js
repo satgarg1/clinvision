@@ -1977,11 +1977,6 @@
       hi.join('\n'),
       en.join('\n'),
       'आप कतार की स्थिति यहाँ देख सकते हैं / You can follow the queue here:\n' + link,
-      // The last thing the patient reads is a question they can answer in one word. A reply turns a first
-      // message into a conversation, which is also what keeps the clinic's number in good standing.
-      patient.type === 'appointment'
-        ? 'क्या आप आ रहे हैं? YES (हाँ) या NO (नहीं) लिखकर भेजें।\nWill you be coming? Reply YES to confirm, or NO if you cannot make it.'
-        : 'कृपया OK लिखकर बताएँ कि संदेश मिल गया।\nPlease reply OK so we know this reached you.',
     ].join('\n\n');
   }
 
