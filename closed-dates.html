@@ -94,6 +94,20 @@
           </span>
         </div>
         <div id="closuresTableWrap"></div>
+        <div class="pd-foot" id="closuresFoot" style="display:none;">
+          <div class="pd-per">
+            <label for="closuresPerPage">Show</label>
+            <select id="closuresPerPage" class="pd-select">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span>per page</span>
+            <span class="pd-showing" id="closuresShowing" style="margin-left:10px;"></span>
+          </div>
+          <div class="pd-pager" id="closuresPager"></div>
+        </div>
       </div>
     </main>
   </div>
@@ -102,7 +116,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=144"></script>
+  <script src="clinic-data.js?v=145"></script>
   <script src="app-topbar.js?v=9"></script>
   <script>
     (async function () {
@@ -140,6 +154,9 @@
       }
 
       let closures = [];
+      let closuresPage = 1;
+      let closuresPageSize = 25;
+      let closuresPageSet = false;
 
       function fmtDate(dateStr) {
         const [y, m, d] = dateStr.split('-').map(Number);
@@ -159,14 +176,25 @@
         document.getElementById('closuresCountText').textContent = `${closures.length} date${closures.length === 1 ? '' : 's'}`;
         if (closures.length === 0) {
           wrap.innerHTML = '<div class="empty-state">No closed dates added yet.</div>';
+          document.getElementById('closuresFoot').style.display = 'none';
           return;
         }
+        // Opens on the page with the next closure, not on the oldest ones.
+        if (!closuresPageSet) { closuresPage = Qlinic.pageOfFirstUpcoming(closures, (c) => c.date, closuresPageSize); closuresPageSet = true; }
+        const pg = Qlinic.renderNumberedPager({
+          pagerEl: document.getElementById('closuresPager'), showingEl: document.getElementById('closuresShowing'),
+          total: closures.length, page: closuresPage, pageSize: closuresPageSize,
+          onPage: (p) => { closuresPage = p; renderClosures(); },
+        });
+        closuresPage = pg.page;
+        document.getElementById('closuresFoot').style.display = closures.length > 10 ? '' : 'none';
+        const pageRows = closures.slice(pg.start, pg.end);
         wrap.innerHTML = `
           <table class="qtable qtable-fixed hl-table">
             <colgroup><col style="width:34%;"><col style="width:${amDoctor ? '66' : '48'}%;">${amDoctor ? '' : '<col style="width:18%;">'}</colgroup>
             <thead><tr><th>Date</th><th>Note</th>${amDoctor ? '' : '<th style="text-align:right;">Actions</th>'}</tr></thead>
             <tbody>
-              ${closures.map((c) => `
+              ${pageRows.map((c) => `
                 <tr>
                   <td>${fmtDate(c.date)}</td>
                   <td>${c.note ? Qlinic.escapeHtml(c.note) : '<span class="sub-line">No note</span>'}</td>
@@ -187,6 +215,11 @@
         closures = await Qlinic.getClinicClosures();
         renderClosures();
       }
+      document.getElementById('closuresPerPage').addEventListener('change', (e) => {
+        closuresPageSize = Number(e.target.value);
+        closuresPageSet = false;
+        renderClosures();
+      });
 
       async function doDeleteClosure(id) {
         if (!(await Qlinic.confirmDialog({ message: 'Remove this closed date?', confirmLabel: 'Remove', danger: true }))) return;

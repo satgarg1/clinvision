@@ -118,6 +118,55 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // The numbered pager shared by Patient Directory, Revenue and the closed dates and holidays lists:
+  // "Showing 1 to 25 of 80", numbered buttons, and back to the top on every page change.
+  function pageNumbers(current, totalPages) {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const set = new Set([1, totalPages, current, current - 1, current + 1]);
+    if (current <= 3) { set.add(2); set.add(3); set.add(4); set.add(5); }
+    if (current >= totalPages - 2) { [2, 3, 4].forEach((k) => set.add(totalPages - k)); }
+    const pages = [...set].filter((p) => p >= 1 && p <= totalPages).sort((a, b) => a - b);
+    const out = [];
+    pages.forEach((p, i) => {
+      if (i > 0 && p - pages[i - 1] > 1) out.push('\u2026');
+      out.push(p);
+    });
+    return out;
+  }
+
+  function renderNumberedPager({ pagerEl, showingEl, total, page, pageSize, onPage }) {
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const cur = Math.min(Math.max(1, page || 1), totalPages);
+    const start = (cur - 1) * pageSize;
+    const end = Math.min(start + pageSize, total);
+    if (showingEl) showingEl.textContent = total === 0 ? '' : `Showing ${start + 1} to ${end} of ${total}`;
+    if (pagerEl) {
+      if (totalPages <= 1) {
+        pagerEl.innerHTML = '';
+      } else {
+        pagerEl.innerHTML = `
+          <button type="button" class="pd-pg" data-page="${cur - 1}" aria-label="Previous page" ${cur === 1 ? 'disabled' : ''}>&lsaquo;</button>
+          ${pageNumbers(cur, totalPages).map((p) => (p === '\u2026'
+            ? '<span class="pd-pg-gap">\u2026</span>'
+            : `<button type="button" class="pd-pg${p === cur ? ' active' : ''}" data-page="${p}" ${p === cur ? 'aria-current="page"' : ''}>${p}</button>`)).join('')}
+          <button type="button" class="pd-pg" data-page="${cur + 1}" aria-label="Next page" ${cur === totalPages ? 'disabled' : ''}>&rsaquo;</button>
+        `;
+        pagerEl.querySelectorAll('[data-page]').forEach((btn) => {
+          btn.addEventListener('click', () => { onPage(Number(btn.dataset.page)); scrollToTop(); });
+        });
+      }
+    }
+    return { page: cur, start, end, totalPages };
+  }
+
+  // The page that holds the first date from today on (the last page when everything is in the past), so a
+  // list of dates opens on what is coming up instead of on the oldest entries.
+  function pageOfFirstUpcoming(list, dateOf, pageSize) {
+    const today = todayDateStr();
+    const idx = list.findIndex((item) => dateOf(item) >= today);
+    return idx < 0 ? Math.max(1, Math.ceil(list.length / pageSize)) : Math.floor(idx / pageSize) + 1;
+  }
+
   function wirePager(containerEl, page, totalPages, pageChanged) {
     if (!containerEl) return;
     // Going to a different page always brings the reader back to the top.
@@ -3832,6 +3881,8 @@
     pagerHtml,
     wirePager,
     scrollToTop,
+    renderNumberedPager,
+    pageOfFirstUpcoming,
     confirmDialog,
     openAdjustBillingModal,
     attachDatePicker,

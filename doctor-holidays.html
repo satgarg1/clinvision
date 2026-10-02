@@ -111,6 +111,20 @@
             <span class="qr-pill hl-count" id="holidaysCount"></span>
           </div>
           <div id="holidaysTableWrap"></div>
+          <div class="pd-foot" id="holidaysFoot" style="display:none;">
+            <div class="pd-per">
+              <label for="holidaysPerPage">Show</label>
+              <select id="holidaysPerPage" class="pd-select">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              <span>per page</span>
+              <span class="pd-showing" id="holidaysShowing" style="margin-left:10px;"></span>
+            </div>
+            <div class="pd-pager" id="holidaysPager"></div>
+          </div>
         </div>
       </div>
 
@@ -166,7 +180,20 @@
           <tbody id="allHolidaysTableWrap"></tbody>
         </table>
         <div class="empty-state" id="allHolidaysEmpty" style="display:none;">No holidays match this filter.</div>
-        <div class="pager" id="allHolidaysPager"></div>
+        <div class="pd-foot" id="allHolidaysFoot" style="display:none;">
+          <div class="pd-per">
+            <label for="allHolidaysPerPage">Show</label>
+            <select id="allHolidaysPerPage" class="pd-select">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span>per page</span>
+            <span class="pd-showing" id="allHolidaysShowing" style="margin-left:10px;"></span>
+          </div>
+          <div class="pd-pager" id="allHolidaysPager"></div>
+        </div>
       </div>
     </main>
   </div>
@@ -175,7 +202,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=144"></script>
+  <script src="clinic-data.js?v=145"></script>
   <script src="app-topbar.js?v=9"></script>
   <script>
     (async function () {
@@ -218,6 +245,9 @@
       let targetDoctorId = amDoctor ? myProfile.doctorId : null;
       let targetProfileId = amStaff ? myProfile.id : null;
       let holidays = [];
+      let holidaysPage = 1;
+      let holidaysPageSize = 25;
+      let holidaysPageKey = null;
 
       function roleLabel(role) {
         return role === 'admin' ? 'Admin' : role === 'doctor' ? 'Doctor' : 'Reception';
@@ -271,13 +301,25 @@
         document.getElementById('holidaysCount').textContent = `${holidays.length} holiday${holidays.length === 1 ? '' : 's'}`;
         if (holidays.length === 0) {
           wrap.innerHTML = '<div class="empty-state">No holidays added yet.</div>';
+          document.getElementById('holidaysFoot').style.display = 'none';
           return;
         }
+        // Switching to another person opens on the page with their next holiday.
+        const pageKey = personType + ':' + (targetProfileId || targetDoctorId || '');
+        if (holidaysPageKey !== pageKey) { holidaysPageKey = pageKey; holidaysPage = Qlinic.pageOfFirstUpcoming(holidays, (h) => h.date, holidaysPageSize); }
+        const pg = Qlinic.renderNumberedPager({
+          pagerEl: document.getElementById('holidaysPager'), showingEl: document.getElementById('holidaysShowing'),
+          total: holidays.length, page: holidaysPage, pageSize: holidaysPageSize,
+          onPage: (p) => { holidaysPage = p; renderHolidays(); },
+        });
+        holidaysPage = pg.page;
+        document.getElementById('holidaysFoot').style.display = holidays.length > 10 ? '' : 'none';
+        const pageRows = holidays.slice(pg.start, pg.end);
         wrap.innerHTML = `
           <table class="qtable hl-table">
             <thead><tr><th>Date</th><th>Reason</th><th style="width:90px;"></th></tr></thead>
             <tbody>
-              ${holidays.map((h) => {
+              ${pageRows.map((h) => {
                 const isPast = h.date < TODAY_STR;
                 const cls = isPast ? 'is-past' : h.date === TODAY_STR ? 'is-today' : '';
                 const badge = h.date === TODAY_STR ? '<span class="today-badge">Today</span>' : relativeSoonBadge(h.date);
@@ -298,6 +340,12 @@
           </table>
         `;
       }
+
+      document.getElementById('holidaysPerPage').addEventListener('change', (e) => {
+        holidaysPageSize = Number(e.target.value);
+        holidaysPageKey = null;
+        renderHolidays();
+      });
 
       let holidaysSeq = 0;
       async function loadHolidays() {
@@ -320,7 +368,7 @@
       let allHolidaysNameFilter = new Set();
       let allHolidaysPage = 1;
       let allHolidaysFilterOpen = false;
-      const ALL_HOLIDAYS_PAGE_SIZE = 25;
+      let allHolidaysPageSize = 25;
       const TODAY_STR = Qlinic.getTodayDate();
 
       async function loadAllHolidays() {
@@ -335,8 +383,8 @@
           const p = staffById[h.profileId];
           return { date: h.date, note: h.note, role: p ? p.role : 'reception', name: p ? (p.fullName || p.email) : 'Unknown' };
         }));
-        allHolidaysPage = 1;
         allHolidaysNameFilter.clear();
+        allHolidaysPage = Qlinic.pageOfFirstUpcoming(allHolidaysVisible(), (r) => r.date, allHolidaysPageSize);
         renderAllHolidaysAll();
       }
 
@@ -368,23 +416,19 @@
           renderAllHolidaysAll();
         });
       }
-      function renderAllHolidaysPager(total) {
-        const totalPages = Math.max(1, Math.ceil(total / ALL_HOLIDAYS_PAGE_SIZE));
-        if (allHolidaysPage > totalPages) allHolidaysPage = totalPages;
-        const start = (allHolidaysPage - 1) * ALL_HOLIDAYS_PAGE_SIZE;
-        const end = Math.min(start + ALL_HOLIDAYS_PAGE_SIZE, total);
-        const pager = document.getElementById('allHolidaysPager');
-        const summary = `Showing ${total === 0 ? 0 : start + 1}-${end} of ${total}`;
-        pager.innerHTML = `<span class="sub-line">${summary}</span>${Qlinic.pagerHtml(allHolidaysPage, totalPages)}`;
-        Qlinic.wirePager(pager, allHolidaysPage, totalPages, (p) => { allHolidaysPage = p; renderAllHolidaysRows(); });
-      }
       function renderAllHolidaysRows() {
         const all = allHolidaysVisible();
-        const start = (allHolidaysPage - 1) * ALL_HOLIDAYS_PAGE_SIZE;
-        const pageRows = all.slice(start, start + ALL_HOLIDAYS_PAGE_SIZE);
+        const pg = Qlinic.renderNumberedPager({
+          pagerEl: document.getElementById('allHolidaysPager'), showingEl: document.getElementById('allHolidaysShowing'),
+          total: all.length, page: allHolidaysPage, pageSize: allHolidaysPageSize,
+          onPage: (p) => { allHolidaysPage = p; renderAllHolidaysRows(); },
+        });
+        allHolidaysPage = pg.page;
+        document.getElementById('allHolidaysFoot').style.display = all.length > 10 ? '' : 'none';
+        const pageRows = all.slice(pg.start, pg.end);
         const tbody = document.getElementById('allHolidaysTableWrap');
         const empty = document.getElementById('allHolidaysEmpty');
-        if (all.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; renderAllHolidaysPager(0); return; }
+        if (all.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
         empty.style.display = 'none';
         tbody.innerHTML = pageRows.map((r) => {
           const cls = r.date < TODAY_STR ? 'is-past' : r.date === TODAY_STR ? 'is-today' : '';
@@ -397,8 +441,12 @@
             </tr>
           `;
         }).join('');
-        renderAllHolidaysPager(all.length);
       }
+      document.getElementById('allHolidaysPerPage').addEventListener('change', (e) => {
+        allHolidaysPageSize = Number(e.target.value);
+        allHolidaysPage = 1;
+        renderAllHolidaysRows();
+      });
       function renderAllHolidaysAll() {
         renderAllHolidaysTotal();
         renderAllHolidaysChips();
