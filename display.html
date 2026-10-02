@@ -8,13 +8,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=468" />
+<link rel="stylesheet" href="styles.css?v=469" />
 </head>
 <body class="display-body" style="visibility:hidden;">
   <button class="display-theme-toggle display-sound-toggle" id="displaySoundToggle" aria-label="Turn call sound on or off">
     <svg class="icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
     <svg class="icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none;"><path d="M11 5 6 9H2v6h4l5 4z"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>
   </button>
+  <span class="display-sound-label" id="displaySoundLabel" role="status" aria-live="polite"></span>
   <button class="display-theme-toggle display-zoom-out" id="displayZoomOut" aria-label="Shrink the board to fit this screen">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </button>
@@ -23,52 +24,146 @@
   </button>
 
   <script>
+    // ClinVision display sounds (chosen in the Sound Lab). One family: struck glass, vibes, kalimba and tuned bars,
+    // all on the C major pentatonic scale, so any two can overlap without a clash.
+    //   rising = come / available     falling = away     one repeated note = stay put     open leaps + voice = listen
+    // Loudness ladder (RMS dBFS): call -18, announcement -20, emergency -22, back from break -26, break -28. Each
+    // `gain` below is that calibration, measured once offline, so every sound sits on its own step of the ladder
+    // and no peak passes -3 dBFS. A limiter at -2 dBFS keeps the Loud setting from distorting small TV speakers.
     window.DisplaySound = (function () {
-      var MUTE_KEY = 'clinvision_display_sound_muted';
-      var muted = localStorage.getItem(MUTE_KEY) === '1';
-      var ctx = null;
+      var LEVEL_KEY = 'clinvision_display_sound_level';
+      var OLD_MUTE_KEY = 'clinvision_display_sound_muted';
+      var LEVELS = ['standard', 'loud', 'quiet', 'off'];
+      var LEVEL_LABEL = { standard: 'Standard', loud: 'Loud', quiet: 'Quiet', off: 'Off' };
+      var LEVEL_GAIN = { standard: 1, loud: 1.585, quiet: 0.5 };   // 0 dB, +4 dB, -6 dB
+      var level = localStorage.getItem(LEVEL_KEY);
+      if (LEVELS.indexOf(level) === -1) level = localStorage.getItem(OLD_MUTE_KEY) === '1' ? 'off' : 'standard';
+
+      var ctx = null, master = null;
+      var queue = [], running = false, lastCallAt = -99, lastHighAt = -99;
+
+      var NOTE = { C: 0, D: 2, E: 4, G: 7, A: 9 };
+      function hz(name) {
+        var m = /^([CDEGA])(\d)$/.exec(name);
+        return 440 * Math.pow(2, (NOTE[m[1]] + (Number(m[2]) - 4) * 12 - 9) / 12);
+      }
+
+      // Priority decides the order. A sound is never cut off; calls, emergencies and announcements wait their turn
+      // (300 ms apart), while the two informational sounds are dropped if anything else is playing or has just played.
+      var PRI = { announcement: 5, emergency: 5, call: 3, back: 2, break: 1 };
+
+      // gain = offline calibration; notes = [start s, pitch, ring s, level dB, (optional) own timbre]
+      var SOUNDS = {
+        call: { gain: 0.57211, layers: [['glass', 1]],
+          notes: [[0, 'G5', 1.0], [0.16, 'C6', 1.0], [0.32, 'E6', 1.35], [0.32, 'G6', 0.8, -12]] },
+        break: { gain: 0.34938, layers: [['vibes', 1]],
+          notes: [[0, 'D6', 0.7], [0.2, 'A5', 0.95]] },
+        back: { gain: 0.30658, layers: [['kalimba', 1]],
+          notes: [[0, 'A5', 0.8], [0.12, 'D6', 0.8], [0.24, 'E6', 1.0]] },
+        emergency: { gain: 0.5299, layers: [['bar', 1]],
+          notes: [[0, 'D5', 1.0], [0.42, 'D5', 1.2], [0.42, 'A5', 1.0, -8]] },
+        announcement: { gain: 0.33974, layers: [['glass', 0.9], ['bar', 0.6]],
+          notes: [[0, 'G5', 1.3], [0.2, 'C6', 1.3], [0.4, 'G6', 1.5]] }
+      };
+
+      function partials(dest, t, f, g, parts, att, trem) {
+        var bus = dest;
+        if (trem) {
+          bus = ctx.createGain(); bus.gain.value = 1 - trem.depth;
+          var lfo = ctx.createOscillator(); lfo.frequency.value = trem.rate;
+          var lg = ctx.createGain(); lg.gain.value = trem.depth * 0.9;
+          lfo.connect(lg); lg.connect(bus.gain); bus.connect(dest);
+          lfo.start(t); lfo.stop(t + 3.2);
+        }
+        parts.forEach(function (p) {
+          var fr = f * p.r; if (fr > 11000) return;
+          var o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = fr;
+          var e = ctx.createGain(), end = t + att + p.d, pk = g * p.a;
+          e.gain.setValueAtTime(0.00001, t);
+          e.gain.linearRampToValueAtTime(pk, t + att);
+          e.gain.exponentialRampToValueAtTime(Math.max(1e-7, pk * 0.001), end);
+          o.connect(e); e.connect(bus); o.start(t); o.stop(end + 0.03);
+        });
+      }
+      function click(dest, t, g, fc) {
+        var len = Math.ceil(ctx.sampleRate * 0.03), b = ctx.createBuffer(1, len, ctx.sampleRate), d = b.getChannelData(0);
+        for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (len * 0.12));
+        var s = ctx.createBufferSource(); s.buffer = b;
+        var bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = fc; bp.Q.value = 1.4;
+        var gn = ctx.createGain(); gn.gain.value = g;
+        s.connect(bp); bp.connect(gn); gn.connect(dest); s.start(t);
+      }
+      var TIMBRE = {
+        // struck glass: inharmonic partials plus a 1.0033 twin that beats slowly for a shimmer
+        glass: function (dest, t, f, d, g) {
+          partials(dest, t, f, g, [{ r: 1, a: 1, d: d }, { r: 1.0033, a: 0.5, d: d }, { r: 2.32, a: 0.42, d: d * 0.7 },
+            { r: 4.25, a: 0.26, d: d * 0.45 }, { r: 6.63, a: 0.12, d: d * 0.3 }], 0.003);
+        },
+        // tuned metal bar
+        bar: function (dest, t, f, d, g) {
+          partials(dest, t, f, g, [{ r: 1, a: 1, d: d }, { r: 2.76, a: 0.5, d: d * 0.55 }, { r: 5.4, a: 0.3, d: d * 0.3 }, { r: 8.93, a: 0.1, d: d * 0.16 }], 0.002);
+        },
+        // vibraphone: slow 5.2 Hz tremolo
+        vibes: function (dest, t, f, d, g) {
+          partials(dest, t, f, g, [{ r: 1, a: 1, d: d }, { r: 4, a: 0.2, d: d * 0.5 }, { r: 10, a: 0.05, d: d * 0.2 }], 0.003, { rate: 5.2, depth: 0.28 });
+        },
+        // thumb piano
+        kalimba: function (dest, t, f, d, g) {
+          partials(dest, t, f, g, [{ r: 1, a: 1, d: Math.min(d, 0.9) * 0.8 }, { r: 5.4, a: 0.28, d: 0.14 }], 0.001);
+          click(dest, t, g * 0.08, 3200);
+        }
+      };
 
       function unlock() {
         if (!ctx) {
           try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+          master = ctx.createGain();
+          master.gain.value = LEVEL_GAIN[level] || 1;
+          var lim = ctx.createDynamicsCompressor();
+          lim.threshold.value = -2; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.001; lim.release.value = 0.12;
+          master.connect(lim); lim.connect(ctx.destination);
         }
         if (ctx.state === 'suspended') ctx.resume();
       }
 
-      function tone(freq, start, dur, peak, type) {
-        var now = ctx.currentTime;
-        var osc = ctx.createOscillator();
-        var gain = ctx.createGain();
-        osc.type = type || 'sine';
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.0001, now + start);
-        gain.gain.exponentialRampToValueAtTime(peak, now + start + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
-        osc.connect(gain).connect(ctx.destination);
-        osc.start(now + start);
-        osc.stop(now + start + dur + 0.05);
-      }
-
-      function playChime() {
-        if (muted || !ctx) return;
-        tone(1046, 0, 0.35, 0.6, 'sine');
-        tone(880, 0.28, 0.55, 0.6, 'sine');
-      }
-
-      function playBreakChime() {
-        if (muted || !ctx) return;
-        tone(392, 0, 0.6, 0.45, 'triangle');
-      }
-      function playEmergencyChime() {
-        if (muted || !ctx) return;
-        [0, 0.14, 0.28, 0.42].forEach(function (start, i) {
-          tone(i % 2 === 0 ? 784 : 988, start, 0.12, 0.65, 'square');
+      // Schedules one sound and returns how long it rings, in seconds. `onlyFirst` plays just the first notes.
+      function playSound(def, onlyFirst) {
+        var pg = ctx.createGain(); pg.gain.value = def.gain; pg.connect(master);
+        var t0 = ctx.currentTime + 0.03, notes = onlyFirst ? def.notes.slice(0, onlyFirst) : def.notes, len = 0;
+        notes.forEach(function (n) {
+          var t = n[0], d = n[2], db = n[3] || 0;
+          len = Math.max(len, t + d);
+          def.layers.forEach(function (L) {
+            TIMBRE[L[0]](pg, t0 + t, hz(n[1]), d, 0.5 * L[1] * Math.pow(10, db / 20));
+          });
         });
+        return len + 0.1;
       }
-      function playAvailableChime() {
-        if (muted || !ctx) return;
-        tone(659, 0, 0.22, 0.45, 'sine');
-        tone(880, 0.16, 0.35, 0.45, 'sine');
+
+      function pump() {
+        if (running || !queue.length || !ctx || level === 'off') return;
+        var kind = queue.shift(), now = ctx.currentTime;
+        // two calls close together (two doctors): the second one plays only its first two notes
+        var short = kind === 'call' && now - lastCallAt < 4;
+        if (kind === 'call') lastCallAt = now;
+        if (PRI[kind] >= 3) lastHighAt = now;
+        var len = playSound(SOUNDS[kind], short ? 2 : 0);
+        running = true;
+        setTimeout(function () { running = false; pump(); }, (len + 0.3) * 1000);
+      }
+
+      function enqueue(kind) {
+        if (level === 'off' || !ctx || queue.length >= 4) return;
+        if (PRI[kind] < 3 && (running || queue.length || ctx.currentTime - lastHighAt < 3)) return;
+        queue.push(kind);
+        queue.sort(function (a, b) { return PRI[b] - PRI[a]; });
+      }
+      function request(kind) { enqueue(kind); pump(); }
+
+      // Everything that happened in one refresh, in priority order.
+      function playEvents(ev) {
+        ['announcement', 'emergency', 'call', 'back', 'break'].forEach(function (k) { if (ev && ev[k]) enqueue(k); });
+        pump();
       }
 
       document.addEventListener('click', unlock, { once: true });
@@ -76,25 +171,40 @@
       var btn = document.getElementById('displaySoundToggle');
       var onIcon = btn.querySelector('.icon-sound-on');
       var offIcon = btn.querySelector('.icon-sound-off');
-      function reflectMuted() {
-        onIcon.style.display = muted ? 'none' : '';
-        offIcon.style.display = muted ? '' : 'none';
-        btn.setAttribute('aria-label', muted ? 'Turn call sound on' : 'Turn call sound off');
+      var label = document.getElementById('displaySoundLabel');
+      var labelTimer = null;
+      function reflect(showLabel) {
+        var off = level === 'off';
+        onIcon.style.display = off ? 'none' : '';
+        offIcon.style.display = off ? '' : 'none';
+        var text = 'Call sound: ' + LEVEL_LABEL[level];
+        btn.setAttribute('aria-label', text + '. Press to change the level.');
+        btn.title = text;
+        if (showLabel && label) {
+          label.textContent = 'Sound: ' + LEVEL_LABEL[level];
+          label.classList.add('show');
+          clearTimeout(labelTimer);
+          labelTimer = setTimeout(function () { label.classList.remove('show'); }, 1800);
+        }
       }
-      reflectMuted();
+      reflect(false);
+      // Press to step through Standard, Loud, Quiet and Off; a call sound plays at the new level as a preview.
       btn.addEventListener('click', function () {
         unlock();
-        muted = !muted;
-        localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
-        reflectMuted();
-        if (!muted) playChime();
+        level = LEVELS[(LEVELS.indexOf(level) + 1) % LEVELS.length];
+        try { localStorage.setItem(LEVEL_KEY, level); } catch (e) { /* storage blocked */ }
+        if (master) master.gain.setTargetAtTime(LEVEL_GAIN[level] || 1, ctx.currentTime, 0.02);
+        reflect(true);
+        if (level !== 'off') { queue.length = 0; request('call'); }
       });
 
       return {
-        playChime: playChime,
-        playBreakChime: playBreakChime,
-        playEmergencyChime: playEmergencyChime,
-        playAvailableChime: playAvailableChime,
+        playChime: function () { request('call'); },
+        playBreakChime: function () { request('break'); },
+        playEmergencyChime: function () { request('emergency'); },
+        playAvailableChime: function () { request('back'); },
+        playAnnouncement: function () { request('announcement'); },
+        playEvents: playEvents
       };
     })();
   </script>
@@ -532,10 +642,7 @@
         lastServedByDoctor = nextServedByDoctor;
         lastStatusByDoctor = nextStatusByDoctor;
         hasRenderedOnce = true;
-        if (someoneNewlyCalled) window.DisplaySound.playChime();
-        if (someoneWentOnBreak) window.DisplaySound.playBreakChime();
-        if (someoneWentEmergency) window.DisplaySound.playEmergencyChime();
-        if (someoneCameBack) window.DisplaySound.playAvailableChime();
+        window.DisplaySound.playEvents({ call: someoneNewlyCalled, break: someoneWentOnBreak, emergency: someoneWentEmergency, back: someoneCameBack });
 
         const isWide = all.length === 1;
         const colsClass = all.length <= 1 ? 'cols-1'

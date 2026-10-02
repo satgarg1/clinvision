@@ -5488,6 +5488,13 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   transition: opacity 0.15s ease, background 0.15s ease;
 }
 .display-theme-toggle:hover { opacity: 0.85; }
+/* The line that appears for a moment when the sound level is changed. */
+.display-sound-label {
+  position: absolute; top: 24px; right: 14px; padding: 4px 10px; border-radius: 99px; z-index: 5;
+  background: rgba(30, 27, 75, 0.88); color: #fff; font-size: 11px; font-weight: 600; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+}
+.display-sound-label.show { opacity: 1; }
 .display-zoom-out { right: 66px; }
 .display-zoom-in { right: 88px; }
 .display-theme-toggle svg { width: 11px; height: 11px; display: block; transition: transform 0.25s ease; }
