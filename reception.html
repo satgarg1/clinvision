@@ -1457,6 +1457,8 @@
 
         let bookedForToday = true;
         let time = null;
+        // The day just booked, so the form can stay on it for the next call (today for walk-ins).
+        let bookedDate = Qlinic.getTodayDate();
 
         if (patientMode === 'walkin') {
           const walkinTime = document.getElementById('pWalkinTime').value;
@@ -1519,6 +1521,7 @@
             return;
           }
           bookedForToday = date === Qlinic.getTodayDate();
+          bookedDate = date;
           showToast(bookedForToday ? 'Appointment added' : `Appointment booked for ${Qlinic.formatDateLabel(date)} (${Qlinic.formatTime(Qlinic.parseTime(time))})`);
           renderNotificationPreview(addResult.message, phone);
           await showWaBookedBar({ id: addResult.id, queueCode: addResult.queueCode, name, phone, type: 'appointment', doctorId, bookedDate: date, bookedTime: time }, addResult.tokenNumber);
@@ -1535,12 +1538,18 @@
         fillDoctorSelects();
         document.getElementById('pDoctor').value = doctorId;
         setPatientMode(patientMode);
-        document.getElementById('pDate').value = Qlinic.getTodayDate();
+        // After an appointment the form stays on the same doctor and the same date, and offers the same
+        // time again (or the next open slot if that one is now full), so several calls for one day go
+        // quickly. If that time has already passed today, the time is left blank. It used to jump back
+        // to today while keeping the time, which could show a time that does not fit the date.
+        document.getElementById('pDate').value = bookedDate;
         resetTimePicker();
         if (time) {
-          const recheck = await Qlinic.getSlotAvailability(doctorId, Qlinic.getTodayDate(), time);
+          const recheck = await Qlinic.getSlotAvailability(doctorId, bookedDate, time);
           const nextTime = recheck && recheck.isFull ? recheck.suggestion : time;
-          if (nextTime) selectTime(nextTime, Qlinic.formatTime(Qlinic.parseTime(nextTime)));
+          if (nextTime && !Qlinic.isPastRealDateTime(bookedDate, nextTime)) {
+            selectTime(nextTime, Qlinic.formatTime(Qlinic.parseTime(nextTime)));
+          }
         }
         resetWalkinTimePicker();
         clearPatientLookupHint();
