@@ -697,6 +697,7 @@
       const RETURN_WINDOW_OPTIONS = [15, 30, 45, 60, 90, 120, 180, 240].map((m) => ({
         value: m, label: m < 60 ? `${m} min` : `${m / 60} hr`,
       }));
+      let hasReturnWindow = false;
       const returnWindowPicker = setupDropdownPicker({
         pickerId: 'returnWindowPicker', triggerId: 'returnWindowTrigger', triggerTextId: 'returnWindowTriggerText',
         hiddenId: 'returnWindowInput', panelId: 'returnWindowPanel', options: RETURN_WINDOW_OPTIONS,
@@ -802,6 +803,8 @@
         if (!waWasStaged) waDraft = waSaved;
         renderWhatsAppCard();
         graceWindowPicker.setValue(clinic.grace_window_mins);
+        // Until migration 118 has been run the clinic row has no such column: leave it out of Save then.
+        hasReturnWindow = clinic.return_window_mins !== undefined;
         returnWindowPicker.setValue(clinic.return_window_mins || 60);
         slotIntervalPicker.setValue(clinic.slot_interval_mins);
         slotCapacityPicker.setValue(clinic.slot_capacity);
@@ -1071,7 +1074,7 @@
         try {
           await Qlinic.updateClinic({
             graceWindowMins: document.getElementById('graceWindowInput').value,
-            returnWindowMins: document.getElementById('returnWindowInput').value,
+            ...(hasReturnWindow ? { returnWindowMins: document.getElementById('returnWindowInput').value } : {}),
             slotIntervalMins: document.getElementById('slotIntervalInput').value,
             slotCapacity: document.getElementById('slotCapacityInput').value,
             scheduleIntervalMins: document.getElementById('scheduleIntervalInput').value,
