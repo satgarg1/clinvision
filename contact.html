@@ -164,7 +164,7 @@
               <div class="field-row">
                 <div class="field">
                   <label for="cName">Your name</label>
-                  <input type="text" id="cName" placeholder="Full name" required />
+                  <input type="text" id="cName" placeholder="Full name" required  maxlength="100" />
                 </div>
                 <div class="field">
                   <label for="cPhone">Phone number</label>
@@ -185,16 +185,16 @@
               <div class="field-row">
                 <div class="field">
                   <label for="cClinic">Clinic name <span style="font-weight:400;">(optional)</span></label>
-                  <input type="text" id="cClinic" placeholder="Clinic name" />
+                  <input type="text" id="cClinic" placeholder="Clinic name"  maxlength="150" />
                 </div>
                 <div class="field">
                   <label for="cCity">City <span style="font-weight:400;">(optional)</span></label>
-                  <input type="text" id="cCity" placeholder="City" />
+                  <input type="text" id="cCity" placeholder="City"  maxlength="100" />
                 </div>
               </div>
               <div class="field">
                 <label for="cNote">Anything specific you'd like to ask? <span style="font-weight:400;">(optional)</span></label>
-                <input type="text" id="cNote" placeholder="Tell us a bit more" />
+                <input type="text" id="cNote" placeholder="Tell us a bit more"  maxlength="2000" />
               </div>
               <button type="submit" class="btn btn-accent btn-large" id="contactSubmitBtn">Send</button>
             </form>

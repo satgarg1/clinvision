@@ -1,0 +1,21 @@
+# GitHub Pages builds the site from this folder. Everything listed here is kept OUT of the published site
+# (the database files, notes and exports are for the team, not for visitors).
+exclude:
+  - supabase
+  - BACKLOG.md
+  - README.md
+  - clinic_flow_brief.md
+  - generic_medicines_import.csv
+  - wrangler.jsonc
+  - .assetsignore
+  - .github
+  - .claude
+  - "*.xlsx"
+  - "*.xls"
+  - "*.csv"
+  - "*.json"
+  - "*.zip"
+  - "*.pdf"
+  - "*.docx"
+  - "*mockup*"
+  - "*.py"

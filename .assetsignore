@@ -1,0 +1,23 @@
+# Cloudflare (wrangler deploy) uploads this whole folder unless told otherwise. Keep everything that is not part of
+# the public website out of the upload.
+supabase/
+.github/
+.claude/
+_config.yml
+wrangler.jsonc
+.assetsignore
+README.md
+BACKLOG.md
+clinic_flow_brief.md
+*.md
+*.csv
+*.xlsx
+*.xls
+*.json
+*.zip
+*.pdf
+*.docx
+*mockup*
+*.py
+*.js.bak
+.~lock*
