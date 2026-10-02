@@ -1879,9 +1879,17 @@ a { color: inherit; }
 .pricing-tailor-btn {
   display: inline-flex; align-items: center; gap: 10px; height: 38px; padding: 0 16px; border-radius: 9px;
   background: #3b5bef; color: #fff; font-size: 14px; font-weight: 600; text-decoration: none;
-  transition: background 0.15s ease;
+  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
-.pricing-tailor-btn:hover { background: #2f4ddf; }
+.pricing-tailor-btn svg:last-child { transition: transform 0.18s ease; }
+.pricing-tailor-btn:hover { background: #2f4ddf; transform: translateY(-2px); box-shadow: 0 10px 22px rgba(59, 91, 239, 0.35); }
+.pricing-tailor-btn:hover svg:last-child { transform: translateX(3px); }
+.pricing-tailor-btn:active { transform: translateY(0); box-shadow: 0 3px 8px rgba(59, 91, 239, 0.3); }
+.pricing-tailor-btn:focus-visible { outline: 3px solid rgba(59, 91, 239, 0.35); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .pricing-tailor-btn, .pricing-tailor-btn svg:last-child { transition: background 0.18s ease; }
+  .pricing-tailor-btn:hover, .pricing-tailor-btn:active, .pricing-tailor-btn:hover svg:last-child { transform: none; }
+}
 .pricing-tailor-orb { position: absolute; border-radius: 50%; pointer-events: none; }
 .pricing-tailor-orb.teal { width: 44px; height: 44px; top: 32px; right: 93px; background: #d3f0ea; }
 .pricing-tailor-orb.lilac { width: 170px; height: 170px; top: 135px; right: 11px; background: #ebe8fb; }
