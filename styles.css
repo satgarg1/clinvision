@@ -1861,6 +1861,45 @@ a { color: inherit; }
 .pricing-feat-name { font-size: 15.5px; font-weight: 700; color: var(--black); margin-bottom: 4px; }
 .pricing-feat-desc { font-size: 13px; color: var(--grey-500); line-height: 1.55; }
 
+/* "Need something tailored to your clinic?" card under the features grid. */
+.pricing-tailor {
+  position: relative; overflow: hidden; margin: 56px calc(28px - 5vw) 0; min-height: 215px;
+  border: 1px solid #e3e6f5; border-radius: 22px; background: linear-gradient(135deg, #f5f6fd 0%, #fbfbff 100%);
+  display: grid; grid-template-columns: clamp(250px, 34%, 395px) minmax(0, 1fr); align-items: center;
+}
+.pricing-tailor-art { position: relative; z-index: 1; margin-left: 30px; max-width: 100%; height: auto; overflow: visible; }
+.pricing-tailor-shadow { filter: drop-shadow(0 10px 16px rgba(70, 80, 160, 0.16)); }
+.pricing-tailor-copy { position: relative; z-index: 1; padding: 17px clamp(24px, 14%, 190px) 25px 0; max-width: 760px; }
+.pricing-tailor-tag {
+  display: inline-block; height: 24px; line-height: 24px; padding: 0 12px; border-radius: 12px;
+  background: #e8ecfd; color: #3558d6; font-size: 11.7px; font-weight: 500; white-space: nowrap;
+}
+.pricing-tailor-title { margin: 7px 0 8px; font-size: 27.5px; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; color: #141a3d; }
+.pricing-tailor-text { margin: 0 0 9px; max-width: 548px; font-size: 12.2px; line-height: 18px; color: #6b7183; }
+.pricing-tailor-btn {
+  display: inline-flex; align-items: center; gap: 10px; height: 38px; padding: 0 16px; border-radius: 9px;
+  background: #3b5bef; color: #fff; font-size: 14px; font-weight: 600; text-decoration: none;
+  transition: background 0.15s ease;
+}
+.pricing-tailor-btn:hover { background: #2f4ddf; }
+.pricing-tailor-orb { position: absolute; border-radius: 50%; pointer-events: none; }
+.pricing-tailor-orb.teal { width: 44px; height: 44px; top: 32px; right: 93px; background: #d3f0ea; }
+.pricing-tailor-orb.lilac { width: 170px; height: 170px; top: 135px; right: 11px; background: #ebe8fb; }
+.pricing-tailor-dots {
+  position: absolute; top: 80px; right: 40px; width: 58px; height: 58px; pointer-events: none;
+  background-image: radial-gradient(circle, #d3d2f2 1.6px, transparent 2px); background-size: 12px 12px;
+}
+@media (max-width: 900px) {
+  .pricing-tailor { margin: 40px calc(14px - 6vw) 0; grid-template-columns: 1fr; padding: 28px 0 8px; }
+  .pricing-tailor-art { margin: 0 auto; width: 250px; }
+  .pricing-tailor-copy { padding: 8px 24px 28px; }
+  .pricing-tailor-tag { white-space: normal; height: auto; line-height: 1.4; padding: 4px 12px; }
+  .pricing-tailor-title { font-size: 23px; }
+  .pricing-tailor-dots { display: none; }
+  .pricing-tailor-orb.teal { width: 34px; height: 34px; top: 18px; right: 22px; }
+  .pricing-tailor-orb.lilac { width: 120px; height: 120px; top: auto; bottom: -46px; right: -28px; }
+}
+
 /* Trust band: curved top transition into a light gradient strip, above
    the site's real .mkt-footer (kept as-is on every marketing page). */
 .pricing-trust-wave { display: block; width: 100%; height: 40px; }
