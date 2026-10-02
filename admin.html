@@ -745,6 +745,8 @@
         graceNote.innerHTML = 'Service keeps running until <b>' + formatNice(graceEnd) + '</b> (' + GRACE_DAYS + '-day grace window), then auto-suspends if not renewed.';
       }
       function recomputeTo() {
+        // Picking a length with no start date yet means "starting today".
+        if (durationSelect.value !== 'custom' && !fromInput.value) fromInput.value = todayStr();
         if (durationSelect.value !== 'custom' && fromInput.value) {
           toInput.value = addMonths(fromInput.value, parseInt(durationSelect.value, 10));
         }
@@ -752,6 +754,9 @@
         updateGraceNote();
       }
       function recomputeTrialTo() {
+        // Picking a length with no start date yet means "starting today". Without this the
+        // length did nothing and the old end date was saved.
+        if (trialDurationSelect.value !== 'custom' && !trialFromInput.value) trialFromInput.value = todayStr();
         if (trialDurationSelect.value !== 'custom' && trialFromInput.value) {
           trialToInput.value = addDays(trialFromInput.value, parseInt(trialDurationSelect.value, 10));
         }
@@ -831,7 +836,8 @@
         enforceRange(fromInput, toInput, dateError, 'Subscription');
         updateGraceNote();
 
-        trialDurationSelect.value = '15';
+        // An existing trial shows its real end date; the length box reads "Custom range" until a length is picked.
+        trialDurationSelect.value = c.trialEndsAt ? 'custom' : '15';
         trialFromInput.value = '';
         trialToInput.value = c.trialEndsAt ? c.trialEndsAt.slice(0, 10) : '';
         enforceRange(trialFromInput, trialToInput, trialDateError, 'Trial');
