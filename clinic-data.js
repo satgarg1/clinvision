@@ -12,8 +12,31 @@
     removeItem(key) { this._target().removeItem(key); },
   };
 
+  // Every request to the server is counted, so a page can show a loading skeleton until its
+  // first data has arrived, and a "Reconnecting" bar if the connection drops later.
+  const netState = { pending: 0, started: 0 };
+  const netListeners = [];
+  function emitNet(event) {
+    netListeners.slice().forEach((fn) => { try { fn(event); } catch (e) { } });
+  }
+  function trackedFetch(input, init) {
+    netState.pending++;
+    netState.started++;
+    return fetch(input, init).then(
+      (res) => { netState.pending--; emitNet('ok'); return res; },
+      (err) => {
+        netState.pending--;
+        // A search cancelled on purpose is not a connection problem.
+        emitNet(err && err.name === 'AbortError' ? 'ok' : 'failed');
+        throw err;
+      }
+    );
+  }
+  function onNetwork(fn) { netListeners.push(fn); }
+
   const sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
     auth: { storage: authStorage },
+    global: { fetch: trackedFetch },
   });
 
   let currentClinicId = null;
@@ -781,6 +804,7 @@
       doneAt: row.done_at,
       reason: row.reason,
       tokenNumber: row.token_number,
+      queueCode: row.queue_code || '',
       tokenDate: row.token_date,
       isPriority: row.is_priority,
       createdAt: row.created_at,
@@ -1273,9 +1297,9 @@
     }).select().single();
     if (error) throw error;
     const message = await queueBookingNotification({
-      patientId: data.id, phone: info.phone, doctorId: info.doctorId, kind: 'walkin', tokenNumber: data.token_number,
+      patientId: data.id, queueCode: data.queue_code, phone: info.phone, doctorId: info.doctorId, kind: 'walkin', tokenNumber: data.token_number,
     });
-    return { id: data.id, message, tokenNumber: data.token_number };
+    return { id: data.id, message, tokenNumber: data.token_number, queueCode: data.queue_code };
   }
 
   async function addAppointment(info) {
@@ -1297,10 +1321,10 @@
     }).select().single();
     if (error) throw error;
     const message = await queueBookingNotification({
-      patientId: data.id, phone: info.phone, doctorId: info.doctorId, kind: 'appointment',
+      patientId: data.id, queueCode: data.queue_code, phone: info.phone, doctorId: info.doctorId, kind: 'appointment',
       bookedDate: info.bookedDate, bookedTime: info.bookedTime, tokenNumber: data.token_number,
     });
-    return { id: data.id, message, tokenNumber: data.token_number };
+    return { id: data.id, message, tokenNumber: data.token_number, queueCode: data.queue_code };
   }
 
   async function getPatientLookupByPhone(phone) {
@@ -1716,9 +1740,22 @@
     return normalizeInvoice(data);
   }
 
-  function queueLinkFor(patientId) {
+  // The link a patient gets. With a queue code it is the short neutral form on the live site
+  // (https://clinvision.in/q/K7M2X9QD4F); without one (a visit made before migration 115, or
+  // before it is run) it is the old link with the id, which keeps working.
+  function queueLinkFor(patientId, queueCode) {
     const dir = window.location.href.replace(/[^/]*$/, '');
+    if (queueCode) {
+      if (/^(www\.)?clinvision\.in$/.test(window.location.hostname)) return `${window.location.origin}/q/${queueCode}`;
+      return `${dir}queue.html?c=${queueCode}`;
+    }
     return `${dir}queue.html?id=${patientId}`;
+  }
+
+  async function resolveQueueCode(code) {
+    const { data, error } = await sb.rpc('resolve_queue_code', { p_code: code });
+    if (error) throw error;
+    return data || null;
   }
 
   // ---- WhatsApp booking confirmation (Clinic Settings > Patient messages) ----
@@ -1753,7 +1790,7 @@
   // the token exactly as the patient will see it ("#7", "W2").
   function buildWhatsAppMessage({ patient, clinic, doctor, tokenLabel }) {
     const plainDoctor = String((doctor && doctor.name) || '').replace(/^dr\.?\s+/i, '').trim();
-    const link = queueLinkFor(patient.id);
+    const link = queueLinkFor(patient.id, patient.queueCode);
     const hi = [`नमस्ते ${patient.name},`];
     const en = [`Hello ${patient.name},`];
 
@@ -1801,7 +1838,7 @@
     return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
   }
 
-  async function queueBookingNotification({ patientId, phone, doctorId, kind, bookedDate, bookedTime, tokenNumber }) {
+  async function queueBookingNotification({ patientId, queueCode, phone, doctorId, kind, bookedDate, bookedTime, tokenNumber }) {
     try {
       const clinicId = await ensureClinicContext();
       const clinic = await getClinic();
@@ -1811,7 +1848,7 @@
       const doctor = await getDoctor(doctorId);
       const tokenDisplay = tokenNumber ? (tokenNumber > 100000 ? 'W' + (tokenNumber - 100000) : '#' + tokenNumber) : null;
       const tokenLine = tokenDisplay ? ` Your token number is ${tokenDisplay}.` : '';
-      const link = tokenNumber ? queueLinkFor(patientId) : '';
+      const link = tokenNumber ? queueLinkFor(patientId, queueCode) : '';
       const doctorLine = doctor.specialty ? `${doctor.name} (${doctor.specialty})` : doctor.name;
 
       let message;
@@ -3638,6 +3675,9 @@
     attachDatePicker,
     shouldFlipUp,
     getQueueStatus,
+    resolveQueueCode,
+    onNetwork,
+    netState,
     isWhatsAppConfirmEnabled,
     whatsappUrlFor,
     buildWhatsAppMessage,

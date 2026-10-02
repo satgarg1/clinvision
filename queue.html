@@ -4,13 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Your queue status: ClinVision</title>
+<base href="/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
 <link rel="preload" as="image" href="doc-man.webp" type="image/webp" />
 <link rel="preload" as="image" href="doc-woman.webp" type="image/webp" />
-<link rel="stylesheet" href="styles.css?v=453" />
+<link rel="stylesheet" href="styles.css?v=455" />
 </head>
 <body class="queue-page">
   <div class="login-wrap">
@@ -35,7 +36,16 @@
       </div>
 
       <div id="loadingState">
-        <p class="panel-note" style="text-align:center;" id="loadingText">Loading your queue status…</p>
+        <div class="queue-skel" aria-hidden="true">
+          <div class="sk-b" style="height:26px;width:62%"></div>
+          <div class="sk-card sk-pad" style="margin-top:14px"><div class="sk-b" style="height:13px;width:55%"></div><div class="sk-b" style="height:17px;width:70%;margin-top:10px"></div><div class="sk-b" style="height:13px;width:45%;margin-top:10px"></div></div>
+          <div class="sk-b" style="height:14px;width:50%;margin:20px auto 0"></div>
+          <div class="sk-b" style="height:78px;width:190px;margin:12px auto 0;border-radius:22px"></div>
+          <div class="sk-card sk-pad" style="margin-top:20px"><div class="sk-b" style="height:18px;width:65%"></div></div>
+          <div class="sk-card sk-pad" style="margin-top:12px"><div class="sk-b" style="height:12px;width:40%"></div><div class="sk-b" style="height:30px;width:30%;margin-top:10px"></div></div>
+          <div class="sk-b" style="height:52px;width:100%;margin-top:14px;border-radius:999px"></div>
+        </div>
+        <p class="panel-note" style="text-align:center;margin-top:16px;" id="loadingText">Loading your queue status…</p>
       </div>
 
       <div id="errorState" style="display:none;">
@@ -158,11 +168,12 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=140"></script>
+  <script src="clinic-data.js?v=141"></script>
   <script>
     (async function () {
       const params = new URLSearchParams(window.location.search);
-      const patientId = params.get('id');
+      let patientId = params.get('id');
+      const shortCode = params.get('c');
 
       const loadingEl = document.getElementById('loadingState');
       const errorEl = document.getElementById('errorState');
@@ -288,6 +299,7 @@
       const STRINGS = {
         en: {
           loading: 'Loading your queue status…',
+          loadingSlow: 'Still trying. Please check your internet connection.',
           linkNotFoundTitle: 'Link not found',
           linkNotFoundBody: "We couldn't find a booking for this link. Please double-check the message you received, or contact the clinic directly.",
           closedTitle: 'Doctor has closed for the day',
@@ -367,6 +379,7 @@
         },
         hi: {
           loading: 'आपकी कतार की स्थिति लोड हो रही है…',
+          loadingSlow: 'अभी भी कोशिश जारी है। कृपया अपना इंटरनेट कनेक्शन जाँचें।',
           linkNotFoundTitle: 'लिंक नहीं मिला',
           linkNotFoundBody: 'हमें इस लिंक के लिए कोई बुकिंग नहीं मिली। कृपया अपना प्राप्त संदेश दोबारा जांचें, या सीधे क्लिनिक से संपर्क करें।',
           closedTitle: 'डॉक्टर आज के लिए बंद हो चुके हैं',
@@ -936,6 +949,23 @@
           // shouldn't undo the one thing the patient actually asked to do.
         }
       });
+
+      // After 10 seconds still waiting: say so, so nobody stares at the skeleton wondering.
+      setTimeout(() => {
+        if (loadingEl.style.display !== 'none') document.getElementById('loadingText').textContent = T.loadingSlow;
+      }, 10000);
+
+      // A short link (/q/CODE) carries a code instead of the id; find the visit it belongs to.
+      // A dropped connection keeps the loading screen and tries again, like the status refresh does.
+      if (!patientId && shortCode) {
+        for (;;) {
+          try { patientId = await Qlinic.resolveQueueCode(shortCode); break; }
+          catch (err) { await new Promise((resolve) => setTimeout(resolve, 5000)); }
+        }
+        if (patientId && /^(www\.)?clinvision\.in$/.test(window.location.hostname)) {
+          history.replaceState(null, '', '/q/' + shortCode.toUpperCase());
+        }
+      }
 
       if (!patientId) {
         showError();

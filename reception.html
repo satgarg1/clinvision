@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 <link rel="icon" type="image/png" href="clinvision-favicon.png?v=2" />
-<link rel="stylesheet" href="styles.css?v=444" />
+<link rel="stylesheet" href="styles.css?v=455" />
 </head>
 <body style="visibility:hidden;">
   <div class="app-shell">
@@ -188,8 +188,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="clinic-config.js"></script>
-  <script src="clinic-data.js?v=140"></script>
-  <script src="app-topbar.js?v=7"></script>
+  <script src="clinic-data.js?v=141"></script>
+  <script src="app-topbar.js?v=8"></script>
   <script>
     (async function () {
       if (!(await Qlinic.requireLogin('login.html'))) return;
@@ -1482,7 +1482,7 @@
           }
           showToast(isPriority ? 'Emergency walk-in added — seen first' : 'Walk-in added to the queue');
           renderNotificationPreview(addResult.message, phone);
-          await showWaBookedBar({ id: addResult.id, name, phone, type: 'walkin', doctorId }, addResult.tokenNumber);
+          await showWaBookedBar({ id: addResult.id, queueCode: addResult.queueCode, name, phone, type: 'walkin', doctorId }, addResult.tokenNumber);
         } else {
           const date = document.getElementById('pDate').value;
           time = document.getElementById('pTime').value;
@@ -1521,7 +1521,7 @@
           bookedForToday = date === Qlinic.getTodayDate();
           showToast(bookedForToday ? 'Appointment added' : `Appointment booked for ${Qlinic.formatDateLabel(date)} (${Qlinic.formatTime(Qlinic.parseTime(time))})`);
           renderNotificationPreview(addResult.message, phone);
-          await showWaBookedBar({ id: addResult.id, name, phone, type: 'appointment', doctorId, bookedDate: date, bookedTime: time }, addResult.tokenNumber);
+          await showWaBookedBar({ id: addResult.id, queueCode: addResult.queueCode, name, phone, type: 'appointment', doctorId, bookedDate: date, bookedTime: time }, addResult.tokenNumber);
         }
 
         if (bookedForToday) {

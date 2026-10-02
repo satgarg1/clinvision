@@ -121,4 +121,111 @@
   }
 
   build().catch(() => { });
+
+  // ---- Loading skeleton -------------------------------------------------
+  // Grey blocks with a light band sweeping across them stand in for the page until its first
+  // data has arrived. It stays invisible for the first 0.2 seconds (CSS), so a fast connection
+  // never flashes it. If the connection is down, or nothing answers for 10 seconds, it turns
+  // into a message with a Retry button. After the page has loaded, a dropped connection shows a
+  // slim "Reconnecting" bar instead, and the numbers stay as they were.
+  if (!Qlinic.onNetwork || !Qlinic.netState) return;
+  const PAGE_KINDS = {
+    'dashboard.html': 'dashboard',
+    'reception.html': 'panels', 'doctor.html': 'panels', 'prescriptions.html': 'panels',
+    'pharmacy.html': 'panels', 'manage-medicines.html': 'panels', 'billing.html': 'panels',
+    'billing-consultation.html': 'panels',
+    'settings.html': 'forms', 'clinic-settings.html': 'forms', 'team.html': 'forms',
+    'manage-doctors.html': 'forms', 'doctor-holidays.html': 'forms', 'closed-dates.html': 'forms',
+    'account-security.html': 'forms',
+  };
+  const page = (location.pathname.split('/').pop() || '').toLowerCase();
+  const kind = PAGE_KINDS[page] || 'table';
+  const blk = (w, h, extra) => '<div class="sk-b" style="width:' + w + ';height:' + h + 'px;' + (extra || '') + '"></div>';
+  const cards = (n, h) => '<div class="sk-grid" style="grid-template-columns:repeat(' + n + ',minmax(0,1fr))">' +
+    Array.from({ length: n }, () => '<div class="sk-card" style="height:' + h + 'px"></div>').join('') + '</div>';
+  const rows = (n) => Array.from({ length: n }, () =>
+    '<div class="sk-row">' + blk('34px', 34, 'border-radius:50%;flex:none') + blk('26%', 14) + blk('18%', 14) + blk('22%', 14) + blk('12%', 14, 'margin-left:auto') + '</div>').join('');
+  const LAYOUTS = {
+    dashboard: blk('180px', 28) + '<div class="sk-card" style="height:128px"></div>' + cards(6, 104) +
+      '<div class="sk-grid" style="grid-template-columns:minmax(0,2.2fr) minmax(0,1fr)"><div class="sk-card sk-pad">' + blk('140px', 16) + rows(4) + '</div><div class="sk-card sk-pad">' + blk('110px', 16) + blk('60px', 34, 'margin-top:14px') + blk('90%', 12, 'margin-top:18px') + blk('90%', 12, 'margin-top:12px') + blk('90%', 12, 'margin-top:12px') + '</div></div>',
+    table: blk('180px', 28) + '<div class="sk-grid" style="grid-template-columns:repeat(3,max-content)">' + blk('150px', 40, 'border-radius:99px') + blk('190px', 40, 'border-radius:99px') + blk('120px', 40, 'border-radius:99px') + '</div>' + cards(4, 92) +
+      '<div class="sk-card sk-pad">' + blk('160px', 16) + rows(6) + '</div>',
+    panels: blk('180px', 28) + '<div class="sk-card sk-pad">' + blk('100%', 44, 'border-radius:99px') + '</div>' +
+      '<div class="sk-grid" style="grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)"><div class="sk-card sk-pad">' + blk('150px', 16) + rows(5) + '</div><div class="sk-card sk-pad">' + blk('120px', 16) + blk('100%', 14, 'margin-top:16px') + blk('85%', 14, 'margin-top:12px') + blk('92%', 14, 'margin-top:12px') + '</div></div>',
+    forms: blk('180px', 28) + blk('320px', 14) + '<div class="sk-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="sk-card sk-pad" style="height:210px">' + blk('140px', 16) + blk('100%', 40, 'margin-top:16px') + blk('100%', 40, 'margin-top:12px') + '</div><div class="sk-card sk-pad" style="height:210px">' + blk('140px', 16) + blk('100%', 40, 'margin-top:16px') + blk('100%', 40, 'margin-top:12px') + '</div></div><div class="sk-card sk-pad" style="height:190px">' + blk('160px', 16) + blk('100%', 40, 'margin-top:16px') + '</div>',
+  };
+
+  const overlay = document.createElement('div');
+  overlay.className = 'app-skel';
+  overlay.setAttribute('role', 'status');
+  overlay.setAttribute('aria-label', 'Loading');
+  overlay.innerHTML = '<div class="app-skel-note" hidden></div><div class="app-skel-inner">' + LAYOUTS[kind] + '</div>';
+  shell.appendChild(overlay);
+
+  const startedAt = Date.now();
+  let lastActivity = startedAt;
+  let failed = false;
+  let finished = false;
+  let timer = null;
+
+  function showProblem(title, text, withSkeleton) {
+    if (finished) return;
+    const note = overlay.querySelector('.app-skel-note');
+    if (withSkeleton) {
+      note.hidden = false;
+      note.innerHTML = '<span><b>' + title + '</b> ' + text + '</span><button type="button">Try again</button>';
+      note.querySelector('button').addEventListener('click', () => location.reload());
+      return;
+    }
+    note.hidden = true;
+    overlay.querySelector('.app-skel-inner').innerHTML =
+      '<div class="sk-fail"><div class="sk-fail-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/><line x1="2" y1="2" x2="22" y2="22"/></svg></div>' +
+      '<h2>' + title + '</h2><p>' + text + '</p><button type="button" class="btn-sm primary">Try again</button></div>';
+    overlay.querySelector('.sk-fail button').addEventListener('click', () => location.reload());
+  }
+
+  function finish() {
+    finished = true;
+    clearInterval(timer);
+    overlay.classList.add('is-leaving');
+    setTimeout(() => overlay.remove(), 200);
+  }
+
+  let reconnectBar = null;
+  Qlinic.onNetwork((event) => {
+    lastActivity = Date.now();
+    if (!finished) {
+      if (event === 'failed') {
+        failed = true;
+        showProblem("Can't reach ClinVision", 'Check your internet connection. Nothing you entered has been lost.', false);
+      }
+      return;
+    }
+    // After the first load: a slim bar while the connection is down.
+    if (event === 'failed' && !reconnectBar) {
+      reconnectBar = document.createElement('div');
+      reconnectBar.className = 'net-bar';
+      reconnectBar.setAttribute('role', 'status');
+      reconnectBar.innerHTML = '<span class="net-bar-dot"></span>Reconnecting. These numbers may be a little out of date.';
+      shell.appendChild(reconnectBar);
+    } else if (event === 'ok' && reconnectBar) {
+      reconnectBar.remove();
+      reconnectBar = null;
+    }
+  });
+  window.addEventListener('online', () => { if (!finished && failed) location.reload(); });
+
+  timer = setInterval(() => {
+    if (finished) return;
+    const now = Date.now();
+    const quiet = Qlinic.netState.pending === 0 && now - lastActivity > 350
+      && (Qlinic.netState.started > 0 || now - startedAt > 900);
+    if (quiet && !failed) { finish(); return; }
+    if (!failed && now - startedAt > 10000) {
+      showProblem('Taking longer than usual.', 'Still trying. Check your internet connection.', true);
+    }
+    // Never hold the page behind the skeleton for ever, whatever a stuck request is doing.
+    if (!failed && now - startedAt > 25000) finish();
+  }, 120);
 })();
+

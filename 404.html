@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>Page not found: ClinVision</title>
+<link rel="icon" type="image/png" href="/clinvision-favicon.png?v=2" />
+<style>
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box;
+    font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0b1f4d;
+    background: linear-gradient(180deg, #dfeaff 0%, #eaf0ff 45%, #e6f3f6 100%); }
+  .box { text-align: center; max-width: 380px; }
+  h1 { margin: 0 0 8px; font-size: 24px; }
+  p { margin: 0 0 18px; font-size: 15px; line-height: 1.5; color: #475569; }
+  a { display: inline-block; padding: 12px 26px; border-radius: 999px; background: #1d63e0; color: #fff; font-weight: 700; text-decoration: none; }
+</style>
+</head>
+<body>
+  <div class="box" id="notFound" hidden>
+    <h1>Page not found</h1>
+    <p>The link may be mistyped or no longer in use. If a clinic sent you this link, please ask them to send it again.</p>
+    <a href="/">Go to ClinVision</a>
+  </div>
+  <script>
+    // Patient queue links look like https://clinvision.in/q/K7M2X9QD4F . GitHub Pages has no URL
+    // rewriting, so an address under /q/ lands here and is handed to the queue page with its code.
+    (function () {
+      var match = /^\/q\/([A-Za-z0-9]{6,24})\/?$/.exec(window.location.pathname);
+      if (match) {
+        window.location.replace('/queue.html?c=' + match[1].toUpperCase());
+        return;
+      }
+      document.getElementById('notFound').hidden = false;
+    })();
+  </script>
+</body>
+</html>
