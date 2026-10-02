@@ -752,7 +752,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 begin
   if new.token_number is null then
     perform pg_advisory_xact_lock(hashtext(new.doctor_id::text || ':' || new.token_date::text)::bigint);
@@ -784,7 +784,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 begin
   if new.token_number is not null
      and (new.doctor_id is distinct from old.doctor_id
