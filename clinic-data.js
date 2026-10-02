@@ -1977,6 +1977,10 @@
       hi.join('\n'),
       en.join('\n'),
       'आप कतार की स्थिति यहाँ देख सकते हैं / You can follow the queue here:\n' + link,
+      // Appointments end with a plain question the patient can answer in one word.
+      ...(patient.type === 'appointment'
+        ? ['क्या आप आ रहे हैं? कृपया YES (हाँ) या NO (नहीं) लिखकर भेजें।\nWill you be coming? Please reply YES or NO.']
+        : []),
     ].join('\n\n');
   }
 
