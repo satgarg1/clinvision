@@ -1015,6 +1015,7 @@
     const clinicId = await ensureClinicContext();
     if (!clinicId) throw new Error('No clinic to upload a logo for yet.');
     if (file.size > MAX_LOGO_BYTES) throw new Error('Logo must be under 2 MB.');
+    if (['image/png', 'image/jpeg', 'image/webp'].indexOf(file.type) === -1) throw new Error('The logo must be a PNG, JPEG or WebP picture.');
     const path = `${clinicId}/logo`;
     const { error: uploadError } = await sb.storage.from(LOGO_BUCKET).upload(path, file, {
       upsert: true, cacheControl: '3600', contentType: file.type,
