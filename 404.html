@@ -4,9 +4,29 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex" />
-<title>Page not found: ClinVision</title>
+<!-- GitHub Pages shows this file for any address that does not exist. A patient queue link such as
+     https://clinvision.in/q/K7M2X9QD4F lands here and is passed straight to the queue page. The title and
+     preview below are the ones WhatsApp and a browser tab show for such a link, so they say nothing
+     about "not found". The page stays blank until the script decides what to show. -->
+<title>Your queue on ClinVision</title>
+<meta property="og:title" content="Your queue on ClinVision" />
+<meta property="og:description" content="Open this link to see where you are in the queue." />
+<meta property="og:site_name" content="ClinVision" />
 <link rel="icon" type="image/png" href="/clinvision-favicon.png?v=2" />
+<script>
+  (function () {
+    var match = /^\/q\/([A-Za-z0-9]{6,24})\/?$/.exec(window.location.pathname);
+    if (match) {
+      window.location.replace('/queue.html?c=' + match[1].toUpperCase());
+    } else {
+      document.documentElement.className = 'nf';
+      document.title = 'Page not found: ClinVision';
+    }
+  })();
+</script>
 <style>
+  html { background: #eaf0ff; }
+  html:not(.nf) body { display: none; }
   body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box;
     font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0b1f4d;
     background: linear-gradient(180deg, #dfeaff 0%, #eaf0ff 45%, #e6f3f6 100%); }
@@ -17,22 +37,10 @@
 </style>
 </head>
 <body>
-  <div class="box" id="notFound" hidden>
+  <div class="box">
     <h1>Page not found</h1>
     <p>The link may be mistyped or no longer in use. If a clinic sent you this link, please ask them to send it again.</p>
     <a href="/">Go to ClinVision</a>
   </div>
-  <script>
-    // Patient queue links look like https://clinvision.in/q/K7M2X9QD4F . GitHub Pages has no URL
-    // rewriting, so an address under /q/ lands here and is handed to the queue page with its code.
-    (function () {
-      var match = /^\/q\/([A-Za-z0-9]{6,24})\/?$/.exec(window.location.pathname);
-      if (match) {
-        window.location.replace('/queue.html?c=' + match[1].toUpperCase());
-        return;
-      }
-      document.getElementById('notFound').hidden = false;
-    })();
-  </script>
 </body>
 </html>
